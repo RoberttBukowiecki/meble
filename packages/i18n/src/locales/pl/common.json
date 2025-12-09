@@ -1,0 +1,33 @@
+{
+  "buttons": {
+    "start": "Rozpocznij",
+    "learnMore": "Dowiedz się więcej",
+    "signin": "Zaloguj się",
+    "signup": "Zarejestruj się",
+    "signout": "Wyloguj się",
+    "save": "Zapisz",
+    "cancel": "Anuluj",
+    "delete": "Usuń",
+    "edit": "Edytuj",
+    "close": "Zamknij",
+    "back": "Wstecz",
+    "next": "Dalej",
+    "submit": "Wyślij",
+    "confirm": "Potwierdź"
+  },
+  "navigation": {
+    "home": "Strona główna",
+    "features": "Funkcje",
+    "pricing": "Cennik",
+    "contact": "Kontakt",
+    "account": "Konto",
+    "settings": "Ustawienia"
+  },
+  "common": {
+    "loading": "Ładowanie...",
+    "error": "Wystąpił błąd",
+    "success": "Sukces",
+    "warning": "Ostrzeżenie",
+    "info": "Informacja"
+  }
+}
