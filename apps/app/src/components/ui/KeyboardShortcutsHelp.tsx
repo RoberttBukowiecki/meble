@@ -14,7 +14,7 @@ import {
   DialogDescription,
 } from '@meble/ui';
 import { Keyboard } from 'lucide-react';
-import { KEYBOARD_SHORTCUTS } from '@/lib/config';
+import { KEYBOARD_SHORTCUTS, formatShortcutLabel } from '@/lib/config';
 
 export function KeyboardShortcutsHelp() {
   const [open, setOpen] = useState(false);
@@ -23,21 +23,21 @@ export function KeyboardShortcutsHelp() {
     {
       category: 'Tryby transformacji',
       items: [
-        { key: KEYBOARD_SHORTCUTS.TRANSLATE_MODE.toUpperCase(), description: 'Tryb przesuwania' },
-        { key: KEYBOARD_SHORTCUTS.ROTATE_MODE.toUpperCase(), description: 'Tryb obrotu' },
+        { key: formatShortcutLabel(KEYBOARD_SHORTCUTS.TRANSLATE_MODE), description: 'Tryb przesuwania' },
+        { key: formatShortcutLabel(KEYBOARD_SHORTCUTS.ROTATE_MODE), description: 'Tryb obrotu' },
       ],
     },
     {
       category: 'Kamera',
       items: [
-        { key: KEYBOARD_SHORTCUTS.RESET_CAMERA.toUpperCase(), description: 'Reset widoku kamery' },
+        { key: formatShortcutLabel(KEYBOARD_SHORTCUTS.RESET_CAMERA), description: 'Reset widoku kamery' },
       ],
     },
     {
       category: 'Części',
       items: [
-        { key: 'CTRL+D', description: 'Duplikuj zaznaczoną część' },
-        { key: 'DELETE', description: 'Usuń zaznaczoną część' },
+        { key: `CTRL/CMD + ${formatShortcutLabel(KEYBOARD_SHORTCUTS.DUPLICATE_PART)}`, description: 'Duplikuj zaznaczoną część' },
+        { key: formatShortcutLabel(KEYBOARD_SHORTCUTS.DELETE_PART), description: 'Usuń zaznaczoną część' },
       ],
     },
   ];

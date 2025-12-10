@@ -237,10 +237,16 @@ export interface ProjectState {
 // ============================================================================
 
 /**
+ * Defines how the top and bottom panels are placed relative to the side panels.
+ * 'inset': Placed between the side panels.
+ * 'overlay': Placed on top of (overlaying) the side panels.
+ */
+export type TopBottomPlacement = 'inset' | 'overlay';
+
+/**
  * Available cabinet template types
  */
 export type CabinetType = 'KITCHEN' | 'WARDROBE' | 'BOOKSHELF' | 'DRAWER';
-
 /**
  * Cabinet material configuration
  * Cabinets use two materials: body (structure) and front (visible surfaces)
@@ -257,6 +263,7 @@ export interface CabinetBaseParams {
   width: number;   // Overall width (mm)
   height: number;  // Overall height (mm)
   depth: number;   // Overall depth (mm)
+  topBottomPlacement: TopBottomPlacement; // How top/bottom panels are attached
 }
 
 /**
@@ -314,6 +321,7 @@ export interface Cabinet {
   type: CabinetType;
   params: CabinetParams;
   materials: CabinetMaterials;
+  topBottomPlacement: TopBottomPlacement;
   partIds: string[];  // Array of part IDs that belong to this cabinet
   createdAt: Date;
   updatedAt: Date;

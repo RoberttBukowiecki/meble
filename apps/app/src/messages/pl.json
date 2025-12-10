@@ -6,7 +6,7 @@
     "propertiesTab": "Właściwości",
     "listTab": "Lista",
     "listTabWithCount": "Lista ({count})",
-    "selectPartToEdit": "Wybierz część aby edytować właściwości",
+    "selectPartToEdit": "Wybierz część lub szafkę aby edytować właściwości",
     "validationErrors": "Błędy walidacji",
     "validationErrorsDescription": "Przed eksportem należy naprawić następujące błędy:"
   },
@@ -26,6 +26,9 @@
     "parametersWarning": "Zmiana parametrów wygeneruje części od nowa.",
     "parametersConfirm": "Wygeneruje nowe części. Wszystkie manualne zmiany w częściach zostaną utracone. Czy kontynuować?",
     "materials": "Materiały",
+    "topBottomPlacement": "Montaż góra/dół",
+    "topBottomPlacementInset": "Wewnątrz (między bokami)",
+    "topBottomPlacementOverlay": "Nałożona (na boki)",
     "bodyMaterial": "Korpus",
     "frontMaterial": "Front",
     "deleteCabinetConfirm": "Usunąć szafkę \"{name}\" i wszystkie jej części?",

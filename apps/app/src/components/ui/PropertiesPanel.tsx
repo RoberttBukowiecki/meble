@@ -40,6 +40,7 @@ import type {
   ShapeParamsPolygon,
   CabinetParams,
   CabinetType,
+  TopBottomPlacement,
 } from '@/types';
 import { Alert, AlertDescription, AlertTitle, Badge, Slider } from '@meble/ui';
 
@@ -129,6 +130,23 @@ const CabinetParameterEditor = ({ type, params, onChange }: CabinetParameterEdit
             onChange={(e) => updateParams({ depth: parseInt(e.target.value) || 0 })}
           />
         </div>
+      </div>
+      <div>
+        <Label>{t('topBottomPlacement')}</Label>
+        <Select
+          value={localParams.topBottomPlacement}
+          onValueChange={(value) =>
+            updateParams({ topBottomPlacement: value as TopBottomPlacement } as any)
+          }
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="inset">{t('topBottomPlacementInset')}</SelectItem>
+            <SelectItem value="overlay">{t('topBottomPlacementOverlay')}</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
       {type === 'KITCHEN' && (
         <>

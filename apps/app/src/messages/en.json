@@ -6,7 +6,7 @@
     "propertiesTab": "Properties",
     "listTab": "List",
     "listTabWithCount": "List ({count})",
-    "selectPartToEdit": "Select a part to edit properties",
+    "selectPartToEdit": "Select a part or cabinet to edit properties",
     "validationErrors": "Validation Errors",
     "validationErrorsDescription": "Please fix the following errors before exporting:"
   },
@@ -26,6 +26,9 @@
     "parametersWarning": "Changing parameters will regenerate parts from scratch.",
     "parametersConfirm": "This will generate new parts. All manual changes to parts will be lost. Continue?",
     "materials": "Materials",
+    "topBottomPlacement": "Top/Bottom placement",
+    "topBottomPlacementInset": "Inset (between sides)",
+    "topBottomPlacementOverlay": "Overlay (over sides)",
     "bodyMaterial": "Body",
     "frontMaterial": "Front",
     "deleteCabinetConfirm": "Delete cabinet \"{name}\" and all its parts?",

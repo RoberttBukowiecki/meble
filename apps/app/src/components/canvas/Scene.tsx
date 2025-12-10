@@ -15,7 +15,7 @@ import { Camera, Move, RotateCw } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { KeyboardShortcutsHelp } from '@/components/ui/KeyboardShortcutsHelp';
 import { useKeyboardShortcuts } from '@/lib/useKeyboardShortcuts';
-import { SCENE_CONFIG, KEYBOARD_SHORTCUTS } from '@/lib/config';
+import { SCENE_CONFIG, KEYBOARD_SHORTCUTS, formatShortcutLabel } from '@/lib/config';
 import type { OrbitControls as OrbitControlsType } from 'three-stdlib';
 import { CabinetGroupTransform } from './CabinetGroupTransform';
 import { PartTransformControls } from './PartTransformControls';
@@ -108,7 +108,7 @@ export function Scene() {
             size="sm"
             onClick={() => setTransformMode('translate')}
             className="h-8 px-2"
-            title={`Przesuwanie (${KEYBOARD_SHORTCUTS.TRANSLATE_MODE.toUpperCase()})`}
+            title={`Przesuwanie (${formatShortcutLabel(KEYBOARD_SHORTCUTS.TRANSLATE_MODE)})`}
           >
             <Move className="h-4 w-4" />
           </Button>
@@ -117,7 +117,7 @@ export function Scene() {
             size="sm"
             onClick={() => setTransformMode('rotate')}
             className="h-8 px-2"
-            title={`Obrót (${KEYBOARD_SHORTCUTS.ROTATE_MODE.toUpperCase()})`}
+            title={`Obrót (${formatShortcutLabel(KEYBOARD_SHORTCUTS.ROTATE_MODE)})`}
           >
             <RotateCw className="h-4 w-4" />
           </Button>
@@ -129,7 +129,7 @@ export function Scene() {
           size="sm"
           onClick={handleResetCamera}
           className="bg-background/80 backdrop-blur-sm"
-          title={`Reset widoku (${KEYBOARD_SHORTCUTS.RESET_CAMERA.toUpperCase()})`}
+          title={`Reset widoku (${formatShortcutLabel(KEYBOARD_SHORTCUTS.RESET_CAMERA)})`}
         >
           <Camera className="mr-2 h-4 w-4" />
           Reset widoku

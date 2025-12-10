@@ -13,6 +13,7 @@
 - W komponencie `Part3D` zostanie dodana logika, która sprawdza, czy dana część jest na liście kolidujących części (przechowywanej w store).
 - Jeśli część koliduje, jej materiał (`MeshStandardMaterial`) zostanie tymczasowo zmieniony na materiał w kolorze czerwonym (np. z `emissive` ustawionym na czerwony dla lepszej widoczności).
 - Kiedy kolizja zostanie rozwiązana, materiał powinien wrócić do oryginalnego.
+- Jesli kolidujące części są zgrupowane, cały ich grupowany obiekt powinien zmienić kolor na czerwony.
 
 ## 3. Interfejs użytkownika (UI) dla ostrzeżeń
 

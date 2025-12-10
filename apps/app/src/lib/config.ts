@@ -3,6 +3,19 @@
  * Centralized keyboard shortcuts and settings
  */
 
+import { CabinetParams, CabinetType } from "@/types";
+
+// Utility types/helpers for keyboard shortcuts
+export type ShortcutKeys = string | string[];
+
+export const normalizeShortcutKeys = (shortcut: ShortcutKeys): string[] =>
+  Array.isArray(shortcut) ? shortcut : [shortcut];
+
+export const formatShortcutLabel = (shortcut: ShortcutKeys): string =>
+  normalizeShortcutKeys(shortcut)
+    .map((key) => key.toUpperCase())
+    .join(' / ');
+
 // ============================================================================
 // Keyboard Shortcuts Configuration
 // ============================================================================
@@ -16,7 +29,7 @@ export const KEYBOARD_SHORTCUTS = {
   RESET_CAMERA: 'c',
 
   // Part actions
-  DELETE_PART: 'Delete',
+  DELETE_PART: ['Delete', 'Backspace'],
   DUPLICATE_PART: 'd',
 
   // View options
@@ -26,7 +39,7 @@ export const KEYBOARD_SHORTCUTS = {
   // UNDO: 'z',
   // REDO: 'y',
   // SELECT_ALL: 'a',
-} as const;
+} as const satisfies Record<string, ShortcutKeys>;
 
 // ============================================================================
 // 3D Scene Configuration
@@ -88,3 +101,46 @@ export const PART_CONFIG = {
   CABINET_SELECTION_EMISSIVE_INTENSITY: 0.2,
   CABINET_SELECTION_EDGE_COLOR: '#2222aa',
 } as const;
+
+
+// ============================================================================
+// Cabinet Configuration
+// ============================================================================
+
+export const CABINET_PRESETS: Record<CabinetType, Partial<CabinetParams>> = {
+  KITCHEN: {
+    type: 'KITCHEN',
+    width: 800,
+    height: 720,
+    depth: 580,
+    shelfCount: 1,
+    hasDoors: true,
+    topBottomPlacement: 'inset',
+  },
+  WARDROBE: {
+    type: 'WARDROBE',
+    width: 1000,
+    height: 2200,
+    depth: 600,
+    shelfCount: 1,
+    doorCount: 2,
+    topBottomPlacement: 'inset',
+  },
+  BOOKSHELF: {
+    type: 'BOOKSHELF',
+    width: 900,
+    height: 1800,
+    depth: 300,
+    shelfCount: 4,
+    hasBack: true,
+    topBottomPlacement: 'inset',
+  },
+  DRAWER: {
+    type: 'DRAWER',
+    width: 600,
+    height: 800,
+    depth: 500,
+    drawerCount: 4,
+    topBottomPlacement: 'inset',
+  }
+};

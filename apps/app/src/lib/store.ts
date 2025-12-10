@@ -19,6 +19,7 @@ import type {
   CabinetMaterials,
 } from '@/types';
 import { getGeneratorForType } from './cabinetGenerators';
+import { Euler, Quaternion, Vector3 } from 'three';
 
 // ============================================================================
 // Initial State
@@ -53,6 +54,59 @@ const initialFurnitures: Furniture[] = [
     name: 'Domyślny mebel',
   },
 ];
+
+// Helper: calculate cabinet transform (center + shared rotation) from existing parts
+const getCabinetTransform = (parts: Part[]) => {
+  const center = new Vector3();
+  if (parts.length > 0) {
+    parts.forEach((p) => center.add(new Vector3().fromArray(p.position)));
+    center.divideScalar(parts.length);
+  }
+
+  // Prefer bottom panel as reference for rotation (it has zero base rotation)
+  const referencePart =
+    parts.find((p) => p.cabinetMetadata?.role === 'BOTTOM') ?? parts[0];
+
+  const rotation = referencePart?.rotation
+    ? new Quaternion().setFromEuler(new Euler().fromArray(referencePart.rotation))
+    : new Quaternion(); // identity
+
+  return { center, rotation };
+};
+
+// Helper: apply saved transform to freshly generated cabinet parts
+const applyCabinetTransform = <T extends Omit<Part, 'id' | 'createdAt' | 'updatedAt'>>(
+  generatedParts: T[],
+  targetCenter: Vector3,
+  rotation: Quaternion
+) => {
+  if (generatedParts.length === 0) return generatedParts;
+
+  // Base center of newly generated (untransformed) parts
+  const baseCenter = new Vector3();
+  generatedParts.forEach((p) => baseCenter.add(new Vector3().fromArray(p.position)));
+  baseCenter.divideScalar(generatedParts.length);
+
+  const rotatedBaseCenter = baseCenter.clone().applyQuaternion(rotation);
+  const offset = targetCenter.clone().sub(rotatedBaseCenter);
+
+  return generatedParts.map((part) => {
+    const finalPosition = new Vector3()
+      .fromArray(part.position)
+      .applyQuaternion(rotation)
+      .add(offset);
+
+    const partQuat = new Quaternion().setFromEuler(new Euler().fromArray(part.rotation));
+    const finalQuat = partQuat.premultiply(rotation);
+    const finalEuler = new Euler().setFromQuaternion(finalQuat);
+
+    return {
+      ...part,
+      position: finalPosition.toArray() as [number, number, number],
+      rotation: [finalEuler.x, finalEuler.y, finalEuler.z] as [number, number, number],
+    };
+  });
+};
 
 // ============================================================================
 // Store
@@ -147,6 +201,17 @@ export const useStore = create<ProjectState>()(
           right: false,
         };
 
+        const defaultPosition: [number, number, number] = [
+          0,
+          defaultMaterial.thickness / 2,
+          0,
+        ];
+        const defaultRotation: [number, number, number] = [
+          -Math.PI / 2,
+          0,
+          0,
+        ]; // Lay the part flat on the ground by default
+
         const newPart: Part = {
           id: uuidv4(),
           name: `Część ${get().parts.length + 1}`,
@@ -157,8 +222,8 @@ export const useStore = create<ProjectState>()(
           width: 600,
           height: 400,
           depth: defaultMaterial.thickness,
-          position: [0, 0, 0],
-          rotation: [0, 0, 0],
+          position: defaultPosition,
+          rotation: defaultRotation,
           materialId: defaultMaterial.id,
           edgeBanding: defaultEdgeBanding,
           notes: undefined,
@@ -395,6 +460,7 @@ export const useStore = create<ProjectState>()(
           type,
           params,
           materials,
+          topBottomPlacement: params.topBottomPlacement, // Store the placement
           partIds: parts.map(p => p.id),
           createdAt: now,
           updatedAt: now,
@@ -415,43 +481,62 @@ export const useStore = create<ProjectState>()(
           if (cabinetIndex === -1) return state;
 
           const cabinet = state.cabinets[cabinetIndex];
-          const updatedPatch = { ...patch, updatedAt: new Date() };
+          const cabinetParts = state.parts.filter(p => cabinet.partIds.includes(p.id));
+          const { center, rotation } = getCabinetTransform(cabinetParts);
 
-          // If materials changed, update relevant parts
-          let updatedParts = state.parts;
-          if (patch.materials) {
-            updatedParts = state.parts.map(part => {
-              if (part.cabinetMetadata?.cabinetId !== id) return part;
+          const materials = patch.materials
+            ? { ...cabinet.materials, ...patch.materials }
+            : cabinet.materials;
 
-              const isBodyPart = ['BOTTOM', 'TOP', 'LEFT_SIDE', 'RIGHT_SIDE', 'BACK', 'SHELF'].includes(
-                part.cabinetMetadata.role
-              );
-              const isFrontPart = ['DOOR', 'DRAWER_FRONT'].includes(part.cabinetMetadata.role);
+          const params = patch.topBottomPlacement
+            ? { ...cabinet.params, topBottomPlacement: patch.topBottomPlacement }
+            : cabinet.params;
 
-              if (isBodyPart && patch.materials?.bodyMaterialId) {
-                const newMaterial = state.materials.find(m => m.id === patch.materials?.bodyMaterialId);
-                return {
-                  ...part,
-                  materialId: patch.materials.bodyMaterialId,
-                  depth: newMaterial?.thickness ?? part.depth,
-                };
-              }
-              if (isFrontPart && patch.materials?.frontMaterialId) {
-                const newMaterial = state.materials.find(m => m.id === patch.materials?.frontMaterialId);
-                return {
-                  ...part,
-                  materialId: patch.materials.frontMaterialId,
-                  depth: newMaterial?.thickness ?? part.depth,
-                };
-              }
-              return part;
-            });
+          const shouldRegenerate =
+            Boolean(patch.materials) ||
+            (patch.topBottomPlacement && patch.topBottomPlacement !== cabinet.topBottomPlacement);
+
+          if (shouldRegenerate) {
+            const bodyMaterial = state.materials.find(m => m.id === materials.bodyMaterialId);
+            if (!bodyMaterial) return state; // Should not happen
+
+            // Generate new parts with preserved transform
+            const generator = getGeneratorForType(cabinet.type);
+            const generatedParts = generator(id, cabinet.furnitureId, params, materials, bodyMaterial);
+            const transformedParts = applyCabinetTransform(generatedParts, center, rotation);
+
+            const now = new Date();
+            const newParts = transformedParts.map(part => ({
+              ...part,
+              id: uuidv4(),
+              createdAt: now,
+              updatedAt: now,
+            }));
+
+            const remainingParts = state.parts.filter(p => !cabinet.partIds.includes(p.id));
+
+            const updatedCabinet = {
+              ...cabinet,
+              ...patch,
+              params,
+              materials,
+              topBottomPlacement: params.topBottomPlacement,
+              partIds: newParts.map(p => p.id),
+              updatedAt: now,
+            };
+
+            return {
+              cabinets: state.cabinets.map(c => c.id === id ? updatedCabinet : c),
+              parts: [...remainingParts, ...newParts],
+            };
           }
+
+          const updatedPatch = { ...patch, updatedAt: new Date() };
 
           const newCabinets = [...state.cabinets];
           newCabinets[cabinetIndex] = { ...cabinet, ...updatedPatch };
 
-          return { cabinets: newCabinets, parts: updatedParts };
+          return { cabinets: newCabinets };
         });
       },
 
@@ -464,27 +549,32 @@ export const useStore = create<ProjectState>()(
           const bodyMaterial = state.materials.find(m => m.id === cabinet.materials.bodyMaterialId);
           if (!bodyMaterial) return state;
 
-          // Remove old parts
-          const oldPartIds = new Set(cabinet.partIds);
-          const remainingParts = state.parts.filter(p => !oldPartIds.has(p.id));
+          const cabinetParts = state.parts.filter(p => cabinet.partIds.includes(p.id));
+          const { center, rotation } = getCabinetTransform(cabinetParts);
 
           // Generate new parts
           const generator = getGeneratorForType(params.type);
           const generatedParts = generator(id, cabinet.furnitureId, params, cabinet.materials, bodyMaterial);
+          const transformedParts = applyCabinetTransform(generatedParts, center, rotation);
 
 
           const now = new Date();
-          const newParts = generatedParts.map(part => ({
+          const newParts = transformedParts.map(part => ({
             ...part,
             id: uuidv4(),
             createdAt: now,
             updatedAt: now,
           }));
 
+          const oldPartIds = new Set(cabinet.partIds);
+          const remainingParts = state.parts.filter(p => !oldPartIds.has(p.id));
+
           // Update cabinet
           const updatedCabinet = {
             ...cabinet,
             params,
+            type: params.type,
+            topBottomPlacement: params.topBottomPlacement,
             partIds: newParts.map(p => p.id),
             updatedAt: now,
           };

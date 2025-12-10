@@ -1,6 +1,4 @@
 
-'use client';
-
 import { useState } from 'react';
 import {
   Dialog,
@@ -23,7 +21,8 @@ import {
   Slider,
 } from '@meble/ui';
 import { useStore } from '@/lib/store';
-import { CabinetType, CabinetParams, CabinetMaterials, KitchenCabinetParams, WardrobeCabinetParams, BookshelfCabinetParams, DrawerCabinetParams } from '@/types';
+import { CabinetType, CabinetParams, CabinetMaterials, TopBottomPlacement } from '@/types';
+import { CABINET_PRESETS } from '@/lib/config';
 
 interface CabinetTemplateDialogProps {
   open: boolean;
@@ -92,17 +91,34 @@ const ParameterForm = ({type, params, onChange}: ParameterFormProps) => {
             <div className="grid grid-cols-3 gap-4">
                 <div>
                     <Label>Szerokość (mm)</Label>
-                    <Input type="number" value={params.width || 1000} onChange={e => updateParams({width: parseInt(e.target.value)})} />
+                    <Input type="number" value={params.width || 0} onChange={e => updateParams({width: parseInt(e.target.value)})} />
                 </div>
                 <div>
                     <Label>Wysokość (mm)</Label>
-                    <Input type="number" value={params.height || 2000} onChange={e => updateParams({height: parseInt(e.target.value)})}/>
+                    <Input type="number" value={params.height || 0} onChange={e => updateParams({height: parseInt(e.target.value)})}/>
                 </div>
                 <div>
                     <Label>Głębokość (mm)</Label>
-                    <Input type="number" value={params.depth || 600} onChange={e => updateParams({depth: parseInt(e.target.value)})}/>
+                    <Input type="number" value={params.depth || 0} onChange={e => updateParams({depth: parseInt(e.target.value)})}/>
                 </div>
             </div>
+
+            <div>
+                <Label>Montaż góra/dół</Label>
+                <Select
+                    value={params.topBottomPlacement || 'inset'}
+                    onValueChange={(val: TopBottomPlacement) => updateParams({ topBottomPlacement: val } as any)}
+                >
+                    <SelectTrigger>
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="inset">Wewnątrz (między bokami)</SelectItem>
+                        <SelectItem value="overlay">Nałożona (na boki)</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+
             {type === 'KITCHEN' && (
                 <>
                     <div className="flex items-center justify-between">
@@ -162,51 +178,10 @@ export function CabinetTemplateDialog({ open, onOpenChange, furnitureId }: Cabin
   const { addCabinet, materials: availableMaterials } = useStore();
 
   const handleCreate = () => {
-    if (!selectedType || !params || !materials || !materials.bodyMaterialId || !materials.frontMaterialId) return;
-
-    let finalParams: CabinetParams;
-    const baseParams = {
-        width: params.width || 1000,
-        height: params.height || 2000,
-        depth: params.depth || 600,
-    }
-
-    switch(selectedType) {
-        case 'KITCHEN':
-            finalParams = {
-                ...baseParams,
-                type: 'KITCHEN',
-                shelfCount: ('shelfCount' in params && params.shelfCount !== undefined) ? params.shelfCount : 0,
-                hasDoors: ('hasDoors' in params && params.hasDoors !== undefined) ? params.hasDoors : false,
-            } as KitchenCabinetParams;
-            break;
-        case 'WARDROBE':
-            finalParams = {
-                ...baseParams,
-                type: 'WARDROBE',
-                shelfCount: ('shelfCount' in params && params.shelfCount !== undefined) ? params.shelfCount : 0,
-                doorCount: ('doorCount' in params && params.doorCount !== undefined) ? params.doorCount : 1,
-            } as WardrobeCabinetParams;
-            break;
-        case 'BOOKSHELF':
-            finalParams = {
-                ...baseParams,
-                type: 'BOOKSHELF',
-                shelfCount: ('shelfCount' in params && params.shelfCount !== undefined) ? params.shelfCount : 1,
-                hasBack: ('hasBack' in params && params.hasBack !== undefined) ? params.hasBack : false,
-            } as BookshelfCabinetParams;
-            break;
-        case 'DRAWER':
-            finalParams = {
-                ...baseParams,
-                type: 'DRAWER',
-                drawerCount: ('drawerCount' in params && params.drawerCount !== undefined) ? params.drawerCount : 2,
-            } as DrawerCabinetParams;
-            break;
-        default:
-            return;
-    }
-
+    if (!selectedType || !params.width || !params.height || !params.depth || !materials.bodyMaterialId || !materials.frontMaterialId) return;
+    
+    // All params should be set from the preset, so we can cast more safely
+    const finalParams = params as CabinetParams;
 
     addCabinet(furnitureId, selectedType, finalParams, materials as CabinetMaterials);
     onOpenChange(false);
@@ -219,7 +194,8 @@ export function CabinetTemplateDialog({ open, onOpenChange, furnitureId }: Cabin
   
   const handleSelectType = (type: CabinetType) => {
     setSelectedType(type);
-    setParams({type});
+    // Load default parameters from the presets config
+    setParams(CABINET_PRESETS[type]);
     setStep('configure');
   }
 

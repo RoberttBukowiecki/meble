@@ -1,4 +1,6 @@
 
+
+
 import {
   CabinetParams,
   CabinetMaterials,
@@ -18,6 +20,9 @@ export type CabinetGenerator = (
   materials: CabinetMaterials,
   bodyMaterial: Material
 ) => Omit<Part, 'id' | 'createdAt' | 'updatedAt'>[];
+
+const FRONT_MARGIN = 2; // mm clearance on each edge for doors/fronts
+const DOOR_GAP = 3; // mm gap between double doors
 
 /**
  * Get appropriate generator for cabinet type
@@ -45,8 +50,18 @@ export function generateKitchenCabinet(
   if (params.type !== 'KITCHEN') throw new Error('Invalid params type');
 
   const parts: Omit<Part, 'id' | 'createdAt' | 'updatedAt'>[] = [];
-  const { width, height, depth, shelfCount, hasDoors } = params;
+  const { width, height, depth, shelfCount, hasDoors, topBottomPlacement } = params;
   const thickness = bodyMaterial.thickness;
+
+  const isInset = topBottomPlacement === 'inset';
+  const sideHeight = isInset ? height : Math.max(height - thickness * 2, 0);
+  const sideCenterY = height / 2;
+  const topPanelY = height - thickness / 2;
+  const bottomPanelY = thickness / 2;
+  
+  // Conditionally calculate dimensions based on the placement type
+  const topBottomPanelWidth = isInset ? width - thickness * 2 : width;
+  const shelfWidth = width - thickness * 2; // Shelves are always inset
 
   // 1. BOTTOM panel (sitting on ground, Y = thickness/2)
   parts.push({
@@ -54,11 +69,11 @@ export function generateKitchenCabinet(
     furnitureId,
     group: cabinetId,
     shapeType: 'RECT',
-    shapeParams: { type: 'RECT', x: width, y: depth },
-    width,              // X axis: cabinet width
-    height: thickness,  // Y axis: thin vertical dimension (HORIZONTAL PANEL)
-    depth,              // Z axis: cabinet depth
-    position: [0, thickness / 2, 0],
+    shapeParams: { type: 'RECT', x: topBottomPanelWidth, y: depth },
+    width: topBottomPanelWidth,
+    height: thickness,
+    depth: depth,
+    position: [0, bottomPanelY, 0],
     rotation: [0, 0, 0],
     materialId: materials.bodyMaterialId,
     edgeBanding: { type: 'RECT', top: true, bottom: true, left: true, right: true },
@@ -71,11 +86,11 @@ export function generateKitchenCabinet(
     furnitureId,
     group: cabinetId,
     shapeType: 'RECT',
-    shapeParams: { type: 'RECT', x: depth, y: height },
+    shapeParams: { type: 'RECT', x: depth, y: sideHeight },
     width: depth,
-    height: height,
+    height: sideHeight,
     depth: thickness,
-    position: [-width / 2 + thickness / 2, height / 2 + thickness, 0],
+    position: [-width / 2 + thickness / 2, sideCenterY, 0],
     rotation: [0, Math.PI / 2, 0],
     materialId: materials.bodyMaterialId,
     edgeBanding: { type: 'RECT', top: true, bottom: false, left: true, right: true },
@@ -88,11 +103,11 @@ export function generateKitchenCabinet(
     furnitureId,
     group: cabinetId,
     shapeType: 'RECT',
-    shapeParams: { type: 'RECT', x: depth, y: height },
+    shapeParams: { type: 'RECT', x: depth, y: sideHeight },
     width: depth,
-    height: height,
+    height: sideHeight,
     depth: thickness,
-    position: [width / 2 - thickness / 2, height / 2 + thickness, 0],
+    position: [width / 2 - thickness / 2, sideCenterY, 0],
     rotation: [0, Math.PI / 2, 0],
     materialId: materials.bodyMaterialId,
     edgeBanding: { type: 'RECT', top: true, bottom: false, left: true, right: true },
@@ -105,11 +120,11 @@ export function generateKitchenCabinet(
     furnitureId,
     group: cabinetId,
     shapeType: 'RECT',
-    shapeParams: { type: 'RECT', x: width, y: depth },
-    width,              // X axis: cabinet width
-    height: thickness,  // Y axis: thin vertical dimension (HORIZONTAL PANEL)
-    depth,              // Z axis: cabinet depth
-    position: [0, height + thickness * 1.5, 0],
+    shapeParams: { type: 'RECT', x: topBottomPanelWidth, y: depth },
+    width: topBottomPanelWidth,
+    height: thickness,
+    depth: depth,
+    position: [0, topPanelY, 0],
     rotation: [0, 0, 0],
     materialId: materials.bodyMaterialId,
     edgeBanding: { type: 'RECT', top: true, bottom: true, left: true, right: true },
@@ -117,7 +132,7 @@ export function generateKitchenCabinet(
   });
 
   // 5. SHELVES (evenly spaced)
-  const interiorHeight = height - thickness;
+  const interiorHeight = Math.max(height - thickness * 2, 0);
   const shelfSpacing = interiorHeight / (shelfCount + 1);
 
   for (let i = 0; i < shelfCount; i++) {
@@ -127,10 +142,10 @@ export function generateKitchenCabinet(
       furnitureId,
       group: cabinetId,
       shapeType: 'RECT',
-      shapeParams: { type: 'RECT', x: width - thickness * 2, y: depth - 10 },
-      width: width - thickness * 2,  // X axis: inner width
-      height: thickness,              // Y axis: thin vertical dimension (HORIZONTAL PANEL)
-      depth: depth - 10,              // Z axis: shelf depth (slightly shorter than cabinet)
+      shapeParams: { type: 'RECT', x: shelfWidth, y: depth - 10 },
+      width: shelfWidth,
+      height: thickness,
+      depth: depth - 10,
       position: [0, shelfY, -5],
       rotation: [0, 0, 0],
       materialId: materials.bodyMaterialId,
@@ -141,8 +156,9 @@ export function generateKitchenCabinet(
 
   // 6. DOORS (if enabled, two doors with 3mm gap)
   if (hasDoors) {
-    const doorWidth = (width - thickness * 2 - 3) / 2;  // 3mm gap between doors
-    const doorHeight = height - 2;
+    const availableDoorWidth = Math.max(width - FRONT_MARGIN * 2 - DOOR_GAP, 0);
+    const doorWidth = availableDoorWidth / 2;
+    const doorHeight = Math.max(height - FRONT_MARGIN * 2, 0);
 
     parts.push({
       name: 'Front lewy',
@@ -153,7 +169,7 @@ export function generateKitchenCabinet(
       width: doorWidth,
       height: doorHeight,
       depth: thickness,
-      position: [-doorWidth / 2 - 1.5, height / 2 + thickness, depth / 2 + thickness / 2],
+      position: [-doorWidth / 2 - DOOR_GAP / 2, height / 2, depth / 2 + thickness / 2],
       rotation: [0, 0, 0],
       materialId: materials.frontMaterialId,
       edgeBanding: { type: 'RECT', top: true, bottom: true, left: true, right: true },
@@ -169,7 +185,7 @@ export function generateKitchenCabinet(
       width: doorWidth,
       height: doorHeight,
       depth: thickness,
-      position: [doorWidth / 2 + 1.5, height / 2 + thickness, depth / 2 + thickness / 2],
+      position: [doorWidth / 2 + DOOR_GAP / 2, height / 2, depth / 2 + thickness / 2],
       rotation: [0, 0, 0],
       materialId: materials.frontMaterialId,
       edgeBanding: { type: 'RECT', top: true, bottom: true, left: true, right: true },

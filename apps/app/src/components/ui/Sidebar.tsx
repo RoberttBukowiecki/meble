@@ -6,7 +6,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { useStore, useSelectedPart } from '@/lib/store';
+import { useStore, useSelectedPart, useSelectedCabinet } from '@/lib/store';
 import { Button } from '@meble/ui';
 import { Plus, Download, Settings, List, Package } from 'lucide-react';
 import { APP_NAME } from '@meble/constants';
@@ -28,6 +28,7 @@ export function Sidebar() {
   const t = useTranslations('Sidebar');
   const { selectedFurnitureId, addPart, parts, materials, furnitures } = useStore();
   const selectedPart = useSelectedPart();
+  const selectedCabinet = useSelectedCabinet();
   const [showErrorDialog, setShowErrorDialog] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<TabType>('properties');
@@ -119,7 +120,7 @@ export function Sidebar() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
         {activeTab === 'properties' ? (
-          selectedPart ? (
+          selectedPart || selectedCabinet ? (
             <PropertiesPanel />
           ) : (
             <div className="p-4 text-sm text-muted-foreground">
