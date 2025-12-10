@@ -13,7 +13,12 @@ import type {
   Furniture,
   ShapeParams,
   EdgeBanding,
+  Cabinet,
+  CabinetType,
+  CabinetParams,
+  CabinetMaterials,
 } from '@/types';
+import { getGeneratorForType } from './cabinetGenerators';
 
 // ============================================================================
 // Initial State
@@ -62,7 +67,9 @@ export const useStore = create<ProjectState>()(
       parts: [],
       materials: initialMaterials,
       furnitures: initialFurnitures,
+      cabinets: [],
       selectedPartId: null,
+      selectedCabinetId: null,
       selectedFurnitureId: DEFAULT_FURNITURE_ID,
       isTransforming: false,
       transformMode: 'translate',
@@ -227,17 +234,45 @@ export const useStore = create<ProjectState>()(
        * Remove a part
        */
       removePart: (id: string) => {
-        set((state) => ({
-          parts: state.parts.filter((p) => p.id !== id),
-          selectedPartId: state.selectedPartId === id ? null : state.selectedPartId,
-        }));
+        set((state) => {
+          const part = state.parts.find((p) => p.id === id);
+
+          // If part belongs to cabinet, remove from cabinet's partIds
+          let updatedCabinets = state.cabinets;
+          if (part?.cabinetMetadata) {
+            updatedCabinets = state.cabinets.map((cabinet) => {
+              if (cabinet.id === part.cabinetMetadata?.cabinetId) {
+                return {
+                  ...cabinet,
+                  partIds: cabinet.partIds.filter((pid) => pid !== id),
+                  updatedAt: new Date(),
+                };
+              }
+              return cabinet;
+            });
+          }
+
+          return {
+            parts: state.parts.filter((p) => p.id !== id),
+            cabinets: updatedCabinets,
+            selectedPartId:
+              state.selectedPartId === id ? null : state.selectedPartId,
+          };
+        });
       },
 
       /**
        * Select a part (or deselect if null)
        */
       selectPart: (id: string | null) => {
-        set({ selectedPartId: id });
+        set({ selectedPartId: id, selectedCabinetId: null });
+      },
+
+      /**
+       * Select a cabinet (or deselect if null)
+       */
+      selectCabinet: (id: string | null) => {
+        set({ selectedCabinetId: id, selectedPartId: null });
       },
 
       /**
@@ -324,10 +359,214 @@ export const useStore = create<ProjectState>()(
           materials: state.materials.filter((m) => m.id !== id),
         }));
       },
+
+      // ========================================================================
+      // Cabinet Actions
+      // ========================================================================
+      addCabinet: (furnitureId, type, params, materials) => {
+        const cabinetId = uuidv4();
+        const now = new Date();
+
+        // Get body material for thickness reference
+        const bodyMaterial = get().materials.find(m => m.id === materials.bodyMaterialId);
+        if (!bodyMaterial) {
+          console.error('Body material not found');
+          return;
+        }
+
+        // Generate parts using appropriate generator
+        const generator = getGeneratorForType(type);
+        const generatedParts = generator(cabinetId, furnitureId, params, materials, bodyMaterial);
+
+
+        // Add IDs and timestamps to parts
+        const parts = generatedParts.map(part => ({
+          ...part,
+          id: uuidv4(),
+          createdAt: now,
+          updatedAt: now,
+        }));
+
+        // Create cabinet object
+        const cabinet: Cabinet = {
+          id: cabinetId,
+          name: `Szafka ${get().cabinets.length + 1}`,
+          furnitureId,
+          type,
+          params,
+          materials,
+          partIds: parts.map(p => p.id),
+          createdAt: now,
+          updatedAt: now,
+        };
+
+        // Update store
+        set(state => ({
+          cabinets: [...state.cabinets, cabinet],
+          parts: [...state.parts, ...parts],
+          selectedCabinetId: cabinetId,
+          selectedPartId: null,
+        }));
+      },
+
+      updateCabinet: (id, patch) => {
+        set(state => {
+          const cabinetIndex = state.cabinets.findIndex(c => c.id === id);
+          if (cabinetIndex === -1) return state;
+
+          const cabinet = state.cabinets[cabinetIndex];
+          const updatedPatch = { ...patch, updatedAt: new Date() };
+
+          // If materials changed, update relevant parts
+          let updatedParts = state.parts;
+          if (patch.materials) {
+            updatedParts = state.parts.map(part => {
+              if (part.cabinetMetadata?.cabinetId !== id) return part;
+
+              const isBodyPart = ['BOTTOM', 'TOP', 'LEFT_SIDE', 'RIGHT_SIDE', 'BACK', 'SHELF'].includes(
+                part.cabinetMetadata.role
+              );
+              const isFrontPart = ['DOOR', 'DRAWER_FRONT'].includes(part.cabinetMetadata.role);
+
+              if (isBodyPart && patch.materials?.bodyMaterialId) {
+                const newMaterial = state.materials.find(m => m.id === patch.materials?.bodyMaterialId);
+                return {
+                  ...part,
+                  materialId: patch.materials.bodyMaterialId,
+                  depth: newMaterial?.thickness ?? part.depth,
+                };
+              }
+              if (isFrontPart && patch.materials?.frontMaterialId) {
+                const newMaterial = state.materials.find(m => m.id === patch.materials?.frontMaterialId);
+                return {
+                  ...part,
+                  materialId: patch.materials.frontMaterialId,
+                  depth: newMaterial?.thickness ?? part.depth,
+                };
+              }
+              return part;
+            });
+          }
+
+          const newCabinets = [...state.cabinets];
+          newCabinets[cabinetIndex] = { ...cabinet, ...updatedPatch };
+
+          return { cabinets: newCabinets, parts: updatedParts };
+        });
+      },
+
+      updateCabinetParams: (id, params) => {
+        // This should be called AFTER user confirms regeneration dialog
+        set(state => {
+          const cabinet = state.cabinets.find(c => c.id === id);
+          if (!cabinet) return state;
+
+          const bodyMaterial = state.materials.find(m => m.id === cabinet.materials.bodyMaterialId);
+          if (!bodyMaterial) return state;
+
+          // Remove old parts
+          const oldPartIds = new Set(cabinet.partIds);
+          const remainingParts = state.parts.filter(p => !oldPartIds.has(p.id));
+
+          // Generate new parts
+          const generator = getGeneratorForType(params.type);
+          const generatedParts = generator(id, cabinet.furnitureId, params, cabinet.materials, bodyMaterial);
+
+
+          const now = new Date();
+          const newParts = generatedParts.map(part => ({
+            ...part,
+            id: uuidv4(),
+            createdAt: now,
+            updatedAt: now,
+          }));
+
+          // Update cabinet
+          const updatedCabinet = {
+            ...cabinet,
+            params,
+            partIds: newParts.map(p => p.id),
+            updatedAt: now,
+          };
+
+          return {
+            cabinets: state.cabinets.map(c => c.id === id ? updatedCabinet : c),
+            parts: [...remainingParts, ...newParts],
+          };
+        });
+      },
+
+      removeCabinet: (id) => {
+        set(state => {
+          const cabinet = state.cabinets.find(c => c.id === id);
+          if (!cabinet) return state;
+
+          return {
+            cabinets: state.cabinets.filter(c => c.id !== id),
+            parts: state.parts.filter(p => !cabinet.partIds.includes(p.id)),
+            selectedCabinetId: state.selectedCabinetId === id ? null : state.selectedCabinetId,
+          };
+        });
+      },
+
+      duplicateCabinet: (id) => {
+        const state = get();
+        const cabinet = state.cabinets.find(c => c.id === id);
+        if (!cabinet) return;
+
+        const newCabinetId = uuidv4();
+        const now = new Date();
+
+        // Duplicate parts with new cabinet ID
+        const oldParts = state.parts.filter(p => cabinet.partIds.includes(p.id));
+        const newParts = oldParts.map(part => ({
+          ...part,
+          id: uuidv4(),
+          name: part.name, // Keep same name
+          position: [
+            part.position[0] + 100, // Offset by 100mm on X
+            part.position[1],
+            part.position[2],
+          ] as [number, number, number],
+          cabinetMetadata: part.cabinetMetadata
+            ? { ...part.cabinetMetadata, cabinetId: newCabinetId }
+            : undefined,
+          createdAt: now,
+          updatedAt: now,
+        }));
+
+        // Create new cabinet
+        const newCabinet: Cabinet = {
+          ...cabinet,
+          id: newCabinetId,
+          name: `${cabinet.name} (kopia)`,
+          partIds: newParts.map(p => p.id),
+          createdAt: now,
+          updatedAt: now,
+        };
+
+        set(state => ({
+          cabinets: [...state.cabinets, newCabinet],
+          parts: [...state.parts, ...newParts],
+          selectedCabinetId: newCabinetId,
+          selectedPartId: null,
+        }));
+      },
     }),
     {
       name: 'meblarz-storage', // localStorage key
-      version: 1,
+      version: 2,
+      migrate: (persistedState: any, version: number) => {
+        if (version === 1) {
+          // Migration from v1 to v2: add cabinet fields
+          return {
+            ...persistedState,
+            cabinets: [],
+            selectedCabinetId: null,
+          };
+        }
+        return persistedState;
+      },
     }
   )
 );
@@ -359,4 +598,29 @@ export const useSelectedPart = () => {
  */
 export const useMaterial = (id: string | undefined) => {
   return useStore((state) => state.materials.find((m) => m.id === id));
+};
+
+/**
+ * Get parts for a specific cabinet
+ */
+export const useCabinetParts = (cabinetId: string) => {
+  return useStore((state) =>
+    state.parts.filter((p) => p.cabinetMetadata?.cabinetId === cabinetId)
+  );
+};
+
+/**
+ * Get the currently selected cabinet
+ */
+export const useSelectedCabinet = () => {
+  const cabinets = useStore((state) => state.cabinets);
+  const selectedCabinetId = useStore((state) => state.selectedCabinetId);
+  return cabinets.find((c) => c.id === selectedCabinetId);
+};
+
+/**
+ * Get cabinet by ID
+ */
+export const useCabinet = (id: string | undefined) => {
+  return useStore((state) => state.cabinets.find((c) => c.id === id));
 };

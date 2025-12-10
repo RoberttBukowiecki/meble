@@ -12,16 +12,24 @@ import { useSelectedFurnitureParts, useStore } from '@/lib/store';
 import { Part3D } from './Part3D';
 import { Button } from '@meble/ui';
 import { Camera, Move, RotateCw } from 'lucide-react';
+import { useShallow } from 'zustand/react/shallow';
 import { KeyboardShortcutsHelp } from '@/components/ui/KeyboardShortcutsHelp';
 import { useKeyboardShortcuts } from '@/lib/useKeyboardShortcuts';
 import { SCENE_CONFIG, KEYBOARD_SHORTCUTS } from '@/lib/config';
 import type { OrbitControls as OrbitControlsType } from 'three-stdlib';
+import { CabinetGroupTransform } from './CabinetGroupTransform';
 
 export function Scene() {
   const parts = useSelectedFurnitureParts();
-  const isTransforming = useStore((state) => state.isTransforming);
-  const transformMode = useStore((state) => state.transformMode);
-  const setTransformMode = useStore((state) => state.setTransformMode);
+  const { isTransforming, transformMode, setTransformMode, selectedCabinetId } =
+    useStore(
+      useShallow((state) => ({
+        isTransforming: state.isTransforming,
+        transformMode: state.transformMode,
+        setTransformMode: state.setTransformMode,
+        selectedCabinetId: state.selectedCabinetId,
+      }))
+    );
   const controlsRef = useRef<OrbitControlsType>(null);
 
   const handleResetCamera = () => {
@@ -124,6 +132,8 @@ export function Scene() {
         {parts.map((part) => (
           <Part3D key={part.id} part={part} />
         ))}
+
+        {selectedCabinetId && <CabinetGroupTransform cabinetId={selectedCabinetId} />}
       </Canvas>
     </div>
   );

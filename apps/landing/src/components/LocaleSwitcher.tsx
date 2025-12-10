@@ -1,9 +1,9 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
 import { useTransition } from "react";
 
-import { Locale, locales } from "@meble/i18n";
+import { Locale } from "@meble/i18n";
+import { usePathname, useRouter } from "@/navigation";
 
 interface Props {
   locale: Locale;
@@ -17,9 +17,8 @@ const LocaleSwitcher: React.FC<Props> = ({ locale }) => {
   const targetLocale = locale === "pl" ? "en" : "pl";
 
   const handleSwitch = () => {
-    const nextPath = buildPathname(pathname, targetLocale);
     startTransition(() => {
-      router.replace(nextPath);
+      router.replace(pathname ?? "/", { locale: targetLocale });
       router.refresh();
     });
   };
@@ -40,21 +39,6 @@ const LocaleSwitcher: React.FC<Props> = ({ locale }) => {
       {targetLocale.toUpperCase()}
     </button>
   );
-};
-
-const buildPathname = (pathname: string | null, locale: Locale) => {
-  if (!pathname || pathname === "/") {
-    return `/${locale}`;
-  }
-
-  const segments = pathname.split("/").filter(Boolean);
-  if (segments.length && locales.includes(segments[0] as Locale)) {
-    segments[0] = locale;
-  } else {
-    segments.unshift(locale);
-  }
-
-  return `/${segments.join("/")}`;
 };
 
 export default LocaleSwitcher;

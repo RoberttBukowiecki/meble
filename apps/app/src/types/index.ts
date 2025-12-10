@@ -166,6 +166,13 @@ export interface Part {
   notes?: string;
   createdAt: Date;
   updatedAt: Date;
+
+  /**
+   * NEW: Cabinet membership metadata (optional)
+   * If set, this part belongs to a cabinet and may be regenerated
+   * when cabinet parameters change
+   */
+  cabinetMetadata?: CabinetPartMetadata;
 }
 
 // ============================================================================
@@ -180,9 +187,11 @@ export interface ProjectState {
   parts: Part[];
   materials: Material[];
   furnitures: Furniture[];
+  cabinets: Cabinet[];
 
   // Selection
   selectedPartId: string | null;
+  selectedCabinetId: string | null;
   selectedFurnitureId: string;
   isTransforming: boolean;
   transformMode: 'translate' | 'rotate';
@@ -205,4 +214,133 @@ export interface ProjectState {
   addMaterial: (material: Omit<Material, 'id'>) => void;
   updateMaterial: (id: string, patch: Partial<Material>) => void;
   removeMaterial: (id: string) => void;
+
+  // Actions - Cabinets
+  addCabinet: (
+    furnitureId: string,
+    type: CabinetType,
+    params: CabinetParams,
+    materials: CabinetMaterials
+  ) => void;
+  updateCabinet: (
+    id: string,
+    patch: Partial<Omit<Cabinet, 'id' | 'furnitureId' | 'createdAt'>>
+  ) => void;
+  updateCabinetParams: (id: string, params: CabinetParams) => void;
+  removeCabinet: (id: string) => void;
+  duplicateCabinet: (id: string) => void;
+  selectCabinet: (id: string | null) => void;
+}
+
+// ============================================================================
+// Cabinet Types
+// ============================================================================
+
+/**
+ * Available cabinet template types
+ */
+export type CabinetType = 'KITCHEN' | 'WARDROBE' | 'BOOKSHELF' | 'DRAWER';
+
+/**
+ * Cabinet material configuration
+ * Cabinets use two materials: body (structure) and front (visible surfaces)
+ */
+export interface CabinetMaterials {
+  bodyMaterialId: string;   // For sides, bottom, top, shelves, back
+  frontMaterialId: string;  // For doors, drawer fronts
+}
+
+/**
+ * Base parameters shared by all cabinets
+ */
+export interface CabinetBaseParams {
+  width: number;   // Overall width (mm)
+  height: number;  // Overall height (mm)
+  depth: number;   // Overall depth (mm)
+}
+
+/**
+ * Kitchen cabinet specific parameters
+ */
+export interface KitchenCabinetParams extends CabinetBaseParams {
+  type: 'KITCHEN';
+  shelfCount: number;  // Number of internal shelves (0-5)
+  hasDoors: boolean;   // Whether to add doors
+}
+
+/**
+ * Wardrobe cabinet specific parameters
+ */
+export interface WardrobeCabinetParams extends CabinetBaseParams {
+  type: 'WARDROBE';
+  shelfCount: number;  // Number of internal shelves (0-10)
+  doorCount: number;   // Number of doors (1-4)
+}
+
+/**
+ * Bookshelf cabinet specific parameters
+ */
+export interface BookshelfCabinetParams extends CabinetBaseParams {
+  type: 'BOOKSHELF';
+  shelfCount: number;  // Number of shelves (1-10)
+  hasBack: boolean;    // Whether to add back panel
+}
+
+/**
+ * Drawer cabinet specific parameters
+ */
+export interface DrawerCabinetParams extends CabinetBaseParams {
+  type: 'DRAWER';
+  drawerCount: number; // Number of drawers (2-8)
+}
+
+/**
+ * Discriminated union of all cabinet parameter types
+ */
+export type CabinetParams =
+  | KitchenCabinetParams
+  | WardrobeCabinetParams
+  | BookshelfCabinetParams
+  | DrawerCabinetParams;
+
+/**
+ * Cabinet metadata - stored separately from parts
+ * References parts via cabinetId field in Part.cabinetMetadata
+ */
+export interface Cabinet {
+  id: string;
+  name: string;
+  furnitureId: string;
+  type: CabinetType;
+  params: CabinetParams;
+  materials: CabinetMaterials;
+  partIds: string[];  // Array of part IDs that belong to this cabinet
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * Part role within a cabinet
+ * Used to identify what each part represents for material assignment
+ */
+export type CabinetPartRole =
+  | 'BOTTOM'
+  | 'TOP'
+  | 'LEFT_SIDE'
+  | 'RIGHT_SIDE'
+  | 'BACK'
+  | 'SHELF'
+  | 'DOOR'
+  | 'DRAWER_FRONT'
+  | 'DRAWER_SIDE'
+  | 'DRAWER_BACK'
+  | 'DRAWER_BOTTOM';
+
+/**
+ * Extended metadata for parts that belong to cabinets
+ */
+export interface CabinetPartMetadata {
+  cabinetId: string;
+  role: CabinetPartRole;
+  index?: number; // For shelves, doors, drawers (0-based)
 }

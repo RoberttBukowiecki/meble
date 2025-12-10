@@ -12,7 +12,7 @@ import { Locale, defaultLocale, locales } from '@meble/i18n';
 import { getTranslations } from 'next-intl/server';
 
 type PageProps = {
-  params: { locale: Locale };
+  params: Promise<{ locale: Locale }>;
 };
 
 export function generateStaticParams() {
@@ -20,8 +20,9 @@ export function generateStaticParams() {
 }
 
 const Page = async ({ params }: PageProps) => {
-  const locale = locales.includes(params.locale)
-    ? params.locale
+  const { locale: paramLocale } = await params;
+  const locale = locales.includes(paramLocale)
+    ? paramLocale
     : defaultLocale;
   if (!locales.includes(locale)) {
     notFound();

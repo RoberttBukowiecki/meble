@@ -1,12 +1,14 @@
 import createMiddleware from 'next-intl/middleware';
-import { locales, defaultLocale } from '@meble/i18n';
+import { defaultLocale, locales } from '@meble/i18n';
 
 export default createMiddleware({
-  locales,
   defaultLocale,
-  localePrefix: 'as-needed',
+  locales,
+  // Keep URLs locale-agnostic while still negotiating the locale
+  localePrefix: 'never',
 });
 
 export const config = {
-  matcher: ['/', '/(pl|en)/:path*'],
+  // Apply middleware to all paths except Next.js internals and static files
+  matcher: ['/((?!api|_next|favicon.ico|sitemap.xml|robots.txt).*)'],
 };

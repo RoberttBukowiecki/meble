@@ -8,11 +8,12 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useStore, useSelectedPart } from '@/lib/store';
 import { Button } from '@meble/ui';
-import { Plus, Download, Settings, List } from 'lucide-react';
+import { Plus, Download, Settings, List, Package } from 'lucide-react';
 import { APP_NAME } from '@meble/constants';
 import { PropertiesPanel } from './PropertiesPanel';
 import { PartsTable } from './PartsTable';
 import { generateCSV, downloadCSV, validateParts } from '@/lib/csv';
+import { CabinetTemplateDialog } from './CabinetTemplateDialog';
 import {
   Dialog,
   DialogContent,
@@ -30,6 +31,7 @@ export function Sidebar() {
   const [showErrorDialog, setShowErrorDialog] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<TabType>('properties');
+  const [cabinetDialogOpen, setCabinetDialogOpen] = useState(false);
 
   const handleAddPart = () => {
     addPart(selectedFurnitureId);
@@ -62,7 +64,17 @@ export function Sidebar() {
         <div className="space-y-2">
           <Button onClick={handleAddPart} className="w-full" size="sm">
             <Plus className="mr-2 h-4 w-4" />
-            Dodaj część
+            {t('addPart')}
+          </Button>
+
+          <Button
+            onClick={() => setCabinetDialogOpen(true)}
+            variant="outline"
+            className="w-full"
+            size="sm"
+          >
+            <Package className="mr-2 h-4 w-4" />
+            {t('addCabinet')}
           </Button>
 
           <Button
@@ -73,7 +85,7 @@ export function Sidebar() {
             disabled={parts.length === 0}
           >
             <Download className="mr-2 h-4 w-4" />
-            Eksportuj CSV
+            {t('exportCSV')}
           </Button>
         </div>
       </div>
@@ -89,7 +101,7 @@ export function Sidebar() {
           }`}
         >
           <Settings className="h-4 w-4" />
-          Właściwości
+          {t('propertiesTab')}
         </button>
         <button
           onClick={() => setActiveTab('list')}
@@ -100,7 +112,7 @@ export function Sidebar() {
           }`}
         >
           <List className="h-4 w-4" />
-          Lista ({parts.length})
+          {t('listTabWithCount', { count: parts.length })}
         </button>
       </div>
 
@@ -111,7 +123,7 @@ export function Sidebar() {
             <PropertiesPanel />
           ) : (
             <div className="p-4 text-sm text-muted-foreground">
-              Wybierz część aby edytować właściwości
+              {t('selectPartToEdit')}
             </div>
           )
         ) : (
@@ -121,13 +133,20 @@ export function Sidebar() {
         )}
       </div>
 
+      {/* Cabinet template dialog */}
+      <CabinetTemplateDialog
+        open={cabinetDialogOpen}
+        onOpenChange={setCabinetDialogOpen}
+        furnitureId={selectedFurnitureId}
+      />
+
       {/* Validation Error Dialog */}
       <Dialog open={showErrorDialog} onOpenChange={setShowErrorDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Błędy walidacji</DialogTitle>
+            <DialogTitle>{t('validationErrors')}</DialogTitle>
             <DialogDescription>
-              Przed eksportem należy naprawić następujące błędy:
+              {t('validationErrorsDescription')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
