@@ -1,45 +1,50 @@
 
 'use client';
 
-import { useRef, useEffect, useMemo } from 'react';
+import { useRef, useEffect, useMemo, useCallback } from 'react';
 import { TransformControls } from '@react-three/drei';
 import { useStore } from '@/lib/store';
 import { useShallow } from 'zustand/react/shallow';
 import * as THREE from 'three';
-import { Part } from '@/types';
 
 export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
-  const { parts, updatePart, transformMode, setIsTransforming } = useStore(
+  const parts = useStore(
+    useShallow((state) =>
+      state.parts.filter((p) => p.cabinetMetadata?.cabinetId === cabinetId)
+    )
+  );
+  const { updatePart, transformMode, setIsTransforming } = useStore(
     useShallow((state) => ({
-      parts: state.parts.filter((p) => p.cabinetMetadata?.cabinetId === cabinetId),
       updatePart: state.updatePart,
       transformMode: state.transformMode,
       setIsTransforming: state.setIsTransforming,
     }))
   );
-  
+
   const controlRef = useRef<any>(null);
-  const groupRef = useRef<THREE.Group>(new THREE.Group());
+  const groupRef = useRef<THREE.Group | null>(null);
   const initialPartPositions = useRef<Map<string, THREE.Vector3>>(new Map());
 
+  // Initialize group once
+  if (groupRef.current === null) {
+    groupRef.current = new THREE.Group();
+  }
+
+  // Calculate cabinet center - optimized to avoid creating Three.js objects
   const cabinetCenter = useMemo(() => {
     if (parts.length === 0) return new THREE.Vector3(0, 0, 0);
-    const box = new THREE.Box3();
+
+    // Simple average of all part positions (faster than bounding box calculation)
+    const sum = new THREE.Vector3();
     parts.forEach(p => {
-        const mesh = new THREE.Mesh(new THREE.BoxGeometry(p.width, p.height, p.depth));
-        mesh.position.fromArray(p.position);
-        mesh.rotation.fromArray(p.rotation);
-        box.expandByObject(mesh);
+      sum.add(new THREE.Vector3().fromArray(p.position));
     });
-    const center = new THREE.Vector3();
-    box.getCenter(center);
-    return center;
+    sum.divideScalar(parts.length);
+
+    return sum;
   }, [parts]);
 
   useEffect(() => {
-    const group = groupRef.current;
-    group.position.copy(cabinetCenter);
-    
     // Store initial relative positions of parts to the group center
     initialPartPositions.current.clear();
     parts.forEach(part => {
@@ -47,49 +52,61 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
         const relativePos = initialPosition.clone().sub(cabinetCenter);
         initialPartPositions.current.set(part.id, relativePos);
     });
-
-    if (controlRef.current) {
-        controlRef.current.attach(group);
-    }
-
-    return () => {
-        if (controlRef.current) {
-            controlRef.current.detach();
-        }
-    }
   }, [cabinetCenter, parts]);
 
-  const handleTransformEnd = () => {
+  // Update parts in real-time during transformation (live preview)
+  const updatePartsFromGroup = useCallback(() => {
     const group = groupRef.current;
-    
+    if (!group) return;
+
     parts.forEach(part => {
         const initialRelativePos = initialPartPositions.current.get(part.id);
         if (initialRelativePos) {
             const newPos = initialRelativePos.clone().applyQuaternion(group.quaternion).add(group.position);
-            
+
             const newRotation = new THREE.Euler().setFromQuaternion(
                 new THREE.Quaternion().setFromEuler(new THREE.Euler().fromArray(part.rotation)).premultiply(group.quaternion)
             );
 
-            updatePart(part.id, { 
-                position: newPos.toArray(),
-                rotation: [newRotation.x, newRotation.y, newRotation.z],
+            updatePart(part.id, {
+                position: newPos.toArray() as [number, number, number],
+                rotation: [newRotation.x, newRotation.y, newRotation.z] as [number, number, number],
             });
         }
     });
+  }, [parts, updatePart]);
+
+  // Memoize callback to avoid recreating function on every render
+  const handleTransformEnd = useCallback(() => {
+    const group = groupRef.current;
+    if (!group) return;
+
+    // Final update
+    updatePartsFromGroup();
+
+    // Reset group transform after applying to parts
+    group.position.copy(cabinetCenter);
+    group.rotation.set(0, 0, 0);
+    group.quaternion.identity();
 
     setIsTransforming(false);
-  };
+  }, [updatePartsFromGroup, cabinetCenter, setIsTransforming]);
 
   return (
-      <TransformControls
-        ref={controlRef}
-        mode={transformMode}
-        onMouseDown={() => setIsTransforming(true)}
-        onMouseUp={handleTransformEnd}
-        showX={transformMode === 'translate'}
-        showY={transformMode === 'translate'}
-        showZ={transformMode === 'translate'}
-      />
+      <>
+        {/* Render the group in the scene so TransformControls can attach to it */}
+        <group ref={groupRef} position={cabinetCenter} />
+        <TransformControls
+          ref={controlRef}
+          object={groupRef.current}
+          mode={transformMode}
+          onMouseDown={() => setIsTransforming(true)}
+          onChange={updatePartsFromGroup}
+          onMouseUp={handleTransformEnd}
+          showX={transformMode === 'translate'}
+          showY={transformMode === 'translate'}
+          showZ={transformMode === 'translate'}
+        />
+      </>
   );
 }

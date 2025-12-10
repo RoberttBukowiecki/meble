@@ -4,6 +4,7 @@
  * Properties panel for editing selected part or cabinet attributes
  */
 
+import * as React from 'react';
 import { useTranslations } from 'next-intl';
 import {
   useStore,
@@ -56,33 +57,48 @@ interface CabinetParameterEditorProps {
 
 const CabinetParameterEditor = ({ type, params, onChange }: CabinetParameterEditorProps) => {
   const t = useTranslations('PropertiesPanel');
+  const [localParams, setLocalParams] = React.useState(params);
+  const [hasChanges, setHasChanges] = React.useState(false);
+
+  // Update local params when external params change
+  React.useEffect(() => {
+    setLocalParams(params);
+    setHasChanges(false);
+  }, [params]);
+
   const updateParams = (newParams: Partial<CabinetParams>) => {
-    onChange({ ...params, ...newParams } as CabinetParams);
+    setLocalParams(prev => ({ ...prev, ...newParams } as CabinetParams));
+    setHasChanges(true);
+  };
+
+  const handleApply = () => {
+    onChange(localParams);
+    setHasChanges(false);
   };
 
   // Type-safe accessors for discriminated union properties
   const getShelfCount = (): number => {
-    if ('shelfCount' in params) return params.shelfCount;
+    if ('shelfCount' in localParams) return localParams.shelfCount;
     return 0;
   };
 
   const getDoorCount = (): number => {
-    if ('doorCount' in params) return params.doorCount;
+    if ('doorCount' in localParams) return localParams.doorCount;
     return 1;
   };
 
   const getHasDoors = (): boolean => {
-    if ('hasDoors' in params) return params.hasDoors;
+    if ('hasDoors' in localParams) return localParams.hasDoors;
     return false;
   };
 
   const getHasBack = (): boolean => {
-    if ('hasBack' in params) return params.hasBack;
+    if ('hasBack' in localParams) return localParams.hasBack;
     return false;
   };
 
   const getDrawerCount = (): number => {
-    if ('drawerCount' in params) return params.drawerCount;
+    if ('drawerCount' in localParams) return localParams.drawerCount;
     return 2;
   };
 
@@ -93,24 +109,24 @@ const CabinetParameterEditor = ({ type, params, onChange }: CabinetParameterEdit
           <Label>{t('width')}</Label>
           <Input
             type="number"
-            value={params.width}
-            onChange={(e) => updateParams({ width: parseInt(e.target.value) })}
+            value={localParams.width}
+            onChange={(e) => updateParams({ width: parseInt(e.target.value) || 0 })}
           />
         </div>
         <div>
           <Label>{t('height')}</Label>
           <Input
             type="number"
-            value={params.height}
-            onChange={(e) => updateParams({ height: parseInt(e.target.value) })}
+            value={localParams.height}
+            onChange={(e) => updateParams({ height: parseInt(e.target.value) || 0 })}
           />
         </div>
         <div>
           <Label>{t('depth')}</Label>
           <Input
             type="number"
-            value={params.depth}
-            onChange={(e) => updateParams({ depth: parseInt(e.target.value) })}
+            value={localParams.depth}
+            onChange={(e) => updateParams({ depth: parseInt(e.target.value) || 0 })}
           />
         </div>
       </div>
@@ -194,6 +210,13 @@ const CabinetParameterEditor = ({ type, params, onChange }: CabinetParameterEdit
           </div>
         </>
       )}
+
+      {/* Apply button */}
+      {hasChanges && (
+        <Button onClick={handleApply} className="w-full">
+          {t('applyChanges')}
+        </Button>
+      )}
     </div>
   );
 };
@@ -221,10 +244,8 @@ export function PropertiesPanel() {
   const selectedPart = useSelectedPart();
   const selectedCabinet = useSelectedCabinet();
 
-  // Part mode specific data
-  const cabinetForPart = selectedPart?.cabinetMetadata
-    ? useCabinet(selectedPart.cabinetMetadata.cabinetId)
-    : null;
+  // Part mode specific data - MUST call hook unconditionally (Rules of Hooks)
+  const cabinetForPart = useCabinet(selectedPart?.cabinetMetadata?.cabinetId);
 
   if (selectedCabinet) {
     // ================= Render Cabinet Mode =================

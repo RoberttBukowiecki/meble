@@ -55,9 +55,9 @@ export function generateKitchenCabinet(
     group: cabinetId,
     shapeType: 'RECT',
     shapeParams: { type: 'RECT', x: width, y: depth },
-    width,
-    height: depth,
-    depth: thickness,
+    width,              // X axis: cabinet width
+    height: thickness,  // Y axis: thin vertical dimension (HORIZONTAL PANEL)
+    depth,              // Z axis: cabinet depth
     position: [0, thickness / 2, 0],
     rotation: [0, 0, 0],
     materialId: materials.bodyMaterialId,
@@ -106,9 +106,9 @@ export function generateKitchenCabinet(
     group: cabinetId,
     shapeType: 'RECT',
     shapeParams: { type: 'RECT', x: width, y: depth },
-    width,
-    height: depth,
-    depth: thickness,
+    width,              // X axis: cabinet width
+    height: thickness,  // Y axis: thin vertical dimension (HORIZONTAL PANEL)
+    depth,              // Z axis: cabinet depth
     position: [0, height + thickness * 1.5, 0],
     rotation: [0, 0, 0],
     materialId: materials.bodyMaterialId,
@@ -128,9 +128,9 @@ export function generateKitchenCabinet(
       group: cabinetId,
       shapeType: 'RECT',
       shapeParams: { type: 'RECT', x: width - thickness * 2, y: depth - 10 },
-      width: width - thickness * 2,
-      height: depth - 10,
-      depth: thickness,
+      width: width - thickness * 2,  // X axis: inner width
+      height: thickness,              // Y axis: thin vertical dimension (HORIZONTAL PANEL)
+      depth: depth - 10,              // Z axis: shelf depth (slightly shorter than cabinet)
       position: [0, shelfY, -5],
       rotation: [0, 0, 0],
       materialId: materials.bodyMaterialId,

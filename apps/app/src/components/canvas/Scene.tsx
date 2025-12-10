@@ -5,10 +5,10 @@
  * Renders the furniture parts in 3D space with controls and lighting
  */
 
-import { useRef } from 'react';
+import { useRef, useCallback } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Grid } from '@react-three/drei';
-import { useSelectedFurnitureParts, useStore } from '@/lib/store';
+import { useSelectedFurnitureParts, useStore, useSelectedPart } from '@/lib/store';
 import { Part3D } from './Part3D';
 import { Button } from '@meble/ui';
 import { Camera, Move, RotateCw } from 'lucide-react';
@@ -18,16 +18,36 @@ import { useKeyboardShortcuts } from '@/lib/useKeyboardShortcuts';
 import { SCENE_CONFIG, KEYBOARD_SHORTCUTS } from '@/lib/config';
 import type { OrbitControls as OrbitControlsType } from 'three-stdlib';
 import { CabinetGroupTransform } from './CabinetGroupTransform';
+import { PartTransformControls } from './PartTransformControls';
 
 export function Scene() {
   const parts = useSelectedFurnitureParts();
-  const { isTransforming, transformMode, setTransformMode, selectedCabinetId } =
-    useStore(
+  const selectedPart = useSelectedPart();
+  const {
+    isTransforming,
+    transformMode,
+    setTransformMode,
+    selectedCabinetId,
+    selectedPartId,
+    removePart,
+    removeCabinet,
+    duplicatePart,
+    duplicateCabinet,
+    updatePart,
+    setIsTransforming,
+  } = useStore(
       useShallow((state) => ({
         isTransforming: state.isTransforming,
         transformMode: state.transformMode,
         setTransformMode: state.setTransformMode,
         selectedCabinetId: state.selectedCabinetId,
+        selectedPartId: state.selectedPartId,
+        removePart: state.removePart,
+        removeCabinet: state.removeCabinet,
+        duplicatePart: state.duplicatePart,
+        duplicateCabinet: state.duplicateCabinet,
+        updatePart: state.updatePart,
+        setIsTransforming: state.setIsTransforming,
       }))
     );
   const controlsRef = useRef<OrbitControlsType>(null);
@@ -38,11 +58,43 @@ export function Scene() {
     }
   };
 
+  const handleDelete = () => {
+    // If cabinet is selected, delete entire cabinet
+    if (selectedCabinetId) {
+      if (window.confirm('Usunąć całą szafkę i wszystkie jej części?')) {
+        removeCabinet(selectedCabinetId);
+      }
+    }
+    // Otherwise, if part is selected, delete just that part
+    else if (selectedPartId) {
+      removePart(selectedPartId);
+    }
+  };
+
+  const handleDuplicate = () => {
+    // If cabinet is selected, duplicate entire cabinet
+    if (selectedCabinetId) {
+      duplicateCabinet(selectedCabinetId);
+    }
+    // Otherwise, if part is selected, duplicate just that part
+    else if (selectedPartId) {
+      duplicatePart(selectedPartId);
+    }
+  };
+
+  // Handle part transform end - this will be called by PartTransformControls
+  // We don't need to do anything here because the transform is already applied to the part
+  const handlePartTransformEnd = useCallback(() => {
+    setIsTransforming(false);
+  }, [setIsTransforming]);
+
   // Keyboard shortcuts
   useKeyboardShortcuts({
     onTranslateMode: () => setTransformMode('translate'),
     onRotateMode: () => setTransformMode('rotate'),
     onResetCamera: handleResetCamera,
+    onDeletePart: handleDelete,
+    onDuplicatePart: handleDuplicate,
   });
 
   return (
@@ -133,7 +185,18 @@ export function Scene() {
           <Part3D key={part.id} part={part} />
         ))}
 
+        {/* Transform controls for cabinet groups */}
         {selectedCabinetId && <CabinetGroupTransform cabinetId={selectedCabinetId} />}
+
+        {/* Transform controls for individual parts (not in a cabinet or cabinet not selected) */}
+        {selectedPart && !selectedCabinetId && (
+          <PartTransformControls
+            part={selectedPart}
+            mode={transformMode}
+            onTransformStart={() => setIsTransforming(true)}
+            onTransformEnd={handlePartTransformEnd}
+          />
+        )}
       </Canvas>
     </div>
   );
