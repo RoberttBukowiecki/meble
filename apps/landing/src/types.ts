@@ -10,19 +10,6 @@ export interface HeroDetails {
     imageAlt: string;
 }
 
-export interface CTAButton {
-    href: string;
-    topLabel: string;
-    bottomLabel: string;
-}
-
-export interface CTADetails {
-    heading: string;
-    subheading: string;
-    primaryButton: CTAButton;
-    secondaryButton: CTAButton;
-}
-
 export interface IBenefit {
     title: string;
     description: string;
@@ -31,85 +18,76 @@ export interface IBenefit {
 }
 
 export interface IBenefitBullet {
-    title: string;
-    description: string;
-    icon: JSX.Element;
+  title: string;
+  description: string;
+  icon: string;
 }
 
 export interface IPricing {
-    name: string;
-    price: number | string;
-    features: string[];
+  name: string;
+  price: number | string;
+  features: string[];
+  description: string;
 }
 
 export interface IFAQ {
-    question: string;
-    answer: string;
+  question: string;
+  answer: string;
 }
 
 export interface ITestimonial {
-    name: string;
-    role: string;
-    message: string;
-    avatar: string;
-}
-
-export interface IStats {
-    title: string;
-    icon: JSX.Element;
-    description: string;
+  name: string;
+  role: string;
+  message: string;
+  avatar: string;
 }
 
 export interface ISocials {
-    facebook?: string;
-    github?: string;
-    instagram?: string;
-    linkedin?: string;
-    threads?: string;
-    twitter?: string;
-    youtube?: string;
-    x?: string;
-    [key: string]: string | undefined;
+  facebook?: string;
+  github?: string;
+  instagram?: string;
+  linkedin?: string;
+  threads?: string;
+  twitter?: string;
+  youtube?: string;
+  x?: string;
+  [key: string]: string | undefined;
 }
 
 export interface SiteMetadata {
-    title: string;
-    description: string;
+  title: string;
+  description: string;
 }
 
 export interface SiteDetails {
-    siteName: string;
-    siteUrl: string;
-    metadata: SiteMetadata;
-    language: string;
-    locale: string;
-    siteLogo: string;
-    googleAnalyticsId: string;
+  siteName: string;
+  siteUrl: string;
+  metadata: SiteMetadata;
+  language: string;
+  locale: string;
+  siteLogo: string;
+  googleAnalyticsId: string;
 }
 
 export interface HeaderContent {
-    menuItems: IMenuItem[];
-    primaryCtaLabel: string;
+  menuItems: IMenuItem[];
+  primaryCtaLabel: string;
 }
 
 export interface FooterDetails {
-    subheading: string;
-    quickLinks: IMenuItem[];
-    email: string;
-    telephone: string;
-    socials: ISocials;
+  subheading: string;
+  quickLinks: IMenuItem[];
+  email: string;
+  telephone: string;
+  socials: ISocials;
 }
 
 export interface LandingContent {
-    siteDetails: SiteDetails;
-    header: HeaderContent;
-    hero: HeroDetails;
-    benefits: IBenefit[];
-    pricing: IPricing[];
-    testimonials: ITestimonial[];
-    faqs: IFAQ[];
-    stats: IStats[];
-    cta: CTADetails;
-    footer: FooterDetails;
-    logosNote?: string;
+  siteDetails: SiteDetails;
+  header: HeaderContent;
+  hero: HeroDetails;
+  benefits: IBenefit[];
+  testimonials: ITestimonial[];
+  footer: FooterDetails;
+  logosNote?: string;
 }

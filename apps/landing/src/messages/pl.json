@@ -96,40 +96,6 @@
           "imageSrc": "/images/mockup-1.webp"
         }
       ],
-      "pricing": [
-        {
-          "name": "Starter",
-          "price": 0,
-          "features": [
-            "1 projekt zapisany lokalnie",
-            "Podstawowe materiały z grubością 12 mm",
-            "Obsługa kształtów RECT i TRAPEZOID",
-            "Eksport CSV z głównymi danymi",
-            "Tryb jasny/ciemny"
-          ]
-        },
-        {
-          "name": "Warsztat",
-          "price": 39,
-          "features": [
-            "Nielimitowane projekty w przeglądarce",
-            "Kształty RECT, TRAPEZOID, L_SHAPE, POLYGON",
-            "Edytor obrzeży dla płyty prostokątnej",
-            "Walidacja przed eksportem + alerty",
-            "Przycisk resetu kamery w scenie"
-          ]
-        },
-        {
-          "name": "Produkcja",
-          "price": "Na zamówienie",
-          "features": [
-            "Konfiguracja eksportu CSV pod Twój zakład",
-            "Wsparcie w doborze materiałów i obrzeży",
-            "Szablony projektów mebli skrzyniowych",
-            "Konsultacje wdrożeniowe 1:1"
-          ]
-        }
-      ],
       "testimonials": [
         {
           "name": "Andrzej Kwiatkowski",
@@ -150,59 +116,6 @@
           "avatar": "/images/testimonial-3.webp"
         }
       ],
-      "faqs": [
-        {
-          "question": "Czy mogę modelować różne kształty płyt?",
-          "answer": "Tak. W wersji MVP dostępne są RECT, TRAPEZOID, L_SHAPE i POLYGON. Każdy kształt ma własne parametry i przelicza gabaryty automatycznie."
-        },
-        {
-          "question": "Jak działa eksport CSV?",
-          "answer": "Przed eksportem uruchamiana jest walidacja materiałów i wymiarów. Plik zawiera mebel, grupę, wymiary w mm, grubość z materiału oraz obrzeża dla płyty prostokątnej."
-        },
-        {
-          "question": "Czy dane są bezpieczne?",
-          "answer": "Stan przechowujemy lokalnie w przeglądarce (localStorage). Nie wysyłamy projektów na serwer, więc pracujesz offline bez utraty danych."
-        },
-        {
-          "question": "Czy mogę sterować kamerą w scenie?",
-          "answer": "Tak. Korzystamy z OrbitControls oraz TransformControls. Możesz dodać części, przesuwać je i resetować kamerę do widoku startowego."
-        },
-        {
-          "question": "Czy planujecie kolejne funkcje?",
-          "answer": "Tak. W roadmapie mamy eksport do kolejnych formatów, edytor obrzeży dla skomplikowanych kształtów i szablony projektów mebli."
-        }
-      ],
-      "stats": [
-        {
-          "title": "4 kształty",
-          "icon": "grid",
-          "description": "RECT, TRAPEZOID, L_SHAPE i POLYGON gotowe do użycia w MVP."
-        },
-        {
-          "title": "3 materiały startowe",
-          "icon": "layers",
-          "description": "Biały, Dąb i Antracyt z grubością 12 mm i kolorem w scenie."
-        },
-        {
-          "title": "1 klik = CSV",
-          "icon": "upload",
-          "description": "Walidacja projektu i eksport listy cięć do pliku produkcyjnego."
-        }
-      ],
-      "cta": {
-        "heading": "Uruchom pierwszy projekt w {appName}",
-        "subheading": "Modeluj w przeglądarce, eksportuj do CSV i wracaj do zapisanych formatów, kiedy tylko potrzebujesz.",
-        "primaryButton": {
-          "href": "/app",
-          "topLabel": "Rozpocznij pracę",
-          "bottomLabel": "Otwórz edytor 3D"
-        },
-        "secondaryButton": {
-          "href": "#pricing",
-          "topLabel": "Sprawdź pakiety",
-          "bottomLabel": "Cennik i roadmapa"
-        }
-      },
       "footer": {
         "subheading": "{appName} przyspiesza projektowanie formatki, obrzeża i eksport produkcyjny w jednym narzędziu.",
         "quickLinks": [
@@ -223,11 +136,94 @@
     "sections": {
       "pricing": {
         "title": "Cennik",
-        "description": "Wybierz zestaw funkcji, który najlepiej pasuje do Twojego procesu."
+        "description": "Wybierz zestaw funkcji, który najlepiej pasuje do Twojego procesu.",
+        "tiers": [
+          {
+            "name": "Starter",
+            "price": 0,
+            "features": [
+              "1 projekt zapisany lokalnie",
+              "Podstawowe materiały z grubością 12 mm",
+              "Obsługa kształtów RECT i TRAPEZOID",
+              "Eksport CSV z głównymi danymi",
+              "Tryb jasny/ciemny"
+            ],
+            "description": "Dla hobbystów i jednorazowych projektów."
+          },
+          {
+            "name": "Warsztat",
+            "price": 39,
+            "features": [
+              "Nielimitowane projekty w przeglądarce",
+              "Kształty RECT, TRAPEZOID, L_SHAPE, POLYGON",
+              "Edytor obrzeży dla płyty prostokątnej",
+              "Walidacja przed eksportem + alerty",
+              "Przycisk resetu kamery w scenie"
+            ],
+            "description": "Dla profesjonalistów i małych warsztatów."
+          },
+          {
+            "name": "Produkcja",
+            "price": "Na zamówienie",
+            "features": [
+              "Konfiguracja eksportu CSV pod Twój zakład",
+              "Wsparcie w doborze materiałów i obrzeży",
+              "Szablony projektów mebli skrzyniowych",
+              "Konsultacje wdrożeniowe 1:1"
+            ],
+            "description": "Dla produkcji na dużą skalę i zespołów."
+          }
+        ],
+        "ctaLabel": "Wybierz plan",
+        "priceSuffix": "/mies."
       },
       "testimonials": {
         "title": "Historie użytkowników",
         "description": "Zespoły technologów i stolarzy testują aplikację w swoich projektach."
+      },
+      "faqs": {
+        "title": "Najczęściej zadawane pytania",
+        "description": "Nie możesz znaleźć odpowiedzi, której szukasz? Skontaktuj się z naszym zespołem wsparcia.",
+        "items": [
+          {
+            "question": "Czy mogę modelować różne kształty płyt?",
+            "answer": "Tak. W wersji MVP dostępne są RECT, TRAPEZOID, L_SHAPE i POLYGON. Każdy kształt ma własne parametry i przelicza gabaryty automatycznie."
+          },
+          {
+            "question": "Jak działa eksport CSV?",
+            "answer": "Przed eksportem uruchamiana jest walidacja materiałów i wymiarów. Plik zawiera mebel, grupę, wymiary w mm, grubość z materiału oraz obrzeża dla płyty prostokątnej."
+          },
+          {
+            "question": "Czy dane są bezpieczne?",
+            "answer": "Stan przechowujemy lokalnie w przeglądarce (localStorage). Nie wysyłamy projektów na serwer, więc pracujesz offline bez utraty danych."
+          },
+          {
+            "question": "Czy mogę sterować kamerą w scenie?",
+            "answer": "Tak. Korzystamy z OrbitControls oraz TransformControls. Możesz dodać części, przesuwać je i resetować kamerę do widoku startowego."
+          },
+          {
+            "question": "Czy planujecie kolejne funkcje?",
+            "answer": "Tak. W roadmapie mamy eksport do kolejnych formatów, edytor obrzeży dla skomplikowanych kształtów i szablony projektów mebli."
+          }
+        ]
+      },
+      "stats": {
+        "shapes": {
+          "title": "Kształty",
+          "value": "4"
+        },
+        "materials": {
+          "title": "Materiały startowe",
+          "value": "3"
+        },
+        "export": {
+          "title": "Eksport 1-klik",
+          "value": "CSV"
+        }
+      },
+      "cta": {
+        "heading": "Uruchom pierwszy projekt w {appName}",
+        "primaryButton": "Otwórz edytor 3D"
       }
     }
   }

@@ -96,40 +96,6 @@
           "imageSrc": "/images/mockup-1.webp"
         }
       ],
-      "pricing": [
-        {
-          "name": "Starter",
-          "price": 0,
-          "features": [
-            "1 locally saved project",
-            "Starter materials with 12 mm thickness",
-            "RECT and TRAPEZOID shapes",
-            "CSV export with core fields",
-            "Light/Dark mode"
-          ]
-        },
-        {
-          "name": "Workshop",
-          "price": 39,
-          "features": [
-            "Unlimited local projects",
-            "RECT, TRAPEZOID, L_SHAPE, POLYGON shapes",
-            "Edge banding editor for rectangular panels",
-            "Pre-export validation and alerts",
-            "Camera reset button in the scene"
-          ]
-        },
-        {
-          "name": "Production",
-          "price": "Custom",
-          "features": [
-            "CSV export tailored to your factory format",
-            "Material and edge presets for your team",
-            "Cabinet project templates",
-            "1:1 onboarding support"
-          ]
-        }
-      ],
       "testimonials": [
         {
           "name": "Andrew Quinn",
@@ -150,59 +116,6 @@
           "avatar": "/images/testimonial-3.webp"
         }
       ],
-      "faqs": [
-        {
-          "question": "Which panel shapes are supported?",
-          "answer": "In the MVP you can work with RECT, TRAPEZOID, L_SHAPE, and POLYGON. Each shape has dedicated parameters and automatic bounding box calculation."
-        },
-        {
-          "question": "How does CSV export work?",
-          "answer": "We validate dimensions and material assignments before exporting. The CSV includes furniture, group, dimensions in mm, material thickness, and edge data for rectangular panels."
-        },
-        {
-          "question": "Is my data safe?",
-          "answer": "Project state stays in the browser (localStorage). Nothing is uploaded to a server, so you can work offline without losing changes."
-        },
-        {
-          "question": "Can I control the 3D camera?",
-          "answer": "Yes. OrbitControls and TransformControls let you add and move parts, and a reset button returns the camera to the default view."
-        },
-        {
-          "question": "What comes next?",
-          "answer": "Upcoming features include more export formats, advanced edge banding for complex shapes, and ready-made cabinet templates."
-        }
-      ],
-      "stats": [
-        {
-          "title": "4 shapes",
-          "icon": "grid",
-          "description": "RECT, TRAPEZOID, L_SHAPE, and POLYGON available in the MVP."
-        },
-        {
-          "title": "3 starter materials",
-          "icon": "layers",
-          "description": "White, Oak, and Anthracite at 12 mm with live color preview."
-        },
-        {
-          "title": "1-click CSV",
-          "icon": "upload",
-          "description": "Validation plus export so the cutting list reaches production cleanly."
-        }
-      ],
-      "cta": {
-        "heading": "Launch your first project in {appName}",
-        "subheading": "Model in the browser, export CSV, and return to saved panels anytime without losing data.",
-        "primaryButton": {
-          "href": "/app",
-          "topLabel": "Start building",
-          "bottomLabel": "Open the 3D editor"
-        },
-        "secondaryButton": {
-          "href": "#pricing",
-          "topLabel": "Review plans",
-          "bottomLabel": "Pricing & roadmap"
-        }
-      },
       "footer": {
         "subheading": "{appName} speeds up panel design, edge banding, and production-ready exports in one place.",
         "quickLinks": [
@@ -223,11 +136,94 @@
     "sections": {
       "pricing": {
         "title": "Pricing",
-        "description": "Pick the set of features that fits your workflow."
+        "description": "Pick the set of features that fits your workflow.",
+        "tiers": [
+          {
+            "name": "Starter",
+            "price": 0,
+            "features": [
+              "1 locally saved project",
+              "Starter materials with 12 mm thickness",
+              "RECT and TRAPEZOID shapes",
+              "CSV export with core fields",
+              "Light/Dark mode"
+            ],
+            "description": "For hobbyists and one-off projects."
+          },
+          {
+            "name": "Workshop",
+            "price": 39,
+            "features": [
+              "Unlimited local projects",
+              "RECT, TRAPEZOID, L_SHAPE, POLYGON shapes",
+              "Edge banding editor for rectangular panels",
+              "Pre-export validation and alerts",
+              "Camera reset button in the scene"
+            ],
+            "description": "For professionals and small workshops."
+          },
+          {
+            "name": "Production",
+            "price": "Custom",
+            "features": [
+              "CSV export tailored to your factory format",
+              "Material and edge presets for your team",
+              "Cabinet project templates",
+              "1:1 onboarding support"
+            ],
+            "description": "For large-scale production and teams."
+          }
+        ],
+        "ctaLabel": "Choose plan",
+        "priceSuffix": "/mo"
       },
       "testimonials": {
         "title": "Customer stories",
         "description": "Teams of technologists and makers are testing the app on live projects."
+      },
+      "faqs": {
+        "title": "Frequently Asked Questions",
+        "description": "Can’t find the answer you’re looking for? Reach out to our customer support team.",
+        "items": [
+          {
+            "question": "Which panel shapes are supported?",
+            "answer": "In the MVP you can work with RECT, TRAPEZOID, L_SHAPE, and POLYGON. Each shape has dedicated parameters and automatic bounding box calculation."
+          },
+          {
+            "question": "How does CSV export work?",
+            "answer": "We validate dimensions and material assignments before exporting. The CSV includes furniture, group, dimensions in mm, material thickness, and edge data for rectangular panels."
+          },
+          {
+            "question": "Is my data safe?",
+            "answer": "Project state stays in the browser (localStorage). Nothing is uploaded to a server, so you can work offline without losing changes."
+          },
+          {
+            "question": "Can I control the 3D camera?",
+            "answer": "Yes. OrbitControls and TransformControls let you add and move parts, and a reset button returns the camera to the default view."
+          },
+          {
+            "question": "What comes next?",
+            "answer": "Upcoming features include more export formats, advanced edge banding for complex shapes, and ready-made cabinet templates."
+          }
+        ]
+      },
+      "stats": {
+        "shapes": {
+          "title": "Shapes",
+          "value": "4"
+        },
+        "materials": {
+          "title": "Starter Materials",
+          "value": "3"
+        },
+        "export": {
+          "title": "1-Click CSV",
+          "value": "CSV"
+        }
+      },
+      "cta": {
+        "heading": "Launch your first project in {appName}",
+        "primaryButton": "Open the 3D editor"
       }
     }
   }

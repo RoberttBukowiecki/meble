@@ -4,9 +4,9 @@ import { locales, defaultLocale } from '@meble/i18n';
 export default createMiddleware({
   locales,
   defaultLocale,
-  localePrefix: 'always',
+  localePrefix: 'as-needed',
 });
 
 export const config = {
-  matcher: ['/:path*'],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
 };

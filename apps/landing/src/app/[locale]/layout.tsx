@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { GoogleAnalytics } from "@next/third-parties/google";
+import { NextIntlClientProvider } from 'next-intl';
+import { getMessages } from 'next-intl/server';
 
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -48,9 +50,10 @@ export async function generateMetadata(
 export default async function LocaleLayout({ children, params }: Props) {
   const safeLocale = locales.includes(params.locale) ? params.locale : defaultLocale;
   const content = await getLandingContent(safeLocale);
+  const messages = await getMessages(safeLocale);
 
   return (
-    <>
+    <NextIntlClientProvider locale={safeLocale} messages={messages}>
       {content.siteDetails.googleAnalyticsId && <GoogleAnalytics gaId={content.siteDetails.googleAnalyticsId} />}
       <Header
         siteName={content.siteDetails.siteName}
@@ -60,6 +63,6 @@ export default async function LocaleLayout({ children, params }: Props) {
       />
       <main>{children}</main>
       <Footer siteDetails={content.siteDetails} footerDetails={content.footer} locale={safeLocale} />
-    </>
+    </NextIntlClientProvider>
   );
 }

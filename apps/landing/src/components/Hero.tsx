@@ -1,51 +1,51 @@
 import React from 'react';
 import Image from 'next/image';
+import { useTranslations } from 'next-intl';
 
-import { CTADetails, HeroDetails } from "@/types";
+import { HeroDetails } from '@/types';
+import { Button } from '@meble/ui';
+import Link from 'next/link';
 
 interface Props {
   hero: HeroDetails;
-  cta: CTADetails;
 }
 
-const Hero: React.FC<Props> = ({ hero, cta }) => {
-    return (
-        <section
-            id="hero"
-            className="relative flex items-center justify-center pb-0 pt-32 md:pt-40 px-5"
-        >
-            <div className="absolute left-0 top-0 bottom-0 -z-10 w-full">
-                <div className="absolute inset-0 h-full w-full bg-hero-background bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,#000_60%,transparent_100%)]">
-                </div>
-            </div>
+const Hero: React.FC<Props> = ({ hero }) => {
+  const t = useTranslations('landing.header');
 
-            <div className="absolute left-0 right-0 bottom-0 backdrop-blur-[2px] h-40 bg-gradient-to-b from-transparent via-[rgba(233,238,255,0.5)] to-[rgba(202,208,230,0.5)]">
-            </div>
-
-            <div className="text-center">
-                <h1 className="text-4xl md:text-6xl md:leading-tight font-bold text-foreground max-w-lg md:max-w-3xl mx-auto">{hero.heading}</h1>
-                <p className="mt-4 text-foreground text-lg max-w-2xl mx-auto">{hero.subheading}</p>
-                <a
-                  className="mt-6 inline-flex items-center justify-center rounded-xl bg-foreground px-5 py-3 text-base font-semibold text-background shadow-md transition hover:-translate-y-[1px] hover:shadow-lg"
-                  href={cta.primaryButton.href}
-                >
-                  <span className="text-sm font-medium text-muted-foreground mr-2">{cta.primaryButton.topLabel}</span>
-                  <span>{cta.primaryButton.bottomLabel}</span>
-                </a>
-                <Image
-                    src={hero.centerImageSrc}
-                    width={384}
-                    height={340}
-                    quality={100}
-                    sizes="(max-width: 768px) 100vw, 384px"
-                    priority={true}
-                    unoptimized={true}
-                    alt={hero.imageAlt}
-                    className='relative mt-12 md:mt-16 mx-auto z-10'
-                />
-            </div>
-        </section>
-    );
+  return (
+    <section id="hero" className="relative bg-background">
+      <div className="relative z-10 mx-auto max-w-7xl px-4 pb-8 pt-32 sm:px-6 lg:px-8 lg:pt-40">
+        <div className="mx-auto max-w-4xl text-center">
+          <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl md:text-6xl">
+            {hero.heading}
+          </h1>
+          <p className="mt-3 text-lg leading-8 text-muted-foreground sm:mt-4">
+            {hero.subheading}
+          </p>
+          <div className="mt-10 flex items-center justify-center gap-x-6">
+            <Button asChild size="lg">
+              <Link href="/app">{t('primaryCtaLabel')}</Link>
+            </Button>
+          </div>
+        </div>
+        <div className="mt-16 sm:mt-20">
+          <div className="-m-2 rounded-xl bg-muted p-2 ring-1 ring-inset ring-muted-foreground/10 lg:-m-4 lg:rounded-2xl lg:p-4">
+            <Image
+              src={hero.centerImageSrc}
+              width={1200}
+              height={675}
+              quality={100}
+              sizes="(max-width: 768px) 100vw, 1200px"
+              priority={true}
+              alt={hero.imageAlt}
+              className="w-full rounded-md shadow-2xl ring-1 ring-muted-foreground/10"
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+  );
 };
 
 export default Hero;
