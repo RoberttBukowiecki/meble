@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { TransformControls } from '@react-three/drei';
 import { useStore } from '@/lib/store';
 import * as THREE from 'three';
@@ -22,21 +22,11 @@ export function PartTransformControls({
   const [target, setTarget] = useState<THREE.Group | null>(null);
   const updatePart = useStore((state) => state.updatePart);
 
-  // The original component had a complex and unsafe way of handling the reference
-  // to the controlled object, causing race conditions. This new implementation
-  // uses a standard React pattern (`useState` with a ref callback) to ensure
-  // the TransformControls are only rendered when the target object is mounted in the scene.
+  // The `useState` with ref callback pattern is correct for avoiding the race condition.
+  // We conditionally render the TransformControls only when the target object is mounted.
 
-  // This effect ensures that when the part prop changes, we reset the target.
-  // Although the component is likely re-mounted, this is a safeguard.
-  useEffect(() => {
-    setTarget(null);
-  }, [part.id]);
-
-  // Using useCallback for event handlers to prevent re-creation on every render.
   const handleTransformChange = useCallback(
     (e: THREE.Event | undefined) => {
-      // The `e.target.object` is the most reliable source for the object's current state.
       const group = e?.target.object as THREE.Group;
       if (!group) return;
 
@@ -54,8 +44,6 @@ export function PartTransformControls({
   );
 
   const handleTransformEnd = useCallback(() => {
-    // On transform end, we can rely on the `target` from state, which is safe
-    // because the controls wouldn't exist without it.
     if (!target) {
       onTransformEnd();
       return;
@@ -81,8 +69,7 @@ export function PartTransformControls({
           The ref callback `setTarget` updates the state, triggering the rendering of TransformControls. */}
       <group ref={setTarget} position={part.position} rotation={part.rotation} />
 
-      {/* Conditionally render TransformControls only when the target is set.
-          This fixes the "not a part of the scene graph" error and the perceived delay. */}
+      {/* Conditionally render TransformControls only when the target is set. */}
       {target && (
         <TransformControls
           object={target}
@@ -90,9 +77,9 @@ export function PartTransformControls({
           onMouseDown={onTransformStart}
           onChange={handleTransformChange}
           onMouseUp={handleTransformEnd}
-          key={part.id} // Add key to ensure a fresh instance when part changes
         />
       )}
     </>
   );
 }
+

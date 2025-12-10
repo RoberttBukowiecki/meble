@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useRef, useEffect, useMemo, useCallback } from 'react';
+import { useRef, useEffect, useMemo, useCallback, useState } from 'react';
 import { TransformControls } from '@react-three/drei';
 import { useStore } from '@/lib/store';
 import { useShallow } from 'zustand/react/shallow';
@@ -21,26 +21,18 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
     }))
   );
 
+  const [target, setTarget] = useState<THREE.Group | null>(null);
   const controlRef = useRef<any>(null);
-  const groupRef = useRef<THREE.Group | null>(null);
   const initialPartPositions = useRef<Map<string, THREE.Vector3>>(new Map());
 
-  // Initialize group once
-  if (groupRef.current === null) {
-    groupRef.current = new THREE.Group();
-  }
-
-  // Calculate cabinet center - optimized to avoid creating Three.js objects
+  // Calculate cabinet center
   const cabinetCenter = useMemo(() => {
     if (parts.length === 0) return new THREE.Vector3(0, 0, 0);
-
-    // Simple average of all part positions (faster than bounding box calculation)
     const sum = new THREE.Vector3();
     parts.forEach(p => {
       sum.add(new THREE.Vector3().fromArray(p.position));
     });
     sum.divideScalar(parts.length);
-
     return sum;
   }, [parts]);
 
@@ -54,59 +46,58 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
     });
   }, [cabinetCenter, parts]);
 
-  // Update parts in real-time during transformation (live preview)
+  // Update parts in real-time during transformation
   const updatePartsFromGroup = useCallback(() => {
-    const group = groupRef.current;
+    const group = target;
     if (!group) return;
 
     parts.forEach(part => {
         const initialRelativePos = initialPartPositions.current.get(part.id);
         if (initialRelativePos) {
             const newPos = initialRelativePos.clone().applyQuaternion(group.quaternion).add(group.position);
-
             const newRotation = new THREE.Euler().setFromQuaternion(
                 new THREE.Quaternion().setFromEuler(new THREE.Euler().fromArray(part.rotation)).premultiply(group.quaternion)
             );
-
             updatePart(part.id, {
                 position: newPos.toArray() as [number, number, number],
                 rotation: [newRotation.x, newRotation.y, newRotation.z] as [number, number, number],
             });
         }
     });
-  }, [parts, updatePart]);
+  }, [parts, updatePart, target]);
 
-  // Memoize callback to avoid recreating function on every render
   const handleTransformEnd = useCallback(() => {
-    const group = groupRef.current;
-    if (!group) return;
-
-    // Final update
+    const group = target;
+    if (!group) {
+        setIsTransforming(false);
+        return;
+    }
     updatePartsFromGroup();
-
-    // Reset group transform after applying to parts
     group.position.copy(cabinetCenter);
     group.rotation.set(0, 0, 0);
     group.quaternion.identity();
-
     setIsTransforming(false);
-  }, [updatePartsFromGroup, cabinetCenter, setIsTransforming]);
+  }, [updatePartsFromGroup, cabinetCenter, setIsTransforming, target]);
 
   return (
       <>
-        {/* Render the group in the scene so TransformControls can attach to it */}
-        <group ref={groupRef} position={cabinetCenter} />
-        <TransformControls
-          ref={controlRef}
-          object={groupRef.current}
-          mode={transformMode}
-          onMouseDown={() => setIsTransforming(true)}
-          onChange={updatePartsFromGroup}
-          onMouseUp={handleTransformEnd}
-          showX={transformMode === 'translate'}
-          showY={transformMode === 'translate'}
-          showZ={transformMode === 'translate'}
-        />
+        {/* Proxy group for controls */}
+        <group ref={setTarget} position={cabinetCenter} />
+
+        {/* Conditionally render controls when target is ready */}
+        {target && (
+            <TransformControls
+              ref={controlRef}
+              object={target}
+              mode={transformMode}
+              onMouseDown={() => setIsTransforming(true)}
+              onChange={updatePartsFromGroup}
+              onMouseUp={handleTransformEnd}
+              showX={transformMode === 'translate'}
+              showY={transformMode === 'translate'}
+              showZ={transformMode === 'translate'}
+            />
+        )}
       </>
   );
 }
