@@ -21,12 +21,12 @@
 
 ## Phase 0: Project Initialization & Configuration
 
-### Task 0.1: Initialize Next.js Project
-- [ ] Create new Next.js 14+ project with App Router
-- [ ] Enable TypeScript configuration
-- [ ] Set up Tailwind CSS
-- [ ] Clean up default styles in `globals.css`
-- [ ] Remove unnecessary default components
+### Task 0.1: Initialize Next.js Project ✅
+- [x] Create new Next.js 14+ project with App Router
+- [x] Enable TypeScript configuration
+- [x] Set up Tailwind CSS
+- [x] Clean up default styles in `globals.css`
+- [x] Remove unnecessary default components
 
 **Files affected:**
 - `next.config.js`
@@ -36,15 +36,15 @@
 
 ---
 
-### Task 0.2: Install Dependencies
-- [ ] Install 3D libraries:
+### Task 0.2: Install Dependencies ✅
+- [x] Install 3D libraries:
     - `three`
     - `@types/three`
     - `@react-three/fiber`
     - `@react-three/drei`
-- [ ] Install state management:
+- [x] Install state management:
     - `zustand`
-- [ ] Install utilities:
+- [x] Install utilities:
     - `clsx`
     - `tailwind-merge`
     - `lucide-react`
@@ -58,15 +58,15 @@ pnpm install three @types/three @react-three/fiber @react-three/drei zustand cls
 
 ---
 
-### Task 0.3: Configure shadcn/ui & Theme
-- [ ] Initialize shadcn/ui in project
-- [ ] Configure Tailwind theme with CSS variables (NOT hardcoded colors)
-- [ ] Set up color scheme in `globals.css`:
+### Task 0.3: Configure shadcn/ui & Theme ✅
+- [x] Initialize shadcn/ui in project
+- [x] Configure Tailwind theme with CSS variables (NOT hardcoded colors)
+- [x] Set up color scheme in `globals.css`:
     - `--primary`, `--secondary`, `--accent`
     - `--background`, `--foreground`
     - `--muted`, `--muted-foreground`
     - `--border`, `--input`, `--ring`
-- [ ] Update `tailwind.config.ts` to use CSS variables:
+- [x] Update `tailwind.config.ts` to use CSS variables:
   ```ts
   colors: {
     primary: 'hsl(var(--primary))',
@@ -74,11 +74,11 @@ pnpm install three @types/three @react-three/fiber @react-three/drei zustand cls
     // ... etc
   }
   ```
-- [ ] Add required shadcn/ui components:
+- [x] Add required shadcn/ui components:
     - `button`, `input`, `label`, `card`
     - `slider`, `switch`, `table`
     - `dialog`, `select`, `badge`
-- [ ] **IMPORTANT:** Always use theme colors (e.g., `bg-primary`, `text-foreground`) instead of hardcoded colors (e.g., `bg-blue-500`)
+- [x] **IMPORTANT:** Always use theme colors (e.g., `bg-primary`, `text-foreground`) instead of hardcoded colors (e.g., `bg-blue-500`)
 
 **Command:**
 ```bash
@@ -133,52 +133,52 @@ npx shadcn-ui@latest add button input label card slider switch table dialog sele
 
 ## Phase 1: Business Logic (Types & Store)
 
-### Task 1.1: Define TypeScript Types
-- [ ] Create `src/types/index.ts`
-- [ ] Define shape types: `RECT`, `TRAPEZOID`, `L_SHAPE`, `POLYGON`
-- [ ] Define `Material` interface (id, name, color, thickness)
-- [ ] Define `Furniture` interface (id, name, projectId)
-- [ ] Define shape parameter interfaces:
+### Task 1.1: Define TypeScript Types ✅
+- [x] Create `src/types/index.ts`
+- [x] Define shape types: `RECT`, `TRAPEZOID`, `L_SHAPE`, `POLYGON`
+- [x] Define `Material` interface (id, name, color, thickness)
+- [x] Define `Furniture` interface (id, name, projectId)
+- [x] Define shape parameter interfaces:
     - `ShapeParamsRect`
     - `ShapeParamsTrapezoid`
     - `ShapeParamsLShape`
     - `ShapeParamsPolygon`
-- [ ] Define discriminated union `ShapeParams`
-- [ ] Define edge banding interfaces:
+- [x] Define discriminated union `ShapeParams`
+- [x] Define edge banding interfaces:
     - `EdgeBandingRect` (top, bottom, left, right)
     - `EdgeBandingGeneric` (edges array)
     - `EdgeBanding` discriminated union
-- [ ] Define `Part` interface with all properties:
+- [x] Define `Part` interface with all properties:
     - Basic info (id, name, furnitureId, group)
     - Geometry (shapeType, shapeParams)
     - 3D dimensions (width, height, depth)
     - Transformations (position, rotation)
     - Material and edge banding
-- [ ] Define `ProjectState` interface
+- [x] Define `ProjectState` interface
 
 **File:** `src/types/index.ts`
 
 ---
 
-### Task 1.2: Create Zustand Store
-- [ ] Create `src/lib/store.ts`
-- [ ] Set up Zustand store with persist middleware
-- [ ] Initialize default state:
+### Task 1.2: Create Zustand Store ✅
+- [x] Create `src/lib/store.ts`
+- [x] Set up Zustand store with persist middleware
+- [x] Initialize default state:
     - Empty `parts` array
     - Default furniture ("Domyślny mebel")
-    - Sample materials (Biały 12mm, Dąb 12mm, Antracyt 12mm)
+    - Sample materials (Biały 18mm, Dąb 18mm, Antracyt 18mm)
     - Selected IDs (null for part, default furniture ID)
-- [ ] Implement furniture actions:
+- [x] Implement furniture actions:
     - `addFurniture(name: string)`
     - `removeFurniture(id: string)` - cascade delete related parts
     - `setSelectedFurniture(id: string)`
-- [ ] Implement part actions:
-    - `addPart(furnitureId: string)` - generate UUID, default dimensions (600x400x12), RECT shape
+- [x] Implement part actions:
+    - `addPart(furnitureId: string)` - generate UUID, default dimensions (600x400x18), RECT shape
     - `updatePart(id: string, patch: Partial<Part>)`
     - `removePart(id: string)`
     - `selectPart(id: string | null)`
-- [ ] Ensure immutable updates (spread operators)
-- [ ] Auto-sync `depth` with material `thickness` when material changes
+- [x] Ensure immutable updates (spread operators)
+- [x] Auto-sync `depth` with material `thickness` when material changes
 
 **File:** `src/lib/store.ts`
 
@@ -186,55 +186,55 @@ npx shadcn-ui@latest add button input label card slider switch table dialog sele
 
 ## Phase 2: 3D Fundamentals
 
-### Task 2.1: Create Application Layout
-- [ ] Create main page layout (`app/page.tsx` or `app/editor/page.tsx`)
-- [ ] Set up full-height layout (`min-h-screen`)
-- [ ] Create left panel (75% width) for 3D Canvas (gray background)
-- [ ] Create right sidebar (25% width) (white background)
-- [ ] Add placeholder content
+### Task 2.1: Create Application Layout ✅
+- [x] Create main page layout (`app/[locale]/page.tsx`)
+- [x] Set up full-height layout (`min-h-screen`)
+- [x] Create left panel (75% width) for 3D Canvas
+- [x] Create right sidebar (25% width)
+- [x] Add placeholder content
 
 **Files:**
 - `src/app/page.tsx`
 
 ---
 
-### Task 2.2: Set Up 3D Scene
-- [ ] Create `src/components/canvas/Scene.tsx` with `use client`
-- [ ] Render `<Canvas>` from R3F
-- [ ] Add scene elements:
+### Task 2.2: Set Up 3D Scene ✅
+- [x] Create `src/components/canvas/Scene.tsx` with `use client`
+- [x] Render `<Canvas>` from R3F
+- [x] Add scene elements:
     - `<OrbitControls makeDefault />`
-    - `<gridHelper args={[2000, 20]} />` (grid in mm)
+    - `<Grid>` (infinite grid with 100mm cells)
     - `<ambientLight />`
     - `<directionalLight position={[300, 400, 200]} />`
-- [ ] Configure camera position `[200, 200, 200]` looking at `[0, 0, 0]`
-- [ ] Create ref to OrbitControls for future camera reset
+- [x] Configure camera position `[500, 500, 500]` looking at scene
+- [x] Enable shadows on directionalLight
 
 **File:** `src/components/canvas/Scene.tsx`
 
 ---
 
-### Task 2.3: Create Basic Part3D Component (RECT only)
-- [ ] Create `src/components/canvas/Part3D.tsx`
-- [ ] Accept `part: Part` as props
-- [ ] Handle `RECT` shape type initially
-- [ ] Render `<mesh>` with `<boxGeometry args={[width, height, depth]} />`
-- [ ] Apply position and rotation from part data
-- [ ] Get material from store by `materialId` (reactive - updates when material changes)
-- [ ] Apply material color using `<meshStandardMaterial color={material.color} />`
-- [ ] Fallback to gray (#808080) if material not found
-- [ ] Ensure component re-renders when material color or part dimensions change
+### Task 2.3: Create Basic Part3D Component (RECT only) ✅
+- [x] Create `src/components/canvas/Part3D.tsx`
+- [x] Accept `part: Part` as props
+- [x] Handle `RECT` shape type initially
+- [x] Render `<mesh>` with `<boxGeometry args={[width, depth, height]} />`
+- [x] Apply position and rotation from part data
+- [x] Get material from store by `materialId` (reactive - updates when material changes)
+- [x] Apply material color using `<meshStandardMaterial color={material.color} />`
+- [x] Fallback to gray (#808080) if material not found
+- [x] Ensure component re-renders when material color or part dimensions change
 
 **File:** `src/components/canvas/Part3D.tsx`
 
 ---
 
-### Task 2.4: Render Parts List & Add Button
-- [ ] Connect Scene to Zustand store
-- [ ] Get `parts` and `selectedFurnitureId` from store
-- [ ] Filter and render parts belonging to selected furniture
-- [ ] Create "Add Part" button component
-- [ ] Wire button to call `addPart(selectedFurnitureId)`
-- [ ] Verify new parts appear in 3D scene
+### Task 2.4: Render Parts List & Add Button ✅
+- [x] Connect Scene to Zustand store
+- [x] Get `parts` and `selectedFurnitureId` from store
+- [x] Filter and render parts belonging to selected furniture
+- [x] Create "Add Part" button in Sidebar component
+- [x] Wire button to call `addPart(selectedFurnitureId)`
+- [x] Verify new parts appear in 3D scene
 
 **Files:**
 - `src/components/canvas/Scene.tsx`
@@ -244,37 +244,37 @@ npx shadcn-ui@latest add button input label card slider switch table dialog sele
 
 ## Phase 3: Interaction & Editing
 
-### Task 3.1: Implement Part Selection
-- [ ] Add `onClick` handler to mesh in `Part3D`
-- [ ] Call `selectPart(part.id)` from store
-- [ ] Use `event.stopPropagation()` to prevent click-through
-- [ ] Highlight selected part:
-    - Add `<Edges />` from drei, OR
-    - Change material `emissive` property
-- [ ] Compare part ID with `selectedPartId` from store
+### Task 3.1: Implement Part Selection ✅
+- [x] Add `onClick` handler to mesh in `Part3D`
+- [x] Call `selectPart(part.id)` from store
+- [x] Use `event.stopPropagation()` to prevent click-through
+- [x] Highlight selected part:
+    - Add `<Edges />` from drei
+    - Change material `emissive` property to blue when selected
+- [x] Compare part ID with `selectedPartId` from store
 
 **File:** `src/components/canvas/Part3D.tsx`
 
 ---
 
-### Task 3.2: Add Transform Controls (Translation)
-- [ ] Import `TransformControls` from `@react-three/drei`
-- [ ] Show controls ONLY for selected part
-- [ ] Set mode to `'translate'`
-- [ ] Create mesh ref
-- [ ] Handle `onObjectChange` or `onMouseUp` event:
+### Task 3.2: Add Transform Controls (Translation) ✅
+- [x] Import `TransformControls` from `@react-three/drei`
+- [x] Show controls ONLY for selected part
+- [x] Set mode to `'translate'`
+- [x] Create mesh ref
+- [x] Handle `onMouseUp` event:
     - Get new position from `meshRef.current.position`
     - Call `updatePart(id, { position: [x, y, z] })`
-- [ ] Disable OrbitControls during transformation
-- [ ] Ensure bidirectional sync between store and 3D position
+- [x] Track isTransforming state
+- [x] Ensure bidirectional sync between store and 3D position
 
 **File:** `src/components/canvas/Part3D.tsx`
 
 ---
 
-### Task 3.3: Add Translation Snapping (Optional)
-- [ ] Configure `TransformControls` with `translationSnap={10}`
-- [ ] Test 10mm snap increment for easier positioning
+### Task 3.3: Add Translation Snapping (Optional) ✅
+- [x] Configure `TransformControls` with `translationSnap={10}`
+- [x] Test 10mm snap increment for easier positioning
 
 **File:** `src/components/canvas/Part3D.tsx`
 
@@ -282,16 +282,16 @@ npx shadcn-ui@latest add button input label card slider switch table dialog sele
 
 ## Phase 3.5: Support Multiple Shape Types
 
-### Task 3.5: Extend Part3D for All Shapes
-- [ ] Keep `boxGeometry` for `RECT` shape
-- [ ] For `TRAPEZOID`, `L_SHAPE`, `POLYGON`:
+### Task 3.5: Extend Part3D for All Shapes ✅
+- [x] Keep `boxGeometry` for `RECT` shape
+- [x] For `TRAPEZOID`, `L_SHAPE`, `POLYGON`:
     - Create `THREE.Shape()` in X-Y plane
     - Build 2D outline from `shapeParams`
     - Use `ExtrudeGeometry` with depth as Z-axis extrusion
     - Set `extrudeSettings: { depth, bevelEnabled: false }`
-- [ ] Ensure consistent pivot point (center or corner)
-- [ ] Test shape updates when `shapeParams` changes in store
-- [ ] Handle geometry recreation on shape change
+- [x] Ensure consistent pivot point (center or corner)
+- [x] Test shape updates when `shapeParams` changes in store
+- [x] Handle geometry recreation on shape change
 
 **File:** `src/components/canvas/Part3D.tsx`
 
@@ -299,84 +299,83 @@ npx shadcn-ui@latest add button input label card slider switch table dialog sele
 
 ## Phase 4: User Interface (Sidebar)
 
-### Task 4.1: Create Properties Panel
-- [ ] Create `src/components/ui/PropertiesPanel.tsx`
-- [ ] Connect to Zustand store
-- [ ] Show panel only when `selectedPartId` is not null
-- [ ] Find selected part in `parts` array
-- [ ] Create form inputs:
+### Task 4.1: Create Properties Panel ✅
+- [x] Create `src/components/ui/PropertiesPanel.tsx`
+- [x] Connect to Zustand store
+- [x] Show panel only when `selectedPartId` is not null
+- [x] Find selected part in `parts` array
+- [x] Create form inputs:
     - Name (text input)
-    - Width X (number input, mm)
-    - Height Y (number input, mm)
-    - Depth Z (read-only or tied to material)
+    - Width X (number input, mm) - for RECT shape
+    - Height Y (number input, mm) - for RECT shape
+    - Depth Z (tied to material thickness)
     - Position X, Y, Z (number inputs, mm)
+    - Group (text input)
     - Notes (textarea)
-- [ ] Update store immediately on input change
-- [ ] Validate: prevent negative values (`min={1}`)
-- [ ] Sync with 3D preview
+- [x] Update store immediately on input change
+- [x] Validate: prevent negative values (`min={1}`)
+- [x] Sync with 3D preview
 
 **File:** `src/components/ui/PropertiesPanel.tsx`
 
 ---
 
-### Task 4.2: Add Material Selector
-- [ ] Add `<Select>` component from shadcn/ui
-- [ ] Populate options from `materials` array in store
-- [ ] On material change:
+### Task 4.2: Add Material Selector ✅
+- [x] Add `<Select>` component from shadcn/ui
+- [x] Populate options from `materials` array in store
+- [x] On material change:
     - Update `materialId`
     - Update `depth` to match `material.thickness`
-- [ ] Display material name and thickness in dropdown
+- [x] Display material name and thickness in dropdown
 
 **File:** `src/components/ui/PropertiesPanel.tsx`
 
 ---
 
-### Task 4.3: Add Shape Editor
-- [ ] Add "Shape" section to properties panel
-- [ ] Create `shapeType` selector: RECT / TRAPEZOID / L_SHAPE / POLYGON
-- [ ] Show conditional inputs based on selected shape:
+### Task 4.3: Add Shape Editor ✅
+- [x] Add "Shape" section to properties panel
+- [x] Create `shapeType` selector: RECT / TRAPEZOID / L_SHAPE / POLYGON
+- [x] Show conditional inputs based on selected shape:
     - **RECT:** X (length), Y (width)
     - **TRAPEZOID:** frontX, backX, y, skosSide (select: left/right)
     - **L_SHAPE:** x, y, cutX, cutY
     - **POLYGON:** JSON text input for points array `[[x1,y1], [x2,y2], ...]`
-- [ ] On input change, call `updatePart` with new `shapeParams`
-- [ ] Auto-update `width` and `height` based on shape:
+- [x] On input change, call `updatePart` with new `shapeParams`
+- [x] Auto-update `width` and `height` based on shape (handled in store)
     - RECT: width = x, height = y
     - TRAPEZOID: width = max(frontX, backX), height = y
     - L_SHAPE/POLYGON: width/height = bounding box dimensions
-- [ ] Add validation:
-    - All values > 0
-    - L_SHAPE: cutX < x, cutY < y
-    - POLYGON: minimum 3 points
+- [x] Add validation:
+    - All values > 0 (via min={1} on inputs)
+    - L_SHAPE: cutX < x, cutY < y (handled in store)
+    - POLYGON: minimum 3 points (handled in Part3D)
 
 **File:** `src/components/ui/PropertiesPanel.tsx`
 
 ---
 
-### Task 4.4: Add Edge Banding Editor
-- [ ] Add "Edge Banding" section to properties panel
-- [ ] For `RECT` shape:
-    - Show 4 switches/checkboxes: Top (Y+), Bottom (Y-), Left (X-), Right (X+)
+### Task 4.4: Add Edge Banding Editor ✅
+- [x] Add "Edge Banding" section to properties panel
+- [x] For `RECT` shape:
+    - Show 4 switches: Top (Y+), Bottom (Y-), Left (X-), Right (X+)
     - Map to `edgeBanding.type === 'RECT'` with data: `{ top, bottom, left, right }`
     - Initialize all to `false` if undefined
 - [ ] For other shapes (TRAPEZOID/L_SHAPE/POLYGON):
-    - MVP: show JSON text input for edges array, OR
-    - Show "Coming soon" message
-    - Use `EdgeBandingGeneric` structure
-- [ ] On toggle change, call `updatePart` with new `edgeBanding`
+    - Not implemented in MVP - only RECT shapes have edge banding UI
+- [x] On toggle change, call `updatePart` with new `edgeBanding`
 
 **File:** `src/components/ui/PropertiesPanel.tsx`
 
 ---
 
-### Task 4.5: Add Part Management Actions
-- [ ] Add "Delete" button:
+### Task 4.5: Add Part Management Actions ✅
+- [x] Add "Delete" button:
     - Call `removePart(part.id)`
     - Call `selectPart(null)` to deselect
-- [ ] Add "Duplicate" button:
-    - Call `addPart(furnitureId)` to create new part
-    - Call `updatePart` on new ID with copied properties
+- [x] Add "Duplicate" button:
+    - Call `duplicatePart(part.id)` to create copy with all properties
     - Offset position by +50mm on X-axis
+    - Append " (kopia)" to name
 
 **File:** `src/components/ui/PropertiesPanel.tsx`
 
@@ -384,11 +383,11 @@ npx shadcn-ui@latest add button input label card slider switch table dialog sele
 
 ## Phase 5: Parts List & CSV Export
 
-### Task 5.1: Create Parts Table
-- [ ] Create `src/components/ui/PartsTable.tsx`
-- [ ] Use shadcn/ui `<Table>` component
-- [ ] Display all parts (or filter by selected furniture)
-- [ ] Table columns:
+### Task 5.1: Create Parts Table ✅
+- [x] Create `src/components/ui/PartsTable.tsx`
+- [x] Use shadcn/ui `<Table>` component
+- [x] Display all parts (or filter by selected furniture)
+- [x] Table columns:
     - Furniture name
     - Group
     - Part name
@@ -397,33 +396,34 @@ npx shadcn-ui@latest add button input label card slider switch table dialog sele
     - Thickness (mm)
     - Material
     - Shape type
-    - Edge banding summary (e.g., "L,R,T,B")
-- [ ] Optional: click row to select part in 3D (`selectPart`)
+    - Edge banding summary (e.g., "G,D,L,P")
+- [x] Click row to select part in 3D (`selectPart`)
+- [x] Integrated into Sidebar with tabs (Properties / Lista)
 
 **File:** `src/components/ui/PartsTable.tsx`
 
 ---
 
-### Task 5.2: Implement CSV Generator
-- [ ] Create `src/lib/csv.ts`
-- [ ] Implement `generateCSV(parts, materials, furnitures): string`
-- [ ] Use semicolon (`;`) as separator
-- [ ] CSV header format:
+### Task 5.2: Implement CSV Generator ✅
+- [x] Create `src/lib/csv.ts`
+- [x] Implement `generateCSV(parts, materials, furnitures): string`
+- [x] Use semicolon (`;`) as separator
+- [x] CSV header format:
   ```
   project;furniture;group;part_id;part_name;material;thickness_mm;length_x_mm;width_y_mm;shape;shape_params;edge_top;edge_bottom;edge_left;edge_right;notes
   ```
-- [ ] Map each part to CSV row:
+- [x] Map each part to CSV row:
     - project: constant value or empty
     - furniture: lookup name by furnitureId
     - material: lookup name by materialId
-    - shape_params: JSON string or key=value format
+    - shape_params: JSON string format
     - edge columns: `1` or `0` for RECT type, handle others appropriately
-- [ ] Create "Export CSV" button in app header
-- [ ] On click:
+- [x] Create "Export CSV" button in Sidebar
+- [x] On click:
     - Get data from store
     - Call `generateCSV`
     - Create Blob
-    - Trigger download as `meblarz_export.csv`
+    - Trigger download as `meblarz_export_{date}.csv`
 
 **Files:**
 - `src/lib/csv.ts`
@@ -431,16 +431,16 @@ npx shadcn-ui@latest add button input label card slider switch table dialog sele
 
 ---
 
-### Task 5.3: Add Pre-Export Validation
-- [ ] Create validation function `validateParts(parts, materials): string[]`
-- [ ] Check each part:
+### Task 5.3: Add Pre-Export Validation ✅
+- [x] Create validation function `validateParts(parts, materials): string[]`
+- [x] Check each part:
     - Has valid `materialId`
     - Positive dimensions: width, height, depth > 0
     - `depth === material.thickness`
-- [ ] On validation failure:
+- [x] On validation failure:
     - Prevent CSV generation
     - Show error list in Dialog (shadcn/ui)
-- [ ] Run validation before CSV generation
+- [x] Run validation before CSV generation
 
 **Files:**
 - `src/lib/csv.ts` or `src/lib/validation.ts`
@@ -482,13 +482,13 @@ npx shadcn-ui@latest add button input label card slider switch table dialog sele
 
 ---
 
-### Task 6.1: Add Camera Reset
-- [ ] Add "Reset Camera" button (corner of canvas or toolbar)
-- [ ] Create ref to OrbitControls
-- [ ] On click:
-    - Set camera position to initial `[200, 200, 200]`
-    - Set target to `[0, 0, 0]`
-    - Update controls
+### Task 6.1: Add Camera Reset ✅
+- [x] Add "Reset Camera" button (top-right corner of canvas)
+- [x] Create ref to OrbitControls
+- [x] On click:
+    - Reset OrbitControls to initial state
+    - Camera returns to `[500, 500, 500]`
+    - Semi-transparent background with blur effect
 
 **File:** `src/components/canvas/Scene.tsx`
 
@@ -505,12 +505,12 @@ npx shadcn-ui@latest add button input label card slider switch table dialog sele
 
 ---
 
-### Task 6.3: Fix Camera Movement During Transform
-- [ ] Add `isTransforming` flag (store or local state)
-- [ ] Set flag to `true` when TransformControls is active
-- [ ] Pass to OrbitControls: `enabled={!isTransforming}`
-- [ ] Prevent camera orbit during object dragging
-- [ ] Reset flag when transformation ends
+### Task 6.3: Fix Camera Movement During Transform ✅
+- [x] Add `isTransforming` flag (global state in store)
+- [x] Set flag to `true` when TransformControls is active
+- [x] Pass to OrbitControls: `enabled={!isTransforming}`
+- [x] Prevent camera orbit during object dragging
+- [x] Reset flag when transformation ends
 
 **Files:**
 - `src/components/canvas/Part3D.tsx`
@@ -518,28 +518,57 @@ npx shadcn-ui@latest add button input label card slider switch table dialog sele
 
 ---
 
+---
+
+## Recent Implementation Summary (2025-12-09)
+
+### Completed Features ✅
+1. **3D Scene Performance** - Fixed grid flickering, increased fadeDistance to 100000mm, large grid (20000x20000mm)
+2. **Edge Banding Editor** - Complete UI with 4 toggle switches for RECT shapes (Top, Bottom, Left, Right)
+3. **Parts Table Component** - New component with clickable rows, integrated into Sidebar with tabs
+4. **Complex Shape Geometries** - Full implementation of TRAPEZOID, L_SHAPE, and POLYGON shapes using ExtrudeGeometry
+5. **Shape Editor UI** - Conditional inputs for all shape types with proper validation
+6. **Duplicate Functionality** - Now copies all properties, offsets +50mm, adds "(kopia)" suffix
+7. **Camera Reset Button** - Floating button in top-right corner with semi-transparent background
+8. **Transform Controls UX** - OrbitControls disabled during part transformation for smooth experience
+
+### Files Created
+- `src/components/ui/PartsTable.tsx` - Comprehensive parts list component
+
+### Files Modified
+- `src/components/canvas/Scene.tsx` - Grid optimization + camera reset + isTransforming integration
+- `src/components/canvas/Part3D.tsx` - Complex shape geometries implementation
+- `src/components/ui/PropertiesPanel.tsx` - Edge banding + shape editor UI
+- `src/components/ui/Sidebar.tsx` - Tabs integration (Properties / Lista)
+- `src/lib/store.ts` - duplicatePart + setIsTransforming actions + isTransforming state
+- `src/types/index.ts` - Updated ProjectState interface with new actions
+
+---
+
 ## MVP Completion Checklist
 
 ### Core Functionality
-- [ ] Create multiple furniture items
-- [ ] Add parts with different shapes (RECT, TRAPEZOID, L_SHAPE, POLYGON)
-- [ ] Position and rotate parts in 3D space
-- [ ] Assign materials with thickness and color
-- [ ] Configure edge banding for rectangular parts
-- [ ] Group parts logically
-- [ ] View parts list in table format
-- [ ] Export parts list to CSV with all details
-- [ ] Validate data before export
+- [x] Create multiple furniture items
+- [x] Add parts with different shapes (RECT, TRAPEZOID, L_SHAPE, POLYGON)
+- [x] Position and rotate parts in 3D space (translation with TransformControls)
+- [x] Assign materials with thickness and color
+- [x] Configure edge banding for rectangular parts
+- [x] Group parts logically
+- [x] View parts list in table format
+- [x] Export parts list to CSV with all details
+- [x] Validate data before export
 
 ### Data Persistence
-- [ ] All data saves to localStorage automatically
-- [ ] State persists across browser sessions
+- [x] All data saves to localStorage automatically
+- [x] State persists across browser sessions
 
 ### User Experience
-- [ ] Intuitive 3D manipulation with mouse
-- [ ] Real-time sync between 3D view and properties panel
-- [ ] Visual feedback for selected parts
-- [ ] Clear validation messages
+- [x] Intuitive 3D manipulation with mouse
+- [x] Real-time sync between 3D view and properties panel
+- [x] Visual feedback for selected parts
+- [x] Clear validation messages
+- [x] Camera reset functionality
+- [x] OrbitControls disabled during transformation
 
 ---
 

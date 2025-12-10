@@ -1,57 +1,52 @@
 import type { Metadata } from "next";
-import { GoogleAnalytics } from '@next/third-parties/google';
-import { Source_Sans_3, Manrope } from "next/font/google";
+import { cookies } from "next/headers";
+import { Manrope, Source_Sans_3 } from "next/font/google";
 
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
-import { siteDetails } from '@/data/siteDetails';
+import { APP_NAME } from "@meble/constants";
+import { Locale, defaultLocale, locales } from "@meble/i18n";
+
+import { ThemeProvider } from "@/components/ThemeProvider";
+import { THEME_STORAGE_KEY } from "@/lib/constants";
 
 import "./globals.css";
 
-const manrope = Manrope({ subsets: ['latin'] });
-const sourceSans = Source_Sans_3({ subsets: ['latin'] });
+const manrope = Manrope({ subsets: ["latin"] });
+const sourceSans = Source_Sans_3({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: siteDetails.metadata.title,
-  description: siteDetails.metadata.description,
-  openGraph: {
-    title: siteDetails.metadata.title,
-    description: siteDetails.metadata.description,
-    url: siteDetails.siteUrl,
-    type: 'website',
-    images: [
-      {
-        url: '/images/og-image.jpg',
-        width: 1200,
-        height: 675,
-        alt: siteDetails.siteName,
-      },
-    ],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: siteDetails.metadata.title,
-    description: siteDetails.metadata.description,
-    images: ['/images/twitter-image.jpg'],
-  },
+  title: APP_NAME,
+  description: "Modeluj meble na wymiar w przeglądarce i eksportuj CSV gotowe do produkcji.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const localeCookie = cookieStore.get("NEXT_LOCALE")?.value as Locale | undefined;
+  const locale: Locale = localeCookie && locales.includes(localeCookie) ? localeCookie : defaultLocale;
+
+  const themeScript = `
+    (function() {
+      try {
+        var storageKey = ${JSON.stringify(THEME_STORAGE_KEY)};
+        var stored = localStorage.getItem(storageKey);
+        var system = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        var theme = (stored === 'light' || stored === 'dark') ? stored : system;
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.style.colorScheme = theme;
+      } catch (e) {}
+    })();
+  `;
+
   return (
-    <html lang="en">
-      <body
-        className={`${manrope.className} ${sourceSans.className} antialiased`}
-      >
-        {siteDetails.googleAnalyticsId && <GoogleAnalytics gaId={siteDetails.googleAnalyticsId} />}
-        <Header />
-        <main>
+    <html lang={locale} suppressHydrationWarning>
+      <body className={`${manrope.className} ${sourceSans.className} antialiased`}>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <ThemeProvider>
           {children}
-        </main>
-        <Footer />
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -3,14 +3,33 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-  --primary: #FED835;
-  --secondary: #304fff;
+  --background: #f8fafc;
+  --foreground: #0b1221;
+  --primary: #fed835;
+  --secondary: #3b5bff;
 
-  --primary-accent: #e5c230;
-  --foreground-accent: #454545;
-  --hero-background: #F3F3F5;
+  --primary-accent: #f1c425;
+  --foreground-accent: #475569;
+  --hero-background: #eef1f6;
+  --card: #ffffff;
+  --muted: #e8edf5;
+  --muted-foreground: #6b7280;
+  --border: #e4e6ed;
+}
+
+[data-theme='dark'] {
+  --background: #0b0f17;
+  --foreground: #e7ecf5;
+  --primary: #f4c430;
+  --secondary: #88b1ff;
+
+  --primary-accent: #d2a700;
+  --foreground-accent: #aeb7c9;
+  --hero-background: #0f1624;
+  --card: #111827;
+  --muted: #151d2b;
+  --muted-foreground: #9ca3af;
+  --border: #1f2a3d;
 }
 
 html {
@@ -47,6 +66,11 @@ h1, h2, h3, h4, h5, h6 {
 
 #logos svg {
   @apply w-fit h-10 sm:h-12;
+  color: inherit;
+}
+
+#logos svg path {
+  fill: currentColor;
 }
 
 .benefit-section:last-of-type > div {

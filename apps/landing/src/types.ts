@@ -3,6 +3,26 @@ export interface IMenuItem {
     url: string;
 }
 
+export interface HeroDetails {
+    heading: string;
+    subheading: string;
+    centerImageSrc: string;
+    imageAlt: string;
+}
+
+export interface CTAButton {
+    href: string;
+    topLabel: string;
+    bottomLabel: string;
+}
+
+export interface CTADetails {
+    heading: string;
+    subheading: string;
+    primaryButton: CTAButton;
+    secondaryButton: CTAButton;
+}
+
 export interface IBenefit {
     title: string;
     description: string;
@@ -50,4 +70,46 @@ export interface ISocials {
     youtube?: string;
     x?: string;
     [key: string]: string | undefined;
+}
+
+export interface SiteMetadata {
+    title: string;
+    description: string;
+}
+
+export interface SiteDetails {
+    siteName: string;
+    siteUrl: string;
+    metadata: SiteMetadata;
+    language: string;
+    locale: string;
+    siteLogo: string;
+    googleAnalyticsId: string;
+}
+
+export interface HeaderContent {
+    menuItems: IMenuItem[];
+    primaryCtaLabel: string;
+}
+
+export interface FooterDetails {
+    subheading: string;
+    quickLinks: IMenuItem[];
+    email: string;
+    telephone: string;
+    socials: ISocials;
+}
+
+export interface LandingContent {
+    siteDetails: SiteDetails;
+    header: HeaderContent;
+    hero: HeroDetails;
+    benefits: IBenefit[];
+    pricing: IPricing[];
+    testimonials: ITestimonial[];
+    faqs: IFAQ[];
+    stats: IStats[];
+    cta: CTADetails;
+    footer: FooterDetails;
+    logosNote?: string;
 }

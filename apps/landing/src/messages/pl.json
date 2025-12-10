@@ -1,7 +1,234 @@
 {
   "landing": {
-    "siteName": "{appName}",
-    "title": "{appName} - Strona Główna",
-    "description": "Projektuj meble na wymiar z łatwością"
+    "content": {
+      "siteDetails": {
+        "siteName": "{appName}",
+        "siteUrl": "https://meblarz3d.pl",
+        "metadata": {
+          "title": "{appName} — webowy edytor mebli na wymiar",
+          "description": "Modeluj płyty w 3D, kontroluj obrzeża i eksportuj listy cięć do CSV w kilka minut."
+        },
+        "language": "pl-PL",
+        "locale": "pl-PL",
+        "siteLogo": "/images/logo.png",
+        "googleAnalyticsId": ""
+      },
+      "header": {
+        "menuItems": [
+          { "text": "Funkcje", "url": "#features" },
+          { "text": "Cennik", "url": "#pricing" },
+          { "text": "Historie użytkowników", "url": "#testimonials" },
+          { "text": "FAQ", "url": "#faq" }
+        ],
+        "primaryCtaLabel": "Otwórz edytor"
+      },
+      "hero": {
+        "heading": "{appName} — webowy edytor mebli na wymiar",
+        "subheading": "Modeluj formatki, obrzeża i materiały w przeglądarce. Eksportuj listy cięć do CSV w minutę, bez instalowania czegokolwiek.",
+        "centerImageSrc": "/images/hero-mockup.webp",
+        "imageAlt": "Podgląd edytora {appName} z widokiem 3D i panelem właściwości"
+      },
+      "benefits": [
+        {
+          "title": "Model 3D gotowy do produkcji",
+          "description": "Twórz formatki prostokątne, trapezowe, w kształcie litery L i nieregularne poligony. Wszystko w milimetrach i z natychmiastowym podglądem.",
+          "bullets": [
+            {
+              "title": "Gotowe kształty płyt",
+              "description": "RECT, TRAPEZOID, L_SHAPE i POLYGON z kontrolą parametrów i obliczaniem gabarytów.",
+              "icon": "grid"
+            },
+            {
+              "title": "Transformacje w 3D",
+              "description": "Przesuwaj elementy w scenie i wracaj do bazowej pozycji jednym kliknięciem.",
+              "icon": "rotate"
+            },
+            {
+              "title": "Podgląd materiału",
+              "description": "Kolor i grubość materiału są widoczne w scenie od razu po zmianie.",
+              "icon": "box"
+            }
+          ],
+          "imageSrc": "/images/mockup-1.webp"
+        },
+        {
+          "title": "Magazyn materiałów i obrzeży",
+          "description": "Zarządzaj biblioteką płyt, ich grubością i konfiguracją obrzeży dla każdej krawędzi.",
+          "bullets": [
+            {
+              "title": "Biblioteka materiałów",
+              "description": "Startowe zestawy płyt (Biały, Dąb, Antracyt) z możliwością rozbudowy.",
+              "icon": "layers"
+            },
+            {
+              "title": "Synchronizacja grubości",
+              "description": "Po zmianie materiału automatycznie aktualizuje się głębokość formatki.",
+              "icon": "cpu"
+            },
+            {
+              "title": "Obrzeża per krawędź",
+              "description": "Włącz/wyłącz obrzeże dla każdej krawędzi RECT i zapisz konfigurację.",
+              "icon": "clipboard"
+            }
+          ],
+          "imageSrc": "/images/mockup-2.webp"
+        },
+        {
+          "title": "Eksport i kontrola jakości",
+          "description": "Waliduj projekt przed eksportem, pilnuj zgodności grubości z materiałem i pobieraj CSV gotowe pod produkcję.",
+          "bullets": [
+            {
+              "title": "Eksport CSV",
+              "description": "Projekt, mebel, formatka, materiał, krawędzie — wszystko w jednym pliku.",
+              "icon": "upload"
+            },
+            {
+              "title": "Walidacja przed wysyłką",
+              "description": "Blokada eksportu, jeśli brakuje materiału lub wymiary są niepoprawne.",
+              "icon": "lock"
+            },
+            {
+              "title": "Zapis w przeglądarce",
+              "description": "Stan projektu utrzymywany w localStorage — wracaj do pracy bez serwera.",
+              "icon": "layers"
+            }
+          ],
+          "imageSrc": "/images/mockup-1.webp"
+        }
+      ],
+      "pricing": [
+        {
+          "name": "Starter",
+          "price": 0,
+          "features": [
+            "1 projekt zapisany lokalnie",
+            "Podstawowe materiały z grubością 12 mm",
+            "Obsługa kształtów RECT i TRAPEZOID",
+            "Eksport CSV z głównymi danymi",
+            "Tryb jasny/ciemny"
+          ]
+        },
+        {
+          "name": "Warsztat",
+          "price": 39,
+          "features": [
+            "Nielimitowane projekty w przeglądarce",
+            "Kształty RECT, TRAPEZOID, L_SHAPE, POLYGON",
+            "Edytor obrzeży dla płyty prostokątnej",
+            "Walidacja przed eksportem + alerty",
+            "Przycisk resetu kamery w scenie"
+          ]
+        },
+        {
+          "name": "Produkcja",
+          "price": "Na zamówienie",
+          "features": [
+            "Konfiguracja eksportu CSV pod Twój zakład",
+            "Wsparcie w doborze materiałów i obrzeży",
+            "Szablony projektów mebli skrzyniowych",
+            "Konsultacje wdrożeniowe 1:1"
+          ]
+        }
+      ],
+      "testimonials": [
+        {
+          "name": "Andrzej Kwiatkowski",
+          "role": "Technolog meblowy",
+          "message": "W {appName} w końcu pilnujemy grubości płyty i obrzeży w jednym miejscu. Eksport CSV pasuje do naszego szablonu produkcyjnego.",
+          "avatar": "/images/testimonial-1.webp"
+        },
+        {
+          "name": "Ewa Mazur",
+          "role": "Właścicielka studia na wymiar",
+          "message": "Widzę wszystkie formatki mebla i ich ustawienie w przestrzeni. Klienci rozumieją projekt szybciej, a ja mam gotową listę cięć.",
+          "avatar": "/images/testimonial-2.webp"
+        },
+        {
+          "name": "Marek Lis",
+          "role": "Lider zespołu produkcyjnego",
+          "message": "Najbardziej cenię walidację przed eksportem i to, że stan zostaje w przeglądarce. Mogę wrócić do projektu bez serwera czy logowania.",
+          "avatar": "/images/testimonial-3.webp"
+        }
+      ],
+      "faqs": [
+        {
+          "question": "Czy mogę modelować różne kształty płyt?",
+          "answer": "Tak. W wersji MVP dostępne są RECT, TRAPEZOID, L_SHAPE i POLYGON. Każdy kształt ma własne parametry i przelicza gabaryty automatycznie."
+        },
+        {
+          "question": "Jak działa eksport CSV?",
+          "answer": "Przed eksportem uruchamiana jest walidacja materiałów i wymiarów. Plik zawiera mebel, grupę, wymiary w mm, grubość z materiału oraz obrzeża dla płyty prostokątnej."
+        },
+        {
+          "question": "Czy dane są bezpieczne?",
+          "answer": "Stan przechowujemy lokalnie w przeglądarce (localStorage). Nie wysyłamy projektów na serwer, więc pracujesz offline bez utraty danych."
+        },
+        {
+          "question": "Czy mogę sterować kamerą w scenie?",
+          "answer": "Tak. Korzystamy z OrbitControls oraz TransformControls. Możesz dodać części, przesuwać je i resetować kamerę do widoku startowego."
+        },
+        {
+          "question": "Czy planujecie kolejne funkcje?",
+          "answer": "Tak. W roadmapie mamy eksport do kolejnych formatów, edytor obrzeży dla skomplikowanych kształtów i szablony projektów mebli."
+        }
+      ],
+      "stats": [
+        {
+          "title": "4 kształty",
+          "icon": "grid",
+          "description": "RECT, TRAPEZOID, L_SHAPE i POLYGON gotowe do użycia w MVP."
+        },
+        {
+          "title": "3 materiały startowe",
+          "icon": "layers",
+          "description": "Biały, Dąb i Antracyt z grubością 12 mm i kolorem w scenie."
+        },
+        {
+          "title": "1 klik = CSV",
+          "icon": "upload",
+          "description": "Walidacja projektu i eksport listy cięć do pliku produkcyjnego."
+        }
+      ],
+      "cta": {
+        "heading": "Uruchom pierwszy projekt w {appName}",
+        "subheading": "Modeluj w przeglądarce, eksportuj do CSV i wracaj do zapisanych formatów, kiedy tylko potrzebujesz.",
+        "primaryButton": {
+          "href": "/app",
+          "topLabel": "Rozpocznij pracę",
+          "bottomLabel": "Otwórz edytor 3D"
+        },
+        "secondaryButton": {
+          "href": "#pricing",
+          "topLabel": "Sprawdź pakiety",
+          "bottomLabel": "Cennik i roadmapa"
+        }
+      },
+      "footer": {
+        "subheading": "{appName} przyspiesza projektowanie formatki, obrzeża i eksport produkcyjny w jednym narzędziu.",
+        "quickLinks": [
+          { "text": "Funkcje", "url": "#features" },
+          { "text": "Cennik", "url": "#pricing" },
+          { "text": "Historie użytkowników", "url": "#testimonials" },
+          { "text": "FAQ", "url": "#faq" }
+        ],
+        "email": "hello@meblarz3d.pl",
+        "telephone": "+48 123 456 789",
+        "socials": {
+          "linkedin": "https://www.linkedin.com",
+          "facebook": "https://facebook.com",
+          "instagram": "https://www.instagram.com"
+        }
+      }
+    },
+    "sections": {
+      "pricing": {
+        "title": "Cennik",
+        "description": "Wybierz zestaw funkcji, który najlepiej pasuje do Twojego procesu."
+      },
+      "testimonials": {
+        "title": "Historie użytkowników",
+        "description": "Zespoły technologów i stolarzy testują aplikację w swoich projektach."
+      }
+    }
   }
 }

@@ -1,7 +1,234 @@
 {
   "landing": {
-    "siteName": "{appName}",
-    "title": "{appName} - Home",
-    "description": "Design custom furniture with ease"
+    "content": {
+      "siteDetails": {
+        "siteName": "{appName}",
+        "siteUrl": "https://meblarz3d.com",
+        "metadata": {
+          "title": "{appName} — browser-based custom furniture editor",
+          "description": "Model panels in 3D, control edge banding, and export CSV cutting lists in minutes."
+        },
+        "language": "en-US",
+        "locale": "en-US",
+        "siteLogo": "/images/logo.png",
+        "googleAnalyticsId": ""
+      },
+      "header": {
+        "menuItems": [
+          { "text": "Features", "url": "#features" },
+          { "text": "Pricing", "url": "#pricing" },
+          { "text": "Customer stories", "url": "#testimonials" },
+          { "text": "FAQ", "url": "#faq" }
+        ],
+        "primaryCtaLabel": "Open the editor"
+      },
+      "hero": {
+        "heading": "{appName} — browser editor for made-to-measure furniture",
+        "subheading": "Model panels, edge banding, and materials without leaving your browser. Export production-ready CSV cutting lists in minutes.",
+        "centerImageSrc": "/images/hero-mockup.webp",
+        "imageAlt": "{appName} editor preview with 3D scene and properties panel"
+      },
+      "benefits": [
+        {
+          "title": "Production-ready 3D model",
+          "description": "Create rectangular, trapezoid, L-shape, and polygon panels with millimeter precision and instant 3D preview.",
+          "bullets": [
+            {
+              "title": "Ready-made panel shapes",
+              "description": "RECT, TRAPEZOID, L_SHAPE, and POLYGON with parameter control and automatic bounding boxes.",
+              "icon": "grid"
+            },
+            {
+              "title": "3D transforms",
+              "description": "Move parts in the scene and reset the camera to the default view with one click.",
+              "icon": "rotate"
+            },
+            {
+              "title": "Material preview",
+              "description": "Material color and thickness instantly appear in the scene after every change.",
+              "icon": "box"
+            }
+          ],
+          "imageSrc": "/images/mockup-1.webp"
+        },
+        {
+          "title": "Materials and edge banding library",
+          "description": "Manage board libraries, thickness, and edge banding configuration per edge for each part.",
+          "bullets": [
+            {
+              "title": "Material library",
+              "description": "Starter set of boards (White, Oak, Anthracite) with ready thickness values.",
+              "icon": "layers"
+            },
+            {
+              "title": "Thickness sync",
+              "description": "When you change the material, the panel depth updates automatically.",
+              "icon": "cpu"
+            },
+            {
+              "title": "Edge banding per edge",
+              "description": "Toggle banding per edge for RECT panels and keep the configuration saved.",
+              "icon": "clipboard"
+            }
+          ],
+          "imageSrc": "/images/mockup-2.webp"
+        },
+        {
+          "title": "Export and quality control",
+          "description": "Validate projects before export, enforce material thickness, and download CSV ready for the shop floor.",
+          "bullets": [
+            {
+              "title": "CSV export",
+              "description": "Project, furniture, group, dimensions, material, and edge data in one file.",
+              "icon": "upload"
+            },
+            {
+              "title": "Pre-export validation",
+              "description": "Block export when material is missing or dimensions are invalid so mistakes never leave the editor.",
+              "icon": "lock"
+            },
+            {
+              "title": "Local persistence",
+              "description": "State stored in the browser (localStorage) — continue without logging into a server.",
+              "icon": "layers"
+            }
+          ],
+          "imageSrc": "/images/mockup-1.webp"
+        }
+      ],
+      "pricing": [
+        {
+          "name": "Starter",
+          "price": 0,
+          "features": [
+            "1 locally saved project",
+            "Starter materials with 12 mm thickness",
+            "RECT and TRAPEZOID shapes",
+            "CSV export with core fields",
+            "Light/Dark mode"
+          ]
+        },
+        {
+          "name": "Workshop",
+          "price": 39,
+          "features": [
+            "Unlimited local projects",
+            "RECT, TRAPEZOID, L_SHAPE, POLYGON shapes",
+            "Edge banding editor for rectangular panels",
+            "Pre-export validation and alerts",
+            "Camera reset button in the scene"
+          ]
+        },
+        {
+          "name": "Production",
+          "price": "Custom",
+          "features": [
+            "CSV export tailored to your factory format",
+            "Material and edge presets for your team",
+            "Cabinet project templates",
+            "1:1 onboarding support"
+          ]
+        }
+      ],
+      "testimonials": [
+        {
+          "name": "Andrew Quinn",
+          "role": "Furniture technologist",
+          "message": "{appName} keeps board thickness and edge banding together. The CSV layout matches what our production team expects.",
+          "avatar": "/images/testimonial-1.webp"
+        },
+        {
+          "name": "Eva Martin",
+          "role": "Custom studio owner",
+          "message": "I see every panel in 3D with its material and position. Clients understand the design faster and I instantly get a cutting list.",
+          "avatar": "/images/testimonial-2.webp"
+        },
+        {
+          "name": "Mark Lee",
+          "role": "Production lead",
+          "message": "Validation before export and local storage are huge. I can pause work, come back later, and nothing leaves the browser by accident.",
+          "avatar": "/images/testimonial-3.webp"
+        }
+      ],
+      "faqs": [
+        {
+          "question": "Which panel shapes are supported?",
+          "answer": "In the MVP you can work with RECT, TRAPEZOID, L_SHAPE, and POLYGON. Each shape has dedicated parameters and automatic bounding box calculation."
+        },
+        {
+          "question": "How does CSV export work?",
+          "answer": "We validate dimensions and material assignments before exporting. The CSV includes furniture, group, dimensions in mm, material thickness, and edge data for rectangular panels."
+        },
+        {
+          "question": "Is my data safe?",
+          "answer": "Project state stays in the browser (localStorage). Nothing is uploaded to a server, so you can work offline without losing changes."
+        },
+        {
+          "question": "Can I control the 3D camera?",
+          "answer": "Yes. OrbitControls and TransformControls let you add and move parts, and a reset button returns the camera to the default view."
+        },
+        {
+          "question": "What comes next?",
+          "answer": "Upcoming features include more export formats, advanced edge banding for complex shapes, and ready-made cabinet templates."
+        }
+      ],
+      "stats": [
+        {
+          "title": "4 shapes",
+          "icon": "grid",
+          "description": "RECT, TRAPEZOID, L_SHAPE, and POLYGON available in the MVP."
+        },
+        {
+          "title": "3 starter materials",
+          "icon": "layers",
+          "description": "White, Oak, and Anthracite at 12 mm with live color preview."
+        },
+        {
+          "title": "1-click CSV",
+          "icon": "upload",
+          "description": "Validation plus export so the cutting list reaches production cleanly."
+        }
+      ],
+      "cta": {
+        "heading": "Launch your first project in {appName}",
+        "subheading": "Model in the browser, export CSV, and return to saved panels anytime without losing data.",
+        "primaryButton": {
+          "href": "/app",
+          "topLabel": "Start building",
+          "bottomLabel": "Open the 3D editor"
+        },
+        "secondaryButton": {
+          "href": "#pricing",
+          "topLabel": "Review plans",
+          "bottomLabel": "Pricing & roadmap"
+        }
+      },
+      "footer": {
+        "subheading": "{appName} speeds up panel design, edge banding, and production-ready exports in one place.",
+        "quickLinks": [
+          { "text": "Features", "url": "#features" },
+          { "text": "Pricing", "url": "#pricing" },
+          { "text": "Customer stories", "url": "#testimonials" },
+          { "text": "FAQ", "url": "#faq" }
+        ],
+        "email": "hello@meblarz3d.com",
+        "telephone": "+48 123 456 789",
+        "socials": {
+          "linkedin": "https://www.linkedin.com",
+          "facebook": "https://facebook.com",
+          "instagram": "https://www.instagram.com"
+        }
+      }
+    },
+    "sections": {
+      "pricing": {
+        "title": "Pricing",
+        "description": "Pick the set of features that fits your workflow."
+      },
+      "testimonials": {
+        "title": "Customer stories",
+        "description": "Teams of technologists and makers are testing the app on live projects."
+      }
+    }
   }
 }

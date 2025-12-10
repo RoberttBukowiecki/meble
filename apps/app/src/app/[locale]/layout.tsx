@@ -1,34 +1,27 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import { NextIntlClientProvider } from "next-intl";
-import { getMessages } from "next-intl/server";
-import { locales } from "@meble/i18n";
-import { APP_NAME } from "@meble/constants";
-import "./globals.css";
-
-const inter = Inter({ subsets: ["latin"] });
+import type { Metadata } from 'next';
+import { NextIntlClientProvider } from 'next-intl';
+import { getMessages } from 'next-intl/server';
+import { APP_NAME } from '@meble/constants';
+import "../../styles/globals.css";
 
 export const metadata: Metadata = {
-  title: `${APP_NAME} - Aplikacja do projektowania mebli`,
-  description: "Projektuj meble na wymiar z łatwością",
+  title: APP_NAME,
+  description: 'Browser-based 3D furniture design tool',
 };
 
-export function generateStaticParams() {
-  return locales.map((locale) => ({ locale }));
-}
-
-export default async function RootLayout({
+export default async function LocaleLayout({
   children,
-  params: { locale },
+  params,
 }: {
   children: React.ReactNode;
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 }) {
+  const { locale } = await params;
   const messages = await getMessages();
 
   return (
     <html lang={locale}>
-      <body className={inter.className}>
+      <body>
         <NextIntlClientProvider messages={messages}>
           {children}
         </NextIntlClientProvider>

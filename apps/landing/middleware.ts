@@ -4,9 +4,9 @@ import { locales, defaultLocale } from '@meble/i18n';
 export default createMiddleware({
   locales,
   defaultLocale,
-  localePrefix: 'as-needed',
+  localePrefix: 'always',
 });
 
 export const config = {
-  matcher: ['/', '/(pl|en)/:path*'],
+  matcher: ['/:path*'],
 };

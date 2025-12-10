@@ -1,24 +1,20 @@
-import { useTranslations } from "next-intl";
-import { Button } from "@meble/ui";
-import { APP_NAME } from "@meble/constants";
+'use client';
+
+import { Scene } from '@/components/canvas/Scene';
+import { Sidebar } from '@/components/ui/Sidebar';
 
 export default function Home() {
-  const t = useTranslations("home");
-
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-24">
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm">
-        <h1 className="text-4xl font-bold mb-8 text-center text-foreground">
-          {t("title", { appName: APP_NAME })}
-        </h1>
-        <p className="text-center text-muted-foreground mb-8">
-          {t("description")}
-        </p>
-        <div className="flex gap-4 justify-center">
-          <Button>{t("getStarted")}</Button>
-          <Button variant="outline">{t("learnMore")}</Button>
-        </div>
+    <div className="flex h-screen w-full overflow-hidden">
+      {/* 3D Canvas - 75% width */}
+      <div className="w-3/4 bg-muted">
+        <Scene />
       </div>
-    </main>
+
+      {/* Sidebar - 25% width */}
+      <div className="w-1/4 border-l border-border bg-background">
+        <Sidebar />
+      </div>
+    </div>
   );
 }
