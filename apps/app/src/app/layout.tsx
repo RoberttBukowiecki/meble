@@ -3,6 +3,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
 import { APP_NAME } from '@meble/constants';
 import { TooltipProvider } from '@meble/ui';
+import { GlobalKeyboardListener } from '@/components/GlobalKeyboardListener';
 import "../styles/globals.css";
 
 export const metadata: Metadata = {
@@ -23,6 +24,7 @@ export default async function RootLayout({
       <body>
         <NextIntlClientProvider messages={messages}>
           <TooltipProvider>
+            <GlobalKeyboardListener />
             {children}
           </TooltipProvider>
         </NextIntlClientProvider>

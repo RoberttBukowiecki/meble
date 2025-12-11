@@ -161,3 +161,4 @@ apps/app/src/
 - [ ] Wszystkie tłumaczenia są zaktualizowane i kompletne
 - [ ] Komunikaty błędów są user-friendly i przetłumaczone
 - [ ] Dokumentacja jest aktualna
+- Nie uzuwa sie czegos takiego jak useStore(useCallback!) NIGDY! Uzywaj useStore(useShallow)!

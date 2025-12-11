@@ -3,13 +3,11 @@
 import { useState } from 'react';
 import { Scene } from '@/components/canvas/Scene';
 import { Sidebar } from '@/components/ui/Sidebar';
-import { useHistoryKeyboard } from '@/hooks/useHistoryKeyboard';
 import { HistoryDrawer } from '@/components/layout/HistoryDrawer';
 import { HistoryPanel } from '@/components/layout/HistoryPanel';
 
 export default function Home() {
-  // Enable keyboard shortcuts for undo/redo
-  useHistoryKeyboard();
+  // Keyboard shortcuts are now handled by GlobalKeyboardListener in layout.tsx
 
   const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false);
 

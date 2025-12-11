@@ -10,7 +10,10 @@ export const createCollisionSlice: StoreSlice<CollisionSlice> = (set, get) => ({
       (p) => p.furnitureId === state.selectedFurnitureId
     );
 
-    const collisions = detectCollisionsFn(selectedFurnitureParts);
+    const collisions = detectCollisionsFn(
+      selectedFurnitureParts,
+      state.selectedCabinetId || undefined
+    );
 
     set({ collisions });
   },

@@ -6,6 +6,7 @@ import { useStore } from '@/lib/store';
 import * as THREE from 'three';
 import type { Part } from '@/types';
 import { pickTransform } from '@/lib/store/history/utils';
+import { SCENE_CONFIG } from '@/lib/config';
 
 interface PartTransformControlsProps {
   part: Part;
@@ -24,7 +25,13 @@ export function PartTransformControls({
   const updatePart = useStore((state) => state.updatePart);
   const beginBatch = useStore((state) => state.beginBatch);
   const commitBatch = useStore((state) => state.commitBatch);
+  const isShiftPressed = useStore((state) => state.isShiftPressed);
+  const detectCollisions = useStore((state) => state.detectCollisions);
   const initialTransformRef = useRef<{ position: [number, number, number]; rotation: [number, number, number] } | null>(null);
+
+  const rotationSnap = mode === 'rotate' && isShiftPressed
+    ? THREE.MathUtils.degToRad(SCENE_CONFIG.ROTATION_SNAP_DEGREES)
+    : undefined;
 
   // The `useState` with ref callback pattern is correct for avoiding the race condition.
   // We conditionally render the TransformControls only when the target object is mounted.
@@ -88,7 +95,10 @@ export function PartTransformControls({
 
     // Call the parent callback
     onTransformEnd();
-  }, [part.id, updatePart, commitBatch, onTransformEnd, target]);
+
+    // Recompute collisions once after the transform
+    detectCollisions();
+  }, [part.id, updatePart, commitBatch, onTransformEnd, target, detectCollisions]);
 
   return (
     <>
@@ -104,9 +114,9 @@ export function PartTransformControls({
           onMouseDown={handleTransformStart}
           onChange={handleTransformChange}
           onMouseUp={handleTransformEnd}
+          rotationSnap={rotationSnap}
         />
       )}
     </>
   );
 }
-

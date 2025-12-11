@@ -5,7 +5,7 @@
  * Renders the furniture parts in 3D space with controls and lighting
  */
 
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Grid } from '@react-three/drei';
 import { useSelectedFurnitureParts, useStore, useSelectedPart } from '@/lib/store';
@@ -15,7 +15,6 @@ import { Camera, Move, RotateCw } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { KeyboardShortcutsHelp } from '@/components/ui/KeyboardShortcutsHelp';
 import { CollisionWarning } from '@/components/ui/CollisionWarning';
-import { useKeyboardShortcuts } from '@/lib/useKeyboardShortcuts';
 import { SCENE_CONFIG, KEYBOARD_SHORTCUTS, formatShortcutLabel } from '@/lib/config';
 import type { OrbitControls as OrbitControlsType } from 'three-stdlib';
 import { CabinetGroupTransform } from './CabinetGroupTransform';
@@ -100,14 +99,17 @@ export function Scene() {
     }
   }, [selectedPartId, selectedCabinetId, selectPart, selectCabinet]);
 
-  // Keyboard shortcuts
-  useKeyboardShortcuts({
-    onTranslateMode: () => setTransformMode('translate'),
-    onRotateMode: () => setTransformMode('rotate'),
-    onResetCamera: handleResetCamera,
-    onDeletePart: handleDelete,
-    onDuplicatePart: handleDuplicate,
-  });
+  // Listen for camera reset custom event from GlobalKeyboardListener
+  useEffect(() => {
+    const handleCameraReset = () => {
+      if (controlsRef.current) {
+        controlsRef.current.reset();
+      }
+    };
+
+    window.addEventListener('keyboard:resetCamera', handleCameraReset);
+    return () => window.removeEventListener('keyboard:resetCamera', handleCameraReset);
+  }, []);
 
   return (
     <div className="relative h-full w-full">

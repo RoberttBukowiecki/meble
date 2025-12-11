@@ -1,7 +1,8 @@
 import type { StateCreator } from 'zustand';
 import type { ProjectState, HistoryEntry, HistoryEntryType } from '@/types';
+import type { UISlice } from './slices/uiSlice';
 
-export type StoreState = ProjectState & HistorySlice;
+export type StoreState = ProjectState & HistorySlice & UISlice;
 export type StoreMutators = [['zustand/persist', unknown]];
 export type StoreSlice<T> = StateCreator<StoreState, StoreMutators, [], T>;
 
@@ -34,6 +35,7 @@ export type PartsSlice = Pick<
   | 'parts'
   | 'addPart'
   | 'updatePart'
+  | 'updatePartsBatch'
   | 'renamePart'
   | 'renameManualGroup'
   | 'removePart'

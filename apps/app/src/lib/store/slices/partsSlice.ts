@@ -79,7 +79,11 @@ export const createPartsSlice: StoreSlice<PartsSlice> = (set, get) => ({
       });
     }
 
-    triggerDebouncedCollisionDetection(get);
+    // Avoid collision spam during live transforms; they will be recalculated after the transform ends.
+    const isTransforming = get().isTransforming;
+    if (!isTransforming || !skipHistory) {
+      triggerDebouncedCollisionDetection(get);
+    }
   },
 
   updatePart: (id: string, patch: Partial<Part>, skipHistory = false) => {
@@ -168,6 +172,74 @@ export const createPartsSlice: StoreSlice<PartsSlice> = (set, get) => ({
     }
 
     triggerDebouncedCollisionDetection(get);
+  },
+
+  /**
+   * Batch update multiple parts in a single store update for better performance
+   * This prevents multiple re-renders when updating many parts at once
+   */
+  updatePartsBatch: (updates: Array<{ id: string; patch: Partial<Part> }>) => {
+    if (updates.length === 0) return;
+
+    const now = new Date();
+
+    set((state) => {
+      const updateMap = new Map(updates.map(u => [u.id, u.patch]));
+
+      const newParts = state.parts.map((part) => {
+        const patch = updateMap.get(part.id);
+        if (!patch) return part;
+
+        let updatedPatch = { ...patch };
+
+        // Handle material change
+        if (patch.materialId && patch.materialId !== part.materialId) {
+          const newMaterial = state.materials.find((m) => m.id === patch.materialId);
+          if (newMaterial) {
+            updatedPatch.depth = newMaterial.thickness;
+          }
+        }
+
+        // Handle shape params change
+        if (patch.shapeParams) {
+          const params = patch.shapeParams;
+          switch (params.type) {
+            case 'RECT':
+              updatedPatch.width = params.x;
+              updatedPatch.height = params.y;
+              break;
+            case 'TRAPEZOID':
+              updatedPatch.width = Math.max(params.frontX, params.backX);
+              updatedPatch.height = params.y;
+              break;
+            case 'L_SHAPE':
+              updatedPatch.width = params.x;
+              updatedPatch.height = params.y;
+              break;
+            case 'POLYGON': {
+              const xs = params.points.map((p) => p[0]);
+              const ys = params.points.map((p) => p[1]);
+              updatedPatch.width = Math.max(...xs) - Math.min(...xs);
+              updatedPatch.height = Math.max(...ys) - Math.min(...ys);
+              break;
+            }
+          }
+        }
+
+        updatedPatch.updatedAt = now;
+
+        return { ...part, ...updatedPatch };
+      });
+
+      return { parts: newParts };
+    });
+
+    // Skip collision detection during live transforms to avoid flickering
+    // It will be triggered after transform ends in handleTransformEnd
+    const isTransforming = get().isTransforming;
+    if (!isTransforming) {
+      triggerDebouncedCollisionDetection(get);
+    }
   },
 
   renamePart: (id: string, name: string, skipHistory = false) => {

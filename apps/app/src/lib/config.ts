@@ -57,7 +57,7 @@ export const SCENE_CONFIG = {
 
   // Transform controls
   TRANSLATION_SNAP: 10, // mm
-  ROTATION_SNAP: 15, // degrees
+  ROTATION_SNAP_DEGREES: 15, // degrees for Shift-based snapping
 
   // Lighting
   AMBIENT_LIGHT_INTENSITY: 0.5,

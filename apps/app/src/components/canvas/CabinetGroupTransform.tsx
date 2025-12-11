@@ -7,28 +7,36 @@ import { useStore } from '@/lib/store';
 import { useShallow } from 'zustand/react/shallow';
 import * as THREE from 'three';
 import { Part } from '@/types';
+import { SCENE_CONFIG } from '@/lib/config';
 
 type PartTransform = Pick<Part, 'position' | 'rotation'>;
 
 export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
+  // Get cabinet parts using useShallow
   const parts = useStore(
     useShallow((state) =>
       state.parts.filter((p) => p.cabinetMetadata?.cabinetId === cabinetId)
     )
   );
-  const { updatePart, transformMode, setIsTransforming, beginBatch, commitBatch } = useStore(
+
+  const { updatePartsBatch, transformMode, setIsTransforming, beginBatch, commitBatch, isShiftPressed, detectCollisions } = useStore(
     useShallow((state) => ({
-      updatePart: state.updatePart,
+      updatePartsBatch: state.updatePartsBatch,
       transformMode: state.transformMode,
       setIsTransforming: state.setIsTransforming,
       beginBatch: state.beginBatch,
       commitBatch: state.commitBatch,
+      isShiftPressed: state.isShiftPressed,
+      detectCollisions: state.detectCollisions,
     }))
   );
 
   const [target, setTarget] = useState<THREE.Group | null>(null);
   const controlRef = useRef<any>(null);
   const initialPartPositions = useRef<Map<string, THREE.Vector3>>(new Map());
+  const initialPartRotations = useRef<Map<string, THREE.Quaternion>>(new Map());
+  const rafIdRef = useRef<number | null>(null);
+  const initialGroupQuaternion = useRef<THREE.Quaternion>(new THREE.Quaternion());
 
   // Calculate cabinet center
   const cabinetCenter = useMemo(() => {
@@ -41,37 +49,91 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
     return sum;
   }, [parts]);
 
-  useEffect(() => {
-    // Store initial relative positions of parts to the group center
-    initialPartPositions.current.clear();
-    parts.forEach(part => {
-        const initialPosition = new THREE.Vector3().fromArray(part.position);
-        const relativePos = initialPosition.clone().sub(cabinetCenter);
-        initialPartPositions.current.set(part.id, relativePos);
-    });
-  }, [cabinetCenter, parts]);
 
-  // Update parts in real-time during transformation
-  const updatePartsFromGroup = useCallback(() => {
+  const rotationSnap = isShiftPressed
+    ? THREE.MathUtils.degToRad(SCENE_CONFIG.ROTATION_SNAP_DEGREES)
+    : undefined;
+
+  useEffect(() => {
+    return () => {
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+      }
+    };
+  }, []);
+
+  // Update parts in real-time during transformation (throttled to animation frame)
+  const applyGroupTransform = useCallback(() => {
     const group = target;
     if (!group) return;
 
+    const updates: Array<{ id: string; patch: Partial<Part> }> = [];
+
+    // Calculate delta rotation from initial state
+    const deltaQuat = group.quaternion.clone().multiply(initialGroupQuaternion.current.clone().invert());
+
     parts.forEach(part => {
-        const initialRelativePos = initialPartPositions.current.get(part.id);
-        if (initialRelativePos) {
-            const newPos = initialRelativePos.clone().applyQuaternion(group.quaternion).add(group.position);
-            const newRotation = new THREE.Euler().setFromQuaternion(
-                new THREE.Quaternion().setFromEuler(new THREE.Euler().fromArray(part.rotation)).premultiply(group.quaternion)
-            );
-            updatePart(part.id, {
-                position: newPos.toArray() as [number, number, number],
-                rotation: [newRotation.x, newRotation.y, newRotation.z] as [number, number, number],
-            }, true); // skip history for intermediate updates
+        const relativePos = initialPartPositions.current.get(part.id);
+        const originalRot = initialPartRotations.current.get(part.id);
+        if (relativePos && originalRot) {
+            // Apply delta rotation to the relative position, then add group position
+            const newPos = relativePos.clone().applyQuaternion(deltaQuat).add(group.position);
+
+            // Apply delta rotation to the original rotation
+            const newRotQuat = deltaQuat.clone().multiply(originalRot);
+            const newRot = new THREE.Euler().setFromQuaternion(newRotQuat);
+
+            updates.push({
+                id: part.id,
+                patch: {
+                    position: newPos.toArray() as [number, number, number],
+                    rotation: [newRot.x, newRot.y, newRot.z] as [number, number, number],
+                }
+            });
         }
     });
-  }, [parts, updatePart, target]);
+
+    // Batch update all parts in a single store update
+    if (updates.length > 0) {
+        updatePartsBatch(updates);
+    }
+  }, [parts, updatePartsBatch, target]);
+
+  const scheduleGroupTransform = useCallback(() => {
+    if (rafIdRef.current !== null) return;
+    rafIdRef.current = requestAnimationFrame(() => {
+      rafIdRef.current = null;
+      applyGroupTransform();
+    });
+  }, [applyGroupTransform]);
 
   const handleTransformStart = useCallback(() => {
+    if (!target) return;
+
+    // Set gizmo to cabinet center with NO rotation (identity)
+    target.position.copy(cabinetCenter);
+    target.rotation.set(0, 0, 0);
+    target.updateMatrixWorld();
+
+    // Save initial group quaternion (should be identity)
+    initialGroupQuaternion.current.copy(target.quaternion);
+
+    // Capture initial state for each part
+    initialPartPositions.current.clear();
+    initialPartRotations.current.clear();
+
+    parts.forEach(part => {
+      // Store relative position from cabinet center (simple offset in world space)
+      const partPos = new THREE.Vector3().fromArray(part.position);
+      const relativePos = partPos.clone().sub(cabinetCenter);
+      initialPartPositions.current.set(part.id, relativePos);
+
+      // Store original rotation as quaternion (world space, no conversion!)
+      const partRot = new THREE.Euler().fromArray(part.rotation);
+      const partQuat = new THREE.Quaternion().setFromEuler(partRot);
+      initialPartRotations.current.set(part.id, partQuat);
+    });
+
     setIsTransforming(true);
     const beforeState: Record<string, PartTransform> = {};
     parts.forEach(p => {
@@ -81,7 +143,7 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
       targetId: cabinetId,
       before: beforeState,
     });
-  }, [setIsTransforming, parts, beginBatch, cabinetId]);
+  }, [setIsTransforming, parts, beginBatch, cabinetId, cabinetCenter, target]);
 
   const handleTransformEnd = useCallback(() => {
     const group = target;
@@ -89,7 +151,11 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
         setIsTransforming(false);
         return;
     }
-    updatePartsFromGroup();
+    if (rafIdRef.current !== null) {
+      cancelAnimationFrame(rafIdRef.current);
+      rafIdRef.current = null;
+    }
+    applyGroupTransform();
 
     const afterState: Record<string, PartTransform> = {};
     // Need to get the latest part state from the store
@@ -100,11 +166,11 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
 
     commitBatch({ after: afterState });
 
-    group.position.copy(cabinetCenter);
-    group.rotation.set(0, 0, 0);
-    group.quaternion.identity();
     setIsTransforming(false);
-  }, [updatePartsFromGroup, cabinetCenter, setIsTransforming, target, commitBatch, cabinetId]);
+
+    // Recompute collisions once after the transform finishes
+    detectCollisions();
+  }, [applyGroupTransform, setIsTransforming, target, commitBatch, cabinetId, detectCollisions]);
 
   return (
       <>
@@ -118,11 +184,9 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
               object={target}
               mode={transformMode}
               onMouseDown={handleTransformStart}
-              onChange={updatePartsFromGroup}
+              onChange={scheduleGroupTransform}
               onMouseUp={handleTransformEnd}
-              showX={transformMode === 'translate'}
-              showY={transformMode === 'translate'}
-              showZ={transformMode === 'translate'}
+              rotationSnap={rotationSnap}
             />
         )}
       </>

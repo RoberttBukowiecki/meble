@@ -220,6 +220,7 @@ export interface ProjectState {
   // Actions - Parts
   addPart: (furnitureId: string, skipHistory?: boolean) => void;
   updatePart: (id: string, patch: Partial<Part>, skipHistory?: boolean) => void;
+  updatePartsBatch: (updates: Array<{ id: string; patch: Partial<Part> }>) => void;
   renamePart: (id: string, name: string, skipHistory?: boolean) => void;
   renameManualGroup: (groupId: string, name: string, skipHistory?: boolean) => void;
   removePart: (id: string, skipHistory?: boolean) => void;

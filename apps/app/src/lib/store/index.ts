@@ -7,6 +7,7 @@ import { createPartsSlice } from './slices/partsSlice';
 import { createCabinetSlice } from './slices/cabinetSlice';
 import { createCollisionSlice } from './slices/collisionSlice';
 import { createHistorySlice } from './slices/historySlice';
+import { createUISlice } from './slices/uiSlice';
 import { HISTORY_MAX_LENGTH, HISTORY_MAX_MILESTONES } from './history/constants';
 import type { StoreState } from './types';
 
@@ -20,6 +21,7 @@ export const useStore = create<StoreState>()(
       ...createCabinetSlice(...args),
       ...createCollisionSlice(...args),
       ...createHistorySlice(...args),
+      ...createUISlice(...args),
     }),
     {
       name: 'meblarz-storage',
@@ -63,6 +65,7 @@ export const useStore = create<StoreState>()(
           setSelectedFurniture,
           addPart,
           updatePart,
+          updatePartsBatch,
           renamePart,
           renameManualGroup,
           removePart,
@@ -94,6 +97,10 @@ export const useStore = create<StoreState>()(
           jumpTo,
           setTimelineCursor,
           runWithHistory,
+          // UI functions
+          setShiftPressed,
+          // UI state (don't persist keyboard state)
+          isShiftPressed,
           ...rest
         } = state as any;
         return rest;
