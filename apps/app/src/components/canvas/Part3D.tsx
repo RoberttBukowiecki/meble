@@ -9,6 +9,7 @@ import { useRef, useMemo } from 'react';
 import { Mesh, Shape, ExtrudeGeometry } from 'three';
 import { ThreeEvent } from '@react-three/fiber';
 import { Edges } from '@react-three/drei';
+import { useShallow } from 'zustand/react/shallow';
 import { useMaterial, useStore } from '@/lib/store';
 import { PART_CONFIG, MATERIAL_CONFIG } from '@/lib/config';
 import type { Part, ShapeParamsTrapezoid, ShapeParamsLShape, ShapeParamsPolygon } from '@/types';
@@ -22,15 +23,33 @@ export function Part3D({ part }: Part3DProps) {
   const meshRef = useRef<Mesh>(null);
   const clickTimeRef = useRef<number>(0);
 
+  // PERFORMANCE: Use useShallow to prevent re-renders when unrelated store state changes
   const {
     selectPart,
     selectCabinet,
     selectedPartId,
     selectedCabinetId,
     collisions,
-  } = useStore();
+    transformingPartId,
+    transformingCabinetId,
+  } = useStore(
+    useShallow((state) => ({
+      selectPart: state.selectPart,
+      selectCabinet: state.selectCabinet,
+      selectedPartId: state.selectedPartId,
+      selectedCabinetId: state.selectedCabinetId,
+      collisions: state.collisions,
+      transformingPartId: state.transformingPartId,
+      transformingCabinetId: state.transformingCabinetId,
+    }))
+  );
 
   const material = useMaterial(part.materialId);
+
+  // Hide this part when it or its cabinet is being transformed (preview mesh is shown instead)
+  const isBeingTransformed =
+    transformingPartId === part.id ||
+    (transformingCabinetId !== null && part.cabinetMetadata?.cabinetId === transformingCabinetId);
 
   const isPartSelected = selectedPartId === part.id;
   const isCabinetSelected = part.cabinetMetadata?.cabinetId === selectedCabinetId;
@@ -91,6 +110,10 @@ export function Part3D({ part }: Part3DProps) {
     }
   }, [part.shapeType, part.width, part.height, part.depth, part.shapeParams]);
 
+  // Hide this part when it or its cabinet is being transformed (preview mesh is shown instead)
+  if (isBeingTransformed) {
+    return null;
+  }
 
   return (
     <mesh

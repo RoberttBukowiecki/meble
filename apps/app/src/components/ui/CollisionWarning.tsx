@@ -7,6 +7,7 @@
  */
 
 import { useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { useStore } from '@/lib/store';
 import {
   Button,
@@ -22,7 +23,13 @@ import { AlertTriangle } from 'lucide-react';
 
 export function CollisionWarning() {
   const [open, setOpen] = useState(false);
-  const { collisions, parts } = useStore();
+  // PERFORMANCE: Use useShallow to prevent re-renders during 3D transforms
+  const { collisions, parts } = useStore(
+    useShallow((state) => ({
+      collisions: state.collisions,
+      parts: state.parts,
+    }))
+  );
 
   // Don't show if there are no collisions
   if (collisions.length === 0) {

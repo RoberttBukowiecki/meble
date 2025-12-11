@@ -80,6 +80,13 @@ export function GlobalKeyboardListener() {
         return;
       }
 
+      // S = Resize mode
+      if (matchesShortcut(KEYBOARD_SHORTCUTS.RESIZE_MODE, key)) {
+        event.preventDefault();
+        useStore.getState().setTransformMode('resize');
+        return;
+      }
+
       // ============================================================================
       // Part/Cabinet actions
       // ============================================================================

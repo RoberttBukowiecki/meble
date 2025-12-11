@@ -24,6 +24,7 @@ export const KEYBOARD_SHORTCUTS = {
   // Transform modes
   TRANSLATE_MODE: 'm',
   ROTATE_MODE: 'r',
+  RESIZE_MODE: 's',
 
   // Camera controls
   RESET_CAMERA: 'c',

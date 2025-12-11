@@ -6,6 +6,7 @@ import { HISTORY_LABELS } from '../history/constants';
 import { generateId, inferKindFromType, pickFields, getUpdatePartLabel } from '../history/utils';
 import { sanitizeName, NAME_MAX_LENGTH } from '@/lib/naming';
 import { buildManualGroupId, parseManualGroupId } from '@/lib/groups';
+import { roundToDecimals, roundPosition, roundRotation } from '@/lib/utils';
 
 export const createPartsSlice: StoreSlice<PartsSlice> = (set, get) => ({
   parts: [],
@@ -133,6 +134,23 @@ export const createPartsSlice: StoreSlice<PartsSlice> = (set, get) => ({
         }
       }
 
+      // Round transform values to 2 decimal places (only if they have more)
+      if (updatedPatch.position) {
+        updatedPatch.position = roundPosition(updatedPatch.position);
+      }
+      if (updatedPatch.rotation) {
+        updatedPatch.rotation = roundRotation(updatedPatch.rotation);
+      }
+      if (updatedPatch.width !== undefined) {
+        updatedPatch.width = roundToDecimals(updatedPatch.width);
+      }
+      if (updatedPatch.height !== undefined) {
+        updatedPatch.height = roundToDecimals(updatedPatch.height);
+      }
+      if (updatedPatch.depth !== undefined) {
+        updatedPatch.depth = roundToDecimals(updatedPatch.depth);
+      }
+
       updatedPatch.updatedAt = new Date();
 
       const newParts = [...state.parts];
@@ -171,6 +189,7 @@ export const createPartsSlice: StoreSlice<PartsSlice> = (set, get) => ({
       }
     }
 
+    // Collision detection is debounced (100ms) so safe to call frequently
     triggerDebouncedCollisionDetection(get);
   },
 
@@ -224,6 +243,23 @@ export const createPartsSlice: StoreSlice<PartsSlice> = (set, get) => ({
               break;
             }
           }
+        }
+
+        // Round transform values to 2 decimal places (only if they have more)
+        if (updatedPatch.position) {
+          updatedPatch.position = roundPosition(updatedPatch.position);
+        }
+        if (updatedPatch.rotation) {
+          updatedPatch.rotation = roundRotation(updatedPatch.rotation);
+        }
+        if (updatedPatch.width !== undefined) {
+          updatedPatch.width = roundToDecimals(updatedPatch.width);
+        }
+        if (updatedPatch.height !== undefined) {
+          updatedPatch.height = roundToDecimals(updatedPatch.height);
+        }
+        if (updatedPatch.depth !== undefined) {
+          updatedPatch.depth = roundToDecimals(updatedPatch.depth);
         }
 
         updatedPatch.updatedAt = now;

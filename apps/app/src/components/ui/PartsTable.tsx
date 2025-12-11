@@ -228,16 +228,31 @@ export function PartsTable() {
     return [...cabinetGroups, ...manualGroups, ...ungrouped];
   }, [cabinets, furnitureLabelMap, parts, t]);
 
-  const accordionDefault = useMemo(() => groups.map((group) => group.id), [groups]);
-  const [openGroups, setOpenGroups] = useState<string[]>(accordionDefault);
+  const STORAGE_KEY = 'partsTable.openGroups';
+
+  const [openGroups, setOpenGroups] = useState<string[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
 
   useEffect(() => {
-    setOpenGroups((prev) => {
-      const existing = new Set(prev);
-      const next = groups.map((g) => g.id).filter((id) => existing.has(id));
-      return next.length > 0 ? next : accordionDefault;
-    });
-  }, [groups, accordionDefault]);
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(openGroups));
+    } catch {
+      // Ignore storage errors
+    }
+  }, [openGroups]);
+
+  useEffect(() => {
+    // Remove stale group IDs that no longer exist
+    const validIds = new Set(groups.map((g) => g.id));
+    setOpenGroups((prev) => prev.filter((id) => validIds.has(id)));
+  }, [groups]);
 
   const handlePartSelect = useCallback(
     (partId: string) => {

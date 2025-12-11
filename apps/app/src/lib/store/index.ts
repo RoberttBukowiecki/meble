@@ -8,6 +8,7 @@ import { createCabinetSlice } from './slices/cabinetSlice';
 import { createCollisionSlice } from './slices/collisionSlice';
 import { createHistorySlice } from './slices/historySlice';
 import { createUISlice } from './slices/uiSlice';
+import { createSnapSlice } from './slices/snapSlice';
 import { HISTORY_MAX_LENGTH, HISTORY_MAX_MILESTONES } from './history/constants';
 import type { StoreState } from './types';
 
@@ -22,6 +23,7 @@ export const useStore = create<StoreState>()(
       ...createCollisionSlice(...args),
       ...createHistorySlice(...args),
       ...createUISlice(...args),
+      ...createSnapSlice(...args),
     }),
     {
       name: 'meblarz-storage',
@@ -101,6 +103,10 @@ export const useStore = create<StoreState>()(
           setShiftPressed,
           // UI state (don't persist keyboard state)
           isShiftPressed,
+          // Snap functions (snapEnabled and snapSettings ARE persisted)
+          toggleSnap,
+          setSnapEnabled,
+          updateSnapSettings,
           ...rest
         } = state as any;
         return rest;

@@ -1,6 +1,7 @@
 'use client';
 
 import { useStore } from '@/lib/store';
+import { useShallow } from 'zustand/react/shallow';
 import { useMemo, useRef, useState, useEffect } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@meble/ui';
 import { cn } from '@/lib/utils';
@@ -26,7 +27,14 @@ function getEntryIcon(entry: HistoryEntry) {
 }
 
 export function HorizontalTimeline() {
-  const { undoStack, redoStack, jumpTo } = useStore();
+  // PERFORMANCE: Use useShallow to prevent re-renders during 3D transforms
+  const { undoStack, redoStack, jumpTo } = useStore(
+    useShallow((state) => ({
+      undoStack: state.undoStack,
+      redoStack: state.redoStack,
+      jumpTo: state.jumpTo,
+    }))
+  );
   const containerRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
 

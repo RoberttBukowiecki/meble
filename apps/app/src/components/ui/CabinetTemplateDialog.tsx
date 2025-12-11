@@ -6,7 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
   Button,
-  Input,
+  NumberInput,
   Label,
   Select,
   SelectContent,
@@ -20,6 +20,7 @@ import {
   Switch,
   Slider,
 } from '@meble/ui';
+import { useShallow } from 'zustand/react/shallow';
 import { useStore } from '@/lib/store';
 import { CabinetType, CabinetParams, CabinetMaterials, TopBottomPlacement } from '@/types';
 import { CABINET_PRESETS } from '@/lib/config';
@@ -92,15 +93,15 @@ const ParameterForm = ({type, params, onChange}: ParameterFormProps) => {
             <div className="grid grid-cols-3 gap-4">
                 <div>
                     <Label>Szerokość (mm)</Label>
-                    <Input type="number" value={params.width || 0} onChange={e => updateParams({width: parseInt(e.target.value)})} />
+                    <NumberInput value={params.width} onChange={val => updateParams({width: val})} min={1} allowNegative={false} />
                 </div>
                 <div>
                     <Label>Wysokość (mm)</Label>
-                    <Input type="number" value={params.height || 0} onChange={e => updateParams({height: parseInt(e.target.value)})}/>
+                    <NumberInput value={params.height} onChange={val => updateParams({height: val})} min={1} allowNegative={false} />
                 </div>
                 <div>
                     <Label>Głębokość (mm)</Label>
-                    <Input type="number" value={params.depth || 0} onChange={e => updateParams({depth: parseInt(e.target.value)})}/>
+                    <NumberInput value={params.depth} onChange={val => updateParams({depth: val})} min={1} allowNegative={false} />
                 </div>
             </div>
 
@@ -176,7 +177,13 @@ export function CabinetTemplateDialog({ open, onOpenChange, furnitureId }: Cabin
   const [params, setParams] = useState<Partial<CabinetParams>>({});
   const [materials, setMaterials] = useState<Partial<CabinetMaterials>>({});
 
-  const { addCabinet, materials: availableMaterials } = useStore();
+  // PERFORMANCE: Use useShallow to prevent re-renders during 3D transforms
+  const { addCabinet, materials: availableMaterials } = useStore(
+    useShallow((state) => ({
+      addCabinet: state.addCabinet,
+      materials: state.materials,
+    }))
+  );
   const { default_material, default_front_material } = useMemo(
     () => getDefaultMaterials(availableMaterials),
     [availableMaterials]

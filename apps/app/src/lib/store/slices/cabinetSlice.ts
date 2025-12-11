@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
+import { Euler, Quaternion, Vector3 } from 'three';
 import type {
   Cabinet,
   CabinetMaterials,
@@ -16,6 +17,7 @@ import type { CabinetSlice, StoreSlice } from '../types';
 import { HISTORY_LABELS } from '../history/constants';
 import { generateId, createPartIdMap, inferKindFromType } from '../history/utils';
 import { sanitizeName, NAME_MAX_LENGTH } from '@/lib/naming';
+import { roundPosition, roundRotation } from '@/lib/utils';
 
 export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
   cabinets: [],
@@ -257,6 +259,85 @@ export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
         cabinets: state.cabinets.map((c) => (c.id === id ? updatedCabinet : c)),
         parts: [...remainingParts, ...newParts],
       };
+    });
+
+    triggerDebouncedCollisionDetection(get);
+  },
+
+  updateCabinetTransform: (
+    id: string,
+    transform: {
+      position?: [number, number, number];
+      rotation?: [number, number, number];
+    },
+    _skipHistory = false
+  ) => {
+    const state = get();
+    const cabinet = state.cabinets.find((c) => c.id === id);
+    if (!cabinet) return;
+
+    const cabinetParts = state.parts.filter((p) => cabinet.partIds.includes(p.id));
+    if (cabinetParts.length === 0) return;
+
+    // Get current cabinet transform
+    const { center: currentCenter, rotation: currentRotation } = getCabinetTransform(cabinetParts);
+
+    // Calculate new center if position is provided
+    const newCenter = transform.position
+      ? new Vector3().fromArray(transform.position)
+      : currentCenter;
+
+    // Calculate new rotation if rotation is provided
+    const newRotation = transform.rotation
+      ? new Quaternion().setFromEuler(new Euler().fromArray(transform.rotation))
+      : currentRotation;
+
+    // Calculate position offset
+    const positionOffset = newCenter.clone().sub(currentCenter);
+
+    // Calculate rotation delta
+    const rotationDelta = newRotation.clone().multiply(currentRotation.clone().invert());
+
+    const now = new Date();
+
+    set((state) => {
+      const updatedParts = state.parts.map((part) => {
+        if (!cabinet.partIds.includes(part.id)) return part;
+
+        // Apply position offset
+        let finalPosition = new Vector3().fromArray(part.position);
+
+        // If rotation changed, rotate part around cabinet center
+        if (transform.rotation) {
+          // Move to origin relative to cabinet center
+          finalPosition.sub(currentCenter);
+          // Apply rotation
+          finalPosition.applyQuaternion(rotationDelta);
+          // Move back
+          finalPosition.add(currentCenter);
+        }
+
+        // Apply position offset
+        finalPosition.add(positionOffset);
+
+        // Calculate new part rotation
+        let finalRotation = part.rotation;
+        if (transform.rotation) {
+          const partQuat = new Quaternion().setFromEuler(new Euler().fromArray(part.rotation));
+          const newPartQuat = rotationDelta.clone().multiply(partQuat);
+          const newPartEuler = new Euler().setFromQuaternion(newPartQuat);
+          finalRotation = [newPartEuler.x, newPartEuler.y, newPartEuler.z] as [number, number, number];
+        }
+
+        return {
+          ...part,
+          position: roundPosition(finalPosition.toArray() as [number, number, number]),
+          rotation: roundRotation(finalRotation),
+          updatedAt: now,
+        };
+      });
+
+      return { parts: updatedParts };
     });
 
     triggerDebouncedCollisionDetection(get);

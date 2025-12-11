@@ -11,7 +11,7 @@ import { OrbitControls, Grid } from '@react-three/drei';
 import { useSelectedFurnitureParts, useStore, useSelectedPart } from '@/lib/store';
 import { Part3D } from './Part3D';
 import { Button } from '@meble/ui';
-import { Camera, Move, RotateCw } from 'lucide-react';
+import { Camera, Move, RotateCw, Maximize2 } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { KeyboardShortcutsHelp } from '@/components/ui/KeyboardShortcutsHelp';
 import { CollisionWarning } from '@/components/ui/CollisionWarning';
@@ -19,6 +19,10 @@ import { SCENE_CONFIG, KEYBOARD_SHORTCUTS, formatShortcutLabel } from '@/lib/con
 import type { OrbitControls as OrbitControlsType } from 'three-stdlib';
 import { CabinetGroupTransform } from './CabinetGroupTransform';
 import { PartTransformControls } from './PartTransformControls';
+import { PartResizeControls } from './PartResizeControls';
+import { SnapGuidesRenderer } from './SnapGuidesRenderer';
+import { SnapProvider } from '@/lib/snap-context';
+import { SnapControlPanel } from '@/components/layout/SnapControlPanel';
 
 export function Scene() {
   const parts = useSelectedFurnitureParts();
@@ -37,6 +41,7 @@ export function Scene() {
     setIsTransforming,
     selectPart,
     selectCabinet,
+    snapEnabled,
   } = useStore(
       useShallow((state) => ({
         isTransforming: state.isTransforming,
@@ -52,6 +57,7 @@ export function Scene() {
         setIsTransforming: state.setIsTransforming,
         selectPart: state.selectPart,
         selectCabinet: state.selectCabinet,
+        snapEnabled: state.snapEnabled,
       }))
     );
   const controlsRef = useRef<OrbitControlsType>(null);
@@ -135,7 +141,19 @@ export function Scene() {
           >
             <RotateCw className="h-4 w-4" />
           </Button>
+          <Button
+            variant={transformMode === 'resize' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setTransformMode('resize')}
+            className="h-8 px-2"
+            title={`Zmień rozmiar (${formatShortcutLabel(KEYBOARD_SHORTCUTS.RESIZE_MODE)})`}
+          >
+            <Maximize2 className="h-4 w-4" />
+          </Button>
         </div>
+
+        {/* Snap Control Panel */}
+        <SnapControlPanel />
 
         {/* Camera Reset Button */}
         <Button
@@ -153,66 +171,82 @@ export function Scene() {
         <KeyboardShortcutsHelp />
       </div>
 
-      <Canvas
-        camera={{
-          position: SCENE_CONFIG.CAMERA_INITIAL_POSITION,
-          fov: SCENE_CONFIG.CAMERA_FOV,
-          near: 0.1,
-          far: 100000,
-        }}
-        shadows
-        onPointerMissed={handlePointerMissed}
-      >
-        {/* Controls */}
-        <OrbitControls
-          ref={controlsRef}
-          makeDefault
-          dampingFactor={0.05}
-          enableDamping
-          enabled={!isTransforming}
-        />
-
-        {/* Lighting */}
-        <ambientLight intensity={SCENE_CONFIG.AMBIENT_LIGHT_INTENSITY} />
-        <directionalLight
-          position={[300, 400, 200]}
-          intensity={SCENE_CONFIG.DIRECTIONAL_LIGHT_INTENSITY}
-          castShadow
-          shadow-mapSize-width={2048}
-          shadow-mapSize-height={2048}
-        />
-
-        {/* Grid */}
-        <Grid
-          args={[SCENE_CONFIG.GRID_SIZE, SCENE_CONFIG.GRID_SIZE]}
-          cellSize={SCENE_CONFIG.GRID_CELL_SIZE}
-          cellThickness={0.5}
-          cellColor="#6b7280"
-          sectionSize={500}
-          sectionThickness={1}
-          sectionColor="#374151"
-          fadeDistance={SCENE_CONFIG.GRID_FADE_DISTANCE}
-          followCamera={false}
-          infiniteGrid={false}
-        />
-
-        {parts.map((part) => (
-          <Part3D key={part.id} part={part} />
-        ))}
-
-        {/* Transform controls for cabinet groups */}
-        {selectedCabinetId && <CabinetGroupTransform cabinetId={selectedCabinetId} />}
-
-        {/* Transform controls for individual parts (not in a cabinet or cabinet not selected) */}
-        {selectedPart && !selectedCabinetId && (
-          <PartTransformControls
-            part={selectedPart}
-            mode={transformMode}
-            onTransformStart={() => setIsTransforming(true)}
-            onTransformEnd={handlePartTransformEnd}
+      <SnapProvider>
+        <Canvas
+          camera={{
+            position: SCENE_CONFIG.CAMERA_INITIAL_POSITION,
+            fov: SCENE_CONFIG.CAMERA_FOV,
+            near: 0.1,
+            far: 100000,
+          }}
+          shadows
+          onPointerMissed={handlePointerMissed}
+        >
+          {/* Controls */}
+          <OrbitControls
+            ref={controlsRef}
+            makeDefault
+            dampingFactor={0.05}
+            enableDamping
+            enabled={!isTransforming}
           />
-        )}
-      </Canvas>
+
+          {/* Lighting */}
+          <ambientLight intensity={SCENE_CONFIG.AMBIENT_LIGHT_INTENSITY} />
+          <directionalLight
+            position={[300, 400, 200]}
+            intensity={SCENE_CONFIG.DIRECTIONAL_LIGHT_INTENSITY}
+            castShadow
+            shadow-mapSize-width={2048}
+            shadow-mapSize-height={2048}
+          />
+
+          {/* Grid */}
+          <Grid
+            args={[SCENE_CONFIG.GRID_SIZE, SCENE_CONFIG.GRID_SIZE]}
+            cellSize={SCENE_CONFIG.GRID_CELL_SIZE}
+            cellThickness={0.5}
+            cellColor="#6b7280"
+            sectionSize={500}
+            sectionThickness={1}
+            sectionColor="#374151"
+            fadeDistance={SCENE_CONFIG.GRID_FADE_DISTANCE}
+            followCamera={false}
+            infiniteGrid={false}
+          />
+
+          {parts.map((part) => (
+            <Part3D key={part.id} part={part} />
+          ))}
+
+          {/* Transform controls for cabinet groups (translate/rotate only, no resize) */}
+          {selectedCabinetId && (transformMode === 'translate' || transformMode === 'rotate') && (
+            <CabinetGroupTransform cabinetId={selectedCabinetId} />
+          )}
+
+          {/* Transform controls for individual parts (translate/rotate modes) */}
+          {selectedPart && !selectedCabinetId && (transformMode === 'translate' || transformMode === 'rotate') && (
+            <PartTransformControls
+              part={selectedPart}
+              mode={transformMode}
+              onTransformStart={() => setIsTransforming(true)}
+              onTransformEnd={handlePartTransformEnd}
+            />
+          )}
+
+          {/* Resize controls for individual parts (resize mode) */}
+          {selectedPart && !selectedCabinetId && transformMode === 'resize' && (
+            <PartResizeControls
+              part={selectedPart}
+              onTransformStart={() => setIsTransforming(true)}
+              onTransformEnd={handlePartTransformEnd}
+            />
+          )}
+
+          {/* Snap guides (rendered based on snap context) */}
+          {snapEnabled && <SnapGuidesRenderer />}
+        </Canvas>
+      </SnapProvider>
 
       {/* Collision warning overlay */}
       <CollisionWarning />

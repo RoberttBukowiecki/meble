@@ -2,17 +2,42 @@
 
 import { useCallback, useState, useRef, useEffect } from 'react';
 import { TransformControls } from '@react-three/drei';
-import { useStore } from '@/lib/store';
+import { useStore, useMaterial } from '@/lib/store';
+import { useShallow } from 'zustand/react/shallow';
 import * as THREE from 'three';
 import type { Part } from '@/types';
 import { pickTransform } from '@/lib/store/history/utils';
-import { SCENE_CONFIG } from '@/lib/config';
+import { SCENE_CONFIG, PART_CONFIG, MATERIAL_CONFIG } from '@/lib/config';
+import { useSnapContext } from '@/lib/snap-context';
+import { calculateSnapSimple } from '@/lib/snapping';
+import type { TransformControls as TransformControlsImpl } from 'three-stdlib';
 
 interface PartTransformControlsProps {
   part: Part;
   mode: 'translate' | 'rotate';
   onTransformStart: () => void;
   onTransformEnd: () => void;
+}
+
+/**
+ * Detect which axis has the most movement (fallback when TransformControls axis is not available)
+ */
+function detectMovementAxis(
+  originalPos: [number, number, number],
+  currentPos: [number, number, number]
+): 'X' | 'Y' | 'Z' | null {
+  const dx = Math.abs(currentPos[0] - originalPos[0]);
+  const dy = Math.abs(currentPos[1] - originalPos[1]);
+  const dz = Math.abs(currentPos[2] - originalPos[2]);
+
+  const maxDelta = Math.max(dx, dy, dz);
+
+  // Only detect if there's meaningful movement (> 1mm)
+  if (maxDelta < 1) return null;
+
+  if (dx === maxDelta) return 'X';
+  if (dy === maxDelta) return 'Y';
+  return 'Z';
 }
 
 export function PartTransformControls({
@@ -22,115 +47,169 @@ export function PartTransformControls({
   onTransformEnd,
 }: PartTransformControlsProps) {
   const [target, setTarget] = useState<THREE.Group | null>(null);
-  const updatePart = useStore((state) => state.updatePart);
-  const beginBatch = useStore((state) => state.beginBatch);
-  const commitBatch = useStore((state) => state.commitBatch);
-  const isShiftPressed = useStore((state) => state.isShiftPressed);
-  const detectCollisions = useStore((state) => state.detectCollisions);
+  const { setSnapPoints, clearSnapPoints } = useSnapContext();
+
+  const {
+    updatePart,
+    beginBatch,
+    commitBatch,
+    isShiftPressed,
+    detectCollisions,
+    parts,
+    snapEnabled,
+    snapSettings,
+    setTransformingPartId,
+  } = useStore(
+    useShallow((state) => ({
+      updatePart: state.updatePart,
+      beginBatch: state.beginBatch,
+      commitBatch: state.commitBatch,
+      isShiftPressed: state.isShiftPressed,
+      detectCollisions: state.detectCollisions,
+      parts: state.parts,
+      snapEnabled: state.snapEnabled,
+      snapSettings: state.snapSettings,
+      setTransformingPartId: state.setTransformingPartId,
+    }))
+  );
+
+  // Get material color for preview mesh
+  const material = useMaterial(part.materialId);
+  const partColor = material?.color || MATERIAL_CONFIG.DEFAULT_MATERIAL_COLOR;
+
   const initialTransformRef = useRef<{ position: [number, number, number]; rotation: [number, number, number] } | null>(null);
-  const rafIdRef = useRef<number | null>(null);
+  const controlsRef = useRef<TransformControlsImpl | null>(null);
+  const isDraggingRef = useRef(false);
 
   const rotationSnap = mode === 'rotate' && isShiftPressed
     ? THREE.MathUtils.degToRad(SCENE_CONFIG.ROTATION_SNAP_DEGREES)
     : undefined;
 
-  // Cleanup RAF on unmount
-  useEffect(() => {
-    return () => {
-      if (rafIdRef.current !== null) {
-        cancelAnimationFrame(rafIdRef.current);
-      }
-    };
+  // Get current drag axis from TransformControls
+  const getDragAxis = useCallback((): 'X' | 'Y' | 'Z' | null => {
+    const controls = controlsRef.current;
+    if (!controls) return null;
+    const axis = (controls as unknown as { axis: string | null }).axis;
+    if (axis === 'X' || axis === 'Y' || axis === 'Z') return axis;
+    return null;
   }, []);
 
-  // Apply transform update (throttled to RAF)
-  const applyTransform = useCallback(() => {
-    if (!target) return;
+  // Handle transform changes - called on every frame during drag
+  // PERFORMANCE: No store updates during drag, only snap logic
+  const handleChange = useCallback(() => {
+    if (!target || !isDraggingRef.current) return;
 
     const position = target.position.toArray() as [number, number, number];
-    const rotation = target.rotation.toArray().slice(0, 3) as [number, number, number];
 
-    // Live update to store (skip history - will be recorded in batch)
-    updatePart(part.id, { position, rotation }, true);
-  }, [target, part.id, updatePart]);
+    // Apply snap only for translate mode when enabled
+    if (mode === 'translate' && snapEnabled) {
+      const axis = getDragAxis();
 
-  // Schedule throttled transform update
-  const scheduleTransformUpdate = useCallback(() => {
-    if (rafIdRef.current !== null) return; // Already scheduled
-    rafIdRef.current = requestAnimationFrame(() => {
-      rafIdRef.current = null;
-      applyTransform();
-    });
-  }, [applyTransform]);
+      // If no specific axis detected, try to determine from movement
+      const originalPos = initialTransformRef.current?.position || part.position;
+      const effectiveAxis = axis || detectMovementAxis(originalPos, position);
 
-  // The `useState` with ref callback pattern is correct for avoiding the race condition.
-  // We conditionally render the TransformControls only when the target object is mounted.
+      if (effectiveAxis) {
+        const otherParts = parts.filter(
+          (p) =>
+            p.id !== part.id &&
+            (!part.cabinetMetadata?.cabinetId ||
+              p.cabinetMetadata?.cabinetId !== part.cabinetMetadata.cabinetId)
+        );
+
+        const snapResult = calculateSnapSimple(
+          part,
+          position,
+          otherParts,
+          snapSettings,
+          effectiveAxis
+        );
+
+        if (snapResult.snapped && snapResult.snapPoints.length > 0) {
+          // Apply snap offset ONLY on the drag axis
+          const axisIndex = effectiveAxis === 'X' ? 0 : effectiveAxis === 'Y' ? 1 : 2;
+          position[axisIndex] = snapResult.position[axisIndex];
+          target.position.setComponent(axisIndex, position[axisIndex]);
+          setSnapPoints(snapResult.snapPoints);
+        } else {
+          clearSnapPoints();
+        }
+      }
+    }
+
+    // PERFORMANCE: NO store update here - preview mesh follows target directly
+    // Store will be updated on mouseUp
+  }, [target, part, mode, snapEnabled, snapSettings, parts, setSnapPoints, clearSnapPoints, getDragAxis]);
 
   const handleTransformStart = useCallback(() => {
-    // Capture initial transform state
+    isDraggingRef.current = true;
     initialTransformRef.current = pickTransform(part);
 
-    // Begin history batch
     beginBatch('TRANSFORM_PART', {
       targetId: part.id,
       before: initialTransformRef.current,
     });
 
-    // Call parent callback
+    setTransformingPartId(part.id); // Hide original Part3D, show preview
     onTransformStart();
-  }, [part, beginBatch, onTransformStart]);
+  }, [part, beginBatch, onTransformStart, setTransformingPartId]);
 
   const handleTransformEnd = useCallback(() => {
+    isDraggingRef.current = false;
+
     if (!target) {
+      setTransformingPartId(null);
       onTransformEnd();
       return;
     }
 
-    // Cancel any pending RAF
-    if (rafIdRef.current !== null) {
-      cancelAnimationFrame(rafIdRef.current);
-      rafIdRef.current = null;
-    }
+    clearSnapPoints();
 
-    // Apply final transform
-    applyTransform();
-
-    // Read final transform values for history
     const position = target.position.toArray() as [number, number, number];
-    const rotation = target.rotation.toArray().slice(0, 3) as [
-      number,
-      number,
-      number
-    ];
+    const rotation = target.rotation.toArray().slice(0, 3) as [number, number, number];
 
-    // Commit history batch with final transform
+    // PERFORMANCE: Single store update on mouseUp (not during drag)
+    updatePart(part.id, { position, rotation }, true);
+
     commitBatch({
-      after: {
-        position,
-        rotation,
-      },
+      after: { position, rotation },
     });
 
-    // Call the parent callback
+    setTransformingPartId(null); // Show original Part3D again
     onTransformEnd();
-
-    // Recompute collisions once after the transform
     detectCollisions();
-  }, [target, applyTransform, commitBatch, onTransformEnd, detectCollisions]);
+  }, [target, updatePart, part.id, commitBatch, onTransformEnd, detectCollisions, clearSnapPoints, setTransformingPartId]);
+
+  // Sync target position with part when part changes externally
+  useEffect(() => {
+    if (target && !isDraggingRef.current) {
+      target.position.set(...part.position);
+      target.rotation.set(...part.rotation);
+    }
+  }, [target, part.position, part.rotation]);
 
   return (
     <>
-      {/* An invisible group that acts as a proxy for the transform controls.
-          The ref callback `setTarget` updates the state, triggering the rendering of TransformControls. */}
-      <group ref={setTarget} position={part.position} rotation={part.rotation} />
+      {/* Target group that TransformControls operates on */}
+      <group ref={setTarget} position={part.position} rotation={part.rotation}>
+        {/* Preview mesh - child of target, so follows transform automatically */}
+        <mesh castShadow receiveShadow>
+          <boxGeometry args={[part.width, part.height, part.depth]} />
+          <meshStandardMaterial
+            color={partColor}
+            emissive={PART_CONFIG.SELECTION_EMISSIVE_COLOR}
+            emissiveIntensity={PART_CONFIG.SELECTION_EMISSIVE_INTENSITY}
+          />
+        </mesh>
+      </group>
 
-      {/* Conditionally render TransformControls only when the target is set. */}
       {target && (
         <TransformControls
+          ref={controlsRef}
           object={target}
           mode={mode}
           onMouseDown={handleTransformStart}
-          onChange={scheduleTransformUpdate}
+          onChange={handleChange}
           onMouseUp={handleTransformEnd}
           rotationSnap={rotationSnap}
         />

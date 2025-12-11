@@ -1,3 +1,4 @@
+import type { TransformMode } from '@/types';
 import { DEFAULT_FURNITURE_ID } from '../constants';
 import type { SelectionSlice, StoreSlice } from '../types';
 
@@ -6,6 +7,8 @@ export const createSelectionSlice: StoreSlice<SelectionSlice> = (set) => ({
   selectedCabinetId: null,
   selectedFurnitureId: DEFAULT_FURNITURE_ID,
   isTransforming: false,
+  transformingPartId: null,
+  transformingCabinetId: null,
   transformMode: 'translate',
 
   setSelectedFurniture: (id: string) => {
@@ -24,7 +27,15 @@ export const createSelectionSlice: StoreSlice<SelectionSlice> = (set) => ({
     set({ isTransforming });
   },
 
-  setTransformMode: (mode: 'translate' | 'rotate') => {
+  setTransformingPartId: (id: string | null) => {
+    set({ transformingPartId: id });
+  },
+
+  setTransformingCabinetId: (id: string | null) => {
+    set({ transformingCabinetId: id });
+  },
+
+  setTransformMode: (mode: TransformMode) => {
     set({ transformMode: mode });
   },
 });

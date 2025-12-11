@@ -36,6 +36,7 @@ export function KeyboardShortcutsHelp() {
       items: [
         { key: formatShortcutLabel(KEYBOARD_SHORTCUTS.TRANSLATE_MODE), description: 'Tryb przesuwania' },
         { key: formatShortcutLabel(KEYBOARD_SHORTCUTS.ROTATE_MODE), description: 'Tryb obrotu' },
+        { key: formatShortcutLabel(KEYBOARD_SHORTCUTS.RESIZE_MODE), description: 'Tryb zmiany rozmiaru' },
       ],
     },
     {

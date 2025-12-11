@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { useShallow } from 'zustand/react/shallow';
 import { useStore, useSelectedPart, useSelectedCabinet } from '@/lib/store';
 import { Button } from '@meble/ui';
 import { Plus, Download, Settings, List, Package } from 'lucide-react';
@@ -22,7 +23,16 @@ type TabType = 'properties' | 'list';
 
 export function Sidebar() {
   const t = useTranslations('Sidebar');
-  const { selectedFurnitureId, addPart, parts, materials, furnitures } = useStore();
+  // PERFORMANCE: Use useShallow to prevent re-renders during 3D transforms
+  const { selectedFurnitureId, addPart, parts, materials, furnitures } = useStore(
+    useShallow((state) => ({
+      selectedFurnitureId: state.selectedFurnitureId,
+      addPart: state.addPart,
+      parts: state.parts,
+      materials: state.materials,
+      furnitures: state.furnitures,
+    }))
+  );
   const selectedPart = useSelectedPart();
   const selectedCabinet = useSelectedCabinet();
   const [showErrorDialog, setShowErrorDialog] = useState(false);

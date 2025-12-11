@@ -1,24 +1,30 @@
 import type { StateCreator } from 'zustand';
-import type { ProjectState, HistoryEntry, HistoryEntryType } from '@/types';
+import type { ProjectState, HistoryEntry, HistoryEntryType, TransformMode } from '@/types';
 import type { UISlice } from './slices/uiSlice';
+import type { SnapSlice } from './slices/snapSlice';
 
-export type StoreState = ProjectState & HistorySlice & UISlice;
+export type StoreState = ProjectState & HistorySlice & UISlice & SnapSlice;
 export type StoreMutators = [['zustand/persist', unknown]];
 export type StoreSlice<T> = StateCreator<StoreState, StoreMutators, [], T>;
 
-export type SelectionSlice = Pick<
-  StoreState,
-  | 'selectedPartId'
-  | 'selectedCabinetId'
-  | 'selectedFurnitureId'
-  | 'isTransforming'
-  | 'transformMode'
-  | 'selectPart'
-  | 'selectCabinet'
-  | 'setSelectedFurniture'
-  | 'setIsTransforming'
-  | 'setTransformMode'
->;
+export type SelectionSlice = {
+  selectedPartId: string | null;
+  selectedCabinetId: string | null;
+  selectedFurnitureId: string;
+  isTransforming: boolean;
+  /** ID of part currently being transformed (for hiding original during preview) */
+  transformingPartId: string | null;
+  /** ID of cabinet currently being transformed (for hiding all its parts during preview) */
+  transformingCabinetId: string | null;
+  transformMode: TransformMode;
+  selectPart: (id: string | null) => void;
+  selectCabinet: (id: string | null) => void;
+  setSelectedFurniture: (id: string) => void;
+  setIsTransforming: (isTransforming: boolean) => void;
+  setTransformingPartId: (id: string | null) => void;
+  setTransformingCabinetId: (id: string | null) => void;
+  setTransformMode: (mode: TransformMode) => void;
+};
 
 export type MaterialsSlice = Pick<
   StoreState,
@@ -49,6 +55,7 @@ export type CabinetSlice = Pick<
   | 'updateCabinet'
   | 'renameCabinet'
   | 'updateCabinetParams'
+  | 'updateCabinetTransform'
   | 'removeCabinet'
   | 'duplicateCabinet'
 >;
