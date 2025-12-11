@@ -9,7 +9,7 @@ import Footer from "@/components/Footer";
 import { getLandingContent } from "@/data/content";
 import { Locale, defaultLocale, locales } from "@meble/i18n";
 
-type Params = { locale: Locale };
+type Params = { locale: string };
 
 interface Props {
   children: ReactNode;
@@ -20,7 +20,8 @@ export async function generateMetadata(
   { params }: { params: Promise<Params> }
 ): Promise<Metadata> {
   const { locale: paramLocale } = await params;
-  const safeLocale = locales.includes(paramLocale) ? paramLocale : defaultLocale;
+  const safeLocale: Locale =
+    locales.find((value) => value === paramLocale) ?? defaultLocale;
   const content = await getLandingContent(safeLocale);
   const { metadata, siteName, siteUrl } = content.siteDetails;
 
@@ -52,7 +53,8 @@ export async function generateMetadata(
 
 export default async function LocaleLayout({ children, params }: Props) {
   const { locale: paramLocale } = await params;
-  const safeLocale = locales.includes(paramLocale) ? paramLocale : defaultLocale;
+  const safeLocale: Locale =
+    locales.find((value) => value === paramLocale) ?? defaultLocale;
   const content = await getLandingContent(safeLocale);
   const messages = await getMessages(safeLocale);
 

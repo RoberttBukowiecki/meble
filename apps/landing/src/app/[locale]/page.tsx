@@ -1,5 +1,3 @@
-import { notFound } from 'next/navigation';
-
 import Benefits from '@/components/Benefits/Benefits';
 import FAQ from '@/components/FAQ';
 import Hero from '@/components/Hero';
@@ -12,7 +10,7 @@ import { Locale, defaultLocale, locales } from '@meble/i18n';
 import { getTranslations } from 'next-intl/server';
 
 type PageProps = {
-  params: Promise<{ locale: Locale }>;
+  params: Promise<{ locale: string }>;
 };
 
 export function generateStaticParams() {
@@ -21,12 +19,8 @@ export function generateStaticParams() {
 
 const Page = async ({ params }: PageProps) => {
   const { locale: paramLocale } = await params;
-  const locale = locales.includes(paramLocale)
-    ? paramLocale
-    : defaultLocale;
-  if (!locales.includes(locale)) {
-    notFound();
-  }
+  const locale: Locale =
+    locales.find((value) => value === paramLocale) ?? defaultLocale;
 
   const content = await getLandingContent(locale);
   const t = await getTranslations({ locale, namespace: 'landing' });
