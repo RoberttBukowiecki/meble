@@ -36,6 +36,8 @@ export function Scene() {
     duplicateCabinet,
     updatePart,
     setIsTransforming,
+    selectPart,
+    selectCabinet,
   } = useStore(
       useShallow((state) => ({
         isTransforming: state.isTransforming,
@@ -49,6 +51,8 @@ export function Scene() {
         duplicateCabinet: state.duplicateCabinet,
         updatePart: state.updatePart,
         setIsTransforming: state.setIsTransforming,
+        selectPart: state.selectPart,
+        selectCabinet: state.selectCabinet,
       }))
     );
   const controlsRef = useRef<OrbitControlsType>(null);
@@ -88,6 +92,13 @@ export function Scene() {
   const handlePartTransformEnd = useCallback(() => {
     setIsTransforming(false);
   }, [setIsTransforming]);
+
+  const handlePointerMissed = useCallback(() => {
+    if (selectedPartId || selectedCabinetId) {
+      selectPart(null);
+      selectCabinet(null);
+    }
+  }, [selectedPartId, selectedCabinetId, selectPart, selectCabinet]);
 
   // Keyboard shortcuts
   useKeyboardShortcuts({
@@ -148,6 +159,7 @@ export function Scene() {
           far: 100000,
         }}
         shadows
+        onPointerMissed={handlePointerMissed}
       >
         {/* Controls */}
         <OrbitControls

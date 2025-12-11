@@ -31,7 +31,13 @@ export type FurnitureSlice = Pick<
 
 export type PartsSlice = Pick<
   StoreState,
-  'parts' | 'addPart' | 'updatePart' | 'removePart' | 'duplicatePart'
+  | 'parts'
+  | 'addPart'
+  | 'updatePart'
+  | 'renamePart'
+  | 'renameManualGroup'
+  | 'removePart'
+  | 'duplicatePart'
 >;
 
 export type CabinetSlice = Pick<
@@ -39,6 +45,7 @@ export type CabinetSlice = Pick<
   | 'cabinets'
   | 'addCabinet'
   | 'updateCabinet'
+  | 'renameCabinet'
   | 'updateCabinetParams'
   | 'removeCabinet'
   | 'duplicateCabinet'

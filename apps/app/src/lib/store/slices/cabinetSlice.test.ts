@@ -296,4 +296,35 @@ describe('cabinetSlice', () => {
     expect(state.selectedPartId).toBeNull();
     expect(triggerDebouncedCollisionDetection).toHaveBeenCalledTimes(1);
   });
+
+  it('renames cabinet and records history', () => {
+    const now = new Date('2024-01-01T00:00:00Z');
+    const cabinet: Cabinet = {
+      id: 'cab-rename',
+      name: 'Stara nazwa',
+      furnitureId: 'f-1',
+      type: 'KITCHEN',
+      params: defaultParams,
+      materials: { bodyMaterialId: 'body-1', frontMaterialId: 'front-1' },
+      topBottomPlacement: 'inset',
+      partIds: [],
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    const store = createCabinetStore({ cabinets: [cabinet] });
+
+    store.getState().renameCabinet('cab-rename', '  Nowa nazwa  ');
+
+    const updated = store.getState().cabinets[0];
+    expect(updated.name).toBe('Nowa nazwa');
+    expect(updated.updatedAt.getTime()).toBeGreaterThan(now.getTime());
+    expect(store.getState().pushEntry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'UPDATE_CABINET',
+        before: { name: 'Stara nazwa' },
+        after: { name: 'Nowa nazwa' },
+      })
+    );
+  });
 });

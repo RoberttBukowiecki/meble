@@ -86,6 +86,7 @@ export function inferKindFromType(type: HistoryEntryType): HistoryEntryKind {
   if (type.includes('CABINET')) return 'cabinet';
   if (type.includes('MATERIAL')) return 'material';
   if (type === 'SELECTION') return 'selection';
+  if (type.includes('GROUP')) return 'misc';
   if (type.includes('TRANSFORM') || type.includes('PART')) return 'geometry';
   return 'misc';
 }

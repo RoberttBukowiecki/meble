@@ -2,7 +2,7 @@
  * CSV export functionality for furniture parts
  */
 
-import type { Part, Material, Furniture, EdgeBandingRect } from '@/types';
+import type { Part, Material, Furniture } from '@/types';
 
 /**
  * Generate CSV file content from parts data
@@ -15,7 +15,6 @@ export function generateCSV(
 ): string {
   // CSV Header
   const header = [
-    'project',
     'furniture',
     'group',
     'part_id',
@@ -23,14 +22,7 @@ export function generateCSV(
     'material',
     'thickness_mm',
     'length_x_mm',
-    'width_y_mm',
-    'shape',
-    'shape_params',
-    'edge_top',
-    'edge_bottom',
-    'edge_left',
-    'edge_right',
-    'notes',
+    'width_y_mm'
   ].join(';');
 
   // Helper functions
@@ -40,53 +32,9 @@ export function generateCSV(
   const getFurnitureName = (id: string) =>
     furnitures.find((f) => f.id === id)?.name || 'Unknown';
 
-  const formatShapeParams = (part: Part): string => {
-    const params = part.shapeParams;
-    switch (params.type) {
-      case 'RECT':
-        return `x=${params.x};y=${params.y}`;
-      case 'TRAPEZOID':
-        return `frontX=${params.frontX};backX=${params.backX};y=${params.y};side=${params.skosSide}`;
-      case 'L_SHAPE':
-        return `x=${params.x};y=${params.y};cutX=${params.cutX};cutY=${params.cutY}`;
-      case 'POLYGON':
-        return `points=${JSON.stringify(params.points)}`;
-      default:
-        return '';
-    }
-  };
-
-  const formatEdgeBanding = (
-    part: Part
-  ): {
-    top: string;
-    bottom: string;
-    left: string;
-    right: string;
-  } => {
-    if (part.edgeBanding.type === 'RECT') {
-      const eb = part.edgeBanding as EdgeBandingRect;
-      return {
-        top: eb.top ? '1' : '0',
-        bottom: eb.bottom ? '1' : '0',
-        left: eb.left ? '1' : '0',
-        right: eb.right ? '1' : '0',
-      };
-    }
-    // For GENERIC edge banding, use default
-    return {
-      top: '0',
-      bottom: '0',
-      left: '0',
-      right: '0',
-    };
-  };
-
   // Generate rows
   const rows = parts.map((part) => {
-    const edges = formatEdgeBanding(part);
     return [
-      'Meblarz3D', // project name
       getFurnitureName(part.furnitureId),
       part.group || '',
       part.id,
@@ -94,14 +42,7 @@ export function generateCSV(
       getMaterialName(part.materialId),
       part.depth.toString(),
       part.width.toString(),
-      part.height.toString(),
-      part.shapeType,
-      formatShapeParams(part),
-      edges.top,
-      edges.bottom,
-      edges.left,
-      edges.right,
-      part.notes || '',
+      part.height.toString()
     ].join(';');
   });
 

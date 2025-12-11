@@ -220,6 +220,8 @@ export interface ProjectState {
   // Actions - Parts
   addPart: (furnitureId: string, skipHistory?: boolean) => void;
   updatePart: (id: string, patch: Partial<Part>, skipHistory?: boolean) => void;
+  renamePart: (id: string, name: string, skipHistory?: boolean) => void;
+  renameManualGroup: (groupId: string, name: string, skipHistory?: boolean) => void;
   removePart: (id: string, skipHistory?: boolean) => void;
   selectPart: (id: string | null) => void;
   duplicatePart: (id: string, skipHistory?: boolean) => void;
@@ -244,6 +246,7 @@ export interface ProjectState {
     patch: Partial<Omit<Cabinet, 'id' | 'furnitureId' | 'createdAt'>>,
     skipHistory?: boolean
   ) => void;
+  renameCabinet: (id: string, name: string, skipHistory?: boolean) => void;
   updateCabinetParams: (id: string, params: CabinetParams, skipHistory?: boolean) => void;
   removeCabinet: (id: string, skipHistory?: boolean) => void;
   duplicateCabinet: (id: string, skipHistory?: boolean) => void;
@@ -393,6 +396,7 @@ export type HistoryEntryType =
   | 'UPDATE_CABINET'
   | 'DUPLICATE_CABINET'
   | 'REGENERATE_CABINET'
+  | 'UPDATE_GROUP'
   | 'SELECTION'
   | 'MILESTONE';
 
@@ -438,6 +442,16 @@ export interface CabinetRegenerationSnapshot {
 }
 
 /**
+ * Manual group rename snapshot
+ */
+export interface GroupRenameSnapshot {
+  id: string;
+  furnitureId: string;
+  name: string;
+  partIds: string[];
+}
+
+/**
  * Part snapshot for add/remove operations
  */
 export interface PartSnapshot extends Partial<Part> {
@@ -461,7 +475,7 @@ export interface HistoryEntry {
   targetIds?: string[];
   furnitureId?: string;
   cabinetId?: string;
-  before?: PartSnapshot | TransformSnapshot | CabinetRegenerationSnapshot | Partial<Cabinet> | unknown;
-  after?: PartSnapshot | TransformSnapshot | CabinetRegenerationSnapshot | Partial<Cabinet> | unknown;
+  before?: PartSnapshot | TransformSnapshot | CabinetRegenerationSnapshot | GroupRenameSnapshot | Partial<Cabinet> | unknown;
+  after?: PartSnapshot | TransformSnapshot | CabinetRegenerationSnapshot | GroupRenameSnapshot | Partial<Cabinet> | unknown;
   meta: HistoryEntryMeta;
 }

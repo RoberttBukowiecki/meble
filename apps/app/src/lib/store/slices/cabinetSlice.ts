@@ -14,7 +14,8 @@ import {
 } from '../utils';
 import type { CabinetSlice, StoreSlice } from '../types';
 import { HISTORY_LABELS } from '../history/constants';
-import { generateId, createPartIdMap } from '../history/utils';
+import { generateId, createPartIdMap, inferKindFromType } from '../history/utils';
+import { sanitizeName, NAME_MAX_LENGTH } from '@/lib/naming';
 
 export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
   cabinets: [],
@@ -84,7 +85,8 @@ export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
 
   updateCabinet: (
     id,
-    patch: Partial<Omit<Cabinet, 'id' | 'furnitureId' | 'createdAt'>>
+    patch: Partial<Omit<Cabinet, 'id' | 'furnitureId' | 'createdAt'>>,
+    _skipHistory = false
   ) => {
     set((state) => {
       const cabinetIndex = state.cabinets.findIndex((c) => c.id === id);
@@ -149,6 +151,38 @@ export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
     });
 
     triggerDebouncedCollisionDetection(get);
+  },
+
+  renameCabinet: (id: string, name: string, skipHistory = false) => {
+    const cabinet = get().cabinets.find((c) => c.id === id);
+    const normalized = sanitizeName(name, NAME_MAX_LENGTH);
+    if (!cabinet || !normalized) return;
+
+    const currentName = cabinet.name;
+    if (currentName === normalized) return;
+
+    const now = new Date();
+    set((state) => ({
+      cabinets: state.cabinets.map((c) =>
+        c.id === id ? { ...c, name: normalized, updatedAt: now } : c
+      ),
+    }));
+
+    if (!skipHistory) {
+      get().pushEntry({
+        type: 'UPDATE_CABINET',
+        targetId: id,
+        furnitureId: cabinet.furnitureId,
+        before: { name: currentName },
+        after: { name: normalized },
+        meta: {
+          id: generateId(),
+          timestamp: Date.now(),
+          label: HISTORY_LABELS.UPDATE_CABINET,
+          kind: inferKindFromType('UPDATE_CABINET'),
+        },
+      });
+    }
   },
 
   updateCabinetParams: (id: string, params: CabinetParams, skipHistory = false) => {

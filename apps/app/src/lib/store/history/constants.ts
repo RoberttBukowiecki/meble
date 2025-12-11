@@ -36,6 +36,7 @@ export const HISTORY_LABELS: Record<HistoryEntryType, string> = {
   UPDATE_CABINET: 'Zaktualizowano szafkę',
   DUPLICATE_CABINET: 'Powielono szafkę',
   REGENERATE_CABINET: 'Przebudowano szafkę',
+  UPDATE_GROUP: 'Zmieniono grupę',
   SELECTION: 'Wybór elementu',
   MILESTONE: 'Punkt kontrolny',
 };

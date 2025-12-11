@@ -83,7 +83,10 @@
     "partsCount": "{count, plural, one {# część} few {# części} other {# części}}",
     "dimensions": "{width} x {height} x {depth} mm",
     "none": "Brak",
-    "noDash": "-"
+    "noDash": "-",
+    "renamePart": "Zmień nazwę części",
+    "renameGroup": "Zmień nazwę grupy",
+    "renameCabinet": "Zmień nazwę szafki"
   },
   "CabinetTemplateDialog": {
     "title": "Dodaj szafkę",

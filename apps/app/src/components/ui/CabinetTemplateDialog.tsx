@@ -183,6 +183,8 @@ export function CabinetTemplateDialog({ open, onOpenChange, furnitureId }: Cabin
   );
 
   useEffect(() => {
+    if (!open) return;
+
     setMaterials((prev) => {
       const nextBody = prev.bodyMaterialId ?? default_material;
       const nextFront = prev.frontMaterialId ?? default_front_material;
@@ -197,7 +199,7 @@ export function CabinetTemplateDialog({ open, onOpenChange, furnitureId }: Cabin
         frontMaterialId: nextFront,
       };
     });
-  }, [default_material, default_front_material]);
+  }, [default_material, default_front_material, open]);
 
   const handleCreate = () => {
     if (!selectedType || !params.width || !params.height || !params.depth || !materials.bodyMaterialId || !materials.frontMaterialId) return;

@@ -6,6 +6,7 @@ import type {
   PartSnapshot,
   CabinetSnapshot,
   Cabinet,
+  GroupRenameSnapshot,
 } from '@/types';
 import type { StoreState } from '../types';
 
@@ -65,6 +66,10 @@ export function applyHistoryEntry(
     case 'UPDATE_CABINET':
     case 'REGENERATE_CABINET':
       applyCabinetUpdate(entry, direction, get, set, state);
+      break;
+
+    case 'UPDATE_GROUP':
+      applyGroupRename(entry, direction, get, set, state);
       break;
 
     default:
@@ -342,15 +347,31 @@ function applyCabinetUpdate(
   state: unknown
 ): void {
   if (!entry.targetId) return;
-  const snapshot = state as CabinetRegenerationSnapshot;
+  const snapshot = state as CabinetRegenerationSnapshot | Partial<Cabinet>;
   if (!snapshot) return;
 
-  const { cabinetParams, partIds, parts } = snapshot;
-
-  // Remove old parts
   const cabinet = get().cabinets.find((c) => c.id === entry.targetId);
   if (!cabinet) return;
 
+  const isRegenerationSnapshot = Array.isArray((snapshot as CabinetRegenerationSnapshot).parts)
+    && Array.isArray((snapshot as CabinetRegenerationSnapshot).partIds);
+
+  // Simple cabinet field update (e.g., rename)
+  if (!isRegenerationSnapshot) {
+    const cabinetPatch = snapshot as Partial<Cabinet>;
+    set((s) => ({
+      cabinets: s.cabinets.map((c) =>
+        c.id === entry.targetId
+          ? { ...c, ...cabinetPatch, updatedAt: new Date() }
+          : c
+      ),
+    }));
+    return;
+  }
+
+  const { cabinetParams, partIds, parts } = snapshot as CabinetRegenerationSnapshot;
+
+  // Remove old parts
   set((s) => {
     const remainingParts = s.parts.filter((p) => !cabinet.partIds.includes(p.id));
 
@@ -367,5 +388,35 @@ function applyCabinetUpdate(
           : c
       ),
     };
+  });
+}
+
+/**
+ * Apply UPDATE_GROUP history entry (manual group rename)
+ */
+function applyGroupRename(
+  entry: HistoryEntry,
+  direction: 'undo' | 'redo',
+  get: () => StoreState,
+  set: (partial: Partial<StoreState> | ((state: StoreState) => Partial<StoreState>)) => void,
+  state: unknown
+): void {
+  const snapshot = state as GroupRenameSnapshot;
+  if (!snapshot || !snapshot.partIds?.length) return;
+
+  const nextName = snapshot.name;
+  const partIdSet = new Set(snapshot.partIds);
+
+  set((s) => {
+    let changed = false;
+    const now = new Date();
+    const updatedParts = s.parts.map((part) => {
+      if (!partIdSet.has(part.id)) return part;
+      changed = true;
+      return { ...part, group: nextName, updatedAt: now };
+    });
+
+    if (!changed) return s;
+    return { parts: updatedParts };
   });
 }

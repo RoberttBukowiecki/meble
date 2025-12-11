@@ -4,6 +4,8 @@ import { getDefaultMaterials, triggerDebouncedCollisionDetection } from '../util
 import type { PartsSlice, StoreSlice } from '../types';
 import { HISTORY_LABELS } from '../history/constants';
 import { generateId, inferKindFromType, pickFields, getUpdatePartLabel } from '../history/utils';
+import { sanitizeName, NAME_MAX_LENGTH } from '@/lib/naming';
+import { buildManualGroupId, parseManualGroupId } from '@/lib/groups';
 
 export const createPartsSlice: StoreSlice<PartsSlice> = (set, get) => ({
   parts: [],
@@ -166,6 +168,92 @@ export const createPartsSlice: StoreSlice<PartsSlice> = (set, get) => ({
     }
 
     triggerDebouncedCollisionDetection(get);
+  },
+
+  renamePart: (id: string, name: string, skipHistory = false) => {
+    const part = get().parts.find((p) => p.id === id);
+    const normalized = sanitizeName(name, NAME_MAX_LENGTH);
+    if (!part || !normalized) return;
+
+    const currentName = part.name;
+    if (currentName === normalized) return;
+
+    const now = new Date();
+    set((state) => ({
+      parts: state.parts.map((p) =>
+        p.id === id ? { ...p, name: normalized, updatedAt: now } : p
+      ),
+    }));
+
+    if (!skipHistory) {
+      get().pushEntry({
+        type: 'UPDATE_PART',
+        targetId: id,
+        furnitureId: part.furnitureId,
+        before: { name: currentName },
+        after: { name: normalized },
+        meta: {
+          id: generateId(),
+          timestamp: Date.now(),
+          label: getUpdatePartLabel({ name: normalized }),
+          kind: inferKindFromType('UPDATE_PART'),
+        },
+      });
+    }
+  },
+
+  renameManualGroup: (groupId: string, name: string, skipHistory = false) => {
+    const parsed = parseManualGroupId(groupId);
+    const normalized = sanitizeName(name, NAME_MAX_LENGTH);
+    if (!parsed || !normalized) return;
+
+    const currentName = parsed.name;
+    const targetParts = get().parts.filter(
+      (p) =>
+        !p.cabinetMetadata &&
+        sanitizeName(p.group ?? '', NAME_MAX_LENGTH) === currentName &&
+        p.furnitureId === parsed.furnitureId
+    );
+
+    if (targetParts.length === 0 || currentName === normalized) return;
+
+    const partIds = targetParts.map((p) => p.id);
+    const idSet = new Set(partIds);
+    const now = new Date();
+
+    set((state) => ({
+      parts: state.parts.map((part) =>
+        idSet.has(part.id) ? { ...part, group: normalized, updatedAt: now } : part
+      ),
+    }));
+
+    if (!skipHistory) {
+      const nextId = buildManualGroupId(parsed.furnitureId, normalized);
+      get().pushEntry({
+        type: 'UPDATE_GROUP',
+        targetId: groupId,
+        targetIds: partIds,
+        furnitureId: parsed.furnitureId,
+        before: {
+          id: groupId,
+          furnitureId: parsed.furnitureId,
+          name: currentName,
+          partIds,
+        },
+        after: {
+          id: nextId,
+          furnitureId: parsed.furnitureId,
+          name: normalized,
+          partIds,
+        },
+        meta: {
+          id: generateId(),
+          timestamp: Date.now(),
+          label: HISTORY_LABELS.UPDATE_GROUP,
+          kind: inferKindFromType('UPDATE_GROUP'),
+        },
+      });
+    }
   },
 
   removePart: (id: string, skipHistory = false) => {

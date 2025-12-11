@@ -83,7 +83,10 @@
     "partsCount": "{count, plural, one {# part} other {# parts}}",
     "dimensions": "{width} x {height} x {depth} mm",
     "none": "None",
-    "noDash": "-"
+    "noDash": "-",
+    "renamePart": "Rename part",
+    "renameGroup": "Rename group",
+    "renameCabinet": "Rename cabinet"
   },
   "CabinetTemplateDialog": {
     "title": "Add Cabinet",

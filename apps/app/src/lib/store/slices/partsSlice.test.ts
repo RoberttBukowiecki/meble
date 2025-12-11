@@ -8,6 +8,7 @@ import type { StateCreator } from 'zustand';
 import { createPartsSlice } from './partsSlice';
 import type { PartsSlice } from '../types';
 import type { Material, Part } from '@/types';
+import { buildManualGroupId } from '@/lib/groups';
 
 type PartsTestState = PartsSlice & {
   materials: Material[];
@@ -145,5 +146,53 @@ describe('partsSlice', () => {
     expect(duplicated?.cabinetMetadata).toBeUndefined();
     expect(store.getState().selectedPartId).toBe(duplicated?.id);
     expect(store.getState().detectCollisions).toHaveBeenCalledTimes(1);
+  });
+
+  it('renames part with trimming and records history', () => {
+    const part = createBasePart({ id: 'part-rename' });
+    const store = createPartsStore({ parts: [part] });
+
+    store.getState().renamePart('part-rename', '  Nowa nazwa  ');
+
+    const updated = store.getState().parts[0];
+    expect(updated.name).toBe('Nowa nazwa');
+    expect(store.getState().pushEntry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'UPDATE_PART',
+        before: { name: 'Part 1' },
+        after: { name: 'Nowa nazwa' },
+        meta: expect.objectContaining({ label: 'Zmieniono nazwę części' }),
+      })
+    );
+    expect(store.getState().detectCollisions).not.toHaveBeenCalled();
+  });
+
+  it('renames manual group and updates matching parts', () => {
+    const partA = createBasePart({ id: 'part-a', group: ' Drzwi ' });
+    const partB = createBasePart({ id: 'part-b', group: 'Drzwi' });
+    const partC = createBasePart({ id: 'part-c', group: 'Półki' });
+    const store = createPartsStore({ parts: [partA, partB, partC] });
+
+    const groupId = buildManualGroupId('f1', 'Drzwi');
+    store.getState().renameManualGroup(groupId, 'Nowa grupa');
+
+    const state = store.getState();
+    expect(state.parts.find((p) => p.id === 'part-a')?.group).toBe('Nowa grupa');
+    expect(state.parts.find((p) => p.id === 'part-b')?.group).toBe('Nowa grupa');
+    expect(state.parts.find((p) => p.id === 'part-c')?.group).toBe('Półki');
+    expect(state.pushEntry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'UPDATE_GROUP',
+        before: expect.objectContaining({
+          name: 'Drzwi',
+          partIds: ['part-a', 'part-b'],
+        }),
+        after: expect.objectContaining({
+          name: 'Nowa grupa',
+          partIds: ['part-a', 'part-b'],
+        }),
+      })
+    );
+    expect(state.detectCollisions).not.toHaveBeenCalled();
   });
 });
