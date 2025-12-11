@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
 import { APP_NAME } from '@meble/constants';
-import "../styles/globals.css";
 import { TooltipProvider } from '@meble/ui';
+import "../styles/globals.css";
 
 export const metadata: Metadata = {
   title: APP_NAME,
@@ -21,7 +21,7 @@ export default async function RootLayout({
   return (
     <html lang={locale}>
       <body>
-        <NextIntlClientProvider locale={locale} messages={messages}>
+        <NextIntlClientProvider messages={messages}>
           <TooltipProvider>
             {children}
           </TooltipProvider>
