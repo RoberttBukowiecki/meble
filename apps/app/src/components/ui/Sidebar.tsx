@@ -9,7 +9,7 @@ import { PartsTable } from './PartsTable';
 import { generateCSV, downloadCSV, validateParts } from '@/lib/csv';
 import { CabinetTemplateDialog } from './CabinetTemplateDialog';
 import { HistoryButtons } from './HistoryButtons';
-import { LanguageSwitcher } from './LanguageSwitcher';
+import { SettingsDropdown } from './SettingsDropdown';
 import {
   Dialog,
   DialogContent,
@@ -54,14 +54,14 @@ export function Sidebar() {
     <div className="flex h-full flex-col">
       {/* Header */}
       <div className="border-b border-border p-4">
-        <div className="flex justify-between items-center mb-3">
+        <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold text-foreground">
             {APP_NAME}
           </h2>
-          <HistoryButtons />
-        </div>
-        <div className="mb-4">
-          <LanguageSwitcher />
+          <div className="flex items-center gap-1">
+            <HistoryButtons />
+            <SettingsDropdown />
+          </div>
         </div>
 
         <div className="space-y-2">

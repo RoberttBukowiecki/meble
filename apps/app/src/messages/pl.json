@@ -131,5 +131,9 @@
     "operationCount": "{count, plural, one {# operacja} few {# operacje} many {# operacji} other {# operacji}}",
     "noHistory": "Brak historii. Zacznij projektować, aby zobaczyć swoje akcje.",
     "milestone": "Kamień milowy"
+  },
+  "Settings": {
+    "settings": "Ustawienia",
+    "language": "Język"
   }
 }

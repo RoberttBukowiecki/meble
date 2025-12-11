@@ -14,12 +14,23 @@ import {
   DialogDescription,
 } from '@meble/ui';
 import { Keyboard } from 'lucide-react';
-import { KEYBOARD_SHORTCUTS, formatShortcutLabel } from '@/lib/config';
+import { KEYBOARD_SHORTCUTS, formatShortcutLabel, type ShortcutKeys } from '@/lib/config';
+
+const withMod = (shortcut: ShortcutKeys) =>
+  `CTRL/CMD + ${formatShortcutLabel(shortcut)}`;
 
 export function KeyboardShortcutsHelp() {
   const [open, setOpen] = useState(false);
 
   const shortcuts = [
+    {
+      category: 'Historia zmian',
+      items: [
+        { key: withMod('z'), description: 'Cofnij ostatnią akcję' },
+        { key: `CTRL/CMD + SHIFT + ${formatShortcutLabel('z')}`, description: 'Przywróć cofniętą akcję' },
+        { key: withMod('y'), description: 'Przywróć cofniętą akcję (alternatywa)' },
+      ],
+    },
     {
       category: 'Tryby transformacji',
       items: [
@@ -36,7 +47,7 @@ export function KeyboardShortcutsHelp() {
     {
       category: 'Części',
       items: [
-        { key: `CTRL/CMD + ${formatShortcutLabel(KEYBOARD_SHORTCUTS.DUPLICATE_PART)}`, description: 'Duplikuj zaznaczoną część' },
+        { key: withMod(KEYBOARD_SHORTCUTS.DUPLICATE_PART), description: 'Duplikuj zaznaczoną część' },
         { key: formatShortcutLabel(KEYBOARD_SHORTCUTS.DELETE_PART), description: 'Usuń zaznaczoną część' },
       ],
     },
