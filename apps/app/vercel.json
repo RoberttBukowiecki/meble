@@ -2,6 +2,5 @@
   "version": 2,
   "framework": "nextjs",
   "installCommand": "pnpm install --frozen-lockfile",
-  "buildCommand": "pnpm build",
-  "outputDirectory": ".next"
+  "buildCommand": "pnpm --filter @meble/app build"
 }

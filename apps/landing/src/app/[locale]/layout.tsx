@@ -56,7 +56,7 @@ export default async function LocaleLayout({ children, params }: Props) {
   const safeLocale: Locale =
     locales.find((value) => value === paramLocale) ?? defaultLocale;
   const content = await getLandingContent(safeLocale);
-  const messages = await getMessages(safeLocale);
+  const messages = await getMessages({ locale: safeLocale });
 
   return (
     <NextIntlClientProvider locale={safeLocale} messages={messages}>
