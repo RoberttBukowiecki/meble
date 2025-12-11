@@ -3,6 +3,12 @@ export interface IMenuItem {
     url: string;
 }
 
+export interface CTAButton {
+  topLabel: string;
+  bottomLabel: string;
+  href: string;
+}
+
 export interface HeroDetails {
     heading: string;
     subheading: string;

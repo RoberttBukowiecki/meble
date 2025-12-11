@@ -1,15 +1,12 @@
 import PricingColumn from "./PricingColumn";
 
-import { Locale } from "@meble/i18n";
-
 import { IPricing } from "@/types";
 
 interface Props {
   pricing: IPricing[];
-  locale: Locale;
 }
 
-const Pricing: React.FC<Props> = ({ pricing, locale }) => {
+const Pricing: React.FC<Props> = ({ pricing }) => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       {pricing.map((tier, index) => (
