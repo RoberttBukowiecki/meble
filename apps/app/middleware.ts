@@ -4,8 +4,7 @@ import { defaultLocale, locales } from '@meble/i18n';
 export default createMiddleware({
   defaultLocale,
   locales,
-  // Keep URLs locale-agnostic while still negotiating the locale
-  localePrefix: 'never',
+  localePrefix: 'as-needed',
 });
 
 export const config = {
