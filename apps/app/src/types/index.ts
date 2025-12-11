@@ -116,6 +116,7 @@ export interface Material {
   name: string;
   color: string;      // Hex color (e.g., "#FFFFFF")
   thickness: number;  // Material thickness in mm
+  isDefault?: boolean; // Marks material as a default choice for presets
 }
 
 // ============================================================================
@@ -176,6 +177,20 @@ export interface Part {
 }
 
 // ============================================================================
+// Collision Detection
+// ============================================================================
+
+/**
+ * Represents a collision between two parts or groups
+ */
+export interface Collision {
+  partId1: string;
+  partId2: string;
+  groupId1?: string; // Cabinet ID or manual group ID
+  groupId2?: string; // Cabinet ID or manual group ID
+}
+
+// ============================================================================
 // Application State
 // ============================================================================
 
@@ -188,6 +203,7 @@ export interface ProjectState {
   materials: Material[];
   furnitures: Furniture[];
   cabinets: Cabinet[];
+  collisions: Collision[];
 
   // Selection
   selectedPartId: string | null;
@@ -202,11 +218,11 @@ export interface ProjectState {
   setSelectedFurniture: (id: string) => void;
 
   // Actions - Parts
-  addPart: (furnitureId: string) => void;
-  updatePart: (id: string, patch: Partial<Part>) => void;
-  removePart: (id: string) => void;
+  addPart: (furnitureId: string, skipHistory?: boolean) => void;
+  updatePart: (id: string, patch: Partial<Part>, skipHistory?: boolean) => void;
+  removePart: (id: string, skipHistory?: boolean) => void;
   selectPart: (id: string | null) => void;
-  duplicatePart: (id: string) => void;
+  duplicatePart: (id: string, skipHistory?: boolean) => void;
   setIsTransforming: (isTransforming: boolean) => void;
   setTransformMode: (mode: 'translate' | 'rotate') => void;
 
@@ -220,16 +236,21 @@ export interface ProjectState {
     furnitureId: string,
     type: CabinetType,
     params: CabinetParams,
-    materials: CabinetMaterials
+    materials: CabinetMaterials,
+    skipHistory?: boolean
   ) => void;
   updateCabinet: (
     id: string,
-    patch: Partial<Omit<Cabinet, 'id' | 'furnitureId' | 'createdAt'>>
+    patch: Partial<Omit<Cabinet, 'id' | 'furnitureId' | 'createdAt'>>,
+    skipHistory?: boolean
   ) => void;
-  updateCabinetParams: (id: string, params: CabinetParams) => void;
-  removeCabinet: (id: string) => void;
-  duplicateCabinet: (id: string) => void;
+  updateCabinetParams: (id: string, params: CabinetParams, skipHistory?: boolean) => void;
+  removeCabinet: (id: string, skipHistory?: boolean) => void;
+  duplicateCabinet: (id: string, skipHistory?: boolean) => void;
   selectCabinet: (id: string | null) => void;
+
+  // Actions - Collision Detection
+  detectCollisions: () => void;
 }
 
 // ============================================================================
@@ -351,4 +372,96 @@ export interface CabinetPartMetadata {
   cabinetId: string;
   role: CabinetPartRole;
   index?: number; // For shelves, doors, drawers (0-based)
+}
+
+// ============================================================================
+// History System
+// ============================================================================
+
+/**
+ * History entry types for undo/redo operations
+ */
+export type HistoryEntryType =
+  | 'ADD_PART'
+  | 'REMOVE_PART'
+  | 'UPDATE_PART'
+  | 'TRANSFORM_PART'
+  | 'DUPLICATE_PART'
+  | 'TRANSFORM_CABINET'
+  | 'ADD_CABINET'
+  | 'REMOVE_CABINET'
+  | 'UPDATE_CABINET'
+  | 'DUPLICATE_CABINET'
+  | 'REGENERATE_CABINET'
+  | 'SELECTION'
+  | 'MILESTONE';
+
+/**
+ * Category of history entry for UI grouping
+ */
+export type HistoryEntryKind =
+  | 'geometry'
+  | 'material'
+  | 'cabinet'
+  | 'selection'
+  | 'misc';
+
+/**
+ * Metadata for a history entry
+ */
+export interface HistoryEntryMeta {
+  id: string;
+  timestamp: number;
+  label: string;
+  batchingId?: string;
+  isMilestone?: boolean;
+  kind: HistoryEntryKind;
+}
+
+/**
+ * Transform snapshot for position/rotation/scale
+ */
+export interface TransformSnapshot {
+  position: [number, number, number];
+  rotation: [number, number, number];
+  scale?: [number, number, number];
+}
+
+/**
+ * Cabinet regeneration snapshot capturing old and new state
+ */
+export interface CabinetRegenerationSnapshot {
+  cabinetParams?: Partial<Cabinet>;
+  partIds: string[];
+  parts: Part[];
+  partIdMap?: Record<string, string>; // old -> new
+}
+
+/**
+ * Part snapshot for add/remove operations
+ */
+export interface PartSnapshot extends Partial<Part> {
+  _index?: number; // Original index in parts array
+}
+
+/**
+ * Cabinet snapshot for add/remove/duplicate operations
+ */
+export interface CabinetSnapshot {
+  cabinet: Cabinet & { _index?: number }; // Cabinet with optional index
+  parts: Part[]; // All parts belonging to this cabinet
+}
+
+/**
+ * History entry representing a single undoable/redoable operation
+ */
+export interface HistoryEntry {
+  type: HistoryEntryType;
+  targetId?: string;
+  targetIds?: string[];
+  furnitureId?: string;
+  cabinetId?: string;
+  before?: PartSnapshot | TransformSnapshot | CabinetRegenerationSnapshot | Partial<Cabinet> | unknown;
+  after?: PartSnapshot | TransformSnapshot | CabinetRegenerationSnapshot | Partial<Cabinet> | unknown;
+  meta: HistoryEntryMeta;
 }

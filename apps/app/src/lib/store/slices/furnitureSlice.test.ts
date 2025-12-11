@@ -1,0 +1,60 @@
+jest.mock('uuid', () => {
+  let counter = 0;
+  return { v4: jest.fn(() => `uuid-${++counter}`) };
+});
+
+import { create } from 'zustand';
+import type { StateCreator } from 'zustand';
+import { DEFAULT_FURNITURE_ID } from '../constants';
+import { createFurnitureSlice } from './furnitureSlice';
+import type { FurnitureSlice } from '../types';
+
+type FurnitureTestState = FurnitureSlice & {
+  parts: any[];
+  selectedFurnitureId: string;
+  selectedPartId: string | null;
+};
+
+const createFurnitureStore = () =>
+  create<FurnitureTestState>()((set, get) => ({
+    ...createFurnitureSlice(set as unknown as any, get as unknown as any),
+    parts: [],
+    selectedFurnitureId: DEFAULT_FURNITURE_ID,
+    selectedPartId: null,
+  }));
+
+describe('furnitureSlice', () => {
+  it('adds furniture with generated id', () => {
+    const store = createFurnitureStore();
+
+    store.getState().addFurniture('Biurko');
+
+    const furnitures = store.getState().furnitures;
+    expect(furnitures).toHaveLength(2);
+    expect(furnitures[1]).toMatchObject({ name: 'Biurko' });
+    expect(furnitures[1].id).toBe('uuid-5');
+  });
+
+  it('removes furniture, related parts, and resets selection if needed', () => {
+    const store = createFurnitureStore();
+    store.getState().addFurniture('Drugi');
+    const targetId = store.getState().furnitures[1].id;
+
+    store.setState({
+      parts: [
+        { id: 'p1', furnitureId: targetId },
+        { id: 'p2', furnitureId: 'other' },
+      ],
+      selectedFurnitureId: targetId,
+      selectedPartId: 'p1',
+    });
+
+    store.getState().removeFurniture(targetId);
+
+    const state = store.getState();
+    expect(state.furnitures.some((f) => f.id === targetId)).toBe(false);
+    expect(state.parts).toEqual([{ id: 'p2', furnitureId: 'other' }]);
+    expect(state.selectedFurnitureId).toBe(DEFAULT_FURNITURE_ID);
+    expect(state.selectedPartId).toBeNull();
+  });
+});

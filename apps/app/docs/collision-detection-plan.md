@@ -37,3 +37,6 @@
 4.  **Aktualizacja komponentu `Part3D`:** Dodać logikę zmieniającą materiał na podstawie stanu kolizji.
 5.  **Stworzenie komponentu UI dla ostrzeżeń:** Dodać ikonę i `Popover` z listą kolizji.
 6.  **Testy:** Przetestować ręcznie różne scenariusze kolizji.
+
+
+## 6. Zwroc uwage na wybitny performance

@@ -6,6 +6,9 @@ import { TransformControls } from '@react-three/drei';
 import { useStore } from '@/lib/store';
 import { useShallow } from 'zustand/react/shallow';
 import * as THREE from 'three';
+import { Part } from '@/types';
+
+type PartTransform = Pick<Part, 'position' | 'rotation'>;
 
 export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
   const parts = useStore(
@@ -13,11 +16,13 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
       state.parts.filter((p) => p.cabinetMetadata?.cabinetId === cabinetId)
     )
   );
-  const { updatePart, transformMode, setIsTransforming } = useStore(
+  const { updatePart, transformMode, setIsTransforming, beginBatch, commitBatch } = useStore(
     useShallow((state) => ({
       updatePart: state.updatePart,
       transformMode: state.transformMode,
       setIsTransforming: state.setIsTransforming,
+      beginBatch: state.beginBatch,
+      commitBatch: state.commitBatch,
     }))
   );
 
@@ -61,10 +66,22 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
             updatePart(part.id, {
                 position: newPos.toArray() as [number, number, number],
                 rotation: [newRotation.x, newRotation.y, newRotation.z] as [number, number, number],
-            });
+            }, true); // skip history for intermediate updates
         }
     });
   }, [parts, updatePart, target]);
+
+  const handleTransformStart = useCallback(() => {
+    setIsTransforming(true);
+    const beforeState: Record<string, PartTransform> = {};
+    parts.forEach(p => {
+      beforeState[p.id] = { position: [...p.position], rotation: [...p.rotation] };
+    });
+    beginBatch('TRANSFORM_CABINET', {
+      targetId: cabinetId,
+      before: beforeState,
+    });
+  }, [setIsTransforming, parts, beginBatch, cabinetId]);
 
   const handleTransformEnd = useCallback(() => {
     const group = target;
@@ -73,11 +90,21 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
         return;
     }
     updatePartsFromGroup();
+
+    const afterState: Record<string, PartTransform> = {};
+    // Need to get the latest part state from the store
+    const latestParts = useStore.getState().parts.filter(p => p.cabinetMetadata?.cabinetId === cabinetId);
+    latestParts.forEach(p => {
+      afterState[p.id] = { position: [...p.position], rotation: [...p.rotation] };
+    });
+
+    commitBatch({ after: afterState });
+
     group.position.copy(cabinetCenter);
     group.rotation.set(0, 0, 0);
     group.quaternion.identity();
     setIsTransforming(false);
-  }, [updatePartsFromGroup, cabinetCenter, setIsTransforming, target]);
+  }, [updatePartsFromGroup, cabinetCenter, setIsTransforming, target, commitBatch, cabinetId]);
 
   return (
       <>
@@ -90,7 +117,7 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
               ref={controlRef}
               object={target}
               mode={transformMode}
-              onMouseDown={() => setIsTransforming(true)}
+              onMouseDown={handleTransformStart}
               onChange={updatePartsFromGroup}
               onMouseUp={handleTransformEnd}
               showX={transformMode === 'translate'}

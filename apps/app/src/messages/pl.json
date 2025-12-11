@@ -8,7 +8,8 @@
     "listTabWithCount": "Lista ({count})",
     "selectPartToEdit": "Wybierz część lub szafkę aby edytować właściwości",
     "validationErrors": "Błędy walidacji",
-    "validationErrorsDescription": "Przed eksportem należy naprawić następujące błędy:"
+    "validationErrorsDescription": "Przed eksportem należy naprawić następujące błędy:",
+    "historyListTitle": "Pokaż listę historii"
   },
   "PropertiesPanel": {
     "width": "Szerokość (mm)",
@@ -76,6 +77,11 @@
     "material": "Materiał",
     "shape": "Kształt",
     "edgeBanding": "Okleina",
+    "cabinetGroup": "Szafka",
+    "customGroup": "Grupa",
+    "ungrouped": "Niezgrupowane",
+    "partsCount": "{count, plural, one {# część} few {# części} other {# części}}",
+    "dimensions": "{width} x {height} x {depth} mm",
     "none": "Brak",
     "noDash": "-"
   },
@@ -118,5 +124,12 @@
     "heightMustBePositive": "Część \"{name}\": wysokość musi być > 0",
     "depthMustBePositive": "Część \"{name}\": grubość musi być > 0",
     "depthMismatch": "Część \"{name}\": grubość ({depth}mm) nie pasuje do materiału ({thickness}mm)"
+  },
+  "History": {
+    "listTitle": "Historia",
+    "timelineTitle": "Oś czasu historii",
+    "operationCount": "{count, plural, one {# operacja} few {# operacje} many {# operacji} other {# operacji}}",
+    "noHistory": "Brak historii. Zacznij projektować, aby zobaczyć swoje akcje.",
+    "milestone": "Kamień milowy"
   }
 }

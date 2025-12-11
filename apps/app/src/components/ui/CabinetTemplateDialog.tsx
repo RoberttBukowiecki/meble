@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -23,6 +23,7 @@ import {
 import { useStore } from '@/lib/store';
 import { CabinetType, CabinetParams, CabinetMaterials, TopBottomPlacement } from '@/types';
 import { CABINET_PRESETS } from '@/lib/config';
+import { getDefaultMaterials } from '@/lib/store/utils';
 
 interface CabinetTemplateDialogProps {
   open: boolean;
@@ -176,6 +177,27 @@ export function CabinetTemplateDialog({ open, onOpenChange, furnitureId }: Cabin
   const [materials, setMaterials] = useState<Partial<CabinetMaterials>>({});
 
   const { addCabinet, materials: availableMaterials } = useStore();
+  const { default_material, default_front_material } = useMemo(
+    () => getDefaultMaterials(availableMaterials),
+    [availableMaterials]
+  );
+
+  useEffect(() => {
+    setMaterials((prev) => {
+      const nextBody = prev.bodyMaterialId ?? default_material;
+      const nextFront = prev.frontMaterialId ?? default_front_material;
+
+      if (nextBody === prev.bodyMaterialId && nextFront === prev.frontMaterialId) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        bodyMaterialId: nextBody,
+        frontMaterialId: nextFront,
+      };
+    });
+  }, [default_material, default_front_material]);
 
   const handleCreate = () => {
     if (!selectedType || !params.width || !params.height || !params.depth || !materials.bodyMaterialId || !materials.frontMaterialId) return;

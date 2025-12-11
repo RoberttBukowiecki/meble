@@ -14,6 +14,7 @@ import { Button } from '@meble/ui';
 import { Camera, Move, RotateCw } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { KeyboardShortcutsHelp } from '@/components/ui/KeyboardShortcutsHelp';
+import { CollisionWarning } from '@/components/ui/CollisionWarning';
 import { useKeyboardShortcuts } from '@/lib/useKeyboardShortcuts';
 import { SCENE_CONFIG, KEYBOARD_SHORTCUTS, formatShortcutLabel } from '@/lib/config';
 import type { OrbitControls as OrbitControlsType } from 'three-stdlib';
@@ -198,6 +199,9 @@ export function Scene() {
           />
         )}
       </Canvas>
+
+      {/* Collision warning overlay */}
+      <CollisionWarning />
     </div>
   );
 }

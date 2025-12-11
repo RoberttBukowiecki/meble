@@ -1,10 +1,11 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useRef } from 'react';
 import { TransformControls } from '@react-three/drei';
 import { useStore } from '@/lib/store';
 import * as THREE from 'three';
 import type { Part } from '@/types';
+import { pickTransform } from '@/lib/store/history/utils';
 
 interface PartTransformControlsProps {
   part: Part;
@@ -21,13 +22,30 @@ export function PartTransformControls({
 }: PartTransformControlsProps) {
   const [target, setTarget] = useState<THREE.Group | null>(null);
   const updatePart = useStore((state) => state.updatePart);
+  const beginBatch = useStore((state) => state.beginBatch);
+  const commitBatch = useStore((state) => state.commitBatch);
+  const initialTransformRef = useRef<{ position: [number, number, number]; rotation: [number, number, number] } | null>(null);
 
   // The `useState` with ref callback pattern is correct for avoiding the race condition.
   // We conditionally render the TransformControls only when the target object is mounted.
 
+  const handleTransformStart = useCallback(() => {
+    // Capture initial transform state
+    initialTransformRef.current = pickTransform(part);
+
+    // Begin history batch
+    beginBatch('TRANSFORM_PART', {
+      targetId: part.id,
+      before: initialTransformRef.current,
+    });
+
+    // Call parent callback
+    onTransformStart();
+  }, [part, beginBatch, onTransformStart]);
+
   const handleTransformChange = useCallback(
     (e: THREE.Event | undefined) => {
-      const group = e?.target.object as THREE.Group;
+      const group = (e?.target as any)?.object as THREE.Group;
       if (!group) return;
 
       const position = group.position.toArray() as [number, number, number];
@@ -37,8 +55,8 @@ export function PartTransformControls({
         number
       ];
 
-      // Update the part in the store (live update)
-      updatePart(part.id, { position, rotation });
+      // Update the part in the store (live update, skipHistory=true to avoid per-frame entries)
+      updatePart(part.id, { position, rotation }, true);
     },
     [part.id, updatePart]
   );
@@ -57,11 +75,20 @@ export function PartTransformControls({
       number
     ];
 
-    updatePart(part.id, { position, rotation });
+    // Final update to store (still skip history as it will be recorded in batch)
+    updatePart(part.id, { position, rotation }, true);
+
+    // Commit history batch with final transform
+    commitBatch({
+      after: {
+        position,
+        rotation,
+      },
+    });
 
     // Call the parent callback
     onTransformEnd();
-  }, [part.id, updatePart, onTransformEnd, target]);
+  }, [part.id, updatePart, commitBatch, onTransformEnd, target]);
 
   return (
     <>
@@ -74,7 +101,7 @@ export function PartTransformControls({
         <TransformControls
           object={target}
           mode={mode}
-          onMouseDown={onTransformStart}
+          onMouseDown={handleTransformStart}
           onChange={handleTransformChange}
           onMouseUp={handleTransformEnd}
         />

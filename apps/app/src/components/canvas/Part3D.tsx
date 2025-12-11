@@ -12,6 +12,7 @@ import { Edges } from '@react-three/drei';
 import { useMaterial, useStore } from '@/lib/store';
 import { PART_CONFIG, MATERIAL_CONFIG } from '@/lib/config';
 import type { Part, ShapeParamsTrapezoid, ShapeParamsLShape, ShapeParamsPolygon } from '@/types';
+import { isPartColliding, isGroupColliding, getGroupId } from '@/lib/collisionDetection';
 
 interface Part3DProps {
   part: Part;
@@ -26,12 +27,18 @@ export function Part3D({ part }: Part3DProps) {
     selectCabinet,
     selectedPartId,
     selectedCabinetId,
+    collisions,
   } = useStore();
 
   const material = useMaterial(part.materialId);
 
   const isPartSelected = selectedPartId === part.id;
   const isCabinetSelected = part.cabinetMetadata?.cabinetId === selectedCabinetId;
+
+  // Check if this part or its group is colliding
+  const groupId = getGroupId(part);
+  const isColliding = isPartColliding(part.id, collisions) ||
+    (groupId ? isGroupColliding(groupId, collisions) : false);
 
   const color = material?.color || MATERIAL_CONFIG.DEFAULT_MATERIAL_COLOR;
 
@@ -98,14 +105,18 @@ export function Part3D({ part }: Part3DProps) {
       <meshStandardMaterial
         color={color}
         emissive={
-          isPartSelected
+          isColliding
+            ? PART_CONFIG.COLLISION_EMISSIVE_COLOR
+            : isPartSelected
             ? PART_CONFIG.SELECTION_EMISSIVE_COLOR
             : isCabinetSelected
             ? PART_CONFIG.CABINET_SELECTION_EMISSIVE_COLOR
             : '#000000'
         }
         emissiveIntensity={
-          isPartSelected
+          isColliding
+            ? PART_CONFIG.COLLISION_EMISSIVE_INTENSITY
+            : isPartSelected
             ? PART_CONFIG.SELECTION_EMISSIVE_INTENSITY
             : isCabinetSelected
             ? PART_CONFIG.CABINET_SELECTION_EMISSIVE_INTENSITY
@@ -113,10 +124,12 @@ export function Part3D({ part }: Part3DProps) {
         }
       />
 
-      {(isPartSelected || isCabinetSelected) && (
+      {(isColliding || isPartSelected || isCabinetSelected) && (
         <Edges
           color={
-            isPartSelected
+            isColliding
+              ? PART_CONFIG.COLLISION_EDGE_COLOR
+              : isPartSelected
               ? PART_CONFIG.SELECTION_EDGE_COLOR
               : PART_CONFIG.CABINET_SELECTION_EDGE_COLOR
           }

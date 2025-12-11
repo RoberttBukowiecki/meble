@@ -8,7 +8,8 @@
     "listTabWithCount": "List ({count})",
     "selectPartToEdit": "Select a part or cabinet to edit properties",
     "validationErrors": "Validation Errors",
-    "validationErrorsDescription": "Please fix the following errors before exporting:"
+    "validationErrorsDescription": "Please fix the following errors before exporting:",
+    "historyListTitle": "Show History List"
   },
   "PropertiesPanel": {
     "width": "Width (mm)",
@@ -76,6 +77,11 @@
     "material": "Material",
     "shape": "Shape",
     "edgeBanding": "Edge Banding",
+    "cabinetGroup": "Cabinet",
+    "customGroup": "Group",
+    "ungrouped": "Ungrouped",
+    "partsCount": "{count, plural, one {# part} other {# parts}}",
+    "dimensions": "{width} x {height} x {depth} mm",
     "none": "None",
     "noDash": "-"
   },
@@ -118,5 +124,12 @@
     "heightMustBePositive": "Part \"{name}\": height must be > 0",
     "depthMustBePositive": "Part \"{name}\": thickness must be > 0",
     "depthMismatch": "Part \"{name}\": thickness ({depth}mm) doesn't match material ({thickness}mm)"
+  },
+  "History": {
+    "listTitle": "History",
+    "timelineTitle": "History Timeline",
+    "operationCount": "{count, plural, one {# operation} other {# operations}}",
+    "noHistory": "No history yet. Start designing to see your actions here.",
+    "milestone": "Milestone"
   }
 }
