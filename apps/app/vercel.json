@@ -2,6 +2,5 @@
   "version": 2,
   "framework": "nextjs",
   "installCommand": "pnpm install --frozen-lockfile",
-  "buildCommand": "pnpm --filter @meble/app build",
-  "outputDirectory": ".vercel/output"
+  "buildCommand": "pnpm --filter @meble/app build"
 }
