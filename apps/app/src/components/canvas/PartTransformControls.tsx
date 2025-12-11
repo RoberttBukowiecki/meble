@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState, useRef } from 'react';
+import { useCallback, useState, useRef, useEffect } from 'react';
 import { TransformControls } from '@react-three/drei';
 import { useStore } from '@/lib/store';
 import * as THREE from 'three';
@@ -28,10 +28,40 @@ export function PartTransformControls({
   const isShiftPressed = useStore((state) => state.isShiftPressed);
   const detectCollisions = useStore((state) => state.detectCollisions);
   const initialTransformRef = useRef<{ position: [number, number, number]; rotation: [number, number, number] } | null>(null);
+  const rafIdRef = useRef<number | null>(null);
 
   const rotationSnap = mode === 'rotate' && isShiftPressed
     ? THREE.MathUtils.degToRad(SCENE_CONFIG.ROTATION_SNAP_DEGREES)
     : undefined;
+
+  // Cleanup RAF on unmount
+  useEffect(() => {
+    return () => {
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+      }
+    };
+  }, []);
+
+  // Apply transform update (throttled to RAF)
+  const applyTransform = useCallback(() => {
+    if (!target) return;
+
+    const position = target.position.toArray() as [number, number, number];
+    const rotation = target.rotation.toArray().slice(0, 3) as [number, number, number];
+
+    // Live update to store (skip history - will be recorded in batch)
+    updatePart(part.id, { position, rotation }, true);
+  }, [target, part.id, updatePart]);
+
+  // Schedule throttled transform update
+  const scheduleTransformUpdate = useCallback(() => {
+    if (rafIdRef.current !== null) return; // Already scheduled
+    rafIdRef.current = requestAnimationFrame(() => {
+      rafIdRef.current = null;
+      applyTransform();
+    });
+  }, [applyTransform]);
 
   // The `useState` with ref callback pattern is correct for avoiding the race condition.
   // We conditionally render the TransformControls only when the target object is mounted.
@@ -50,40 +80,28 @@ export function PartTransformControls({
     onTransformStart();
   }, [part, beginBatch, onTransformStart]);
 
-  const handleTransformChange = useCallback(
-    (e: THREE.Event | undefined) => {
-      const group = (e?.target as any)?.object as THREE.Group;
-      if (!group) return;
-
-      const position = group.position.toArray() as [number, number, number];
-      const rotation = group.rotation.toArray().slice(0, 3) as [
-        number,
-        number,
-        number
-      ];
-
-      // Update the part in the store (live update, skipHistory=true to avoid per-frame entries)
-      updatePart(part.id, { position, rotation }, true);
-    },
-    [part.id, updatePart]
-  );
-
   const handleTransformEnd = useCallback(() => {
     if (!target) {
       onTransformEnd();
       return;
     }
 
-    // Final update
+    // Cancel any pending RAF
+    if (rafIdRef.current !== null) {
+      cancelAnimationFrame(rafIdRef.current);
+      rafIdRef.current = null;
+    }
+
+    // Apply final transform
+    applyTransform();
+
+    // Read final transform values for history
     const position = target.position.toArray() as [number, number, number];
     const rotation = target.rotation.toArray().slice(0, 3) as [
       number,
       number,
       number
     ];
-
-    // Final update to store (still skip history as it will be recorded in batch)
-    updatePart(part.id, { position, rotation }, true);
 
     // Commit history batch with final transform
     commitBatch({
@@ -98,7 +116,7 @@ export function PartTransformControls({
 
     // Recompute collisions once after the transform
     detectCollisions();
-  }, [part.id, updatePart, commitBatch, onTransformEnd, target, detectCollisions]);
+  }, [target, applyTransform, commitBatch, onTransformEnd, detectCollisions]);
 
   return (
     <>
@@ -112,7 +130,7 @@ export function PartTransformControls({
           object={target}
           mode={mode}
           onMouseDown={handleTransformStart}
-          onChange={handleTransformChange}
+          onChange={scheduleTransformUpdate}
           onMouseUp={handleTransformEnd}
           rotationSnap={rotationSnap}
         />

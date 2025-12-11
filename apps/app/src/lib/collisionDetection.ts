@@ -20,13 +20,15 @@ const GRID_CELL_SIZE = 1000;
 
 /**
  * Minimum overlap threshold (in mm) to consider a collision
- * This handles floating-point precision issues and parts that are designed to touch
+ * This handles floating-point precision issues
  *
- * For furniture, parts are often designed to touch (e.g., sides touching bottom/top)
- * A threshold of 1-2mm allows parts to touch without triggering false collisions,
- * while still detecting actual overlaps/collisions
+ * We use VERY STRICT thresholds and OBB (not AABB) to avoid false positives:
+ * - SAME_GROUP: Parts in a cabinet should NOT collide (designed to fit together)
+ *   We skip collision detection entirely for same-group parts
+ * - DIFFERENT_GROUP: Actual collisions between separate furniture pieces
+ *   Maximum 0.5mm threshold as required
  */
-const COLLISION_THRESHOLD = 0.1;
+const COLLISION_THRESHOLD = 0.5; // mm - maximum allowed threshold
 
 // ============================================================================
 // Helper Functions
@@ -132,48 +134,48 @@ export function createBoundingBox(part: Part): Box3 {
 
 /**
  * Check if two parts actually collide using OBB (Oriented Bounding Box)
- * This is more accurate than AABB for rotated parts
- * Uses Separating Axis Theorem (SAT) for precise collision detection
+ *
+ * CRITICAL: We skip collision detection for parts in the same group/cabinet
+ * because they are designed to fit together and may touch by design.
+ *
+ * For different groups, we use OBB (not AABB) because AABB expands dramatically
+ * for rotated objects, causing false positives.
  *
  * @param part1 - First part
  * @param part2 - Second part
  * @returns True if parts collide
  */
 function partsCollide(part1: Part, part2: Part): boolean {
-  // Use AABB collision detection
-  // AABB from createBoundingBox already accounts for rotation
-  // (corners are transformed to world space, then AABB is built from those corners)
-  const box1 = createBoundingBox(part1);
-  const box2 = createBoundingBox(part2);
+  // Check if parts are in the same group/cabinet
+  const groupId1 = getGroupId(part1);
+  const groupId2 = getGroupId(part2);
+  const sameGroup = groupId1 && groupId2 && groupId1 === groupId2;
 
-  if (!box1.intersectsBox(box2)) {
+  // SKIP collision detection for same-group parts (designed to fit together)
+  if (sameGroup) {
     return false;
   }
 
-  // Use AABB intersection with threshold
-  return boxesIntersectAABB(box1, box2);
-
-  // NOTE: OBB collision detection disabled for now due to false positives
-  // The current AABB approach (transforming corners then building AABB) is
-  // less accurate for rotated parts but avoids false positives
-  // TODO: Fix OBB implementation if precise collision for rotated parts is needed
+  // Use OBB collision detection for different groups (accurate for rotated objects)
+  return obbCollision(part1, part2, COLLISION_THRESHOLD);
 }
 
 /**
  * Check if two AABB boxes intersect (for axis-aligned parts)
  * @param box1 - First bounding box
  * @param box2 - Second bounding box
+ * @param threshold - Minimum overlap (in mm) to consider a collision
  * @returns True if boxes intersect
  */
-function boxesIntersectAABB(box1: Box3, box2: Box3): boolean {
+function boxesIntersectAABB(box1: Box3, box2: Box3, threshold: number): boolean {
   // Add threshold to handle floating-point precision
   return box1.intersectsBox(box2) &&
-    (box1.max.x - box2.min.x > COLLISION_THRESHOLD) &&
-    (box2.max.x - box1.min.x > COLLISION_THRESHOLD) &&
-    (box1.max.y - box2.min.y > COLLISION_THRESHOLD) &&
-    (box2.max.y - box1.min.y > COLLISION_THRESHOLD) &&
-    (box1.max.z - box2.min.z > COLLISION_THRESHOLD) &&
-    (box2.max.z - box1.min.z > COLLISION_THRESHOLD);
+    (box1.max.x - box2.min.x > threshold) &&
+    (box2.max.x - box1.min.x > threshold) &&
+    (box1.max.y - box2.min.y > threshold) &&
+    (box2.max.y - box1.min.y > threshold) &&
+    (box1.max.z - box2.min.z > threshold) &&
+    (box2.max.z - box1.min.z > threshold);
 }
 
 /**
@@ -182,9 +184,10 @@ function boxesIntersectAABB(box1: Box3, box2: Box3): boolean {
  *
  * @param part1 - First part
  * @param part2 - Second part
+ * @param threshold - Collision threshold in mm
  * @returns True if OBBs collide
  */
-function obbCollision(part1: Part, part2: Part): boolean {
+function obbCollision(part1: Part, part2: Part, threshold: number): boolean {
   // Create temporary meshes to get world-space transforms
   const mesh1 = new Mesh();
   mesh1.position.set(...part1.position);
@@ -229,7 +232,7 @@ function obbCollision(part1: Part, part2: Part): boolean {
   ];
 
   for (const axis of allAxes) {
-    if (!testSeparatingAxis(center1, halfExtents1, axes1, center2, halfExtents2, axes2, axis)) {
+    if (!testSeparatingAxis(center1, halfExtents1, axes1, center2, halfExtents2, axes2, axis, threshold)) {
       return false; // Found separating axis - no collision
     }
   }
@@ -248,7 +251,8 @@ function testSeparatingAxis(
   center2: Vector3,
   halfExtents2: Vector3,
   axes2: Vector3[],
-  axis: Vector3
+  axis: Vector3,
+  threshold: number
 ): boolean {
   // Project centers onto axis
   const centerDist = Math.abs(center2.clone().sub(center1).dot(axis));
@@ -263,7 +267,7 @@ function testSeparatingAxis(
              Math.abs(halfExtents2.z * axes2[2].dot(axis));
 
   // Check if projections overlap (with threshold)
-  return centerDist <= r1 + r2 + COLLISION_THRESHOLD;
+  return centerDist <= r1 + r2 + threshold;
 }
 
 // ============================================================================

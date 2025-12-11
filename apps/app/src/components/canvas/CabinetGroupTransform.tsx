@@ -35,8 +35,9 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
   const controlRef = useRef<any>(null);
   const initialPartPositions = useRef<Map<string, THREE.Vector3>>(new Map());
   const initialPartRotations = useRef<Map<string, THREE.Quaternion>>(new Map());
-  const rafIdRef = useRef<number | null>(null);
   const initialGroupQuaternion = useRef<THREE.Quaternion>(new THREE.Quaternion());
+  const initialCabinetCenter = useRef<THREE.Vector3>(new THREE.Vector3());
+  const rafIdRef = useRef<number | null>(null);
 
   // Calculate cabinet center
   const cabinetCenter = useMemo(() => {
@@ -50,10 +51,11 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
   }, [parts]);
 
 
-  const rotationSnap = isShiftPressed
+  const rotationSnap = transformMode === 'rotate' && isShiftPressed
     ? THREE.MathUtils.degToRad(SCENE_CONFIG.ROTATION_SNAP_DEGREES)
     : undefined;
 
+  // Cleanup RAF on unmount
   useEffect(() => {
     return () => {
       if (rafIdRef.current !== null) {
@@ -62,7 +64,7 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
     };
   }, []);
 
-  // Update parts in real-time during transformation (throttled to animation frame)
+  // Apply group transform (throttled to RAF)
   const applyGroupTransform = useCallback(() => {
     const group = target;
     if (!group) return;
@@ -72,16 +74,21 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
     // Calculate delta rotation from initial state
     const deltaQuat = group.quaternion.clone().multiply(initialGroupQuaternion.current.clone().invert());
 
+    // CRITICAL: Use frozen cabinet center, not current group.position
+    // group.position could drift during transform due to floating point or user dragging
+    const pivotPoint = initialCabinetCenter.current;
+
     parts.forEach(part => {
         const relativePos = initialPartPositions.current.get(part.id);
         const originalRot = initialPartRotations.current.get(part.id);
         if (relativePos && originalRot) {
-            // Apply delta rotation to the relative position, then add group position
-            const newPos = relativePos.clone().applyQuaternion(deltaQuat).add(group.position);
+            // Apply delta rotation to the relative position, then add pivot point
+            const newPos = relativePos.clone().applyQuaternion(deltaQuat).add(pivotPoint);
 
             // Apply delta rotation to the original rotation
-            const newRotQuat = deltaQuat.clone().multiply(originalRot);
-            const newRot = new THREE.Euler().setFromQuaternion(newRotQuat);
+            // For world-space rotation: newRot = deltaRot * originalRot
+            const newRotQuat = new THREE.Quaternion().multiplyQuaternions(deltaQuat, originalRot);
+            const newRot = new THREE.Euler().setFromQuaternion(newRotQuat, 'XYZ');
 
             updates.push({
                 id: part.id,
@@ -93,14 +100,15 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
         }
     });
 
-    // Batch update all parts in a single store update
+    // Batch update all parts in a single store update (skip history)
     if (updates.length > 0) {
         updatePartsBatch(updates);
     }
   }, [parts, updatePartsBatch, target]);
 
+  // Schedule throttled transform update
   const scheduleGroupTransform = useCallback(() => {
-    if (rafIdRef.current !== null) return;
+    if (rafIdRef.current !== null) return; // Already scheduled
     rafIdRef.current = requestAnimationFrame(() => {
       rafIdRef.current = null;
       applyGroupTransform();
@@ -110,28 +118,36 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
   const handleTransformStart = useCallback(() => {
     if (!target) return;
 
-    // Set gizmo to cabinet center with NO rotation (identity)
-    target.position.copy(cabinetCenter);
+    // CRITICAL FIX: Freeze cabinet center at start of transform
+    // cabinetCenter changes during transform (useMemo recalculates), causing math errors
+    initialCabinetCenter.current.copy(cabinetCenter);
+
+    target.position.copy(initialCabinetCenter.current);
     target.rotation.set(0, 0, 0);
     target.updateMatrixWorld();
 
     // Save initial group quaternion (should be identity)
     initialGroupQuaternion.current.copy(target.quaternion);
 
+    console.log('[CabinetTransform] Start - initial quaternion:', initialGroupQuaternion.current.toArray());
+    console.log('[CabinetTransform] Start - frozen cabinet center:', initialCabinetCenter.current.toArray());
+
     // Capture initial state for each part
     initialPartPositions.current.clear();
     initialPartRotations.current.clear();
 
     parts.forEach(part => {
-      // Store relative position from cabinet center (simple offset in world space)
+      // Store relative position from FROZEN cabinet center
       const partPos = new THREE.Vector3().fromArray(part.position);
-      const relativePos = partPos.clone().sub(cabinetCenter);
+      const relativePos = partPos.clone().sub(initialCabinetCenter.current);
       initialPartPositions.current.set(part.id, relativePos);
 
-      // Store original rotation as quaternion (world space, no conversion!)
-      const partRot = new THREE.Euler().fromArray(part.rotation);
+      // Store original rotation as quaternion (preserve rotation order 'XYZ')
+      const partRot = new THREE.Euler(part.rotation[0], part.rotation[1], part.rotation[2], 'XYZ');
       const partQuat = new THREE.Quaternion().setFromEuler(partRot);
       initialPartRotations.current.set(part.id, partQuat);
+
+      console.log(`[Part ${part.name}] relativePos:`, relativePos.toArray(), 'rotation:', part.rotation);
     });
 
     setIsTransforming(true);
@@ -151,26 +167,34 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
         setIsTransforming(false);
         return;
     }
+
+    // Cancel any pending RAF
     if (rafIdRef.current !== null) {
       cancelAnimationFrame(rafIdRef.current);
       rafIdRef.current = null;
     }
+
+    console.log('[CabinetTransform] End - final quaternion:', group.quaternion.toArray());
+    console.log('[CabinetTransform] End - delta from identity:', group.quaternion.angleTo(initialGroupQuaternion.current), 'radians');
+
+    // Apply final transform
     applyGroupTransform();
 
+    // Build afterState for history from latest store state
     const afterState: Record<string, PartTransform> = {};
-    // Need to get the latest part state from the store
     const latestParts = useStore.getState().parts.filter(p => p.cabinetMetadata?.cabinetId === cabinetId);
     latestParts.forEach(p => {
       afterState[p.id] = { position: [...p.position], rotation: [...p.rotation] };
     });
 
+    // Commit history batch
     commitBatch({ after: afterState });
 
     setIsTransforming(false);
 
     // Recompute collisions once after the transform finishes
     detectCollisions();
-  }, [applyGroupTransform, setIsTransforming, target, commitBatch, cabinetId, detectCollisions]);
+  }, [target, applyGroupTransform, setIsTransforming, commitBatch, cabinetId, detectCollisions]);
 
   return (
       <>
