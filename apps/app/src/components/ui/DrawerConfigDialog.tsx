@@ -25,7 +25,7 @@ import {
   getTotalBoxCount,
   getFrontCount,
 } from '@/lib/config';
-import { Plus, Trash2, GripVertical, ChevronUp, ChevronDown } from 'lucide-react';
+import { Plus, Trash2, GripVertical, ChevronUp, ChevronDown, LayoutTemplate } from 'lucide-react';
 
 // Drawer slide type labels
 const DRAWER_SLIDE_LABELS: Record<DrawerSlideType, string> = {
@@ -57,8 +57,8 @@ const ZonePreview = ({ zones, selectedZoneId, onSelectZone, onMoveZone }: ZonePr
   const totalRatio = zones.reduce((sum, z) => sum + z.heightRatio, 0);
 
   return (
-    <div className="border rounded-lg bg-muted/30 p-3 h-80">
-      <div className="flex flex-col h-full gap-1">
+    <div className="border rounded-lg bg-muted/20 p-4 h-full min-h-[320px] flex flex-col">
+      <div className="flex-1 flex flex-col gap-1 w-full max-w-[200px] mx-auto relative">
         {zones.map((zone, index) => {
           const heightPercent = (zone.heightRatio / totalRatio) * 100;
           const isSelected = zone.id === selectedZoneId;
@@ -69,37 +69,37 @@ const ZonePreview = ({ zones, selectedZoneId, onSelectZone, onMoveZone }: ZonePr
             <div
               key={zone.id}
               className={cn(
-                'relative flex-shrink-0 rounded border-2 transition-all cursor-pointer',
+                'relative flex-shrink-0 rounded border-2 transition-all cursor-pointer shadow-sm',
                 isSelected
-                  ? 'border-primary bg-primary/10'
+                  ? 'border-primary bg-primary/5 ring-2 ring-primary/20 z-10'
                   : 'border-border hover:border-primary/50 bg-background',
-                hasExternalFront ? '' : 'border-dashed'
+                hasExternalFront ? '' : 'border-dashed opacity-80'
               )}
-              style={{ height: `${heightPercent}%`, minHeight: '32px' }}
+              style={{ height: `${heightPercent}%`, minHeight: '40px' }}
               onClick={() => onSelectZone(zone.id)}
             >
               {/* Zone content */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center">
-                  <div className="text-xs font-medium">
+              <div className="absolute inset-0 flex items-center justify-center p-2">
+                <div className="text-center w-full overflow-hidden">
+                  <div className="text-xs font-semibold truncate">
                     {hasExternalFront ? 'Front' : 'Wewnętrzna'}
                   </div>
                   {boxCount > 1 && (
-                    <div className="text-[10px] text-muted-foreground">
+                    <div className="text-xs text-muted-foreground">
                       {boxCount} boxy
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Reorder buttons */}
+              {/* Reorder buttons (only visible on hover or selection) */}
               {isSelected && (
-                <div className="absolute right-1 top-1/2 -translate-y-1/2 flex flex-col gap-0.5">
+                <div className="absolute -right-8 top-1/2 -translate-y-1/2 flex flex-col gap-1">
                   {index > 0 && (
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="icon"
-                      className="h-5 w-5"
+                      className="h-6 w-6 rounded-full shadow-sm"
                       onClick={(e) => {
                         e.stopPropagation();
                         onMoveZone(zone.id, 'up');
@@ -110,9 +110,9 @@ const ZonePreview = ({ zones, selectedZoneId, onSelectZone, onMoveZone }: ZonePr
                   )}
                   {index < zones.length - 1 && (
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="icon"
-                      className="h-5 w-5"
+                      className="h-6 w-6 rounded-full shadow-sm"
                       onClick={(e) => {
                         e.stopPropagation();
                         onMoveZone(zone.id, 'down');
@@ -125,8 +125,8 @@ const ZonePreview = ({ zones, selectedZoneId, onSelectZone, onMoveZone }: ZonePr
               )}
 
               {/* Height ratio indicator */}
-              <div className="absolute left-1 top-1 text-[10px] text-muted-foreground">
-                {zone.heightRatio}x
+              <div className="absolute left-2 top-1/2 -translate-y-1/2 -translate-x-full pr-3 text-xs font-mono text-muted-foreground">
+                {zone.heightRatio}
               </div>
             </div>
           );
@@ -169,14 +169,16 @@ const ZoneEditor = ({ zone, onUpdate, onDelete, canDelete }: ZoneEditorProps) =>
   };
 
   return (
-    <div className="border rounded-lg p-4 space-y-4 bg-card">
-      <div className="flex items-center justify-between">
-        <h4 className="font-medium text-sm">Strefa szuflady</h4>
+    <div className="border rounded-lg p-5 space-y-5 bg-card shadow-sm">
+      <div className="flex items-center justify-between pb-2 border-b">
+        <h4 className="font-semibold text-sm flex items-center gap-2">
+            Edycja strefy
+        </h4>
         {canDelete && (
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-destructive hover:text-destructive"
+            className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
             onClick={onDelete}
           >
             <Trash2 className="h-4 w-4" />
@@ -185,10 +187,10 @@ const ZoneEditor = ({ zone, onUpdate, onDelete, canDelete }: ZoneEditorProps) =>
       </div>
 
       {/* Height ratio */}
-      <div className="space-y-2">
+      <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <Label className="text-xs">Wysokość (proporcja)</Label>
-          <span className="text-xs text-muted-foreground">{zone.heightRatio}x</span>
+          <Label className="text-sm font-medium">Wysokość (proporcja)</Label>
+          <span className="text-xs font-mono bg-muted px-2 py-0.5 rounded">{zone.heightRatio}x</span>
         </div>
         <Slider
           value={[zone.heightRatio]}
@@ -200,38 +202,39 @@ const ZoneEditor = ({ zone, onUpdate, onDelete, canDelete }: ZoneEditorProps) =>
       </div>
 
       {/* External front toggle */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between p-3 border rounded-md bg-muted/10">
         <div>
-          <Label className="text-xs">Front zewnętrzny</Label>
-          <p className="text-[10px] text-muted-foreground">
-            {hasExternalFront ? 'Widoczny front' : 'Szuflada wewnętrzna (bez frontu)'}
+          <Label className="text-sm font-medium cursor-pointer" htmlFor="front-toggle">Front zewnętrzny</Label>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {hasExternalFront ? 'Widoczny front' : 'Szuflada wewnętrzna'}
           </p>
         </div>
         <Switch
+          id="front-toggle"
           checked={hasExternalFront}
           onCheckedChange={handleFrontToggle}
         />
       </div>
 
       {/* Box count (for drawer-in-drawer) */}
-      <div className="space-y-2">
+      <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <Label className="text-xs">Boxy wewnętrzne</Label>
-          <div className="flex items-center gap-2">
+          <Label className="text-sm font-medium">Ilość szuflad w strefie</Label>
+          <div className="flex items-center gap-1 border rounded-md">
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon"
-              className="h-6 w-6"
+              className="h-8 w-8 rounded-none border-r"
               onClick={() => handleBoxCountChange(Math.max(1, boxCount - 1))}
               disabled={boxCount <= 1}
             >
               -
             </Button>
-            <span className="w-6 text-center text-sm">{boxCount}</span>
+            <span className="w-8 text-center text-sm font-medium">{boxCount}</span>
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon"
-              className="h-6 w-6"
+              className="h-8 w-8 rounded-none border-l"
               onClick={() => handleBoxCountChange(Math.min(4, boxCount + 1))}
               disabled={boxCount >= 4}
             >
@@ -240,10 +243,10 @@ const ZoneEditor = ({ zone, onUpdate, onDelete, canDelete }: ZoneEditorProps) =>
           </div>
         </div>
         {boxCount > 1 && (
-          <p className="text-[10px] text-muted-foreground">
+          <p className="text-xs text-muted-foreground bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-500 p-2 rounded border border-amber-200 dark:border-amber-900">
             {hasExternalFront
-              ? `Jeden front wysoki zakrywa ${boxCount} boxy wewnętrzne`
-              : `${boxCount} wewnętrzne szuflady bez frontu`}
+              ? `Jeden wysoki front zakrywa ${boxCount} szuflady wewnętrzne.`
+              : `${boxCount} wewnętrzne szuflady bez frontów.`}
           </p>
         )}
       </div>
@@ -260,13 +263,13 @@ interface PresetButtonsProps {
 
 const PresetButtons = ({ onSelect }: PresetButtonsProps) => {
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
       {Object.entries(DRAWER_ZONE_PRESETS).map(([key, preset]) => (
         <Button
           key={key}
           variant="outline"
           size="sm"
-          className="text-xs"
+          className="text-xs h-auto py-2 flex flex-col gap-1 items-center"
           onClick={() => {
             // Create a deep copy with new IDs
             const configCopy: DrawerConfiguration = {
@@ -280,6 +283,7 @@ const PresetButtons = ({ onSelect }: PresetButtonsProps) => {
             onSelect(configCopy);
           }}
         >
+          <LayoutTemplate className="h-4 w-4 text-muted-foreground" />
           {preset.labelPl}
         </Button>
       ))}
@@ -393,93 +397,101 @@ export function DrawerConfigDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0">
-        <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4">
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0">
+        <DialogHeader className="flex-shrink-0 px-6 py-6 border-b">
           <DialogTitle>Konfiguracja szuflad</DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-6">
-          {/* Presets */}
-          <div className="mb-6">
-            <Label className="text-xs mb-2 block">Szablony</Label>
-            <PresetButtons onSelect={handlePresetSelect} />
-          </div>
+        <div className="flex-1 overflow-y-auto px-6 py-6">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 h-full">
+            
+            {/* Left Column: Preview */}
+            <div className="md:col-span-5 flex flex-col gap-4">
+               <div>
+                  <Label className="text-sm font-medium mb-3 block">Podgląd układu</Label>
+                  <ZonePreview
+                    zones={localConfig.zones}
+                    selectedZoneId={selectedZoneId}
+                    onSelectZone={setSelectedZoneId}
+                    onMoveZone={handleMoveZone}
+                  />
+                  <div className="mt-2 text-xs text-center text-muted-foreground bg-muted/20 py-2 rounded">
+                    {totalFronts} frontów • {totalBoxes} szuflad łącznie
+                  </div>
+               </div>
+               
+               {/* Add zone button */}
+               <Button
+                  variant="outline"
+                  className="w-full border-dashed"
+                  onClick={handleAddZone}
+                  disabled={localConfig.zones.length >= 8}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Dodaj nową strefę
+               </Button>
+            </div>
 
-          {/* Main content: Preview + Editor */}
-          <div className="grid grid-cols-2 gap-6 mb-6">
-            {/* Preview */}
-            <div>
-              <Label className="text-xs mb-2 block">Podgląd (kliknij aby wybrać)</Label>
-              <ZonePreview
-                zones={localConfig.zones}
-                selectedZoneId={selectedZoneId}
-                onSelectZone={setSelectedZoneId}
-                onMoveZone={handleMoveZone}
-              />
-              <div className="mt-2 text-xs text-muted-foreground text-center">
-                {totalFronts} frontów, {totalBoxes} boxów
+            {/* Right Column: Editor & Settings */}
+            <div className="md:col-span-7 flex flex-col gap-6">
+              
+              {/* Presets */}
+              <div>
+                <Label className="text-sm font-medium mb-3 block">Szybkie szablony</Label>
+                <PresetButtons onSelect={handlePresetSelect} />
               </div>
+
+              {/* Active Zone Editor */}
+              <div>
+                 {selectedZone ? (
+                    <ZoneEditor
+                      zone={selectedZone}
+                      onUpdate={handleUpdateZone}
+                      onDelete={() => handleDeleteZone(selectedZone.id)}
+                      canDelete={localConfig.zones.length > 1}
+                    />
+                  ) : (
+                    <div className="border-2 border-dashed rounded-lg p-8 text-center text-muted-foreground text-sm h-full flex items-center justify-center">
+                      Wybierz strefę z podglądu, aby ją edytować
+                    </div>
+                  )}
+              </div>
+
+              {/* Slide type selector */}
+              <div className="bg-muted/10 p-4 rounded-lg border">
+                <Label className="text-sm font-medium mb-2 block">System prowadnic</Label>
+                <Select
+                  value={localConfig.slideType}
+                  onValueChange={(value: DrawerSlideType) => handleSlideTypeChange(value)}
+                >
+                  <SelectTrigger className="w-full h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(Object.keys(DRAWER_SLIDE_PRESETS) as DrawerSlideType[]).map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {DRAWER_SLIDE_LABELS[type]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-2 flex items-center gap-2">
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                  Wymagany luz boczny: {DRAWER_SLIDE_PRESETS[localConfig.slideType].sideOffset}mm na stronę
+                </p>
+              </div>
+
             </div>
-
-            {/* Editor */}
-            <div className="space-y-4">
-              {selectedZone ? (
-                <ZoneEditor
-                  zone={selectedZone}
-                  onUpdate={handleUpdateZone}
-                  onDelete={() => handleDeleteZone(selectedZone.id)}
-                  canDelete={localConfig.zones.length > 1}
-                />
-              ) : (
-                <div className="border rounded-lg p-4 text-center text-muted-foreground text-sm">
-                  Wybierz strefę z podglądu
-                </div>
-              )}
-
-              {/* Add zone button */}
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={handleAddZone}
-                disabled={localConfig.zones.length >= 8}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Dodaj strefę
-              </Button>
-            </div>
-          </div>
-
-          {/* Slide type selector */}
-          <div className="mb-6">
-            <Label className="text-xs mb-2 block">Typ prowadnic</Label>
-            <Select
-              value={localConfig.slideType}
-              onValueChange={(value: DrawerSlideType) => handleSlideTypeChange(value)}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {(Object.keys(DRAWER_SLIDE_PRESETS) as DrawerSlideType[]).map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {DRAWER_SLIDE_LABELS[type]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground mt-1">
-              Offset boczny: {DRAWER_SLIDE_PRESETS[localConfig.slideType].sideOffset}mm na stronę
-            </p>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 border-t bg-background px-6 py-4 flex justify-between">
+        <div className="flex-shrink-0 border-t bg-muted/20 px-6 py-4 flex justify-between">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Anuluj
           </Button>
           <Button onClick={handleSave}>
-            Zapisz
+            Zastosuj zmiany
           </Button>
         </div>
       </DialogContent>

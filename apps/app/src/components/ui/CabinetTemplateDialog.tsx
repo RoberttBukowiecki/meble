@@ -19,10 +19,13 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardContent,
   Switch,
   Slider,
   Alert,
   AlertDescription,
+  Separator,
+  Badge,
 } from '@meble/ui';
 import { useShallow } from 'zustand/react/shallow';
 import { useStore } from '@/lib/store';
@@ -49,9 +52,10 @@ import { DrawerConfigDialog } from './DrawerConfigDialog';
 import { SideFrontsConfigDialog } from './SideFrontsConfigDialog';
 import { getDefaultMaterials, getDefaultBackMaterial } from '@/lib/store/utils';
 import { getSideFrontsSummary, hasSideFronts } from '@/lib/cabinetGenerators';
-import { Settings2, PanelLeftDashed, AlertTriangle, RectangleHorizontal, Grip } from 'lucide-react';
+import { Settings2, PanelLeftDashed, AlertTriangle, RectangleHorizontal, Grip, Box, Warehouse, Library, Layers } from 'lucide-react';
 import { FrontsConfigDialog } from './FrontsConfigDialog';
 import { HandlesConfigDialog } from './HandlesConfigDialog';
+import { cn } from '@/lib/utils';
 
 interface CabinetTemplateDialogProps {
   open: boolean;
@@ -64,282 +68,66 @@ interface TemplateCardProps {
   type: CabinetType;
   title: string;
   description: string;
+  icon: React.ReactNode;
   onClick: () => void;
 }
 
-const TemplateCard = ({type, title, description, onClick}: TemplateCardProps) => (
-    <Card onClick={onClick} className="cursor-pointer hover:bg-muted">
-        <CardHeader>
-            <CardTitle>{title}</CardTitle>
-            <CardDescription>{description}</CardDescription>
+const TemplateCard = ({type, title, description, icon, onClick}: TemplateCardProps) => (
+    <Card 
+        onClick={onClick} 
+        className="cursor-pointer hover:bg-muted/50 hover:border-primary/50 transition-all duration-200 border-2 border-transparent hover:shadow-md"
+    >
+        <CardHeader className="p-4">
+            <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-primary/10 rounded-md text-primary">
+                    {icon}
+                </div>
+                <CardTitle className="text-base">{title}</CardTitle>
+            </div>
+            <CardDescription className="text-xs line-clamp-2">{description}</CardDescription>
         </CardHeader>
     </Card>
 )
 
-interface FrontsConfigButtonProps {
-  params: Partial<CabinetParams>;
-  onChange: (params: Partial<CabinetParams>) => void;
+interface ConfigRowProps {
+    title: string;
+    description?: React.ReactNode;
+    icon?: React.ReactNode;
+    action?: React.ReactNode;
+    alert?: React.ReactNode;
 }
 
-const FrontsConfigButton = ({ params, onChange }: FrontsConfigButtonProps) => {
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const kitchenParams = params as Partial<KitchenCabinetParams>;
-  const doorConfig = kitchenParams.doorConfig ?? DEFAULT_DOOR_CONFIG;
-
-  const summary = `${doorConfig.layout === 'SINGLE' ? 'Pojedyncze' : 'Podwójne'}, ${doorConfig.openingDirection === 'HORIZONTAL' ? 'na bok' : (doorConfig.openingDirection === 'LIFT_UP' ? 'do góry' : 'w dół')}`;
-
-  return (
-    <div className="border-t pt-4 mt-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h4 className="font-medium text-sm">Konfiguracja frontów</h4>
-          <p className="text-xs text-muted-foreground">
-            {summary}
-          </p>
+const ConfigRow = ({ title, description, icon, action, alert }: ConfigRowProps) => (
+    <div className="flex flex-col gap-3 p-3 rounded-lg border bg-card text-card-foreground shadow-sm">
+        <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-3">
+                {icon && (
+                    <div className="mt-1 text-muted-foreground">
+                        {icon}
+                    </div>
+                )}
+                <div className="space-y-1">
+                    <h4 className="text-sm font-medium leading-none">{title}</h4>
+                    {description && (
+                        <div className="text-xs text-muted-foreground">
+                            {description}
+                        </div>
+                    )}
+                </div>
+            </div>
+            {action && (
+                <div className="shrink-0">
+                    {action}
+                </div>
+            )}
         </div>
-        <Button variant="outline" size="sm" onClick={() => setDialogOpen(true)}>
-          <RectangleHorizontal className="h-4 w-4 mr-2" />
-          Konfiguruj
-        </Button>
-      </div>
-
-      <FrontsConfigDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        params={params}
-        onParamsChange={onChange}
-      />
+        {alert && (
+            <div className="mt-1">
+                {alert}
+            </div>
+        )}
     </div>
-  );
-};
-
-interface HandlesConfigButtonProps {
-  params: Partial<CabinetParams>;
-  onChange: (params: Partial<CabinetParams>) => void;
-}
-
-const HandlesConfigButton = ({ params, onChange }: HandlesConfigButtonProps) => {
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const kitchenParams = params as Partial<KitchenCabinetParams>;
-  const handleConfig = kitchenParams.handleConfig;
-
-  const summary = handleConfig ? `${handleConfig.type}, ${handleConfig.finish}` : 'Brak (kliknij aby skonfigurować)';
-
-  return (
-    <div className="border-t pt-4 mt-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h4 className="font-medium text-sm">Konfiguracja uchwytów</h4>
-          <p className="text-xs text-muted-foreground">
-            {summary}
-          </p>
-        </div>
-        <Button variant="outline" size="sm" onClick={() => setDialogOpen(true)}>
-          <Grip className="h-4 w-4 mr-2" />
-          Konfiguruj
-        </Button>
-      </div>
-
-      <HandlesConfigDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        params={params}
-        onParamsChange={onChange}
-      />
-    </div>
-  );
-};
-
-interface DrawerConfigButtonProps {
-  params: Partial<CabinetParams>;
-  onChange: (params: Partial<CabinetParams>) => void;
-  cabinetHeight: number;
-}
-/**
- * Button that opens the drawer configuration sub-dialog
- * Shows summary of current configuration
- */
-const DrawerConfigButton = ({ params, onChange, cabinetHeight }: DrawerConfigButtonProps) => {
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const drawerConfig = params.drawerConfig;
-
-  // Calculate summary info
-  const totalBoxes = drawerConfig ? getTotalBoxCount(drawerConfig) : 0;
-  const totalFronts = drawerConfig ? getFrontCount(drawerConfig) : 0;
-  const hasConfig = drawerConfig && drawerConfig.zones.length > 0;
-
-  const handleConfigChange = (config: DrawerConfiguration) => {
-    onChange({ ...params, drawerConfig: config } as any);
-  };
-
-  return (
-    <div className="border-t pt-4 mt-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h4 className="font-medium text-sm">Konfiguracja szuflad</h4>
-          {hasConfig ? (
-            <p className="text-xs text-muted-foreground">
-              {totalFronts} frontów, {totalBoxes} boxów • {drawerConfig.slideType}
-            </p>
-          ) : (
-            <p className="text-xs text-muted-foreground">
-              Kliknij aby skonfigurować
-            </p>
-          )}
-        </div>
-        <Button variant="outline" size="sm" onClick={() => setDialogOpen(true)}>
-          <Settings2 className="h-4 w-4 mr-2" />
-          Konfiguruj
-        </Button>
-      </div>
-
-      <DrawerConfigDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        config={drawerConfig}
-        onConfigChange={handleConfigChange}
-        cabinetHeight={cabinetHeight}
-      />
-    </div>
-  );
-};
-
-interface DrawerConfigButtonWithConflictProps {
-  params: Partial<CabinetParams>;
-  onConfigChange: (config: DrawerConfiguration) => void;
-  cabinetHeight: number;
-  hasDoors: boolean;
-}
-
-/**
- * Drawer config button with conflict awareness
- * Shows warning when doors are enabled and drawer config would have fronts
- */
-const DrawerConfigButtonWithConflict = ({
-  params,
-  onConfigChange,
-  cabinetHeight,
-  hasDoors,
-}: DrawerConfigButtonWithConflictProps) => {
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const drawerConfig = params.drawerConfig;
-
-  // Calculate summary info
-  const totalBoxes = drawerConfig ? getTotalBoxCount(drawerConfig) : 0;
-  const totalFronts = drawerConfig ? getFrontCount(drawerConfig) : 0;
-  const hasConfig = drawerConfig && drawerConfig.zones.length > 0;
-  const configHasFronts = hasDrawerFronts(drawerConfig);
-
-  const handleConfigChange = (config: DrawerConfiguration) => {
-    onConfigChange(config);
-    setDialogOpen(false);
-  };
-
-  return (
-    <div className="border-t pt-4 mt-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h4 className="font-medium text-sm">Konfiguracja szuflad</h4>
-          {hasConfig ? (
-            <p className="text-xs text-muted-foreground">
-              {totalFronts > 0 ? `${totalFronts} frontów, ` : ''}{totalBoxes} boxów • {drawerConfig.slideType}
-              {configHasFronts && hasDoors && (
-                <span className="text-amber-500 ml-1">(konflikt z drzwiami)</span>
-              )}
-            </p>
-          ) : (
-            <p className="text-xs text-muted-foreground">
-              Kliknij aby skonfigurować
-            </p>
-          )}
-        </div>
-        <Button variant="outline" size="sm" onClick={() => setDialogOpen(true)}>
-          <Settings2 className="h-4 w-4 mr-2" />
-          Konfiguruj
-        </Button>
-      </div>
-
-      {/* Info alert when doors are enabled */}
-      {hasDoors && (
-        <Alert className="mt-3">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription className="text-xs">
-            Drzwi są włączone. Szuflady będą traktowane jako wewnętrzne (bez frontów dekoracyjnych).
-          </AlertDescription>
-        </Alert>
-      )}
-
-      <DrawerConfigDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        config={drawerConfig}
-        onConfigChange={handleConfigChange}
-        cabinetHeight={cabinetHeight}
-      />
-    </div>
-  );
-};
-
-interface SideFrontsConfigButtonProps {
-  params: Partial<CabinetParams>;
-  onChange: (params: Partial<CabinetParams>) => void;
-  cabinetHeight: number;
-  materials: Material[];
-  defaultFrontMaterialId: string;
-}
-
-/**
- * Button that opens the side fronts configuration sub-dialog
- * Shows summary of current configuration
- */
-const SideFrontsConfigButton = ({
-  params,
-  onChange,
-  cabinetHeight,
-  materials,
-  defaultFrontMaterialId,
-}: SideFrontsConfigButtonProps) => {
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const sideFrontsConfig = params.sideFronts;
-  const hasConfig = hasSideFronts(sideFrontsConfig);
-  const summary = getSideFrontsSummary(sideFrontsConfig);
-
-  const handleConfigChange = (config: SideFrontsConfig) => {
-    onChange({ ...params, sideFronts: config } as any);
-  };
-
-  return (
-    <div className="border-t pt-4 mt-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h4 className="font-medium text-sm">Fronty boczne</h4>
-          <p className="text-xs text-muted-foreground">
-            {hasConfig ? summary : 'Brak (kliknij aby skonfigurować)'}
-          </p>
-        </div>
-        <Button variant="outline" size="sm" onClick={() => setDialogOpen(true)}>
-          <PanelLeftDashed className="h-4 w-4 mr-2" />
-          Konfiguruj
-        </Button>
-      </div>
-
-      <SideFrontsConfigDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        config={sideFrontsConfig}
-        onConfigChange={handleConfigChange}
-        materials={materials}
-        defaultFrontMaterialId={defaultFrontMaterialId}
-        cabinetHeight={cabinetHeight}
-      />
-    </div>
-  );
-};
-
-/**
- * Conflict type for doors vs drawer fronts
- */
-type ConflictType = 'doors-enabling' | 'drawer-fronts-enabling' | null;
+);
 
 interface ParameterFormProps {
   type: CabinetType;
@@ -353,6 +141,12 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
     // Conflict resolution state
     const [conflictType, setConflictType] = useState<ConflictType>(null);
     const [pendingDrawerConfig, setPendingDrawerConfig] = useState<DrawerConfiguration | null>(null);
+
+    // Dialog states for sub-configs
+    const [frontsDialogOpen, setFrontsDialogOpen] = useState(false);
+    const [handlesDialogOpen, setHandlesDialogOpen] = useState(false);
+    const [drawerDialogOpen, setDrawerDialogOpen] = useState(false);
+    const [sideFrontsDialogOpen, setSideFrontsDialogOpen] = useState(false);
 
     const updateParams = (newParams: Partial<CabinetParams>) => {
         onChange({...params, ...newParams});
@@ -390,7 +184,6 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
     // Handle door toggle with conflict detection
     const handleDoorsToggle = (enableDoors: boolean) => {
         if (enableDoors && drawerHasFronts) {
-            // Conflict: enabling doors when drawer config has fronts
             setConflictType('doors-enabling');
         } else {
             updateParams({ hasDoors: enableDoors } as any);
@@ -401,22 +194,41 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
     const handleDrawerConfigChange = (config: DrawerConfiguration) => {
         const newConfigHasFronts = hasDrawerFronts(config);
         if (newConfigHasFronts && getHasDoors()) {
-            // Conflict: drawer config has fronts when doors are enabled
             setPendingDrawerConfig(config);
             setConflictType('drawer-fronts-enabling');
         } else {
             onChange({ ...params, drawerConfig: config } as any);
+            setDrawerDialogOpen(false);
         }
     };
+
+    // Side fronts summary
+    const sideFrontsConfig = params.sideFronts;
+    const hasSideFrontsConfig = hasSideFronts(sideFrontsConfig);
+    const sideFrontsSummary = getSideFrontsSummary(sideFrontsConfig);
+
+    // Door config summary
+    const kitchenParams = params as Partial<KitchenCabinetParams>;
+    const doorConfig = kitchenParams.doorConfig ?? DEFAULT_DOOR_CONFIG;
+    const doorSummary = `${doorConfig.layout === 'SINGLE' ? 'Pojedyncze' : 'Podwójne'}, ${doorConfig.openingDirection === 'HORIZONTAL' ? 'na bok' : (doorConfig.openingDirection === 'LIFT_UP' ? 'do góry' : 'w dół')}`;
+
+    // Handle config summary
+    const handleConfig = kitchenParams.handleConfig;
+    const handleSummary = handleConfig ? `${handleConfig.type}, ${handleConfig.finish}` : 'Brak';
+
+    // Drawer config summary
+    const drawerConfig = params.drawerConfig;
+    const totalBoxes = drawerConfig ? getTotalBoxCount(drawerConfig) : 0;
+    const totalFronts = drawerConfig ? getFrontCount(drawerConfig) : 0;
+    const hasDrawerConfig = drawerConfig && drawerConfig.zones.length > 0;
+    const configHasFronts = hasDrawerFronts(drawerConfig);
 
     // Conflict resolution handlers
     const handleConflictResolve = (action: 'remove-doors' | 'convert-drawers' | 'cancel') => {
         if (action === 'remove-doors') {
             if (conflictType === 'doors-enabling') {
-                // User wanted to enable doors but chose to not do it
                 // Just close dialog
             } else if (conflictType === 'drawer-fronts-enabling' && pendingDrawerConfig) {
-                // Apply drawer config with fronts, remove doors
                 onChange({
                     ...params,
                     hasDoors: false,
@@ -425,7 +237,6 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
             }
         } else if (action === 'convert-drawers') {
             if (conflictType === 'doors-enabling') {
-                // Enable doors and convert existing drawers to internal
                 const convertedConfig = params.drawerConfig
                     ? convertDrawersToInternal(params.drawerConfig)
                     : undefined;
@@ -435,7 +246,6 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
                     drawerConfig: convertedConfig,
                 } as any);
             } else if (conflictType === 'drawer-fronts-enabling' && pendingDrawerConfig) {
-                // Convert pending drawer config to internal and apply
                 const convertedConfig = convertDrawersToInternal(pendingDrawerConfig);
                 onChange({
                     ...params,
@@ -443,44 +253,47 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
                 } as any);
             }
         }
-        // Reset conflict state
         setConflictType(null);
         setPendingDrawerConfig(null);
     };
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-8">
             {/* Conflict Resolution Dialog */}
             <Dialog open={conflictType !== null} onOpenChange={(open) => !open && handleConflictResolve('cancel')}>
                 <DialogContent className="max-w-md">
                     <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2">
-                            <AlertTriangle className="h-5 w-5 text-amber-500" />
-                            Konflikt: Drzwi i fronty szuflad
+                        <DialogTitle className="flex items-center gap-2 text-amber-600">
+                            <AlertTriangle className="h-5 w-5" />
+                            Konflikt konfiguracji
                         </DialogTitle>
                         <DialogDescription>
                             {conflictType === 'doors-enabling'
-                                ? 'Szafka ma skonfigurowane szuflady z frontami. Drzwi i fronty szuflad nie mogą być używane jednocześnie.'
-                                : 'Szafka ma włączone drzwi. Fronty szuflad i drzwi nie mogą być używane jednocześnie.'}
+                                ? 'Szafka ma szuflady z frontami. Nie można jednocześnie używać drzwi.'
+                                : 'Szafka ma włączone drzwi. Nie można dodać szuflad z frontami.'}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-3 py-4">
                         <Button
                             variant="outline"
-                            className="w-full justify-start"
+                            className="w-full justify-start h-auto py-3"
                             onClick={() => handleConflictResolve('convert-drawers')}
                         >
-                            <span className="font-medium">Konwertuj szuflady na wewnętrzne</span>
-                            <span className="text-xs text-muted-foreground ml-2">(usuń fronty szuflad)</span>
+                            <div className="text-left">
+                                <div className="font-medium">Konwertuj szuflady na wewnętrzne</div>
+                                <div className="text-xs text-muted-foreground">Usuń fronty szuflad, zachowaj boxy</div>
+                            </div>
                         </Button>
                         {conflictType === 'drawer-fronts-enabling' && (
                             <Button
                                 variant="outline"
-                                className="w-full justify-start"
+                                className="w-full justify-start h-auto py-3"
                                 onClick={() => handleConflictResolve('remove-doors')}
                             >
-                                <span className="font-medium">Usuń drzwi</span>
-                                <span className="text-xs text-muted-foreground ml-2">(zachowaj fronty szuflad)</span>
+                                <div className="text-left">
+                                    <div className="font-medium">Usuń drzwi</div>
+                                    <div className="text-xs text-muted-foreground">Zachowaj fronty szuflad</div>
+                                </div>
                             </Button>
                         )}
                     </div>
@@ -492,149 +305,270 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
                 </DialogContent>
             </Dialog>
 
-            <div className="grid grid-cols-3 gap-4">
-                <div>
-                    <Label>Szerokość (mm)</Label>
-                    <NumberInput value={params.width} onChange={val => updateParams({width: val})} min={1} allowNegative={false} />
-                </div>
-                <div>
-                    <Label>Wysokość (mm)</Label>
-                    <NumberInput value={params.height} onChange={val => updateParams({height: val})} min={1} allowNegative={false} />
-                </div>
-                <div>
-                    <Label>Głębokość (mm)</Label>
-                    <NumberInput value={params.depth} onChange={val => updateParams({depth: val})} min={1} allowNegative={false} />
-                </div>
-            </div>
-
-            <div>
-                <Label>Montaż góra/dół</Label>
-                <Select
-                    value={params.topBottomPlacement || 'inset'}
-                    onValueChange={(val: TopBottomPlacement) => updateParams({ topBottomPlacement: val } as any)}
-                >
-                    <SelectTrigger>
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="inset">Wewnątrz (między bokami)</SelectItem>
-                        <SelectItem value="overlay">Nałożona (na boki)</SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
-            
-            <div className="border-t pt-4 mt-4">
-                <div className="flex items-center justify-between mb-4">
-                    <Label>Plecy (tylna ściana)</Label>
-                    <Switch checked={getHasBack()} onCheckedChange={val => updateParams({hasBack: val} as any)} />
-                </div>
-                {getHasBack() && (
-                    <div className="flex items-center justify-between">
-                        <Label>Głębokość wpustu ({Math.round(getBackOverlapRatio() * 100)}%)</Label>
-                        <Slider
-                            value={[getBackOverlapRatio()]}
-                            onValueChange={([val]) => updateParams({backOverlapRatio: val} as any)}
-                            min={0.33}
-                            max={1.0}
-                            step={0.01}
-                            className="w-32"
+            {/* Section: Dimensions */}
+            <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-foreground/80 flex items-center gap-2">
+                    <Box className="h-4 w-4" />
+                    Wymiary
+                </h3>
+                <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">Szerokość (mm)</Label>
+                        <NumberInput 
+                            value={params.width} 
+                            onChange={val => updateParams({width: val})} 
+                            min={1} 
+                            allowNegative={false} 
+                            className="h-9"
                         />
                     </div>
-                )}
+                    <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">Wysokość (mm)</Label>
+                        <NumberInput 
+                            value={params.height} 
+                            onChange={val => updateParams({height: val})} 
+                            min={1} 
+                            allowNegative={false}
+                            className="h-9"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">Głębokość (mm)</Label>
+                        <NumberInput 
+                            value={params.depth} 
+                            onChange={val => updateParams({depth: val})} 
+                            min={1} 
+                            allowNegative={false}
+                            className="h-9"
+                        />
+                    </div>
+                </div>
+            </div>
+            
+            <Separator />
+
+            {/* Section: Structure */}
+            <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-foreground/80 flex items-center gap-2">
+                    <Warehouse className="h-4 w-4" />
+                    Konstrukcja
+                </h3>
+                
+                <div className="grid gap-4">
+                     <div className="grid grid-cols-2 gap-4 items-end">
+                        <div className="space-y-2">
+                            <Label className="text-xs text-muted-foreground">Montaż wieńców</Label>
+                            <Select
+                                value={params.topBottomPlacement || 'inset'}
+                                onValueChange={(val: TopBottomPlacement) => updateParams({ topBottomPlacement: val } as any)}
+                            >
+                                <SelectTrigger className="h-9">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="inset">Wpuszczane (między boki)</SelectItem>
+                                    <SelectItem value="overlay">Nakładane (na boki)</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        
+                         <div className="flex items-center justify-between border rounded-md p-2 h-9">
+                            <Label className="text-sm cursor-pointer flex-1" htmlFor="has-back">Plecy (HDF)</Label>
+                            <Switch 
+                                id="has-back"
+                                checked={getHasBack()} 
+                                onCheckedChange={val => updateParams({hasBack: val} as any)} 
+                            />
+                        </div>
+                    </div>
+
+                    {getHasBack() && (
+                         <div className="space-y-2 bg-muted/30 p-3 rounded-md">
+                            <div className="flex justify-between">
+                                <Label className="text-xs">Głębokość wpustu</Label>
+                                <span className="text-xs font-mono">{Math.round(getBackOverlapRatio() * 100)}%</span>
+                            </div>
+                            <Slider
+                                value={[getBackOverlapRatio()]}
+                                onValueChange={([val]) => updateParams({backOverlapRatio: val} as any)}
+                                min={0.33}
+                                max={1.0}
+                                step={0.01}
+                            />
+                        </div>
+                    )}
+                </div>
             </div>
 
-            {type === 'KITCHEN' && (
-                <>
-                    <div className="border-t pt-4 mt-4">
-                      <div className="flex items-center justify-between">
-                          <Label>Półki ({getShelfCount()})</Label>
-                          <Slider value={[getShelfCount()]} onValueChange={([val]) => updateParams({shelfCount: val} as any)} min={0} max={5} step={1} />
-                      </div>
-                    </div>
-                    <div className="border-t pt-4 mt-4">
-                      <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                              <Label>Drzwi</Label>
-                              {drawerHasFronts && !getHasDoors() && (
-                                  <span className="text-xs text-muted-foreground">(wyłączone - szuflady mają fronty)</span>
-                              )}
-                          </div>
-                          <Switch checked={getHasDoors()} onCheckedChange={handleDoorsToggle} />
-                      </div>
-                    </div>
-                    {/* Door configuration */}
-                    {getHasDoors() && (
+            <Separator />
+
+            {/* Section: Configuration */}
+            <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-foreground/80 flex items-center gap-2">
+                    <Library className="h-4 w-4" />
+                    Wyposażenie
+                </h3>
+
+                <div className="space-y-3">
+                    {/* Shelves Control */}
+                    {(type === 'KITCHEN' || type === 'WARDROBE' || type === 'BOOKSHELF') && (
+                        <div className="flex flex-col gap-2 p-3 rounded-lg border bg-card text-card-foreground shadow-sm">
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-1">
+                                    <h4 className="text-sm font-medium">Półki</h4>
+                                    <p className="text-xs text-muted-foreground">Ilość półek wewnętrznych: {getShelfCount()}</p>
+                                </div>
+                                <div className="w-32">
+                                     <Slider 
+                                        value={[getShelfCount()]} 
+                                        onValueChange={([val]) => updateParams({shelfCount: val} as any)} 
+                                        min={0} 
+                                        max={10} 
+                                        step={1} 
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* Doors Main Toggle */}
+                    {(type === 'KITCHEN' || type === 'WARDROBE') && (
+                        <div className="flex items-center justify-between p-3 rounded-lg border bg-card shadow-sm">
+                             <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                    <h4 className="text-sm font-medium">Drzwi</h4>
+                                    {drawerHasFronts && !getHasDoors() && (
+                                        <Badge variant="outline" className="text-xs text-muted-foreground border-dashed">
+                                            Konflikt: szuflady
+                                        </Badge>
+                                    )}
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                    {type === 'WARDROBE' ? `Ilość skrzydeł: ${getDoorCount()}` : (getHasDoors() ? 'Włączone' : 'Wyłączone')}
+                                </p>
+                             </div>
+                             
+                             {type === 'WARDROBE' ? (
+                                <div className="w-32">
+                                    <Slider 
+                                        value={[getDoorCount()]} 
+                                        onValueChange={([val]) => updateParams({doorCount: val} as any)} 
+                                        min={1} 
+                                        max={4} 
+                                        step={1} 
+                                    />
+                                </div>
+                             ) : (
+                                <Switch checked={getHasDoors()} onCheckedChange={handleDoorsToggle} />
+                             )}
+                        </div>
+                    )}
+
+                    {/* Conditional Door Configuration */}
+                    {getHasDoors() && type === 'KITCHEN' && (
                         <>
-                            <FrontsConfigButton params={params} onChange={onChange} />
-                            <HandlesConfigButton params={params} onChange={onChange} />
+                            <ConfigRow
+                                title="Konfiguracja frontów"
+                                description={doorSummary}
+                                icon={<RectangleHorizontal className="h-4 w-4" />}
+                                action={
+                                    <Button variant="outline" size="sm" onClick={() => setFrontsDialogOpen(true)}>
+                                        Konfiguruj
+                                    </Button>
+                                }
+                            />
+                            <ConfigRow
+                                title="Uchwyty"
+                                description={handleSummary}
+                                icon={<Grip className="h-4 w-4" />}
+                                action={
+                                    <Button variant="outline" size="sm" onClick={() => setHandlesDialogOpen(true)}>
+                                        Wybierz
+                                    </Button>
+                                }
+                            />
                         </>
                     )}
 
-                    {/* Drawer configuration button - with conflict-aware handler */}
-                    <DrawerConfigButtonWithConflict
-                        params={params}
-                        onConfigChange={handleDrawerConfigChange}
-                        cabinetHeight={params.height ?? 720}
-                        hasDoors={getHasDoors()}
-                    />
-                </>
-            )}
-            {type === 'WARDROBE' && (
-                <>
-                    <div className="flex items-center justify-between">
-                        <Label>Półki ({getShelfCount()})</Label>
-                        <Slider value={[getShelfCount()]} onValueChange={([val]) => updateParams({shelfCount: val} as any)} min={0} max={10} step={1} />
-                    </div>
-                    <div className="flex items-center justify-between">
-                        <Label>Drzwi ({getDoorCount()})</Label>
-                        <Slider value={[getDoorCount()]} onValueChange={([val]) => updateParams({doorCount: val} as any)} min={1} max={4} step={1} />
-                    </div>
+                    {/* Drawers Configuration */}
+                    {(type === 'KITCHEN' || type === 'WARDROBE' || type === 'BOOKSHELF' || type === 'DRAWER') && (
+                         <ConfigRow
+                            title="Szuflady"
+                            description={
+                                hasDrawerConfig 
+                                    ? `${totalFronts > 0 ? `${totalFronts} frontów, ` : ''}${totalBoxes} boxów • ${drawerConfig.slideType}`
+                                    : 'Brak szuflad'
+                            }
+                            icon={<Layers className="h-4 w-4" />}
+                            alert={
+                                configHasFronts && getHasDoors() ? (
+                                    <Alert variant="warning" className="mt-2 py-2">
+                                        <AlertTriangle className="h-3 w-3" />
+                                        <AlertDescription className="text-xs">
+                                            Konflikt z drzwiami. Szuflady będą wewnętrzne.
+                                        </AlertDescription>
+                                    </Alert>
+                                ) : null
+                            }
+                            action={
+                                <Button variant="outline" size="sm" onClick={() => setDrawerDialogOpen(true)}>
+                                    Konfiguruj
+                                </Button>
+                            }
+                        />
+                    )}
 
-                    {/* Drawer configuration button */}
-                    <DrawerConfigButton
-                        params={params}
-                        onChange={onChange}
-                        cabinetHeight={params.height ?? 2200}
+                    {/* Side Fronts Configuration */}
+                     <ConfigRow
+                        title="Fronty boczne"
+                        description={hasSideFrontsConfig ? sideFrontsSummary : 'Brak (standardowe boki)'}
+                        icon={<PanelLeftDashed className="h-4 w-4" />}
+                        action={
+                            <Button variant="outline" size="sm" onClick={() => setSideFrontsDialogOpen(true)}>
+                                Zmień
+                            </Button>
+                        }
                     />
-                </>
-            )}
-            {type === 'BOOKSHELF' && (
-                <>
-                    <div className="flex items-center justify-between">
-                        <Label>Półki ({getShelfCount()})</Label>
-                        <Slider value={[getShelfCount()]} onValueChange={([val]) => updateParams({shelfCount: val} as any)} min={1} max={10} step={1} />
-                    </div>
+                </div>
+            </div>
 
-                    {/* Drawer configuration button */}
-                    <DrawerConfigButton
-                        params={params}
-                        onChange={onChange}
-                        cabinetHeight={params.height ?? 1800}
-                    />
-                </>
-            )}
-            {type === 'DRAWER' && (
-                <>
-                    {/* Drawer configuration button - mandatory for DRAWER type */}
-                    <DrawerConfigButton
-                        params={params}
-                        onChange={onChange}
-                        cabinetHeight={params.height ?? 800}
-                    />
-                </>
-            )}
-
-            {/* Side fronts configuration - common for all cabinet types */}
-            <SideFrontsConfigButton
+            {/* Sub-Dialogs */}
+            <FrontsConfigDialog
+                open={frontsDialogOpen}
+                onOpenChange={setFrontsDialogOpen}
                 params={params}
-                onChange={onChange}
+                onParamsChange={onChange}
+            />
+            <HandlesConfigDialog
+                open={handlesDialogOpen}
+                onOpenChange={setHandlesDialogOpen}
+                params={params}
+                onParamsChange={onChange}
+            />
+            <DrawerConfigDialog
+                open={drawerDialogOpen}
+                onOpenChange={setDrawerDialogOpen}
+                config={drawerConfig}
+                onConfigChange={handleDrawerConfigChange}
                 cabinetHeight={params.height ?? 720}
+            />
+            <SideFrontsConfigDialog
+                open={sideFrontsDialogOpen}
+                onOpenChange={setSideFrontsDialogOpen}
+                config={sideFrontsConfig}
+                onConfigChange={(config) => onChange({ ...params, sideFronts: config } as any)}
                 materials={materials}
                 defaultFrontMaterialId={defaultFrontMaterialId}
+                cabinetHeight={params.height ?? 720}
             />
         </div>
     )
 }
+
+/**
+ * Conflict type for doors vs drawer fronts
+ */
+type ConflictType = 'doors-enabling' | 'drawer-fronts-enabling' | null;
 
 export function CabinetTemplateDialog({ open, onOpenChange, furnitureId }: CabinetTemplateDialogProps) {
   const [step, setStep] = useState<Step>('select');
@@ -718,38 +652,51 @@ export function CabinetTemplateDialog({ open, onOpenChange, furnitureId }: Cabin
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0">
-        <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4">
-          <DialogTitle>Dodaj szafkę</DialogTitle>
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0">
+        <DialogHeader className="flex-shrink-0 px-6 py-6 border-b">
+          <DialogTitle className="text-xl">
+             {step === 'select' && 'Wybierz typ szafki'}
+             {step === 'configure' && 'Konfiguracja parametrów'}
+             {step === 'materials' && 'Wybór materiałów'}
+          </DialogTitle>
+          <DialogDescription>
+             {step === 'select' && 'Wybierz jeden z dostępnych szablonów, aby rozpocząć konfigurację.'}
+             {step === 'configure' && 'Dostosuj wymiary i wyposażenie szafki.'}
+             {step === 'materials' && 'Wybierz materiały dla korpusu i frontów.'}
+          </DialogDescription>
         </DialogHeader>
 
         {/* Scrollable content area */}
-        <div className="flex-1 overflow-y-auto px-6">
+        <div className="flex-1 overflow-y-auto px-6 py-6">
           {/* Step 1: Template Selection */}
           {step === 'select' && (
-            <div className="grid grid-cols-2 gap-4 pb-6">
+            <div className="grid grid-cols-2 gap-4">
               <TemplateCard
                 type="KITCHEN"
                 title="Szafka kuchenna"
-                description="Podstawowa szafka z półkami i frontami"
+                description="Uniwersalna szafka z możliwością konfiguracji drzwi, szuflad i półek."
+                icon={<Box className="w-6 h-6" />}
                 onClick={() => handleSelectType('KITCHEN')}
               />
               <TemplateCard
                 type="WARDROBE"
                 title="Szafa ubraniowa"
-                description="Wysoka szafa z drzwiami i półkami"
+                description="Wysoka szafa z drzwiami skrzydłowymi i półkami."
+                icon={<Warehouse className="w-6 h-6" />}
                 onClick={() => handleSelectType('WARDROBE')}
               />
               <TemplateCard
                 type="BOOKSHELF"
-                title="Regał/Biblioteczka"
-                description="Otwarty regał z półkami"
+                title="Regał"
+                description="Otwarty regał z konfigurowalną ilością półek."
+                icon={<Library className="w-6 h-6" />}
                 onClick={() => handleSelectType('BOOKSHELF')}
               />
               <TemplateCard
                 type="DRAWER"
-                title="Szafka z szufladami"
-                description="Szafka z frontami szufladowymi"
+                title="Kontener szufladowy"
+                description="Szafka dedykowana wyłącznie pod szuflady."
+                icon={<Layers className="w-6 h-6" />}
                 onClick={() => handleSelectType('DRAWER')}
               />
             </div>
@@ -757,7 +704,6 @@ export function CabinetTemplateDialog({ open, onOpenChange, furnitureId }: Cabin
 
           {/* Step 2: Parameter Configuration */}
           {step === 'configure' && selectedType && (
-            <div className="pb-4">
               <ParameterForm
                 type={selectedType}
                 params={params}
@@ -765,19 +711,18 @@ export function CabinetTemplateDialog({ open, onOpenChange, furnitureId }: Cabin
                 materials={availableMaterials}
                 defaultFrontMaterialId={default_front_material ?? ''}
               />
-            </div>
           )}
 
           {/* Step 3: Material Selection */}
           {step === 'materials' && (
-            <div className="space-y-4 pb-4">
-              <div>
-                <Label>Materiał korpusu (boki, dno, góra, półki)</Label>
+            <div className="space-y-6">
+              <div className="space-y-3">
+                <Label className="text-base font-medium">Korpus (boki, wieńce, półki)</Label>
                 <Select
                   value={materials?.bodyMaterialId}
                   onValueChange={(id) => setMaterials({ ...materials, bodyMaterialId: id })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="h-10">
                       <SelectValue placeholder="Wybierz materiał" />
                   </SelectTrigger>
                   <SelectContent>
@@ -789,13 +734,14 @@ export function CabinetTemplateDialog({ open, onOpenChange, furnitureId }: Cabin
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label>Materiał frontu (drzwi, szuflady)</Label>
+              
+              <div className="space-y-3">
+                <Label className="text-base font-medium">Fronty</Label>
                 <Select
                   value={materials?.frontMaterialId}
                   onValueChange={(id) => setMaterials({ ...materials, frontMaterialId: id })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="h-10">
                       <SelectValue placeholder="Wybierz materiał" />
                   </SelectTrigger>
                   <SelectContent>
@@ -807,14 +753,15 @@ export function CabinetTemplateDialog({ open, onOpenChange, furnitureId }: Cabin
                   </SelectContent>
                 </Select>
               </div>
+
               {params.hasBack && (
-                <div>
-                  <Label>Materiał pleców (tylna ściana - HDF)</Label>
+                <div className="space-y-3">
+                  <Label className="text-base font-medium">Plecy (HDF)</Label>
                   <Select
                     value={materials?.backMaterialId}
                     onValueChange={(id) => setMaterials({ ...materials, backMaterialId: id })}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-10">
                         <SelectValue placeholder="Wybierz materiał HDF" />
                     </SelectTrigger>
                     <SelectContent>
@@ -840,9 +787,9 @@ export function CabinetTemplateDialog({ open, onOpenChange, furnitureId }: Cabin
           )}
         </div>
 
-        {/* Sticky footer - always visible at bottom */}
+        {/* Footer */}
         {step !== 'select' && (
-          <div className="flex-shrink-0 border-t bg-background px-6 py-4 flex justify-between">
+          <div className="flex-shrink-0 border-t bg-muted/20 px-6 py-4 flex justify-between">
             <Button
               variant="outline"
               onClick={() => setStep(step === 'materials' ? 'configure' : 'select')}

@@ -155,11 +155,11 @@ const PartRow = memo(function PartRow({
       </div>
       <div className="flex items-center gap-2">
         {isHidden && (
-          <Badge variant="outline" className="text-[10px] px-1 py-0 text-muted-foreground">
+          <Badge variant="outline" className="text-xs px-1 py-0 text-muted-foreground">
             ukryta
           </Badge>
         )}
-        <span className="text-[10px] uppercase tracking-wide text-muted-foreground">{part.shapeType}</span>
+        <span className="text-xs uppercase tracking-wide text-muted-foreground">{part.shapeType}</span>
       </div>
     </div>
   );
@@ -587,7 +587,7 @@ export function PartsTable() {
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
                       {groupHiddenStatus !== 'none' && (
-                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground pointer-events-none">
+                        <Badge variant="outline" className="text-xs px-1.5 py-0 text-muted-foreground pointer-events-none">
                           {groupHiddenStatus === 'all'
                             ? 'ukryte'
                             : `${group.partIds.filter(id => hiddenPartIds.has(id)).length} ukrytych`}

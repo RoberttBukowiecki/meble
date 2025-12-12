@@ -74,7 +74,7 @@ export function Sidebar() {
         </div>
 
         <div className="space-y-2">
-          <Button onClick={handleAddPart} className="w-full" size="sm">
+          <Button onClick={handleAddPart} variant="outline" className="w-full" size="sm">
             <Plus className="mr-2 h-4 w-4" />
             {t('addPart')}
           </Button>

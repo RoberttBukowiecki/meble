@@ -58,6 +58,7 @@ import {
   AccordionItem,
   AccordionTrigger,
   AccordionContent,
+  Label,
 } from '@meble/ui';
 
 import { getCabinetTypeLabel } from '@/lib/cabinetHelpers';
@@ -99,20 +100,20 @@ const SideFrontsSection = ({
 
   return (
     <AccordionItem value="sidefronts" className="border-b-0">
-      <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
+      <AccordionTrigger className="py-3 text-xs font-medium hover:no-underline">
         <div className="flex items-center gap-2">
-          <PanelLeftDashed className="h-3 w-3" />
+          <PanelLeftDashed className="h-4 w-4 text-muted-foreground" />
           Fronty boczne
           {hasConfig && (
-            <Badge variant="secondary" className="text-[10px] px-1 py-0">
+            <Badge variant="secondary" className="text-xs px-1.5 py-0 h-5">
               {summary}
             </Badge>
           )}
         </div>
       </AccordionTrigger>
-      <AccordionContent className="pb-2 pt-0">
-        <div className="space-y-2">
-          <p className="text-[10px] text-muted-foreground">
+      <AccordionContent className="pb-4 pt-0">
+        <div className="space-y-3 px-1">
+          <p className="text-xs text-muted-foreground">
             {hasConfig
               ? `Skonfigurowane: ${summary}`
               : 'Brak skonfigurowanych frontów bocznych'}
@@ -120,10 +121,10 @@ const SideFrontsSection = ({
           <Button
             variant="outline"
             size="sm"
-            className="w-full h-7 text-xs"
+            className="w-full h-8 text-xs"
             onClick={() => setDialogOpen(true)}
           >
-            <PanelLeftDashed className="h-3 w-3 mr-2" />
+            <PanelLeftDashed className="h-3.5 w-3.5 mr-2" />
             Konfiguruj fronty boczne
           </Button>
         </div>
@@ -214,17 +215,17 @@ export function PropertiesPanel() {
     };
 
     return (
-      <div className="p-2">
+      <div className="p-4 space-y-4">
         {/* Multiselect header */}
-        <div className="flex items-center justify-between mb-3">
-          <Badge variant="secondary" className="text-xs">
+        <div className="flex items-center justify-between">
+          <Badge variant="secondary" className="text-xs h-6">
             {t('multiselect', { count: selectedParts.length })}
           </Badge>
           <div className="flex gap-1">
             <Button
               size="icon"
               variant="ghost"
-              className="h-7 w-7"
+              className="h-8 w-8"
               onClick={duplicateSelectedParts}
               title={t('duplicateAll')}
             >
@@ -233,7 +234,7 @@ export function PropertiesPanel() {
             <Button
               size="icon"
               variant="ghost"
-              className="h-7 w-7 text-destructive hover:text-destructive"
+              className="h-8 w-8 text-destructive hover:text-destructive"
               onClick={deleteSelectedParts}
               title={t('deleteAll')}
             >
@@ -243,23 +244,23 @@ export function PropertiesPanel() {
         </div>
 
         {/* Selection summary */}
-        <div className="mb-3 p-2 bg-muted/30 rounded-md">
-          <p className="text-xs text-muted-foreground mb-1">{t('selectedParts')}:</p>
-          <ul className="text-xs space-y-0.5 max-h-32 overflow-y-auto">
+        <div className="p-3 bg-muted/30 rounded-md border">
+          <Label className="text-xs text-muted-foreground mb-2 block">{t('selectedParts')}:</Label>
+          <ul className="text-xs space-y-1 max-h-32 overflow-y-auto">
             {selectedParts.map(p => (
-              <li key={p.id} className="truncate">{p.name}</li>
+              <li key={p.id} className="truncate text-foreground/80">• {p.name}</li>
             ))}
           </ul>
         </div>
 
         {/* Batch material change */}
         <div className="space-y-2">
-          <label className="text-xs text-muted-foreground">{t('material')}</label>
+          <Label className="text-xs font-medium">{t('material')}</Label>
           <Select
             value={commonMaterialId ?? ''}
             onValueChange={handleBatchMaterialChange}
           >
-            <SelectTrigger className="h-8">
+            <SelectTrigger className="h-8 w-full">
               <SelectValue placeholder={commonMaterialId ? undefined : t('mixedMaterials')} />
             </SelectTrigger>
             <SelectContent>
@@ -276,7 +277,7 @@ export function PropertiesPanel() {
         <Button
           variant="outline"
           size="sm"
-          className="w-full mt-4"
+          className="w-full h-8"
           onClick={clearSelection}
         >
           {t('clearSelection')}
@@ -349,78 +350,82 @@ export function PropertiesPanel() {
     };
 
     return (
-      <div className="p-2 flex flex-col h-full">
+      <div className="flex flex-col h-full">
         {/* Cabinet header */}
-        <div className="flex items-center justify-between mb-2">
-          <Badge variant="outline" className="text-xs">
-            {getCabinetTypeLabel(selectedCabinet.type)}
-          </Badge>
-          <div className="flex gap-1">
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-7 w-7"
-              onClick={() => duplicateCabinet(selectedCabinet.id)}
-            >
-              <Copy className="h-3.5 w-3.5" />
-            </Button>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-7 w-7 text-destructive hover:text-destructive"
-              onClick={handleDeleteCabinet}
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-        </div>
+        <div className="p-4 pb-2 border-b bg-card z-10">
+            <div className="flex items-center justify-between mb-3">
+            <Badge variant="outline" className="text-xs font-medium">
+                {getCabinetTypeLabel(selectedCabinet.type)}
+            </Badge>
+            <div className="flex gap-1">
+                <Button
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8"
+                onClick={() => duplicateCabinet(selectedCabinet.id)}
+                title="Duplikuj"
+                >
+                <Copy className="h-4 w-4" />
+                </Button>
+                <Button
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                onClick={handleDeleteCabinet}
+                title="Usuń"
+                >
+                <Trash2 className="h-4 w-4" />
+                </Button>
+            </div>
+            </div>
 
-        {/* Name */}
-        <div className="mb-2">
-          <span className="text-xs font-medium text-muted-foreground">{t('cabinetName')}</span>
-          <Input
-            className="h-7 text-xs mt-0.5"
-            value={selectedCabinet.name}
-            onChange={(e) =>
-              updateCabinet(selectedCabinet.id, { name: e.target.value })
-            }
-          />
-        </div>
+            {/* Name */}
+            <div className="mb-3 space-y-1.5">
+                <Label className="text-xs font-medium text-muted-foreground">{t('cabinetName')}</Label>
+                <Input
+                    className="h-8 text-xs"
+                    value={selectedCabinet.name}
+                    onChange={(e) =>
+                    updateCabinet(selectedCabinet.id, { name: e.target.value })
+                    }
+                />
+            </div>
 
-        {/* Hide fronts toggle */}
-        <div className="flex items-center justify-between mb-2 py-1">
-          <span className="text-xs text-muted-foreground">Ukryj fronty</span>
-          <Switch
-            className="scale-75"
-            checked={selectedCabinet.hideFronts ?? false}
-            onCheckedChange={(checked) =>
-              updateCabinet(selectedCabinet.id, { hideFronts: checked })
-            }
-          />
+            {/* Hide fronts toggle */}
+            <div className="flex items-center justify-between py-1">
+                <Label className="text-xs text-muted-foreground font-normal">Ukryj fronty</Label>
+                <Switch
+                    className="scale-90"
+                    checked={selectedCabinet.hideFronts ?? false}
+                    onCheckedChange={(checked) =>
+                    updateCabinet(selectedCabinet.id, { hideFronts: checked })
+                    }
+                />
+            </div>
         </div>
         
-        <div className='flex-grow overflow-y-auto'>
-            <Accordion type="multiple" defaultValue={['dimensions']} className="w-full">
-                <AccordionItem value="dimensions" className="border-b-0">
-                    <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
+        <div className='flex-grow overflow-y-auto px-2 py-2'>
+            <Accordion type="multiple" defaultValue={['dimensions']} className="w-full space-y-1">
+                <AccordionItem value="dimensions" className="border rounded-md px-2 bg-card">
+                    <AccordionTrigger className="py-3 text-xs font-medium hover:no-underline">
                         <div className="flex items-center gap-2">
-                            <Ruler className="h-3 w-3" />
+                            <Ruler className="h-4 w-4 text-muted-foreground" />
                             Wymiary
                         </div>
                     </AccordionTrigger>
-                    <AccordionContent className="pb-4 pt-2 bg-muted/20 border-t">
+                    <AccordionContent className="pb-4 pt-1 border-t mt-1">
                         <DimensionsConfig params={localParams} onChange={updateLocalParams} />
                     </AccordionContent>
                 </AccordionItem>
                 
-                <AccordionItem value="assembly" className="border-b-0">
-                    <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
+                <AccordionItem value="assembly" className="border rounded-md px-2 bg-card">
+                    <AccordionTrigger className="py-3 text-xs font-medium hover:no-underline">
                         <div className="flex items-center gap-2">
-                            <Settings className="h-3 w-3" />
+                            <Settings className="h-4 w-4 text-muted-foreground" />
                             Montaż
                         </div>
                     </AccordionTrigger>
-                    <AccordionContent className="pb-4 pt-2 space-y-4 bg-muted/20 border-t">
+                    <AccordionContent className="pb-4 pt-1 space-y-4 border-t mt-1">
                         <AssemblyConfig params={localParams} onChange={updateLocalParams} />
                         <BackWallConfig params={localParams} onChange={updateLocalParams} />
                     </AccordionContent>
@@ -428,36 +433,36 @@ export function PropertiesPanel() {
 
                 {selectedCabinet.type === 'KITCHEN' && (
                     <>
-                        <AccordionItem value="shelves" className="border-b-0">
-                            <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
+                        <AccordionItem value="shelves" className="border rounded-md px-2 bg-card">
+                            <AccordionTrigger className="py-3 text-xs font-medium hover:no-underline">
                                 <div className="flex items-center gap-2">
-                                    <Rows className="h-3 w-3" />
+                                    <Rows className="h-4 w-4 text-muted-foreground" />
                                     Półki
                                 </div>
                             </AccordionTrigger>
-                            <AccordionContent className="pb-4 pt-2 bg-muted/20 border-t">
+                            <AccordionContent className="pb-4 pt-1 border-t mt-1">
                                 <ShelvesConfig params={localParams} onChange={updateLocalParams} maxShelves={5}/>
                             </AccordionContent>
                         </AccordionItem>
-                        <AccordionItem value="fronts" className="border-b-0">
-                            <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
+                        <AccordionItem value="fronts" className="border rounded-md px-2 bg-card">
+                            <AccordionTrigger className="py-3 text-xs font-medium hover:no-underline">
                                 <div className="flex items-center gap-2">
-                                    <DoorClosed className="h-3 w-3" />
+                                    <DoorClosed className="h-4 w-4 text-muted-foreground" />
                                     Fronty
                                 </div>
                             </AccordionTrigger>
-                            <AccordionContent className="pb-4 pt-2 bg-muted/20 border-t">
+                            <AccordionContent className="pb-4 pt-1 border-t mt-1">
                                 <FrontsConfig params={localParams} onChange={updateLocalParams} />
                             </AccordionContent>
                         </AccordionItem>
-                        <AccordionItem value="handles" className="border-b-0">
-                            <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
+                        <AccordionItem value="handles" className="border rounded-md px-2 bg-card">
+                            <AccordionTrigger className="py-3 text-xs font-medium hover:no-underline">
                                 <div className="flex items-center gap-2">
-                                    <Grip className="h-3 w-3" />
+                                    <Grip className="h-4 w-4 text-muted-foreground" />
                                     Uchwyty
                                 </div>
                             </AccordionTrigger>
-                            <AccordionContent className="pb-4 pt-2 bg-muted/20 border-t">
+                            <AccordionContent className="pb-4 pt-1 border-t mt-1">
                                 <HandlesConfig params={localParams} onChange={updateLocalParams} />
                             </AccordionContent>
                         </AccordionItem>
@@ -465,26 +470,28 @@ export function PropertiesPanel() {
                 )}
 
               {/* Side Fronts */}
-              <SideFrontsSection
-                cabinetId={selectedCabinet.id}
-                params={localParams}
-                materials={materials}
-                defaultFrontMaterialId={selectedCabinet.materials.frontMaterialId}
-                onUpdateParams={updateLocalParams}
-              />
+              <div className="border rounded-md px-2 bg-card">
+                 <SideFrontsSection
+                    cabinetId={selectedCabinet.id}
+                    params={localParams}
+                    materials={materials}
+                    defaultFrontMaterialId={selectedCabinet.materials.frontMaterialId}
+                    onUpdateParams={updateLocalParams}
+                />
+              </div>
               
               {/* Materials */}
-              <AccordionItem value="materials" className="border-b-0">
-                <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
+              <AccordionItem value="materials" className="border rounded-md px-2 bg-card">
+                <AccordionTrigger className="py-3 text-xs font-medium hover:no-underline">
                   <div className="flex items-center gap-2">
-                      <Wrench className="h-3 w-3" />
+                      <Wrench className="h-4 w-4 text-muted-foreground" />
                       Materiały
                   </div>
                 </AccordionTrigger>
-                <AccordionContent className="pb-4 pt-2 bg-muted/20 border-t">
-                  <div className="space-y-2">
-                    <div>
-                      <span className="text-[10px] text-muted-foreground">{t('bodyMaterial')}</span>
+                <AccordionContent className="pb-4 pt-1 border-t mt-1">
+                  <div className="space-y-4 pt-2">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground font-normal">{t('bodyMaterial')}</Label>
                       <Select
                         value={selectedCabinet.materials.bodyMaterialId}
                         onValueChange={(id) =>
@@ -493,7 +500,7 @@ export function PropertiesPanel() {
                           })
                         }
                       >
-                        <SelectTrigger className="h-7 text-xs">
+                        <SelectTrigger className="h-8 text-xs w-full">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -505,8 +512,8 @@ export function PropertiesPanel() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div>
-                      <span className="text-[10px] text-muted-foreground">{t('frontMaterial')}</span>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground font-normal">{t('frontMaterial')}</Label>
                       <Select
                         value={selectedCabinet.materials.frontMaterialId}
                         onValueChange={(id) =>
@@ -515,7 +522,7 @@ export function PropertiesPanel() {
                           })
                         }
                       >
-                        <SelectTrigger className="h-7 text-xs">
+                        <SelectTrigger className="h-8 text-xs w-full">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -532,69 +539,69 @@ export function PropertiesPanel() {
               </AccordionItem>
               
               {/* Transform (Position & Rotation) */}
-              <AccordionItem value="transform" className="border-b-0">
-                <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
+              <AccordionItem value="transform" className="border rounded-md px-2 bg-card">
+                <AccordionTrigger className="py-3 text-xs font-medium hover:no-underline">
                   <div className="flex items-center gap-2">
-                        <Scaling className="h-3 w-3" />
+                        <Scaling className="h-4 w-4 text-muted-foreground" />
                         {t('transform')}
                     </div>
                 </AccordionTrigger>
-                <AccordionContent className="pb-4 pt-2 bg-muted/20 border-t">
-                  <div className="space-y-2">
-                    <div>
-                      <span className="text-[10px] text-muted-foreground">{t('position')}</span>
-                      <div className="grid grid-cols-3 gap-1">
+                <AccordionContent className="pb-4 pt-1 border-t mt-1">
+                  <div className="space-y-4 pt-2">
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground font-normal">{t('position')}</Label>
+                      <div className="grid grid-cols-3 gap-2">
                         <div>
-                          <span className="text-[10px] text-muted-foreground">X</span>
+                          <span className="text-xs text-muted-foreground block mb-1 ml-0.5">X</span>
                           <NumberInput
-                            className="h-7 text-xs"
+                            className="h-8 text-xs"
                             value={cabinetCenter[0]}
                             onChange={(val) => handleCabinetPositionUpdate(0, val)}
                           />
                         </div>
                         <div>
-                          <span className="text-[10px] text-muted-foreground">Y</span>
+                          <span className="text-xs text-muted-foreground block mb-1 ml-0.5">Y</span>
                           <NumberInput
-                            className="h-7 text-xs"
+                            className="h-8 text-xs"
                             value={cabinetCenter[1]}
                             onChange={(val) => handleCabinetPositionUpdate(1, val)}
                           />
                         </div>
                         <div>
-                          <span className="text-[10px] text-muted-foreground">Z</span>
+                          <span className="text-xs text-muted-foreground block mb-1 ml-0.5">Z</span>
                           <NumberInput
-                            className="h-7 text-xs"
+                            className="h-8 text-xs"
                             value={cabinetCenter[2]}
                             onChange={(val) => handleCabinetPositionUpdate(2, val)}
                           />
                         </div>
                       </div>
                     </div>
-                    <div>
-                      <span className="text-[10px] text-muted-foreground">{t('rotation')}</span>
-                      <div className="grid grid-cols-3 gap-1">
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground font-normal">{t('rotation')}</Label>
+                      <div className="grid grid-cols-3 gap-2">
                         <div>
-                          <span className="text-[10px] text-muted-foreground">X</span>
+                          <span className="text-xs text-muted-foreground block mb-1 ml-0.5">X</span>
                           <NumberInput
-                            className="h-7 text-xs"
+                            className="h-8 text-xs"
                             value={cabinetRotationDegrees[0]}
                             onChange={(val) => handleCabinetRotationUpdate(0, val)}
                             allowDecimals
                           />
                         </div>
                         <div>
-                          <span className="text-[10px] text-muted-foreground">Y</span>
+                          <span className="text-xs text-muted-foreground block mb-1 ml-0.5">Y</span>
                           <NumberInput
-                            className="h-7 text-xs"
+                            className="h-8 text-xs"
                             value={cabinetRotationDegrees[1]}
                             onChange={(val) => handleCabinetRotationUpdate(1, val)}
                             allowDecimals
                           />
                         </div>
                         <div>
-                          <span className="text-[10px] text-muted-foreground">Z</span>
+                          <span className="text-xs text-muted-foreground block mb-1 ml-0.5">Z</span>
                           <NumberInput
-                            className="h-7 text-xs"
+                            className="h-8 text-xs"
                             value={cabinetRotationDegrees[2]}
                             onChange={(val) => handleCabinetRotationUpdate(2, val)}
                             allowDecimals
@@ -609,8 +616,8 @@ export function PropertiesPanel() {
             </Accordion>
         </div>
         {hasChanges && (
-            <div className="mt-auto pt-2">
-                <Button onClick={handleApplyChanges} size="sm" className="w-full">
+            <div className="p-4 border-t bg-background">
+                <Button onClick={handleApplyChanges} size="sm" className="w-full h-9">
                     Zastosuj zmiany
                 </Button>
             </div>
@@ -726,314 +733,324 @@ export function PropertiesPanel() {
         : undefined;
 
     return (
-      <div className="p-2">
-        {/* Cabinet Part Warning */}
-        {cabinetForPart && (
-          <Alert className="py-2 mb-2">
-            <AlertCircle className="h-3 w-3" />
-            <AlertTitle className="text-xs">{t('cabinetPartWarningTitle', { name: cabinetForPart.name })}</AlertTitle>
-            <AlertDescription className="text-[10px]">
-              {t('cabinetPartWarningDescription')}
-              <Button
-                variant="link"
-                size="sm"
-                className="p-0 h-auto ml-1 text-[10px]"
-                onClick={() => selectCabinet(cabinetForPart.id)}
-              >
-                {t('editCabinet')}
-              </Button>
-            </AlertDescription>
-          </Alert>
-        )}
+      <div className="p-4 flex flex-col h-full overflow-hidden">
+        <div className="flex-shrink-0 mb-4">
+             {/* Cabinet Part Warning */}
+            {cabinetForPart && (
+            <Alert className="py-3 mb-3 border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-900">
+                <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-500" />
+                <AlertTitle className="text-xs font-medium text-amber-800 dark:text-amber-400">
+                    {t('cabinetPartWarningTitle', { name: cabinetForPart.name })}
+                </AlertTitle>
+                <AlertDescription className="text-xs text-amber-700 dark:text-amber-500 mt-1">
+                {t('cabinetPartWarningDescription')}
+                <Button
+                    variant="link"
+                    size="sm"
+                    className="p-0 h-auto ml-1 text-xs text-amber-900 dark:text-amber-300 font-semibold"
+                    onClick={() => selectCabinet(cabinetForPart.id)}
+                >
+                    {t('editCabinet')}
+                </Button>
+                </AlertDescription>
+            </Alert>
+            )}
 
-        {/* Actions */}
-        <div className="flex gap-1 mb-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleDuplicate}
-            className="flex-1 h-7 text-xs"
-          >
-            <Copy className="mr-1 h-3 w-3" />
-            {t('duplicate')}
-          </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={handleDelete}
-            className="flex-1 h-7 text-xs"
-          >
-            <Trash2 className="mr-1 h-3 w-3" />
-            {t('delete')}
-          </Button>
+            {/* Actions */}
+            <div className="flex gap-2">
+            <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDuplicate}
+                className="flex-1 h-8 text-xs"
+            >
+                <Copy className="mr-2 h-3.5 w-3.5" />
+                {t('duplicate')}
+            </Button>
+            <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleDelete}
+                className="flex-1 h-8 text-xs"
+            >
+                <Trash2 className="mr-2 h-3.5 w-3.5" />
+                {t('delete')}
+            </Button>
+            </div>
         </div>
 
-        <Accordion type="multiple" defaultValue={[]} className="w-full">
-          {/* Basic Info */}
-          <AccordionItem value="basic" className="border-b-0">
-            <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
-              {t('basicInfo')}
-            </AccordionTrigger>
-            <AccordionContent className="pb-2 pt-0">
-              <div className="space-y-2">
-                <div>
-                  <span className="text-[10px] text-muted-foreground">{t('name')}</span>
-                  <Input
-                    className="h-7 text-xs"
-                    value={selectedPart.name}
-                    onChange={(e) => handleUpdate('name', e.target.value)}
-                  />
-                </div>
-                <div>
-                  <span className="text-[10px] text-muted-foreground">{t('group')}</span>
-                  <Input
-                    className="h-7 text-xs"
-                    value={selectedPart.group || ''}
-                    onChange={(e) => handleUpdate('group', e.target.value || undefined)}
-                    placeholder={t('groupPlaceholder')}
-                  />
-                </div>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-
-          {/* Shape & Dimensions */}
-          <AccordionItem value="shape" className="border-b-0">
-            <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
-              {t('shapeAndDimensions')}
-            </AccordionTrigger>
-            <AccordionContent className="pb-2 pt-0">
-              <div className="space-y-2">
-                <div>
-                  <span className="text-[10px] text-muted-foreground">{t('shapeType')}</span>
-                  <Select
-                    value={selectedPart.shapeType}
-                    onValueChange={(value) => handleShapeTypeChange(value as ShapeType)}
-                  >
-                    <SelectTrigger className="h-7 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="RECT">{t('shapeRectangle')}</SelectItem>
-                      <SelectItem value="TRAPEZOID">{t('shapeTrapezoid')}</SelectItem>
-                      <SelectItem value="L_SHAPE">{t('shapeLShape')}</SelectItem>
-                      <SelectItem value="POLYGON">{t('shapePolygon')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                {selectedPart.shapeType === 'RECT' && (
-                  <div className="grid grid-cols-2 gap-1">
-                    <div>
-                      <span className="text-[10px] text-muted-foreground">{t('lengthX')}</span>
-                      <NumberInput
-                        className="h-7 text-xs"
-                        value={(selectedPart.shapeParams as ShapeParamsRect).x}
-                        onChange={(val) => handleShapeParamUpdate('x', val)}
-                        min={1}
-                        allowNegative={false}
-                      />
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-muted-foreground">{t('widthY')}</span>
-                      <NumberInput
-                        className="h-7 text-xs"
-                        value={(selectedPart.shapeParams as ShapeParamsRect).y}
-                        onChange={(val) => handleShapeParamUpdate('y', val)}
-                        min={1}
-                        allowNegative={false}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-
-          {/* Transform (Position & Rotation) */}
-          <AccordionItem value="transform" className="border-b-0">
-            <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
-              {t('transform')}
-            </AccordionTrigger>
-            <AccordionContent className="pb-2 pt-0">
-              <div className="space-y-2">
-                <div>
-                  <span className="text-[10px] text-muted-foreground">{t('position')}</span>
-                  <div className="grid grid-cols-3 gap-1">
-                    <div>
-                      <span className="text-[10px] text-muted-foreground">X</span>
-                      <NumberInput
-                        className="h-7 text-xs"
-                        value={selectedPart.position[0]}
-                        onChange={(val) => handlePositionUpdate(0, val)}
-                      />
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-muted-foreground">Y</span>
-                      <NumberInput
-                        className="h-7 text-xs"
-                        value={selectedPart.position[1]}
-                        onChange={(val) => handlePositionUpdate(1, val)}
-                      />
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-muted-foreground">Z</span>
-                      <NumberInput
-                        className="h-7 text-xs"
-                        value={selectedPart.position[2]}
-                        onChange={(val) => handlePositionUpdate(2, val)}
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <span className="text-[10px] text-muted-foreground">{t('rotation')}</span>
-                  <div className="grid grid-cols-3 gap-1">
-                    <div>
-                      <span className="text-[10px] text-muted-foreground">X</span>
-                      <NumberInput
-                        className="h-7 text-xs"
-                        value={rotationDegrees[0]}
-                        onChange={(val) => handleRotationUpdate(0, val)}
-                        allowDecimals
-                      />
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-muted-foreground">Y</span>
-                      <NumberInput
-                        className="h-7 text-xs"
-                        value={rotationDegrees[1]}
-                        onChange={(val) => handleRotationUpdate(1, val)}
-                        allowDecimals
-                      />
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-muted-foreground">Z</span>
-                      <NumberInput
-                        className="h-7 text-xs"
-                        value={rotationDegrees[2]}
-                        onChange={(val) => handleRotationUpdate(2, val)}
-                        allowDecimals
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-
-          {/* Material */}
-          <AccordionItem value="material" className="border-b-0">
-            <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
-              {t('material')}
-            </AccordionTrigger>
-            <AccordionContent className="pb-2 pt-0">
-              <Select value={selectedPart.materialId} onValueChange={handleMaterialChange}>
-                <SelectTrigger className="h-7 text-xs">
-                  <SelectValue placeholder={t('selectMaterial')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {materials.map((material) => (
-                    <SelectItem key={material.id} value={material.id}>
-                      {material.name} ({material.thickness}mm)
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </AccordionContent>
-          </AccordionItem>
-
-          {/* Edge Banding */}
-          {selectedPart.shapeType === 'RECT' && (
-            <AccordionItem value="edgebanding" className="border-b-0">
-              <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
-                {t('edgeBanding')}
-              </AccordionTrigger>
-              <AccordionContent className="pb-2 pt-0">
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-muted-foreground">{t('edgeTop')}</span>
-                    <Switch
-                      className="scale-75"
-                      checked={edgeBanding?.top || false}
-                      onCheckedChange={(checked) => handleEdgeBandingUpdate('top', checked)}
+        <div className="flex-grow overflow-y-auto pr-1">
+            <Accordion type="multiple" defaultValue={['basic', 'shape']} className="w-full space-y-1">
+            {/* Basic Info */}
+            <AccordionItem value="basic" className="border rounded-md px-2 bg-card">
+                <AccordionTrigger className="py-3 text-xs font-medium hover:no-underline">
+                 Informacje podstawowe
+                </AccordionTrigger>
+                <AccordionContent className="pb-4 pt-1 border-t mt-1">
+                <div className="space-y-3 pt-2">
+                    <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground font-normal">{t('name')}</Label>
+                    <Input
+                        className="h-8 text-xs"
+                        value={selectedPart.name}
+                        onChange={(e) => handleUpdate('name', e.target.value)}
                     />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-muted-foreground">{t('edgeBottom')}</span>
-                    <Switch
-                      className="scale-75"
-                      checked={edgeBanding?.bottom || false}
-                      onCheckedChange={(checked) => handleEdgeBandingUpdate('bottom', checked)}
+                    </div>
+                    <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground font-normal">{t('group')}</Label>
+                    <Input
+                        className="h-8 text-xs"
+                        value={selectedPart.group || ''}
+                        onChange={(e) => handleUpdate('group', e.target.value || undefined)}
+                        placeholder={t('groupPlaceholder')}
                     />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-muted-foreground">{t('edgeLeft')}</span>
-                    <Switch
-                      className="scale-75"
-                      checked={edgeBanding?.left || false}
-                      onCheckedChange={(checked) => handleEdgeBandingUpdate('left', checked)}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-muted-foreground">{t('edgeRight')}</span>
-                    <Switch
-                      className="scale-75"
-                      checked={edgeBanding?.right || false}
-                      onCheckedChange={(checked) => handleEdgeBandingUpdate('right', checked)}
-                    />
-                  </div>
+                    </div>
                 </div>
-              </AccordionContent>
+                </AccordionContent>
             </AccordionItem>
-          )}
 
-          {/* Handle Configuration - only for DOOR or DRAWER_FRONT parts */}
-          {(selectedPart.cabinetMetadata?.role === 'DOOR' || selectedPart.cabinetMetadata?.role === 'DRAWER_FRONT') && (
-            <AccordionItem value="handle" className="border-b-0">
-              <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
-                {t('handleConfig')}
-              </AccordionTrigger>
-              <AccordionContent className="pb-2 pt-0">
-                <HandleSelector
-                  value={selectedPart.cabinetMetadata?.handleMetadata?.config}
-                  onChange={(handleConfig: HandleConfig | undefined) => {
-                    if (!selectedPart.cabinetMetadata) return;
-
-                    // Determine door type based on metadata
-                    let doorType: DoorType = 'SINGLE';
-                    const doorMeta = selectedPart.cabinetMetadata.doorMetadata;
-                    if (doorMeta?.hingeSide === 'LEFT' && selectedPart.name?.toLowerCase().includes('lewy')) {
-                      doorType = 'DOUBLE_LEFT';
-                    } else if (doorMeta?.hingeSide === 'RIGHT' && selectedPart.name?.toLowerCase().includes('prawy')) {
-                      doorType = 'DOUBLE_RIGHT';
-                    }
-
-                    // Generate new handle metadata or clear it
-                    const handleMetadata = handleConfig
-                      ? generateHandleMetadata(
-                          handleConfig,
-                          selectedPart.width ?? 400,
-                          selectedPart.height ?? 400,
-                          doorType,
-                          doorMeta?.hingeSide
-                        )
-                      : undefined;
-
-                    // Update the part with new cabinet metadata
-                    updatePart(selectedPart.id, {
-                      cabinetMetadata: {
-                        ...selectedPart.cabinetMetadata,
-                        handleMetadata,
-                      },
-                    });
-                  }}
-                  doorWidth={selectedPart.width ?? 400}
-                  doorHeight={selectedPart.height ?? 400}
-                />
-              </AccordionContent>
+            {/* Shape & Dimensions */}
+            <AccordionItem value="shape" className="border rounded-md px-2 bg-card">
+                <AccordionTrigger className="py-3 text-xs font-medium hover:no-underline">
+                {t('shapeAndDimensions')}
+                </AccordionTrigger>
+                <AccordionContent className="pb-4 pt-1 border-t mt-1">
+                <div className="space-y-3 pt-2">
+                    <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground font-normal">{t('shapeType')}</Label>
+                    <Select
+                        value={selectedPart.shapeType}
+                        onValueChange={(value) => handleShapeTypeChange(value as ShapeType)}
+                    >
+                        <SelectTrigger className="h-8 text-xs">
+                        <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                        <SelectItem value="RECT">{t('shapeRectangle')}</SelectItem>
+                        <SelectItem value="TRAPEZOID">{t('shapeTrapezoid')}</SelectItem>
+                        <SelectItem value="L_SHAPE">{t('shapeLShape')}</SelectItem>
+                        <SelectItem value="POLYGON">{t('shapePolygon')}</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    </div>
+                    {selectedPart.shapeType === 'RECT' && (
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                        <Label className="text-xs text-muted-foreground font-normal">{t('lengthX')}</Label>
+                        <NumberInput
+                            className="h-8 text-xs"
+                            value={(selectedPart.shapeParams as ShapeParamsRect).x}
+                            onChange={(val) => handleShapeParamUpdate('x', val)}
+                            min={1}
+                            allowNegative={false}
+                        />
+                        </div>
+                        <div className="space-y-1.5">
+                        <Label className="text-xs text-muted-foreground font-normal">{t('widthY')}</Label>
+                        <NumberInput
+                            className="h-8 text-xs"
+                            value={(selectedPart.shapeParams as ShapeParamsRect).y}
+                            onChange={(val) => handleShapeParamUpdate('y', val)}
+                            min={1}
+                            allowNegative={false}
+                        />
+                        </div>
+                    </div>
+                    )}
+                </div>
+                </AccordionContent>
             </AccordionItem>
-          )}
-        </Accordion>
+
+            {/* Transform (Position & Rotation) */}
+            <AccordionItem value="transform" className="border rounded-md px-2 bg-card">
+                <AccordionTrigger className="py-3 text-xs font-medium hover:no-underline">
+                {t('transform')}
+                </AccordionTrigger>
+                <AccordionContent className="pb-4 pt-1 border-t mt-1">
+                <div className="space-y-4 pt-2">
+                    <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground font-normal">{t('position')}</Label>
+                    <div className="grid grid-cols-3 gap-2">
+                        <div>
+                        <span className="text-xs text-muted-foreground block mb-1 ml-0.5">X</span>
+                        <NumberInput
+                            className="h-8 text-xs"
+                            value={selectedPart.position[0]}
+                            onChange={(val) => handlePositionUpdate(0, val)}
+                        />
+                        </div>
+                        <div>
+                        <span className="text-xs text-muted-foreground block mb-1 ml-0.5">Y</span>
+                        <NumberInput
+                            className="h-8 text-xs"
+                            value={selectedPart.position[1]}
+                            onChange={(val) => handlePositionUpdate(1, val)}
+                        />
+                        </div>
+                        <div>
+                        <span className="text-xs text-muted-foreground block mb-1 ml-0.5">Z</span>
+                        <NumberInput
+                            className="h-8 text-xs"
+                            value={selectedPart.position[2]}
+                            onChange={(val) => handlePositionUpdate(2, val)}
+                        />
+                        </div>
+                    </div>
+                    </div>
+                    <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground font-normal">{t('rotation')}</Label>
+                    <div className="grid grid-cols-3 gap-2">
+                        <div>
+                        <span className="text-xs text-muted-foreground block mb-1 ml-0.5">X</span>
+                        <NumberInput
+                            className="h-8 text-xs"
+                            value={rotationDegrees[0]}
+                            onChange={(val) => handleRotationUpdate(0, val)}
+                            allowDecimals
+                        />
+                        </div>
+                        <div>
+                        <span className="text-xs text-muted-foreground block mb-1 ml-0.5">Y</span>
+                        <NumberInput
+                            className="h-8 text-xs"
+                            value={rotationDegrees[1]}
+                            onChange={(val) => handleRotationUpdate(1, val)}
+                            allowDecimals
+                        />
+                        </div>
+                        <div>
+                        <span className="text-xs text-muted-foreground block mb-1 ml-0.5">Z</span>
+                        <NumberInput
+                            className="h-8 text-xs"
+                            value={rotationDegrees[2]}
+                            onChange={(val) => handleRotationUpdate(2, val)}
+                            allowDecimals
+                        />
+                        </div>
+                    </div>
+                    </div>
+                </div>
+                </AccordionContent>
+            </AccordionItem>
+
+            {/* Material */}
+            <AccordionItem value="material" className="border rounded-md px-2 bg-card">
+                <AccordionTrigger className="py-3 text-xs font-medium hover:no-underline">
+                {t('material')}
+                </AccordionTrigger>
+                <AccordionContent className="pb-4 pt-1 border-t mt-1">
+                <div className="pt-2">
+                    <Select value={selectedPart.materialId} onValueChange={handleMaterialChange}>
+                        <SelectTrigger className="h-8 text-xs w-full">
+                        <SelectValue placeholder={t('selectMaterial')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                        {materials.map((material) => (
+                            <SelectItem key={material.id} value={material.id}>
+                            {material.name} ({material.thickness}mm)
+                            </SelectItem>
+                        ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                </AccordionContent>
+            </AccordionItem>
+
+            {/* Edge Banding */}
+            {selectedPart.shapeType === 'RECT' && (
+                <AccordionItem value="edgebanding" className="border rounded-md px-2 bg-card">
+                <AccordionTrigger className="py-3 text-xs font-medium hover:no-underline">
+                    {t('edgeBanding')}
+                </AccordionTrigger>
+                <AccordionContent className="pb-4 pt-1 border-t mt-1">
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-3 pt-2">
+                    <div className="flex items-center justify-between">
+                        <Label className="text-xs text-muted-foreground font-normal">{t('edgeTop')}</Label>
+                        <Switch
+                        className="scale-90"
+                        checked={edgeBanding?.top || false}
+                        onCheckedChange={(checked) => handleEdgeBandingUpdate('top', checked)}
+                        />
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <Label className="text-xs text-muted-foreground font-normal">{t('edgeBottom')}</Label>
+                        <Switch
+                        className="scale-90"
+                        checked={edgeBanding?.bottom || false}
+                        onCheckedChange={(checked) => handleEdgeBandingUpdate('bottom', checked)}
+                        />
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <Label className="text-xs text-muted-foreground font-normal">{t('edgeLeft')}</Label>
+                        <Switch
+                        className="scale-90"
+                        checked={edgeBanding?.left || false}
+                        onCheckedChange={(checked) => handleEdgeBandingUpdate('left', checked)}
+                        />
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <Label className="text-xs text-muted-foreground font-normal">{t('edgeRight')}</Label>
+                        <Switch
+                        className="scale-90"
+                        checked={edgeBanding?.right || false}
+                        onCheckedChange={(checked) => handleEdgeBandingUpdate('right', checked)}
+                        />
+                    </div>
+                    </div>
+                </AccordionContent>
+                </AccordionItem>
+            )}
+
+            {/* Handle Configuration - only for DOOR or DRAWER_FRONT parts */}
+            {(selectedPart.cabinetMetadata?.role === 'DOOR' || selectedPart.cabinetMetadata?.role === 'DRAWER_FRONT') && (
+                <AccordionItem value="handle" className="border rounded-md px-2 bg-card">
+                <AccordionTrigger className="py-3 text-xs font-medium hover:no-underline">
+                    {t('handleConfig')}
+                </AccordionTrigger>
+                <AccordionContent className="pb-4 pt-1 border-t mt-1">
+                    <div className="pt-2">
+                        <HandleSelector
+                        value={selectedPart.cabinetMetadata?.handleMetadata?.config}
+                        onChange={(handleConfig: HandleConfig | undefined) => {
+                            if (!selectedPart.cabinetMetadata) return;
+
+                            // Determine door type based on metadata
+                            let doorType: DoorType = 'SINGLE';
+                            const doorMeta = selectedPart.cabinetMetadata.doorMetadata;
+                            if (doorMeta?.hingeSide === 'LEFT' && selectedPart.name?.toLowerCase().includes('lewy')) {
+                            doorType = 'DOUBLE_LEFT';
+                            } else if (doorMeta?.hingeSide === 'RIGHT' && selectedPart.name?.toLowerCase().includes('prawy')) {
+                            doorType = 'DOUBLE_RIGHT';
+                            }
+
+                            // Generate new handle metadata or clear it
+                            const handleMetadata = handleConfig
+                            ? generateHandleMetadata(
+                                handleConfig,
+                                selectedPart.width ?? 400,
+                                selectedPart.height ?? 400,
+                                doorType,
+                                doorMeta?.hingeSide
+                                )
+                            : undefined;
+
+                            // Update the part with new cabinet metadata
+                            updatePart(selectedPart.id, {
+                            cabinetMetadata: {
+                                ...selectedPart.cabinetMetadata,
+                                handleMetadata,
+                            },
+                            });
+                        }}
+                        doorWidth={selectedPart.width ?? 400}
+                        doorHeight={selectedPart.height ?? 400}
+                        />
+                    </div>
+                </AccordionContent>
+                </AccordionItem>
+            )}
+            </Accordion>
+        </div>
       </div>
     );
   }

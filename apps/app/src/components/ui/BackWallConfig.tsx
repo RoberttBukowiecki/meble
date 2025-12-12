@@ -1,4 +1,3 @@
-
 import { Label, Slider, Switch } from '@meble/ui';
 import { CabinetParams } from '@/types';
 import { DEFAULT_BACK_OVERLAP_RATIO } from '@/lib/config';
@@ -20,14 +19,18 @@ export const BackWallConfig = ({ params, onChange }: BackWallConfigProps) => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 pt-2 border-t">
       <div className="flex items-center justify-between">
-        <Label>Plecy (tylna ściana)</Label>
-        <Switch checked={getHasBack()} onCheckedChange={(val) => onChange({ hasBack: val })} />
+        <Label className="text-xs text-muted-foreground font-normal">Plecy (tylna ściana)</Label>
+        <Switch 
+            className="scale-90"
+            checked={getHasBack()} 
+            onCheckedChange={(val) => onChange({ hasBack: val })} 
+        />
       </div>
       {getHasBack() && (
         <div className="flex items-center justify-between">
-          <Label>Głębokość wpustu ({Math.round(getBackOverlapRatio() * 100)}%)</Label>
+          <Label className="text-xs text-muted-foreground font-normal">Głębokość wpustu ({Math.round(getBackOverlapRatio() * 100)}%)</Label>
           <Slider
             value={[getBackOverlapRatio()]}
             onValueChange={([val]) => onChange({ backOverlapRatio: val })}

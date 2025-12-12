@@ -15,6 +15,7 @@ import {
   TableHeader,
   TableRow,
   Label,
+  Checkbox, // Assuming Checkbox exists or using standard input with better styling
 } from '@meble/ui';
 import { useStore } from '@/lib/store';
 import {
@@ -65,16 +66,16 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{t('title')}</DialogTitle>
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0">
+        <DialogHeader className="flex-shrink-0 px-6 py-6 border-b">
+          <DialogTitle className="text-xl">{t('title')}</DialogTitle>
           <DialogDescription>{t('description')}</DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-6 py-4">
-          <div className="space-y-4">
-            <h3 className="text-sm font-medium">{t('selectColumns')}</h3>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold">{t('selectColumns')}</h3>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {AVAILABLE_COLUMNS.map((col) => (
                 <div key={col.id} className="flex items-center space-x-2">
                   <input
@@ -82,11 +83,11 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                     id={`col-${col.id}`}
                     checked={selectedColumnIds.includes(col.id)}
                     onChange={() => toggleColumn(col.id)}
-                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary accent-primary"
                   />
                   <Label
                     htmlFor={`col-${col.id}`}
-                    className="cursor-pointer text-sm"
+                    className="cursor-pointer text-sm font-normal"
                   >
                     {t(`columns.${col.label}`)}
                   </Label>
@@ -95,14 +96,14 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
             </div>
           </div>
 
-          <div className="space-y-4">
-            <h3 className="text-sm font-medium">{t('preview')}</h3>
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold">{t('preview')}</h3>
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
                   <TableRow>
                     {selectedColumns.map((col) => (
-                      <TableHead key={col.id}>
+                      <TableHead key={col.id} className="text-xs h-9">
                         {t(`columns.${col.label}`)}
                       </TableHead>
                     ))}
@@ -112,7 +113,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                   {previewData.map((part) => (
                     <TableRow key={part.id}>
                       {selectedColumns.map((col) => (
-                        <TableCell key={col.id}>
+                        <TableCell key={col.id} className="text-xs py-2">
                           {col.accessor(part, materials, furnitures)}
                         </TableCell>
                       ))}
@@ -122,7 +123,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                     <TableRow>
                       <TableCell
                         colSpan={selectedColumns.length}
-                        className="h-24 text-center"
+                        className="h-24 text-center text-sm"
                       >
                         {t('noData')}
                       </TableCell>
@@ -138,18 +139,18 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
             )}
           </div>
 
-          <div className="space-y-4">
-            <h3 className="text-sm font-medium">{t('csvPreview')}</h3>
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold">{t('csvPreview')}</h3>
             <textarea
               readOnly
               value={csvPreviewContent}
-              className="h-48 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 font-mono text-xs"
+              className="h-32 w-full rounded-md border border-input bg-muted/20 px-3 py-2 text-xs shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 font-mono"
               placeholder={t('noData')}
             />
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="flex-shrink-0 border-t bg-muted/20 px-6 py-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {t('cancel')}
           </Button>

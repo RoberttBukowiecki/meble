@@ -82,20 +82,20 @@ export function HandleSelector({ value, onChange, doorWidth, doorHeight }: Handl
   };
 
   return (
-    <Accordion type="multiple" defaultValue={['category']} className="w-full">
-      <AccordionItem value="category" className="border-b-0">
+    <Accordion type="multiple" defaultValue={['category']} className="w-full space-y-1">
+      <AccordionItem value="category" className="border rounded-md px-2 bg-card">
         <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
           Rodzaj uchwytu
         </AccordionTrigger>
-        <AccordionContent className="pb-2 pt-0">
-          <div className="grid grid-cols-2 gap-1">
+        <AccordionContent className="pb-3 pt-0">
+          <div className="grid grid-cols-2 gap-2 mt-1">
             {(['NONE', 'TRADITIONAL', 'MODERN', 'HANDLELESS'] as const).map((cat) => (
               <Button
                 key={cat}
                 variant={category === cat ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => handleCategoryChange(cat)}
-                className="h-7 text-[10px]"
+                className="h-8 text-xs justify-start px-3"
               >
                 {cat === 'NONE' ? 'Brak' : HANDLE_CATEGORY_LABELS[cat]}
               </Button>
@@ -138,19 +138,19 @@ export function HandleSelector({ value, onChange, doorWidth, doorHeight }: Handl
 function HandleTypeSelector({ category, value, onChange }: HandleTypeSelectorProps) {
   const types = getTypesForCategory(category);
   return (
-    <AccordionItem value="type" className="border-b-0">
+    <AccordionItem value="type" className="border rounded-md px-2 bg-card">
       <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
         Typ
       </AccordionTrigger>
-      <AccordionContent className="pb-2 pt-0">
-        <div className="grid grid-cols-2 gap-1">
+      <AccordionContent className="pb-3 pt-0">
+        <div className="grid grid-cols-2 gap-2 mt-1">
           {types.map((type) => (
             <Button
               key={type}
               variant={value === type ? 'default' : 'outline'}
               size="sm"
               onClick={() => onChange(type)}
-              className="h-7 text-[10px] justify-start"
+              className="h-8 text-xs justify-start px-3"
             >
               {HANDLE_TYPE_LABELS[type]}
             </Button>
@@ -166,16 +166,16 @@ function HandleDimensionSelector({ config, onChange }: HandleDimensionSelectorPr
   if (availableSizes.length === 0) return null;
 
   return (
-    <AccordionItem value="dimensions" className="border-b-0">
+    <AccordionItem value="dimensions" className="border rounded-md px-2 bg-card">
       <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
         Rozmiar
       </AccordionTrigger>
-      <AccordionContent className="pb-2 pt-0">
+      <AccordionContent className="pb-3 pt-0">
         <Select
           value={config.dimensions ? JSON.stringify(config.dimensions) : undefined}
           onValueChange={(val) => onChange({ ...config, dimensions: JSON.parse(val) })}
         >
-          <SelectTrigger className="h-7 text-xs">
+          <SelectTrigger className="h-8 text-xs w-full mt-1">
             <SelectValue placeholder="Wybierz rozmiar" />
           </SelectTrigger>
           <SelectContent>
@@ -203,18 +203,18 @@ function HandlePositionSelector({
   ];
 
   return (
-    <AccordionItem value="position" className="border-b-0">
+    <AccordionItem value="position" className="border rounded-md px-2 bg-card">
       <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
         Pozycja i orientacja
       </AccordionTrigger>
-      <AccordionContent className="pb-2 pt-0 space-y-2">
+      <AccordionContent className="pb-3 pt-0 space-y-3 mt-1">
         <Select
           value={config.position.preset}
           onValueChange={(preset: HandlePositionPreset) =>
             onChange({ ...config, position: { ...config.position, preset } })
           }
         >
-          <SelectTrigger className="h-7 text-xs">
+          <SelectTrigger className="h-8 text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -227,11 +227,11 @@ function HandlePositionSelector({
         </Select>
 
         {config.position.preset === 'CUSTOM' && (
-          <div className="grid grid-cols-2 gap-1">
+          <div className="grid grid-cols-2 gap-2">
             <div>
-              <span className="text-[10px] text-muted-foreground">X (od środka)</span>
+              <span className="text-xs text-muted-foreground block mb-1">X (od środka)</span>
               <NumberInput
-                className="h-7 text-xs"
+                className="h-8 text-xs"
                 value={config.position.x ?? 0}
                 onChange={(val) => onChange({ ...config, position: { ...config.position, x: val } })}
                 min={-doorWidth / 2}
@@ -239,9 +239,9 @@ function HandlePositionSelector({
               />
             </div>
             <div>
-              <span className="text-[10px] text-muted-foreground">Y (od środka)</span>
+              <span className="text-xs text-muted-foreground block mb-1">Y (od środka)</span>
               <NumberInput
-                className="h-7 text-xs"
+                className="h-8 text-xs"
                 value={config.position.y ?? 0}
                 onChange={(val) => onChange({ ...config, position: { ...config.position, y: val } })}
                 min={-doorHeight / 2}
@@ -251,8 +251,11 @@ function HandlePositionSelector({
           </div>
         )}
 
-        <div>
-          <span className="text-[10px] text-muted-foreground">Odstęp od krawędzi ({config.position.offsetFromEdge ?? 30}mm)</span>
+        <div className="space-y-1">
+          <div className="flex justify-between">
+            <span className="text-xs text-muted-foreground">Odstęp od krawędzi</span>
+            <span className="text-xs">{config.position.offsetFromEdge ?? 30} mm</span>
+          </div>
           <Slider
             className="w-full"
             value={[config.position.offsetFromEdge ?? 30]}
@@ -262,13 +265,13 @@ function HandlePositionSelector({
         </div>
 
         {(config.type === 'BAR' || config.type === 'STRIP') && (
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] text-muted-foreground">Orientacja</span>
-            <div className="flex gap-1">
+          <div className="flex items-center justify-between pt-1">
+            <span className="text-xs text-muted-foreground">Orientacja</span>
+            <div className="flex gap-2">
               <Button
                 variant={config.orientation === 'VERTICAL' ? 'default' : 'outline'}
                 size="sm"
-                className="h-6 text-[10px] px-2"
+                className="h-7 text-xs px-3"
                 onClick={() => onChange({ ...config, orientation: 'VERTICAL' })}
               >
                 Pionowo
@@ -276,7 +279,7 @@ function HandlePositionSelector({
               <Button
                 variant={config.orientation === 'HORIZONTAL' ? 'default' : 'outline'}
                 size="sm"
-                className="h-6 text-[10px] px-2"
+                className="h-7 text-xs px-3"
                 onClick={() => onChange({ ...config, orientation: 'HORIZONTAL' })}
               >
                 Poziomo
@@ -292,16 +295,16 @@ function HandlePositionSelector({
 function HandleFinishSelector({ config, onChange }: HandleFinishSelectorProps) {
   const finishes = ['chrome', 'brushed_nickel', 'black_matte', 'gold', 'aluminum', 'stainless'];
   return (
-    <AccordionItem value="finish" className="border-b-0">
+    <AccordionItem value="finish" className="border rounded-md px-2 bg-card">
       <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
         Wykończenie
       </AccordionTrigger>
-      <AccordionContent className="pb-2 pt-0">
+      <AccordionContent className="pb-3 pt-0 mt-1">
         <Select
           value={config.finish ?? 'chrome'}
           onValueChange={(finish) => onChange({ ...config, finish })}
         >
-          <SelectTrigger className="h-7 text-xs">
+          <SelectTrigger className="h-8 text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

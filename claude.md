@@ -100,6 +100,7 @@ apps/app/src/
 ### Flow
 - Nie odpalaj sam serwera (robie to recznie)
 - Zrealizowany plan oznaczaj jako DONE-nazwa-planu.md i przenoś do foldernu app/apps/docs/DONE
+- Jesli chcesz dodac input typu number to dodaj NumberInput
 
 ### TypeScript
 - Używaj **strict mode** w tsconfig.json
