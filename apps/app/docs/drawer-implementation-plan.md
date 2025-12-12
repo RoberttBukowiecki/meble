@@ -100,7 +100,7 @@ export interface DrawerCabinetParams {
   hasInternalDrawers: boolean; // NEW: if true, no drawer fronts (for cabinets with doors)
   drawerHeights?: number[]; // NEW: optional custom heights per drawer (mm)
   bottomMaterialId?: string; // NEW: optional separate material for drawer bottoms (thinner)
-  // Reuse from single-door-support-plan.md (already implemented)
+  // Reuse from DONE-single-door-support-plan.md (already implemented)
   handleConfig?: HandleConfig; // Handle configuration for all drawer fronts
 }
 ```
@@ -116,7 +116,7 @@ export interface CabinetMetadata {
   role: CabinetPartRole; // 'DRAWER_FRONT'
   index?: number;
   drawerIndex?: number; // Which drawer (0-based)
-  // Reuse existing handle system from single-door-support-plan.md
+  // Reuse existing handle system from DONE-single-door-support-plan.md
   handleMetadata?: HandleMetadata; // Same as doors - position, type, dimensions, finish
 }
 ```
@@ -253,7 +253,7 @@ function generateSingleDrawer(params: DrawerGenerationParams): Part[] {
 
   // 5. Drawer Front (if not internal) - REUSES FRONT SYSTEM
   if (!params.hasInternalDrawer && params.handleConfig) {
-    // Use generateHandleMetadata from single-door-support-plan.md
+    // Use generateHandleMetadata from DONE-single-door-support-plan.md
     const handleMetadata = generateHandleMetadata(
       params.handleConfig,
       dims.frontWidth,
@@ -277,7 +277,7 @@ function generateSingleDrawer(params: DrawerGenerationParams): Part[] {
         cabinetId: params.cabinetId,
         role: 'DRAWER_FRONT',
         drawerIndex: params.drawerIndex,
-        // Reuse handle system from single-door-support-plan.md
+        // Reuse handle system from DONE-single-door-support-plan.md
         handleMetadata: handleMetadata,
       }
     });
