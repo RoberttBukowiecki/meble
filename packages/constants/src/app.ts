@@ -9,15 +9,37 @@
 export const APP_NAME = 'Meble 3D';
 
 /**
+ * Company Information
+ */
+export const COMPANY_INFO = {
+  name: 'Meble 3D Sp. z o.o.',
+  email: 'hello@meblarz3d.pl',
+  phone: '+48 123 456 789',
+  nip: '5252525252',
+  address: {
+    street: 'ul. Przykładowa 12/4',
+    city: 'Warszawa',
+    zipCode: '00-001',
+    country: 'Polska'
+  },
+  fullAddress: 'ul. Przykładowa 12/4, 00-001 Warszawa'
+} as const;
+
+/**
+ * Social Media Links
+ */
+export const SOCIAL_LINKS = {
+  facebook: 'https://facebook.com/meblarz3d',
+  instagram: 'https://instagram.com/meblarz3d',
+  linkedin: 'https://linkedin.com/company/meblarz3d',
+  twitter: 'https://twitter.com/meblarz3d',
+  github: 'https://github.com/RoberttBukowiecki/meble'
+} as const;
+
+/**
  * Application metadata
  */
 export const APP_META = {
   name: APP_NAME,
   repository: 'https://github.com/RoberttBukowiecki/meble.git',
 } as const;
-
-// Mozesz dodac button pod "dodaj czesc", po nacisnieciu ktorego bedzie mozna dodac gotowe szafki do latwej edycji ich parametrow? (zmiana wymiarow calej szafki ma zmienic wymiar kilku plyt) cos takiego jak
-// parametryzowany obiekt. Stworz plan do pliku .md w /docs. Zadaj odpowiednie pytania zeby otrzymac production-grade.
-
-// Dodaj wykrywanie kolizji dwoch czesci, czesci ktore koliduja ze soba (nachodza na siebie) powinny byc oznaczone na czerwono w 3D. Powinien pojawic sie wykrzyknik z ostrzezeniem, po nacisnieciu ktorego
-// dostaniesz liste nieprawidlowosci na scenie.

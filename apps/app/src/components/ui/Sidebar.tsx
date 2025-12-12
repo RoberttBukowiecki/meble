@@ -7,10 +7,11 @@ import { Plus, Download, Settings, List, Package } from 'lucide-react';
 import { APP_NAME } from '@meble/constants';
 import { PropertiesPanel } from './PropertiesPanel';
 import { PartsTable } from './PartsTable';
-import { generateCSV, downloadCSV, validateParts } from '@/lib/csv';
+import { validateParts } from '@/lib/csv';
 import { CabinetTemplateDialog } from './CabinetTemplateDialog';
 import { HistoryButtons } from './HistoryButtons';
 import { SettingsDropdown } from './SettingsDropdown';
+import { ExportDialog } from './ExportDialog';
 import {
   Dialog,
   DialogContent,
@@ -39,6 +40,7 @@ export function Sidebar() {
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<TabType>('properties');
   const [cabinetDialogOpen, setCabinetDialogOpen] = useState(false);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
 
   const handleAddPart = () => {
     addPart(selectedFurnitureId);
@@ -54,10 +56,7 @@ export function Sidebar() {
       return;
     }
 
-    // Generate and download CSV
-    const csv = generateCSV(parts, materials, furnitures);
-    const timestamp = new Date().toISOString().split('T')[0];
-    downloadCSV(csv, `meblarz_export_${timestamp}.csv`);
+    setExportDialogOpen(true);
   };
 
   return (
@@ -151,6 +150,12 @@ export function Sidebar() {
         open={cabinetDialogOpen}
         onOpenChange={setCabinetDialogOpen}
         furnitureId={selectedFurnitureId}
+      />
+
+      {/* Export CSV Dialog */}
+      <ExportDialog
+        open={exportDialogOpen}
+        onOpenChange={setExportDialogOpen}
       />
 
       {/* Validation Error Dialog */}

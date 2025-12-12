@@ -4,17 +4,74 @@
 
 import type { Part, Material, Furniture } from '@/types';
 
-/**
- * Generate CSV file content from parts data
- * Uses semicolon (;) as separator
- */
-export function generateCSV(
-  parts: Part[],
-  materials: Material[],
-  furnitures: Furniture[]
-): string {
-  // CSV Header
-  const header = [
+export interface CSVColumn {
+  id: string;
+  label: string; // Internal key for translation
+  accessor: (
+    part: Part,
+    materials: Material[],
+    furnitures: Furniture[]
+  ) => string;
+}
+
+export const AVAILABLE_COLUMNS: CSVColumn[] = [
+  {
+    id: 'furniture',
+    label: 'furniture',
+    accessor: (part, _, furnitures) =>
+      furnitures.find((f) => f.id === part.furnitureId)?.name || 'Unknown',
+  },
+  {
+    id: 'group',
+    label: 'group',
+    accessor: (part) => part.group || '',
+  },
+  {
+    id: 'part_id',
+    label: 'partId',
+    accessor: (part) => part.id,
+  },
+  {
+    id: 'part_name',
+    label: 'partName',
+    accessor: (part) => part.name,
+  },
+  {
+    id: 'material',
+    label: 'material',
+    accessor: (part, materials) =>
+      materials.find((m) => m.id === part.materialId)?.name || 'Unknown',
+  },
+  {
+    id: 'thickness_mm',
+    label: 'thickness',
+    accessor: (part) => part.depth.toString(),
+  },
+  {
+    id: 'length_x_mm',
+    label: 'length',
+    accessor: (part) => part.width.toString(),
+  },
+  {
+    id: 'width_y_mm',
+    label: 'width',
+    accessor: (part) => part.height.toString(),
+  },
+  {
+    id: 'notes',
+    label: 'notes',
+    accessor: (part) => part.notes || '',
+  },
+  {
+    id: 'cabinet',
+    label: 'cabinet',
+    accessor: (part) =>
+      part.cabinetMetadata ? part.cabinetMetadata.cabinetId : '',
+  },
+];
+
+export const DEFAULT_COLUMNS = AVAILABLE_COLUMNS.filter((col) =>
+  [
     'furniture',
     'group',
     'part_id',
@@ -22,28 +79,28 @@ export function generateCSV(
     'material',
     'thickness_mm',
     'length_x_mm',
-    'width_y_mm'
-  ].join(';');
+    'width_y_mm',
+  ].includes(col.id)
+);
 
-  // Helper functions
-  const getMaterialName = (id: string) =>
-    materials.find((m) => m.id === id)?.name || 'Unknown';
-
-  const getFurnitureName = (id: string) =>
-    furnitures.find((f) => f.id === id)?.name || 'Unknown';
+/**
+ * Generate CSV file content from parts data
+ * Uses semicolon (;) as separator
+ */
+export function generateCSV(
+  parts: Part[],
+  materials: Material[],
+  furnitures: Furniture[],
+  columns: CSVColumn[] = DEFAULT_COLUMNS
+): string {
+  // CSV Header
+  const header = columns.map((col) => col.id).join(';');
 
   // Generate rows
   const rows = parts.map((part) => {
-    return [
-      getFurnitureName(part.furnitureId),
-      part.group || '',
-      part.id,
-      part.name,
-      getMaterialName(part.materialId),
-      part.depth.toString(),
-      part.width.toString(),
-      part.height.toString()
-    ].join(';');
+    return columns
+      .map((col) => col.accessor(part, materials, furnitures))
+      .join(';');
   });
 
   // Combine header and rows

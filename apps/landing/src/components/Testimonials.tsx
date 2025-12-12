@@ -1,5 +1,9 @@
+'use client';
+
 import React from 'react';
 import Image from 'next/image';
+import { useTranslations } from 'next-intl';
+import { motion } from 'framer-motion';
 
 import { ITestimonial } from '@/types';
 
@@ -8,46 +12,73 @@ interface Props {
 }
 
 const Testimonials: React.FC<Props> = ({ testimonials }) => {
+  const t = useTranslations('landing.sections.testimonials');
+
   return (
-    <div className="mx-auto mt-16 max-w-2xl sm:mt-20 lg:mt-24 lg:mx-0 lg:flex lg:max-w-none lg:flex-row lg:items-center lg:gap-x-16">
-      <div className="lg:flex-shrink-0 lg:w-1/2">
-        <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-          {/* This title can be passed as a prop or fetched from translations */}
-          What our users say
-        </h2>
-        <p className="mt-4 text-lg leading-8 text-muted-foreground">
-          {/* This description can be passed as a prop or fetched from translations */}
-          Discover how our app is transforming the workflow for furniture makers.
-        </p>
-      </div>
-      <div className="mt-10 lg:mt-0 lg:w-1/2 lg:flex-auto">
-        <div className="grid grid-cols-1 gap-x-8 gap-y-10 sm:grid-cols-2 xl:grid-cols-1">
+    <div className="bg-background py-24 sm:py-32">
+      <div className="mx-auto max-w-7xl px-6 lg:px-8">
+        <div className="mx-auto max-w-xl text-center">
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="text-lg font-semibold leading-8 tracking-tight text-primary"
+          >
+            {t('title')}
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl"
+          >
+             {t('description')}
+          </motion.p>
+        </div>
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={{
+             hidden: {},
+             visible: {
+               transition: {
+                 staggerChildren: 0.2
+               }
+             }
+           }}
+          className="mx-auto mt-16 grid max-w-2xl grid-cols-1 grid-rows-1 gap-8 text-sm leading-6 text-foreground sm:mt-20 sm:grid-cols-2 xl:mx-0 xl:max-w-none xl:grid-cols-3"
+        >
           {testimonials.map((testimonial) => (
-            <figure
+            <motion.figure
               key={testimonial.name}
-              className="rounded-2xl bg-card p-8 text-sm leading-6"
+              variants={{
+                hidden: { opacity: 0, y: 20 },
+                visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
+              }}
+              className="rounded-2xl bg-muted p-6 ring-1 ring-inset ring-muted-foreground/10"
             >
               <blockquote className="text-foreground">
                 <p>{`“${testimonial.message}”`}</p>
               </blockquote>
               <figcaption className="mt-6 flex items-center gap-x-4">
                 <Image
-                  className="h-10 w-10 rounded-full bg-gray-50"
+                  className="h-10 w-10 rounded-full bg-background"
                   src={testimonial.avatar}
                   alt=""
                   width={40}
                   height={40}
                 />
                 <div>
-                  <div className="font-semibold text-foreground">
-                    {testimonial.name}
-                  </div>
+                  <div className="font-semibold">{testimonial.name}</div>
                   <div className="text-muted-foreground">{testimonial.role}</div>
                 </div>
               </figcaption>
-            </figure>
+            </motion.figure>
           ))}
-        </div>
+        </motion.div>
       </div>
     </div>
   );

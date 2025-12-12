@@ -143,5 +143,27 @@
   "Settings": {
     "settings": "Ustawienia",
     "language": "Język"
+  },
+  "ExportDialog": {
+    "title": "Eksportuj do CSV",
+    "description": "Wybierz kolumny do eksportu i sprawdź podgląd danych.",
+    "selectColumns": "Wybierz kolumny",
+    "preview": "Podgląd (pierwsze 5 wierszy)",
+    "noData": "Brak danych do wyświetlenia",
+    "showingFirst": "Pokazuję {count} z {total} wierszy",
+    "export": "Eksportuj",
+    "cancel": "Anuluj",
+    "columns": {
+      "furniture": "Mebel",
+      "group": "Grupa",
+      "partId": "ID Części",
+      "partName": "Nazwa Części",
+      "material": "Materiał",
+      "thickness": "Grubość (mm)",
+      "length": "Długość X (mm)",
+      "width": "Szerokość Y (mm)",
+      "notes": "Notatki",
+      "cabinet": "ID Szafki"
+    }
   }
 }

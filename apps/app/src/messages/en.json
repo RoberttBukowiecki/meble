@@ -138,5 +138,27 @@
   "Settings": {
     "settings": "Settings",
     "language": "Language"
+  },
+  "ExportDialog": {
+    "title": "Export to CSV",
+    "description": "Select columns to export and review data preview.",
+    "selectColumns": "Select Columns",
+    "preview": "Preview (first 5 rows)",
+    "noData": "No data to display",
+    "showingFirst": "Showing {count} of {total} rows",
+    "export": "Export",
+    "cancel": "Cancel",
+    "columns": {
+      "furniture": "Furniture",
+      "group": "Group",
+      "partId": "Part ID",
+      "partName": "Part Name",
+      "material": "Material",
+      "thickness": "Thickness (mm)",
+      "length": "Length X (mm)",
+      "width": "Width Y (mm)",
+      "notes": "Notes",
+      "cabinet": "Cabinet ID"
+    }
   }
 }

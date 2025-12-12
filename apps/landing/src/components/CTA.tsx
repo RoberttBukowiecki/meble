@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { Button } from '@meble/ui';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 
 const CTA = () => {
   const t = useTranslations('landing.cta');
@@ -10,14 +11,26 @@ const CTA = () => {
   return (
     <div className="bg-background">
       <div className="mx-auto max-w-7xl px-6 py-24 sm:py-32 lg:flex lg:items-center lg:justify-between lg:px-8">
-        <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+        <motion.h2 
+          initial={{ opacity: 0, x: -20 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl"
+        >
           {t('heading')}
-        </h2>
-        <div className="mt-10 flex items-center gap-x-6 lg:mt-0 lg:flex-shrink-0">
-          <Button asChild size="lg">
+        </motion.h2>
+        <motion.div 
+          initial={{ opacity: 0, x: 20 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="mt-10 flex items-center gap-x-6 lg:mt-0 lg:flex-shrink-0"
+        >
+          <Button asChild size="lg" className="h-12 px-8 text-lg">
             <Link href="/app">{t('primaryButton')}</Link>
           </Button>
-        </div>
+        </motion.div>
       </div>
     </div>
   );

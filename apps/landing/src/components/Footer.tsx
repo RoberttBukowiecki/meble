@@ -3,6 +3,7 @@ import React from 'react';
 import { FaFingerprint } from 'react-icons/fa';
 
 import { Locale } from '@meble/i18n';
+import { COMPANY_INFO, SOCIAL_LINKS } from '@meble/constants';
 
 import { FooterDetails, SiteDetails } from '@/types';
 import { getPlatformIconByName } from '@/utils';
@@ -51,29 +52,33 @@ const Footer: React.FC<Props> = ({ siteDetails, footerDetails, locale }) => {
         </div>
         <div>
           <h4 className="text-lg font-semibold mb-4">{contactLabel}</h4>
+          <div className="space-y-2">
+            <a href={`mailto:${COMPANY_INFO.email}`}  className="block text-foreground-accent hover:text-foreground">Email: {COMPANY_INFO.email}</a>
+            <a href={`tel:${COMPANY_INFO.phone}`} className="block text-foreground-accent hover:text-foreground">Tel: {COMPANY_INFO.phone}</a>
+            <p className="text-foreground-accent">NIP: {COMPANY_INFO.nip}</p>
+            <p className="text-foreground-accent">{COMPANY_INFO.fullAddress}</p>
+          </div>
 
-          {footerDetails.email && <a href={`mailto:${footerDetails.email}`}  className="block text-foreground-accent hover:text-foreground">Email: {footerDetails.email}</a>}
-
-          {footerDetails.telephone && <a href={`tel:${footerDetails.telephone}`} className="block text-foreground-accent hover:text-foreground">Phone: {footerDetails.telephone}</a>}
-
-          {footerDetails.socials && (
-            <div className="mt-5 flex items-center gap-5 flex-wrap text-foreground">
-              {Object.keys(footerDetails.socials).map(platformName => {
-                if (platformName && footerDetails.socials[platformName]) {
-                  return (
-                    <Link
-                      href={footerDetails.socials[platformName]}
-                      key={platformName}
-                      aria-label={platformName}
-                      className="hover:text-primary"
-                    >
-                      {getPlatformIconByName(platformName)}
-                    </Link>
-                  )
-                }
-              })}
-            </div>
-          )}
+          <div className="mt-5 flex items-center gap-5 flex-wrap text-foreground">
+            {Object.keys(SOCIAL_LINKS).map(platformName => {
+              // @ts-ignore
+              const url = SOCIAL_LINKS[platformName];
+              if (url) {
+                return (
+                  <Link
+                    href={url}
+                    key={platformName}
+                    aria-label={platformName}
+                    className="hover:text-primary"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {getPlatformIconByName(platformName)}
+                  </Link>
+                )
+              }
+            })}
+          </div>
         </div>
       </div>
       <div className="mt-8 md:text-center text-foreground-accent px-6 space-y-1">
