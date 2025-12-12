@@ -24,6 +24,15 @@ export function KeyboardShortcutsHelp() {
 
   const shortcuts = [
     {
+      category: 'Zaznaczanie',
+      items: [
+        { key: withMod(KEYBOARD_SHORTCUTS.SELECT_ALL), description: 'Zaznacz wszystkie części' },
+        { key: formatShortcutLabel(KEYBOARD_SHORTCUTS.CLEAR_SELECTION), description: 'Wyczyść zaznaczenie' },
+        { key: 'CTRL/CMD + KLIK', description: 'Dodaj/usuń z zaznaczenia' },
+        { key: 'SHIFT + KLIK', description: 'Zaznacz zakres części' },
+      ],
+    },
+    {
       category: 'Historia zmian',
       items: [
         { key: withMod('z'), description: 'Cofnij ostatnią akcję' },
@@ -37,6 +46,7 @@ export function KeyboardShortcutsHelp() {
         { key: formatShortcutLabel(KEYBOARD_SHORTCUTS.TRANSLATE_MODE), description: 'Tryb przesuwania' },
         { key: formatShortcutLabel(KEYBOARD_SHORTCUTS.ROTATE_MODE), description: 'Tryb obrotu' },
         { key: formatShortcutLabel(KEYBOARD_SHORTCUTS.RESIZE_MODE), description: 'Tryb zmiany rozmiaru' },
+        { key: 'SHIFT + OBRÓT', description: 'Przyciąganie co 15°' },
       ],
     },
     {

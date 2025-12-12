@@ -72,6 +72,19 @@ export function applyHistoryEntry(
       applyGroupRename(entry, direction, get, set, state);
       break;
 
+    // Multiselect operations
+    case 'TRANSFORM_MULTISELECT':
+      applyTransformMultiselect(entry, direction, get, set, state);
+      break;
+
+    case 'DELETE_MULTISELECT':
+      applyDeleteMultiselect(entry, direction, get, set, state);
+      break;
+
+    case 'DUPLICATE_MULTISELECT':
+      applyDuplicateMultiselect(entry, direction, get, set, state);
+      break;
+
     default:
       console.warn(`Unknown history entry type: ${entry.type}`);
   }
@@ -419,4 +432,114 @@ function applyGroupRename(
     if (!changed) return s;
     return { parts: updatedParts };
   });
+}
+
+// ============================================================================
+// Multiselect Operations
+// ============================================================================
+
+/**
+ * Apply TRANSFORM_MULTISELECT history entry
+ * Works the same as TRANSFORM_CABINET - applies transforms to multiple parts
+ */
+function applyTransformMultiselect(
+  entry: HistoryEntry,
+  direction: 'undo' | 'redo',
+  get: () => StoreState,
+  set: (partial: Partial<StoreState> | ((state: StoreState) => Partial<StoreState>)) => void,
+  state: unknown
+): void {
+  // Get the correct state based on direction
+  const targetState = direction === 'undo' ? entry.before : entry.after;
+  const transforms = targetState as PartTransformMap;
+
+  if (!transforms || typeof transforms !== 'object') {
+    console.warn('Invalid transform data for TRANSFORM_MULTISELECT');
+    return;
+  }
+
+  // Apply transforms to all parts
+  const now = new Date();
+  set((s) => ({
+    parts: s.parts.map((part) => {
+      const transform = transforms[part.id];
+      if (!transform) return part;
+      return { ...part, ...transform, updatedAt: now };
+    }),
+  }));
+}
+
+/**
+ * Apply DELETE_MULTISELECT history entry
+ */
+function applyDeleteMultiselect(
+  entry: HistoryEntry,
+  direction: 'undo' | 'redo',
+  get: () => StoreState,
+  set: (partial: Partial<StoreState> | ((state: StoreState) => Partial<StoreState>)) => void,
+  state: unknown
+): void {
+  if (direction === 'undo') {
+    // Restore deleted parts
+    const snapshot = entry.before as { parts?: PartSnapshot[] };
+    if (!snapshot?.parts?.length) return;
+
+    set((s) => {
+      const newParts = [...s.parts];
+      // Restore each part at its original index if possible
+      snapshot.parts!.forEach((partSnapshot) => {
+        const { _index, ...partData } = partSnapshot;
+        const part = partData as Part;
+        if (_index !== undefined && _index >= 0 && _index <= newParts.length) {
+          newParts.splice(_index, 0, part);
+        } else {
+          newParts.push(part);
+        }
+      });
+      return { parts: newParts };
+    });
+  } else {
+    // Delete parts again
+    const snapshot = entry.before as { parts?: PartSnapshot[] };
+    if (!snapshot?.parts?.length) return;
+
+    const partIdsToDelete = new Set(snapshot.parts.map((p) => p.id));
+    set((s) => ({
+      parts: s.parts.filter((p) => !partIdsToDelete.has(p.id)),
+      selectedPartId: partIdsToDelete.has(s.selectedPartId ?? '') ? null : s.selectedPartId,
+      selectedPartIds: new Set<string>(),
+    }));
+  }
+}
+
+/**
+ * Apply DUPLICATE_MULTISELECT history entry
+ */
+function applyDuplicateMultiselect(
+  entry: HistoryEntry,
+  direction: 'undo' | 'redo',
+  get: () => StoreState,
+  set: (partial: Partial<StoreState> | ((state: StoreState) => Partial<StoreState>)) => void,
+  state: unknown
+): void {
+  if (direction === 'undo') {
+    // Remove duplicated parts
+    const snapshot = entry.after as { parts?: Part[] };
+    if (!snapshot?.parts?.length) return;
+
+    const partIdsToRemove = new Set(snapshot.parts.map((p) => p.id));
+    set((s) => ({
+      parts: s.parts.filter((p) => !partIdsToRemove.has(p.id)),
+      selectedPartId: partIdsToRemove.has(s.selectedPartId ?? '') ? null : s.selectedPartId,
+      selectedPartIds: new Set<string>(),
+    }));
+  } else {
+    // Re-add duplicated parts
+    const snapshot = entry.after as { parts?: Part[] };
+    if (!snapshot?.parts?.length) return;
+
+    set((s) => ({
+      parts: [...s.parts, ...snapshot.parts!],
+    }));
+  }
 }

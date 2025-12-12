@@ -12,6 +12,8 @@ import {
   useSelectedPart,
   useSelectedCabinet,
   useCabinet,
+  useSelectedParts,
+  useIsMultiSelectActive,
 } from '@/lib/store';
 import { Input, NumberInput } from '@meble/ui';
 import { Button } from '@meble/ui';
@@ -291,9 +293,109 @@ export function PropertiesPanel() {
 
   const selectedPart = useSelectedPart();
   const selectedCabinet = useSelectedCabinet();
+  const selectedParts = useSelectedParts();
+  const isMultiSelect = useIsMultiSelectActive();
 
   // Part mode specific data - MUST call hook unconditionally (Rules of Hooks)
   const cabinetForPart = useCabinet(selectedPart?.cabinetMetadata?.cabinetId);
+
+  // Multiselect actions
+  const {
+    deleteSelectedParts,
+    duplicateSelectedParts,
+    updatePartsBatch,
+    clearSelection,
+  } = useStore(
+    useShallow((state) => ({
+      deleteSelectedParts: state.deleteSelectedParts,
+      duplicateSelectedParts: state.duplicateSelectedParts,
+      updatePartsBatch: state.updatePartsBatch,
+      clearSelection: state.clearSelection,
+    }))
+  );
+
+  // ================= Render Multiselect Mode =================
+  if (isMultiSelect && selectedParts.length > 1) {
+    // Check if all parts have the same material
+    const materialIds = new Set(selectedParts.map(p => p.materialId));
+    const commonMaterialId = materialIds.size === 1 ? Array.from(materialIds)[0] : null;
+
+    const handleBatchMaterialChange = (materialId: string) => {
+      const updates = selectedParts.map(p => ({ id: p.id, patch: { materialId } }));
+      updatePartsBatch(updates);
+    };
+
+    return (
+      <div className="p-2">
+        {/* Multiselect header */}
+        <div className="flex items-center justify-between mb-3">
+          <Badge variant="secondary" className="text-xs">
+            {t('multiselect', { count: selectedParts.length })}
+          </Badge>
+          <div className="flex gap-1">
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7"
+              onClick={duplicateSelectedParts}
+              title={t('duplicateAll')}
+            >
+              <Copy className="h-4 w-4" />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7 text-destructive hover:text-destructive"
+              onClick={deleteSelectedParts}
+              title={t('deleteAll')}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Selection summary */}
+        <div className="mb-3 p-2 bg-muted/30 rounded-md">
+          <p className="text-xs text-muted-foreground mb-1">{t('selectedParts')}:</p>
+          <ul className="text-xs space-y-0.5 max-h-32 overflow-y-auto">
+            {selectedParts.map(p => (
+              <li key={p.id} className="truncate">{p.name}</li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Batch material change */}
+        <div className="space-y-2">
+          <label className="text-xs text-muted-foreground">{t('material')}</label>
+          <Select
+            value={commonMaterialId ?? ''}
+            onValueChange={handleBatchMaterialChange}
+          >
+            <SelectTrigger className="h-8">
+              <SelectValue placeholder={commonMaterialId ? undefined : t('mixedMaterials')} />
+            </SelectTrigger>
+            <SelectContent>
+              {materials.map((mat) => (
+                <SelectItem key={mat.id} value={mat.id}>
+                  {mat.name} ({mat.thickness}mm)
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Clear selection button */}
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full mt-4"
+          onClick={clearSelection}
+        >
+          {t('clearSelection')}
+        </Button>
+      </div>
+    );
+  }
 
   if (selectedCabinet) {
     // ================= Render Cabinet Mode =================

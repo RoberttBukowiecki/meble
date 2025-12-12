@@ -109,6 +109,11 @@ export type EdgeBanding = EdgeBandingRect | EdgeBandingGeneric;
 // ============================================================================
 
 /**
+ * Material category for filtering in UI
+ */
+export type MaterialCategory = 'board' | 'hdf' | 'mdf' | 'glass';
+
+/**
  * Material definition for furniture parts
  */
 export interface Material {
@@ -117,6 +122,7 @@ export interface Material {
   color: string;      // Hex color (e.g., "#FFFFFF")
   thickness: number;  // Material thickness in mm
   isDefault?: boolean; // Marks material as a default choice for presets
+  category?: MaterialCategory; // Material type for filtering
 }
 
 // ============================================================================
@@ -216,6 +222,14 @@ export interface ProjectState {
   transformingCabinetId: string | null;
   transformMode: TransformMode;
 
+  // Multiselect state
+  /** Set of selected part IDs for multiselect */
+  selectedPartIds: Set<string>;
+  /** First selected part ID (anchor for range select) */
+  multiSelectAnchorId: string | null;
+  /** Parts being transformed (hide originals, show previews) */
+  transformingPartIds: Set<string>;
+
   // Actions - Furniture
   addFurniture: (name: string) => void;
   removeFurniture: (id: string) => void;
@@ -234,6 +248,26 @@ export interface ProjectState {
   setTransformingPartId: (id: string | null) => void;
   setTransformingCabinetId: (id: string | null) => void;
   setTransformMode: (mode: TransformMode) => void;
+
+  // Actions - Multiselect
+  /** Toggle part in/out of selection (Cmd/Ctrl+click) */
+  togglePartSelection: (id: string) => void;
+  /** Add multiple parts to selection */
+  addToSelection: (ids: string[]) => void;
+  /** Remove multiple parts from selection */
+  removeFromSelection: (ids: string[]) => void;
+  /** Select range of parts between anchor and target (Shift+click) */
+  selectRange: (fromId: string, toId: string) => void;
+  /** Select all parts in current furniture */
+  selectAll: () => void;
+  /** Clear all selection (parts and cabinet) */
+  clearSelection: () => void;
+  /** Set parts being transformed (for hiding during preview) */
+  setTransformingPartIds: (ids: Set<string>) => void;
+  /** Delete all selected parts */
+  deleteSelectedParts: () => void;
+  /** Duplicate all selected parts */
+  duplicateSelectedParts: () => void;
 
   // Actions - Materials
   addMaterial: (material: Omit<Material, 'id'>) => void;
@@ -272,6 +306,147 @@ export interface ProjectState {
 }
 
 // ============================================================================
+// Door Configuration Types
+// ============================================================================
+
+/**
+ * Door layout type - single or double doors
+ */
+export type DoorLayout = 'SINGLE' | 'DOUBLE';
+
+/**
+ * Hinge side for horizontally opening doors
+ */
+export type HingeSide = 'LEFT' | 'RIGHT';
+
+/**
+ * Door opening direction
+ * - HORIZONTAL: Standard side-hinged doors (left or right)
+ * - LIFT_UP: Top-hinged doors that open upward (lift mechanisms)
+ * - FOLD_DOWN: Bottom-hinged doors that fold down (rarely used)
+ */
+export type DoorOpeningDirection = 'HORIZONTAL' | 'LIFT_UP' | 'FOLD_DOWN';
+
+/**
+ * Door configuration for cabinet parameters
+ */
+export interface DoorConfig {
+  layout: DoorLayout;
+  openingDirection: DoorOpeningDirection;
+  hingeSide?: HingeSide; // Only for HORIZONTAL + SINGLE
+}
+
+/**
+ * Extended metadata for door parts
+ */
+export interface DoorMetadata {
+  hingeSide?: HingeSide;
+  openingDirection: DoorOpeningDirection;
+  openingAngle?: number; // Future: for animation (0-120 degrees)
+}
+
+// ============================================================================
+// Handle Types
+// ============================================================================
+
+/**
+ * Handle category - broad classification
+ */
+export type HandleCategory = 'TRADITIONAL' | 'MODERN' | 'HANDLELESS';
+
+/**
+ * Traditional handle types
+ */
+export type TraditionalHandleType =
+  | 'BAR'        // Rękojeść / reling (bar/rail handle)
+  | 'STRIP'      // Listwa (strip/profile handle)
+  | 'KNOB';      // Gałka (round knob)
+
+/**
+ * Modern handle types
+ */
+export type ModernHandleType =
+  | 'MILLED'           // Uchwyt frezowany (routed into top edge of front)
+  | 'GOLA'             // System GOLA (integrated groove/channel)
+  | 'EDGE_MOUNTED';    // Uchwyt krawędziowy nakładany (edge-mounted profile)
+
+/**
+ * Handleless solutions
+ */
+export type HandlelessType =
+  | 'TIP_ON'           // TIP-ON / push-to-open (Blum system)
+  | 'PUSH_LATCH';      // Push latch mechanism
+
+/**
+ * Union of all handle types
+ */
+export type HandleType = TraditionalHandleType | ModernHandleType | HandlelessType;
+
+/**
+ * Handle orientation on the door
+ */
+export type HandleOrientation = 'HORIZONTAL' | 'VERTICAL';
+
+/**
+ * Handle position preset for easy selection
+ */
+export type HandlePositionPreset =
+  | 'TOP_LEFT'
+  | 'TOP_RIGHT'
+  | 'TOP_CENTER'
+  | 'MIDDLE_LEFT'
+  | 'MIDDLE_RIGHT'
+  | 'BOTTOM_LEFT'
+  | 'BOTTOM_RIGHT'
+  | 'BOTTOM_CENTER'
+  | 'CUSTOM';
+
+/**
+ * Handle dimensions (for visualization and reports)
+ */
+export interface HandleDimensions {
+  length: number;       // mm - for bars/strips
+  width?: number;       // mm - for strips
+  height?: number;      // mm - handle projection from surface
+  diameter?: number;    // mm - for knobs
+  holeSpacing?: number; // mm - distance between mounting holes (CC - center to center)
+}
+
+/**
+ * Handle position on the door
+ */
+export interface HandlePosition {
+  preset: HandlePositionPreset;
+  x?: number; // mm from door center (for CUSTOM)
+  y?: number; // mm from door center (for CUSTOM)
+  offsetFromEdge?: number; // mm from nearest edge
+}
+
+/**
+ * Complete handle configuration
+ */
+export interface HandleConfig {
+  type: HandleType;
+  category: HandleCategory;
+  dimensions?: HandleDimensions;
+  position: HandlePosition;
+  orientation: HandleOrientation;
+  // Visual properties
+  finish?: string; // e.g., 'chrome', 'brushed_nickel', 'black_matte', 'gold'
+  // For milled handles
+  milledDepth?: number; // mm - depth of routed groove
+  milledWidth?: number; // mm - width of finger grip
+}
+
+/**
+ * Handle metadata stored on door parts
+ */
+export interface HandleMetadata {
+  config: HandleConfig;
+  actualPosition: { x: number; y: number }; // Calculated position on door
+}
+
+// ============================================================================
 // Cabinet Types
 // ============================================================================
 
@@ -283,16 +458,25 @@ export interface ProjectState {
 export type TopBottomPlacement = 'inset' | 'overlay';
 
 /**
+ * Defines how the back panel is mounted to the cabinet body.
+ * 'overlap': Back panel overlaps onto edges (sits in rabbet/dado)
+ * 'dado': Back panel sits in a groove/dado (future implementation)
+ */
+export type BackMountType = 'overlap' | 'dado';
+
+/**
  * Available cabinet template types
  */
 export type CabinetType = 'KITCHEN' | 'WARDROBE' | 'BOOKSHELF' | 'DRAWER';
+
 /**
  * Cabinet material configuration
- * Cabinets use two materials: body (structure) and front (visible surfaces)
+ * Cabinets use three materials: body (structure), front (visible surfaces), and back (rear panel)
  */
 export interface CabinetMaterials {
-  bodyMaterialId: string;   // For sides, bottom, top, shelves, back
+  bodyMaterialId: string;   // For sides, bottom, top, shelves
   frontMaterialId: string;  // For doors, drawer fronts
+  backMaterialId?: string;  // For back panel (optional, defaults to HDF)
 }
 
 /**
@@ -303,6 +487,9 @@ export interface CabinetBaseParams {
   height: number;  // Overall height (mm)
   depth: number;   // Overall depth (mm)
   topBottomPlacement: TopBottomPlacement; // How top/bottom panels are attached
+  hasBack: boolean;           // Whether to add back panel
+  backOverlapRatio: number;   // How much back panel overlaps onto body edges (0-1, default 2/3)
+  backMountType: BackMountType; // How back panel is mounted (default 'overlap')
 }
 
 /**
@@ -312,6 +499,9 @@ export interface KitchenCabinetParams extends CabinetBaseParams {
   type: 'KITCHEN';
   shelfCount: number;  // Number of internal shelves (0-5)
   hasDoors: boolean;   // Whether to add doors
+  // Door configuration
+  doorConfig?: DoorConfig; // Optional for backward compatibility
+  handleConfig?: HandleConfig; // Handle configuration for doors
 }
 
 /**
@@ -329,7 +519,7 @@ export interface WardrobeCabinetParams extends CabinetBaseParams {
 export interface BookshelfCabinetParams extends CabinetBaseParams {
   type: 'BOOKSHELF';
   shelfCount: number;  // Number of shelves (1-10)
-  hasBack: boolean;    // Whether to add back panel
+  // hasBack is inherited from CabinetBaseParams
 }
 
 /**
@@ -390,6 +580,9 @@ export interface CabinetPartMetadata {
   cabinetId: string;
   role: CabinetPartRole;
   index?: number; // For shelves, doors, drawers (0-based)
+  // Door-specific metadata
+  doorMetadata?: DoorMetadata;
+  handleMetadata?: HandleMetadata;
 }
 
 // ============================================================================
@@ -413,7 +606,11 @@ export type HistoryEntryType =
   | 'REGENERATE_CABINET'
   | 'UPDATE_GROUP'
   | 'SELECTION'
-  | 'MILESTONE';
+  | 'MILESTONE'
+  // Multiselect operations
+  | 'TRANSFORM_MULTISELECT'
+  | 'DELETE_MULTISELECT'
+  | 'DUPLICATE_MULTISELECT';
 
 /**
  * Category of history entry for UI grouping

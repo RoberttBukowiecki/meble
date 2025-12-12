@@ -11,6 +11,7 @@ import { getGeneratorForType } from '../../cabinetGenerators';
 import {
   applyCabinetTransform,
   getCabinetTransform,
+  getDefaultBackMaterial,
   triggerDebouncedCollisionDetection,
 } from '../utils';
 import type { CabinetSlice, StoreSlice } from '../types';
@@ -32,8 +33,13 @@ export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
       return;
     }
 
+    // Get back material - use specified backMaterialId or default HDF
+    const backMaterial = materials.backMaterialId
+      ? get().materials.find((m) => m.id === materials.backMaterialId)
+      : getDefaultBackMaterial(get().materials);
+
     const generator = getGeneratorForType(type);
-    const generatedParts = generator(cabinetId, furnitureId, params, materials, bodyMaterial);
+    const generatedParts = generator(cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial);
 
     const parts = generatedParts.map((part) => ({
       ...part,
@@ -114,8 +120,13 @@ export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
         const bodyMaterial = state.materials.find((m) => m.id === materials.bodyMaterialId);
         if (!bodyMaterial) return state;
 
+        // Get back material
+        const backMaterial = materials.backMaterialId
+          ? state.materials.find((m) => m.id === materials.backMaterialId)
+          : getDefaultBackMaterial(state.materials);
+
         const generator = getGeneratorForType(cabinet.type);
-        const generatedParts = generator(id, cabinet.furnitureId, params, materials, bodyMaterial);
+        const generatedParts = generator(id, cabinet.furnitureId, params, materials, bodyMaterial, backMaterial);
         const transformedParts = applyCabinetTransform(generatedParts, center, rotation);
 
         const now = new Date();
@@ -195,11 +206,16 @@ export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
     const bodyMaterial = state.materials.find((m) => m.id === cabinet.materials.bodyMaterialId);
     if (!bodyMaterial) return;
 
+    // Get back material
+    const backMaterial = cabinet.materials.backMaterialId
+      ? state.materials.find((m) => m.id === cabinet.materials.backMaterialId)
+      : getDefaultBackMaterial(state.materials);
+
     const oldParts = state.parts.filter((p) => cabinet.partIds.includes(p.id));
     const { center, rotation } = getCabinetTransform(oldParts);
 
     const generator = getGeneratorForType(params.type);
-    const generatedParts = generator(id, cabinet.furnitureId, params, cabinet.materials, bodyMaterial);
+    const generatedParts = generator(id, cabinet.furnitureId, params, cabinet.materials, bodyMaterial, backMaterial);
     const transformedParts = applyCabinetTransform(generatedParts, center, rotation);
 
     const now = new Date();

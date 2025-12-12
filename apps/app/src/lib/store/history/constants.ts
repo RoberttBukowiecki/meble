@@ -39,4 +39,8 @@ export const HISTORY_LABELS: Record<HistoryEntryType, string> = {
   UPDATE_GROUP: 'Zmieniono grupę',
   SELECTION: 'Wybór elementu',
   MILESTONE: 'Punkt kontrolny',
+  // Multiselect operations
+  TRANSFORM_MULTISELECT: 'Przesunięto zaznaczenie',
+  DELETE_MULTISELECT: 'Usunięto zaznaczenie',
+  DUPLICATE_MULTISELECT: 'Powielono zaznaczenie',
 };

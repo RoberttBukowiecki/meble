@@ -23,8 +23,8 @@ import {
 import { useShallow } from 'zustand/react/shallow';
 import { useStore } from '@/lib/store';
 import { CabinetType, CabinetParams, CabinetMaterials, TopBottomPlacement } from '@/types';
-import { CABINET_PRESETS } from '@/lib/config';
-import { getDefaultMaterials } from '@/lib/store/utils';
+import { CABINET_PRESETS, DEFAULT_BACK_OVERLAP_RATIO } from '@/lib/config';
+import { getDefaultMaterials, getDefaultBackMaterial } from '@/lib/store/utils';
 
 interface CabinetTemplateDialogProps {
   open: boolean;
@@ -80,7 +80,12 @@ const ParameterForm = ({type, params, onChange}: ParameterFormProps) => {
 
     const getHasBack = (): boolean => {
         if ('hasBack' in params && params.hasBack !== undefined) return params.hasBack;
-        return false;
+        return true; // Default to true for all cabinets
+    };
+
+    const getBackOverlapRatio = (): number => {
+        if ('backOverlapRatio' in params && params.backOverlapRatio !== undefined) return params.backOverlapRatio;
+        return DEFAULT_BACK_OVERLAP_RATIO;
     };
 
     const getDrawerCount = (): number => {
@@ -151,10 +156,6 @@ const ParameterForm = ({type, params, onChange}: ParameterFormProps) => {
                         <Label>Półki ({getShelfCount()})</Label>
                         <Slider value={[getShelfCount()]} onValueChange={([val]) => updateParams({shelfCount: val} as any)} min={1} max={10} step={1} />
                     </div>
-                    <div className="flex items-center justify-between">
-                        <Label>Tylna ściana</Label>
-                        <Switch checked={getHasBack()} onCheckedChange={val => updateParams({hasBack: val} as any)} />
-                    </div>
                 </>
             )}
             {type === 'DRAWER' && (
@@ -166,7 +167,26 @@ const ParameterForm = ({type, params, onChange}: ParameterFormProps) => {
                 </>
             )}
 
-
+            {/* Back panel section - common for all cabinet types */}
+            <div className="border-t pt-4 mt-4">
+                <div className="flex items-center justify-between mb-4">
+                    <Label>Plecy (tylna ściana)</Label>
+                    <Switch checked={getHasBack()} onCheckedChange={val => updateParams({hasBack: val} as any)} />
+                </div>
+                {getHasBack() && (
+                    <div className="flex items-center justify-between">
+                        <Label>Głębokość wpustu ({Math.round(getBackOverlapRatio() * 100)}%)</Label>
+                        <Slider
+                            value={[getBackOverlapRatio()]}
+                            onValueChange={([val]) => updateParams({backOverlapRatio: val} as any)}
+                            min={0.33}
+                            max={1.0}
+                            step={0.01}
+                            className="w-32"
+                        />
+                    </div>
+                )}
+            </div>
         </div>
     )
 }
@@ -189,14 +209,34 @@ export function CabinetTemplateDialog({ open, onOpenChange, furnitureId }: Cabin
     [availableMaterials]
   );
 
+  const default_back_material = useMemo(
+    () => getDefaultBackMaterial(availableMaterials)?.id,
+    [availableMaterials]
+  );
+
+  // Filter materials by category for back panel selection
+  const hdfMaterials = useMemo(
+    () => availableMaterials.filter((m) => m.category === 'hdf'),
+    [availableMaterials]
+  );
+  const boardMaterials = useMemo(
+    () => availableMaterials.filter((m) => m.category !== 'hdf'),
+    [availableMaterials]
+  );
+
   useEffect(() => {
     if (!open) return;
 
     setMaterials((prev) => {
       const nextBody = prev.bodyMaterialId ?? default_material;
       const nextFront = prev.frontMaterialId ?? default_front_material;
+      const nextBack = prev.backMaterialId ?? default_back_material;
 
-      if (nextBody === prev.bodyMaterialId && nextFront === prev.frontMaterialId) {
+      if (
+        nextBody === prev.bodyMaterialId &&
+        nextFront === prev.frontMaterialId &&
+        nextBack === prev.backMaterialId
+      ) {
         return prev;
       }
 
@@ -204,9 +244,10 @@ export function CabinetTemplateDialog({ open, onOpenChange, furnitureId }: Cabin
         ...prev,
         bodyMaterialId: nextBody,
         frontMaterialId: nextFront,
+        backMaterialId: nextBack,
       };
     });
-  }, [default_material, default_front_material, open]);
+  }, [default_material, default_front_material, default_back_material, open]);
 
   const handleCreate = () => {
     if (!selectedType || !params.width || !params.height || !params.depth || !materials.bodyMaterialId || !materials.frontMaterialId) return;
@@ -299,7 +340,7 @@ export function CabinetTemplateDialog({ open, onOpenChange, furnitureId }: Cabin
                     <SelectValue placeholder="Wybierz materiał" />
                 </SelectTrigger>
                 <SelectContent>
-                    {availableMaterials.map(m => (
+                    {boardMaterials.map(m => (
                     <SelectItem key={m.id} value={m.id}>
                         {m.name} ({m.thickness}mm)
                     </SelectItem>
@@ -317,7 +358,7 @@ export function CabinetTemplateDialog({ open, onOpenChange, furnitureId }: Cabin
                     <SelectValue placeholder="Wybierz materiał" />
                 </SelectTrigger>
                 <SelectContent>
-                    {availableMaterials.map(m => (
+                    {boardMaterials.map(m => (
                     <SelectItem key={m.id} value={m.id}>
                         {m.name} ({m.thickness}mm)
                     </SelectItem>
@@ -325,11 +366,47 @@ export function CabinetTemplateDialog({ open, onOpenChange, furnitureId }: Cabin
                 </SelectContent>
               </Select>
             </div>
+            {params.hasBack && (
+              <div>
+                <Label>Materiał pleców (tylna ściana - HDF)</Label>
+                <Select
+                  value={materials?.backMaterialId}
+                  onValueChange={(id) => setMaterials({ ...materials, backMaterialId: id })}
+                >
+                  <SelectTrigger>
+                      <SelectValue placeholder="Wybierz materiał HDF" />
+                  </SelectTrigger>
+                  <SelectContent>
+                      {hdfMaterials.length > 0 ? (
+                        hdfMaterials.map(m => (
+                          <SelectItem key={m.id} value={m.id}>
+                              {m.name} ({m.thickness}mm)
+                          </SelectItem>
+                        ))
+                      ) : (
+                        // Fallback to all materials if no HDF available
+                        availableMaterials.map(m => (
+                          <SelectItem key={m.id} value={m.id}>
+                              {m.name} ({m.thickness}mm)
+                          </SelectItem>
+                        ))
+                      )}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="flex justify-between">
               <Button variant="outline" onClick={() => setStep('configure')}>
                 Wstecz
               </Button>
-              <Button onClick={handleCreate} disabled={!materials?.bodyMaterialId || !materials?.frontMaterialId}>
+              <Button
+                onClick={handleCreate}
+                disabled={
+                  !materials?.bodyMaterialId ||
+                  !materials?.frontMaterialId ||
+                  (params.hasBack && !materials?.backMaterialId)
+                }
+              >
                 Utwórz szafkę
               </Button>
             </div>

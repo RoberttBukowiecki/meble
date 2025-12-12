@@ -36,10 +36,9 @@ export const KEYBOARD_SHORTCUTS = {
   // View options
   TOGGLE_GRID: 'g',
 
-  // Future shortcuts
-  // UNDO: 'z',
-  // REDO: 'y',
-  // SELECT_ALL: 'a',
+  // Selection shortcuts (Cmd/Ctrl modifier required)
+  SELECT_ALL: 'a',
+  CLEAR_SELECTION: 'Escape',
 } as const satisfies Record<string, ShortcutKeys>;
 
 // ============================================================================
@@ -106,12 +105,28 @@ export const PART_CONFIG = {
   COLLISION_EMISSIVE_COLOR: '#ff0000',
   COLLISION_EMISSIVE_INTENSITY: 0.4,
   COLLISION_EDGE_COLOR: '#ff0000',
+
+  // Multiselect visual feedback
+  MULTISELECT_EMISSIVE_COLOR: '#6644ff',
+  MULTISELECT_EMISSIVE_INTENSITY: 0.25,
+  MULTISELECT_EDGE_COLOR: '#6644ff',
+  MULTISELECT_PREVIEW_OPACITY: 0.7,
+  MULTISELECT_PREVIEW_EMISSIVE: '#4444aa',
+
+  // Bounding box visualization
+  MULTISELECT_BBOX_COLOR: '#6644ff',
+  MULTISELECT_BBOX_LINE_WIDTH: 2,
+  MULTISELECT_BBOX_DASH_SIZE: 10,
+  MULTISELECT_BBOX_GAP_SIZE: 5,
 } as const;
 
 
 // ============================================================================
 // Cabinet Configuration
 // ============================================================================
+
+// Default back panel overlap ratio (2/3 of body material thickness)
+export const DEFAULT_BACK_OVERLAP_RATIO = 0.667;
 
 export const CABINET_PRESETS: Record<CabinetType, Partial<CabinetParams>> = {
   KITCHEN: {
@@ -122,6 +137,9 @@ export const CABINET_PRESETS: Record<CabinetType, Partial<CabinetParams>> = {
     shelfCount: 1,
     hasDoors: true,
     topBottomPlacement: 'inset',
+    hasBack: true,
+    backOverlapRatio: DEFAULT_BACK_OVERLAP_RATIO,
+    backMountType: 'overlap',
   },
   WARDROBE: {
     type: 'WARDROBE',
@@ -131,6 +149,9 @@ export const CABINET_PRESETS: Record<CabinetType, Partial<CabinetParams>> = {
     shelfCount: 1,
     doorCount: 2,
     topBottomPlacement: 'inset',
+    hasBack: true,
+    backOverlapRatio: DEFAULT_BACK_OVERLAP_RATIO,
+    backMountType: 'overlap',
   },
   BOOKSHELF: {
     type: 'BOOKSHELF',
@@ -138,8 +159,10 @@ export const CABINET_PRESETS: Record<CabinetType, Partial<CabinetParams>> = {
     height: 1800,
     depth: 300,
     shelfCount: 4,
-    hasBack: true,
     topBottomPlacement: 'inset',
+    hasBack: true,
+    backOverlapRatio: DEFAULT_BACK_OVERLAP_RATIO,
+    backMountType: 'overlap',
   },
   DRAWER: {
     type: 'DRAWER',
@@ -148,5 +171,8 @@ export const CABINET_PRESETS: Record<CabinetType, Partial<CabinetParams>> = {
     depth: 500,
     drawerCount: 4,
     topBottomPlacement: 'inset',
+    hasBack: true,
+    backOverlapRatio: DEFAULT_BACK_OVERLAP_RATIO,
+    backMountType: 'overlap',
   }
 };

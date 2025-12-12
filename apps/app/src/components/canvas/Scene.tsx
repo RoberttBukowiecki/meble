@@ -8,7 +8,7 @@
 import { useRef, useCallback, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Grid } from '@react-three/drei';
-import { useSelectedFurnitureParts, useStore, useSelectedPart } from '@/lib/store';
+import { useSelectedFurnitureParts, useStore, useSelectedPart, useIsMultiSelectActive } from '@/lib/store';
 import { Part3D } from './Part3D';
 import { Button } from '@meble/ui';
 import { Camera, Move, RotateCw, Maximize2 } from 'lucide-react';
@@ -20,6 +20,7 @@ import type { OrbitControls as OrbitControlsType } from 'three-stdlib';
 import { CabinetGroupTransform } from './CabinetGroupTransform';
 import { PartTransformControls } from './PartTransformControls';
 import { PartResizeControls } from './PartResizeControls';
+import { MultiSelectTransformControls } from './MultiSelectTransformControls';
 import { SnapGuidesRenderer } from './SnapGuidesRenderer';
 import { SnapProvider } from '@/lib/snap-context';
 import { SnapControlPanel } from '@/components/layout/SnapControlPanel';
@@ -27,6 +28,7 @@ import { SnapControlPanel } from '@/components/layout/SnapControlPanel';
 export function Scene() {
   const parts = useSelectedFurnitureParts();
   const selectedPart = useSelectedPart();
+  const isMultiSelect = useIsMultiSelectActive();
   const {
     isTransforming,
     transformMode,
@@ -41,6 +43,7 @@ export function Scene() {
     setIsTransforming,
     selectPart,
     selectCabinet,
+    clearSelection,
     snapEnabled,
   } = useStore(
       useShallow((state) => ({
@@ -57,6 +60,7 @@ export function Scene() {
         setIsTransforming: state.setIsTransforming,
         selectPart: state.selectPart,
         selectCabinet: state.selectCabinet,
+        clearSelection: state.clearSelection,
         snapEnabled: state.snapEnabled,
       }))
     );
@@ -99,11 +103,10 @@ export function Scene() {
   }, [setIsTransforming]);
 
   const handlePointerMissed = useCallback(() => {
-    if (selectedPartId || selectedCabinetId) {
-      selectPart(null);
-      selectCabinet(null);
+    if (selectedPartId || selectedCabinetId || isMultiSelect) {
+      clearSelection();
     }
-  }, [selectedPartId, selectedCabinetId, selectPart, selectCabinet]);
+  }, [selectedPartId, selectedCabinetId, isMultiSelect, clearSelection]);
 
   // Listen for camera reset custom event from GlobalKeyboardListener
   useEffect(() => {
@@ -224,8 +227,17 @@ export function Scene() {
             <CabinetGroupTransform cabinetId={selectedCabinetId} />
           )}
 
+          {/* Transform controls for multiselect (translate/rotate modes) */}
+          {isMultiSelect && !selectedCabinetId && (transformMode === 'translate' || transformMode === 'rotate') && (
+            <MultiSelectTransformControls
+              mode={transformMode}
+              onTransformStart={() => setIsTransforming(true)}
+              onTransformEnd={handlePartTransformEnd}
+            />
+          )}
+
           {/* Transform controls for individual parts (translate/rotate modes) */}
-          {selectedPart && !selectedCabinetId && (transformMode === 'translate' || transformMode === 'rotate') && (
+          {selectedPart && !isMultiSelect && !selectedCabinetId && (transformMode === 'translate' || transformMode === 'rotate') && (
             <PartTransformControls
               part={selectedPart}
               mode={transformMode}
@@ -234,8 +246,8 @@ export function Scene() {
             />
           )}
 
-          {/* Resize controls for individual parts (resize mode) */}
-          {selectedPart && !selectedCabinetId && transformMode === 'resize' && (
+          {/* Resize controls for individual parts (resize mode) - not available for multiselect */}
+          {selectedPart && !isMultiSelect && !selectedCabinetId && transformMode === 'resize' && (
             <PartResizeControls
               part={selectedPart}
               onTransformStart={() => setIsTransforming(true)}

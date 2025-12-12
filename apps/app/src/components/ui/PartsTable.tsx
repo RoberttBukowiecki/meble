@@ -4,7 +4,7 @@ import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useStore } from '@/lib/store';
 import type { Part } from '@/types';
-import { Accordion, AccordionContent, AccordionItem, Badge, Card, CardContent, CardHeader, CardTitle, cn } from '@meble/ui';
+import { Accordion, AccordionContent, AccordionItem, Badge, Card, CardContent, CardHeader, CardTitle, Checkbox, cn } from '@meble/ui';
 import { CircleDot, FolderTree, Layers, Package, ChevronDown } from 'lucide-react';
 import { InlineEditableText } from './InlineEditableText';
 import { buildManualGroupId } from '@/lib/groups';
@@ -38,9 +38,11 @@ interface PartRowProps {
   partId: string;
   materialLabelMap: Map<string, string>;
   furnitureLabelMap: Map<string, string>;
-  onSelect: (id: string) => void;
+  onSelect: (id: string, e: React.MouseEvent) => void;
+  onToggleSelect: (id: string) => void;
   onRename: (id: string, name: string) => void;
   isSelected: boolean;
+  isMultiSelected: boolean;
   t: TranslateFn;
 }
 
@@ -49,8 +51,10 @@ const PartRow = memo(function PartRow({
   materialLabelMap,
   furnitureLabelMap,
   onSelect,
+  onToggleSelect,
   onRename,
   isSelected,
+  isMultiSelected,
   t,
 }: PartRowProps) {
   const part = useStore(
@@ -77,20 +81,37 @@ const PartRow = memo(function PartRow({
     meta.push(`${t('edgeBanding')}: ${edge}`);
   }
 
-  const handleSelect = () => onSelect(part.id);
+  const handleRowClick = (e: React.MouseEvent) => {
+    // Don't interfere with checkbox clicks
+    if ((e.target as HTMLElement).closest('button[role="checkbox"]')) {
+      return;
+    }
+    onSelect(part.id, e);
+  };
+
+  const handleCheckboxChange = () => {
+    onToggleSelect(part.id);
+  };
 
   return (
     <div
       role="button"
       tabIndex={0}
-      onClick={handleSelect}
-      onDoubleClick={handleSelect}
+      onClick={handleRowClick}
+      onDoubleClick={handleRowClick}
       className={cn(
         'flex w-full items-center justify-between px-2 py-1 text-left transition hover:bg-muted/30 focus:outline-none',
-        isSelected && 'bg-[#4c82fb1a]'
+        isSelected && 'bg-[#4c82fb1a]',
+        isMultiSelected && 'bg-primary/10'
       )}
     >
       <div className="flex items-center gap-3">
+        <Checkbox
+          checked={isSelected}
+          onCheckedChange={handleCheckboxChange}
+          onClick={(e) => e.stopPropagation()}
+          aria-label={t('selectPart')}
+        />
         <Layers className="h-4 w-4 text-muted-foreground" />
         <div className="flex flex-col">
           <InlineEditableText
@@ -122,11 +143,15 @@ export function PartsTable() {
   const {
     selectPart,
     selectCabinet,
+    togglePartSelection,
+    selectRange,
+    addToSelection,
     renamePart,
     renameManualGroup,
     renameCabinet,
-    selectedPartId,
+    selectedPartIds,
     selectedCabinetId,
+    multiSelectAnchorId,
     parts,
     cabinets,
     materials,
@@ -136,11 +161,15 @@ export function PartsTable() {
       (state) => ({
         selectPart: state.selectPart,
         selectCabinet: state.selectCabinet,
+        togglePartSelection: state.togglePartSelection,
+        selectRange: state.selectRange,
+        addToSelection: state.addToSelection,
         renamePart: state.renamePart,
         renameManualGroup: state.renameManualGroup,
         renameCabinet: state.renameCabinet,
-        selectedPartId: state.selectedPartId,
+        selectedPartIds: state.selectedPartIds,
         selectedCabinetId: state.selectedCabinetId,
+        multiSelectAnchorId: state.multiSelectAnchorId,
         parts: state.parts,
         cabinets: state.cabinets,
         materials: state.materials,
@@ -255,11 +284,30 @@ export function PartsTable() {
   }, [groups]);
 
   const handlePartSelect = useCallback(
-    (partId: string) => {
-      setSelectedGroupId(null);
-      selectPart(partId);
+    (partId: string, e: React.MouseEvent) => {
+      const isCmd = e.metaKey || e.ctrlKey;
+      const isShift = e.shiftKey;
+
+      if (isCmd) {
+        // Cmd/Ctrl+click: Toggle selection
+        togglePartSelection(partId);
+      } else if (isShift && multiSelectAnchorId) {
+        // Shift+click: Range select
+        selectRange(multiSelectAnchorId, partId);
+      } else {
+        // Plain click: Single select
+        setSelectedGroupId(null);
+        selectPart(partId);
+      }
     },
-    [selectPart]
+    [selectPart, togglePartSelection, selectRange, multiSelectAnchorId]
+  );
+
+  const handleTogglePartSelect = useCallback(
+    (partId: string) => {
+      togglePartSelection(partId);
+    },
+    [togglePartSelection]
   );
 
   const handleGroupSelect = useCallback(
@@ -273,6 +321,20 @@ export function PartsTable() {
       }
     },
     [selectCabinet, selectPart]
+  );
+
+  const handleGroupCheckboxChange = useCallback(
+    (group: PartsGroup, checked: boolean) => {
+      if (checked) {
+        // Add all parts in group to selection
+        addToSelection(group.partIds);
+      } else {
+        // This would need a removeFromSelection call
+        // For now, clicking again will toggle individual parts
+        selectPart(null);
+      }
+    },
+    [addToSelection, selectPart]
   );
 
   const handlePartRename = useCallback(
@@ -300,6 +362,23 @@ export function PartsTable() {
     [renameCabinet]
   );
 
+  // Check if all parts in a group are selected
+  const isGroupFullySelected = useCallback(
+    (group: PartsGroup) => {
+      return group.partIds.length > 0 && group.partIds.every((id) => selectedPartIds.has(id));
+    },
+    [selectedPartIds]
+  );
+
+  // Check if some parts in a group are selected
+  const isGroupPartiallySelected = useCallback(
+    (group: PartsGroup) => {
+      const selectedCount = group.partIds.filter((id) => selectedPartIds.has(id)).length;
+      return selectedCount > 0 && selectedCount < group.partIds.length;
+    },
+    [selectedPartIds]
+  );
+
   if (totalParts === 0) {
     return (
       <Card>
@@ -316,7 +395,14 @@ export function PartsTable() {
   return (
     <Card className="border-0 shadow-none">
       <CardHeader className="px-0 pt-0 pb-2">
-        <CardTitle className="text-base">{t('titleWithCount', { count: totalParts })}</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base">{t('titleWithCount', { count: totalParts })}</CardTitle>
+          {selectedPartIds.size > 0 && (
+            <Badge variant="secondary" className="ml-2">
+              {selectedPartIds.size} {t('selected')}
+            </Badge>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="p-0">
         <Accordion
@@ -342,6 +428,9 @@ export function PartsTable() {
               selectedGroupId === group.id ||
               (group.type === 'cabinet' && selectedCabinetId === group.cabinetId);
 
+            const groupFullySelected = isGroupFullySelected(group);
+            const groupPartiallySelected = isGroupPartiallySelected(group);
+
             return (
               <AccordionItem key={group.id} value={group.id} className="border-b-0">
                 <div
@@ -350,6 +439,15 @@ export function PartsTable() {
                     isGroupSelected ? 'bg-[#4c82fb1a]' : 'hover:bg-muted/30'
                   )}
                 >
+                  <div className="flex items-center px-1">
+                    <Checkbox
+                      checked={groupFullySelected}
+                      indeterminate={groupPartiallySelected}
+                      onCheckedChange={(checked) => handleGroupCheckboxChange(group, !!checked)}
+                      onClick={(e) => e.stopPropagation()}
+                      aria-label={t('selectAll')}
+                    />
+                  </div>
                   <button
                     type="button"
                     className={cn(
@@ -415,8 +513,10 @@ export function PartsTable() {
                         materialLabelMap={materialLabelMap}
                         furnitureLabelMap={furnitureLabelMap}
                         onSelect={handlePartSelect}
+                        onToggleSelect={handleTogglePartSelect}
                         onRename={handlePartRename}
-                        isSelected={selectedPartId === partId}
+                        isSelected={selectedPartIds.has(partId)}
+                        isMultiSelected={selectedPartIds.has(partId) && selectedPartIds.size > 1}
                         t={t}
                       />
                     ))}

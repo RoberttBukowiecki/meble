@@ -66,7 +66,13 @@
     "edgeTop": "Góra (Y+)",
     "edgeBottom": "Dół (Y-)",
     "edgeLeft": "Lewo (X-)",
-    "edgeRight": "Prawo (X+)"
+    "edgeRight": "Prawo (X+)",
+    "multiselect": "Zaznaczono {count} części",
+    "selectedParts": "Zaznaczone części",
+    "duplicateAll": "Powiel wszystkie",
+    "deleteAll": "Usuń wszystkie",
+    "mixedMaterials": "Różne materiały",
+    "clearSelection": "Odznacz wszystkie"
   },
   "PartsTable": {
     "title": "Lista części",
@@ -91,7 +97,10 @@
     "noDash": "-",
     "renamePart": "Zmień nazwę części",
     "renameGroup": "Zmień nazwę grupy",
-    "renameCabinet": "Zmień nazwę szafki"
+    "renameCabinet": "Zmień nazwę szafki",
+    "selectPart": "Zaznacz część",
+    "selectAll": "Zaznacz wszystkie",
+    "selected": "zaznaczono"
   },
   "CabinetTemplateDialog": {
     "title": "Dodaj szafkę",

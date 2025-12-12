@@ -38,6 +38,24 @@ export function GlobalKeyboardListener() {
       const isMod = event.metaKey || event.ctrlKey;
 
       // ============================================================================
+      // Selection shortcuts
+      // ============================================================================
+
+      // Cmd/Ctrl + A = Select all parts in current furniture
+      if (isMod && matchesShortcut(KEYBOARD_SHORTCUTS.SELECT_ALL, key)) {
+        event.preventDefault();
+        useStore.getState().selectAll();
+        return;
+      }
+
+      // Escape = Clear selection
+      if (matchesShortcut(KEYBOARD_SHORTCUTS.CLEAR_SELECTION, event.key)) {
+        event.preventDefault();
+        useStore.getState().clearSelection();
+        return;
+      }
+
+      // ============================================================================
       // History shortcuts (Cmd/Ctrl + Z, Cmd/Ctrl + Shift + Z, Cmd/Ctrl + Y)
       // ============================================================================
 
@@ -91,27 +109,39 @@ export function GlobalKeyboardListener() {
       // Part/Cabinet actions
       // ============================================================================
 
-      // Delete/Backspace = Delete selected part or cabinet
+      // Delete/Backspace = Delete selected parts or cabinet
       if (matchesShortcut(KEYBOARD_SHORTCUTS.DELETE_PART, key)) {
         event.preventDefault();
         const state = useStore.getState();
+
         if (state.selectedCabinetId) {
+          // Cabinet selected - confirm deletion
           if (window.confirm('Usunąć całą szafkę i wszystkie jej części?')) {
             state.removeCabinet(state.selectedCabinetId);
           }
+        } else if (state.selectedPartIds.size > 1) {
+          // Multiple parts selected - use multiselect delete
+          state.deleteSelectedParts();
         } else if (state.selectedPartId) {
+          // Single part selected
           state.removePart(state.selectedPartId);
         }
         return;
       }
 
-      // Cmd/Ctrl + D = Duplicate selected part or cabinet
+      // Cmd/Ctrl + D = Duplicate selected parts or cabinet
       if (matchesShortcut(KEYBOARD_SHORTCUTS.DUPLICATE_PART, key) && isMod) {
         event.preventDefault();
         const state = useStore.getState();
+
         if (state.selectedCabinetId) {
+          // Cabinet selected
           state.duplicateCabinet(state.selectedCabinetId);
+        } else if (state.selectedPartIds.size > 1) {
+          // Multiple parts selected - use multiselect duplicate
+          state.duplicateSelectedParts();
         } else if (state.selectedPartId) {
+          // Single part selected
           state.duplicatePart(state.selectedPartId);
         }
         return;

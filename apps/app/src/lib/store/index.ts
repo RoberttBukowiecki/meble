@@ -10,6 +10,8 @@ import { createHistorySlice } from './slices/historySlice';
 import { createUISlice } from './slices/uiSlice';
 import { createSnapSlice } from './slices/snapSlice';
 import { HISTORY_MAX_LENGTH, HISTORY_MAX_MILESTONES } from './history/constants';
+import { MATERIAL_IDS, INITIAL_MATERIALS } from './constants';
+import { DEFAULT_BACK_OVERLAP_RATIO } from '../config';
 import type { StoreState } from './types';
 
 export const useStore = create<StoreState>()(
@@ -27,7 +29,7 @@ export const useStore = create<StoreState>()(
     }),
     {
       name: 'meblarz-storage',
-      version: 3,
+      version: 4,
       migrate: (persistedState: any, version: number) => {
         // Migrate from version 1 to 2
         if (version === 1) {
@@ -41,7 +43,7 @@ export const useStore = create<StoreState>()(
 
         // Migrate from version 2 to 3 (add history)
         if (version < 3) {
-          return {
+          persistedState = {
             ...persistedState,
             collisions: persistedState.collisions || [],
             // Initialize history fields
@@ -54,6 +56,43 @@ export const useStore = create<StoreState>()(
             approxByteSize: 0,
             timelineCursor: null,
           };
+        }
+
+        // Migrate from version 3 to 4 (add HDF material and back panel params)
+        if (version < 4) {
+          // Add HDF material if it doesn't exist
+          const materials = persistedState.materials || [];
+          const hasHdf = materials.some((m: any) => m.category === 'hdf' || m.id === MATERIAL_IDS.HDF_BIALY);
+
+          if (!hasHdf) {
+            const hdfMaterial = INITIAL_MATERIALS.find((m) => m.id === MATERIAL_IDS.HDF_BIALY);
+            if (hdfMaterial) {
+              materials.push({ ...hdfMaterial });
+            }
+          }
+
+          // Add category to existing materials if not present
+          persistedState.materials = materials.map((m: any) => ({
+            ...m,
+            category: m.category || 'board',
+          }));
+
+          // Update existing cabinets with back panel params
+          if (persistedState.cabinets) {
+            persistedState.cabinets = persistedState.cabinets.map((cabinet: any) => ({
+              ...cabinet,
+              params: {
+                ...cabinet.params,
+                hasBack: cabinet.params.hasBack ?? true,
+                backOverlapRatio: cabinet.params.backOverlapRatio ?? DEFAULT_BACK_OVERLAP_RATIO,
+                backMountType: cabinet.params.backMountType ?? 'overlap',
+              },
+              materials: {
+                ...cabinet.materials,
+                backMaterialId: cabinet.materials.backMaterialId ?? MATERIAL_IDS.HDF_BIALY,
+              },
+            }));
+          }
         }
 
         return persistedState;
@@ -75,6 +114,8 @@ export const useStore = create<StoreState>()(
           duplicatePart,
           setIsTransforming,
           setTransformMode,
+          setTransformingPartId,
+          setTransformingCabinetId,
           addMaterial,
           updateMaterial,
           removeMaterial,
@@ -82,10 +123,25 @@ export const useStore = create<StoreState>()(
           updateCabinet,
           renameCabinet,
           updateCabinetParams,
+          updateCabinetTransform,
           removeCabinet,
           duplicateCabinet,
           selectCabinet,
           detectCollisions,
+          // Multiselect functions
+          togglePartSelection,
+          addToSelection,
+          removeFromSelection,
+          selectRange,
+          selectAll,
+          clearSelection,
+          setTransformingPartIds,
+          deleteSelectedParts,
+          duplicateSelectedParts,
+          // Multiselect state (transient - don't persist)
+          selectedPartIds,
+          multiSelectAnchorId,
+          transformingPartIds,
           // History functions
           canUndo,
           canRedo,
@@ -145,4 +201,20 @@ export const useSelectedCabinet = () => {
 
 export const useCabinet = (id: string | undefined) => {
   return useStore((state) => state.cabinets.find((c) => c.id === id));
+};
+
+/**
+ * Get all selected parts (for multiselect)
+ */
+export const useSelectedParts = () => {
+  const parts = useStore((state) => state.parts);
+  const selectedPartIds = useStore((state) => state.selectedPartIds);
+  return parts.filter((p) => selectedPartIds.has(p.id));
+};
+
+/**
+ * Check if multiselect is active (more than 1 part selected)
+ */
+export const useIsMultiSelectActive = () => {
+  return useStore((state) => state.selectedPartIds.size > 1);
 };

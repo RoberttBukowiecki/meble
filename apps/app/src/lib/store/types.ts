@@ -17,6 +17,16 @@ export type SelectionSlice = {
   /** ID of cabinet currently being transformed (for hiding all its parts during preview) */
   transformingCabinetId: string | null;
   transformMode: TransformMode;
+
+  // Multiselect state
+  /** Set of selected part IDs for multiselect */
+  selectedPartIds: Set<string>;
+  /** First selected part ID (anchor for range select) */
+  multiSelectAnchorId: string | null;
+  /** Parts being transformed (hide originals, show previews) */
+  transformingPartIds: Set<string>;
+
+  // Single selection actions
   selectPart: (id: string | null) => void;
   selectCabinet: (id: string | null) => void;
   setSelectedFurniture: (id: string) => void;
@@ -24,6 +34,17 @@ export type SelectionSlice = {
   setTransformingPartId: (id: string | null) => void;
   setTransformingCabinetId: (id: string | null) => void;
   setTransformMode: (mode: TransformMode) => void;
+
+  // Multiselect actions
+  togglePartSelection: (id: string) => void;
+  addToSelection: (ids: string[]) => void;
+  removeFromSelection: (ids: string[]) => void;
+  selectRange: (fromId: string, toId: string) => void;
+  selectAll: () => void;
+  clearSelection: () => void;
+  setTransformingPartIds: (ids: Set<string>) => void;
+  deleteSelectedParts: () => void;
+  duplicateSelectedParts: () => void;
 };
 
 export type MaterialsSlice = Pick<

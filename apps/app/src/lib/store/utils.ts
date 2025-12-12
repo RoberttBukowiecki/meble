@@ -86,3 +86,17 @@ export function getDefaultMaterials(materials: Material[]) {
 
   return { default_material, default_front_material };
 }
+
+/**
+ * Get the default back material (HDF) for cabinets
+ * Prioritizes HDF materials, falls back to thinnest available material
+ */
+export function getDefaultBackMaterial(materials: Material[]): Material | undefined {
+  // First try to find HDF material
+  const hdfMaterial = materials.find((m) => m.category === 'hdf');
+  if (hdfMaterial) return hdfMaterial;
+
+  // Fallback to thinnest material
+  const sorted = [...materials].sort((a, b) => a.thickness - b.thickness);
+  return sorted[0];
+}
