@@ -9,7 +9,12 @@ import {
   CabinetType,
   BackMountType,
   TopBottomPlacement,
+  DoorConfig,
+  HandleConfig,
+  KitchenCabinetParams,
 } from '@/types';
+import { generateHandleMetadata, DoorType } from './handlePresets';
+import { DEFAULT_DOOR_CONFIG } from './config';
 
 /**
  * Generator function type
@@ -145,6 +150,141 @@ function generateBackPanel(
   };
 }
 
+// ============================================================================
+// Door Generation
+// ============================================================================
+
+interface DoorGenerationConfig {
+  cabinetId: string;
+  furnitureId: string;
+  cabinetWidth: number;
+  cabinetHeight: number;
+  cabinetDepth: number;
+  thickness: number;
+  frontMaterialId: string;
+  doorConfig: DoorConfig;
+  handleConfig?: HandleConfig;
+}
+
+/**
+ * Generate door parts based on door configuration
+ * Supports single/double doors with different opening directions
+ */
+function generateDoors(
+  config: DoorGenerationConfig
+): Omit<Part, 'id' | 'createdAt' | 'updatedAt'>[] {
+  const {
+    cabinetId,
+    furnitureId,
+    cabinetWidth,
+    cabinetHeight,
+    cabinetDepth,
+    thickness,
+    frontMaterialId,
+    doorConfig,
+    handleConfig,
+  } = config;
+
+  const parts: Omit<Part, 'id' | 'createdAt' | 'updatedAt'>[] = [];
+
+  const availableWidth = cabinetWidth - FRONT_MARGIN * 2;
+  const doorHeight = cabinetHeight - FRONT_MARGIN * 2;
+
+  if (doorConfig.layout === 'SINGLE') {
+    // Single door - full width
+    const doorWidth = availableWidth;
+    const doorType: DoorType = 'SINGLE';
+
+    parts.push({
+      name: 'Front',
+      furnitureId,
+      group: cabinetId,
+      shapeType: 'RECT',
+      shapeParams: { type: 'RECT', x: doorWidth, y: doorHeight },
+      width: doorWidth,
+      height: doorHeight,
+      depth: thickness,
+      position: [0, cabinetHeight / 2, cabinetDepth / 2 + thickness / 2],
+      rotation: [0, 0, 0],
+      materialId: frontMaterialId,
+      edgeBanding: { type: 'RECT', top: true, bottom: true, left: true, right: true },
+      cabinetMetadata: {
+        cabinetId,
+        role: 'DOOR',
+        index: 0,
+        doorMetadata: {
+          hingeSide: doorConfig.hingeSide,
+          openingDirection: doorConfig.openingDirection,
+        },
+        handleMetadata: handleConfig
+          ? generateHandleMetadata(handleConfig, doorWidth, doorHeight, doorType, doorConfig.hingeSide)
+          : undefined,
+      },
+    });
+  } else {
+    // Double doors
+    const doorWidth = (availableWidth - DOOR_GAP) / 2;
+
+    // Left door
+    parts.push({
+      name: 'Front lewy',
+      furnitureId,
+      group: cabinetId,
+      shapeType: 'RECT',
+      shapeParams: { type: 'RECT', x: doorWidth, y: doorHeight },
+      width: doorWidth,
+      height: doorHeight,
+      depth: thickness,
+      position: [-doorWidth / 2 - DOOR_GAP / 2, cabinetHeight / 2, cabinetDepth / 2 + thickness / 2],
+      rotation: [0, 0, 0],
+      materialId: frontMaterialId,
+      edgeBanding: { type: 'RECT', top: true, bottom: true, left: true, right: true },
+      cabinetMetadata: {
+        cabinetId,
+        role: 'DOOR',
+        index: 0,
+        doorMetadata: {
+          hingeSide: 'LEFT',
+          openingDirection: doorConfig.openingDirection,
+        },
+        handleMetadata: handleConfig
+          ? generateHandleMetadata(handleConfig, doorWidth, doorHeight, 'DOUBLE_LEFT')
+          : undefined,
+      },
+    });
+
+    // Right door
+    parts.push({
+      name: 'Front prawy',
+      furnitureId,
+      group: cabinetId,
+      shapeType: 'RECT',
+      shapeParams: { type: 'RECT', x: doorWidth, y: doorHeight },
+      width: doorWidth,
+      height: doorHeight,
+      depth: thickness,
+      position: [doorWidth / 2 + DOOR_GAP / 2, cabinetHeight / 2, cabinetDepth / 2 + thickness / 2],
+      rotation: [0, 0, 0],
+      materialId: frontMaterialId,
+      edgeBanding: { type: 'RECT', top: true, bottom: true, left: true, right: true },
+      cabinetMetadata: {
+        cabinetId,
+        role: 'DOOR',
+        index: 1,
+        doorMetadata: {
+          hingeSide: 'RIGHT',
+          openingDirection: doorConfig.openingDirection,
+        },
+        handleMetadata: handleConfig
+          ? generateHandleMetadata(handleConfig, doorWidth, doorHeight, 'DOUBLE_RIGHT')
+          : undefined,
+      },
+    });
+  }
+
+  return parts;
+}
+
 /**
  * Get appropriate generator for cabinet type
  */
@@ -277,43 +417,25 @@ export function generateKitchenCabinet(
     });
   }
 
-  // 6. DOORS (if enabled, two doors with 3mm gap)
+  // 6. DOORS (if enabled)
   if (hasDoors) {
-    const availableDoorWidth = Math.max(width - FRONT_MARGIN * 2 - DOOR_GAP, 0);
-    const doorWidth = availableDoorWidth / 2;
-    const doorHeight = Math.max(height - FRONT_MARGIN * 2, 0);
+    // Use door config or default
+    const doorConfig = (params as KitchenCabinetParams).doorConfig ?? DEFAULT_DOOR_CONFIG;
+    const handleConfig = (params as KitchenCabinetParams).handleConfig;
 
-    parts.push({
-      name: 'Front lewy',
+    const doorParts = generateDoors({
+      cabinetId,
       furnitureId,
-      group: cabinetId,
-      shapeType: 'RECT',
-      shapeParams: { type: 'RECT', x: doorWidth, y: doorHeight },
-      width: doorWidth,
-      height: doorHeight,
-      depth: thickness,
-      position: [-doorWidth / 2 - DOOR_GAP / 2, height / 2, depth / 2 + thickness / 2],
-      rotation: [0, 0, 0],
-      materialId: materials.frontMaterialId,
-      edgeBanding: { type: 'RECT', top: true, bottom: true, left: true, right: true },
-      cabinetMetadata: { cabinetId, role: 'DOOR', index: 0 },
+      cabinetWidth: width,
+      cabinetHeight: height,
+      cabinetDepth: depth,
+      thickness,
+      frontMaterialId: materials.frontMaterialId,
+      doorConfig,
+      handleConfig,
     });
 
-    parts.push({
-      name: 'Front prawy',
-      furnitureId,
-      group: cabinetId,
-      shapeType: 'RECT',
-      shapeParams: { type: 'RECT', x: doorWidth, y: doorHeight },
-      width: doorWidth,
-      height: doorHeight,
-      depth: thickness,
-      position: [doorWidth / 2 + DOOR_GAP / 2, height / 2, depth / 2 + thickness / 2],
-      rotation: [0, 0, 0],
-      materialId: materials.frontMaterialId,
-      edgeBanding: { type: 'RECT', top: true, bottom: true, left: true, right: true },
-      cabinetMetadata: { cabinetId, role: 'DOOR', index: 1 },
-    });
+    parts.push(...doorParts);
   }
 
   // 7. BACK PANEL (if enabled)

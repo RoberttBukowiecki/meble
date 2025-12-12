@@ -15,6 +15,7 @@ import { useMaterial, useStore } from '@/lib/store';
 import { PART_CONFIG, MATERIAL_CONFIG } from '@/lib/config';
 import type { Part } from '@/types';
 import { isPartColliding, isGroupColliding, getGroupId } from '@/lib/collisionDetection';
+import { Handle3D } from './Handle3D';
 
 interface Part3DProps {
   part: Part;
@@ -191,25 +192,34 @@ export function Part3D({ part }: Part3DProps) {
 
   const showEdges = isColliding || isPartSelected || isCabinetSelected;
 
-  return (
-    <mesh
-      ref={meshRef}
-      position={part.position}
-      rotation={part.rotation}
-      onClick={handleClick}
-      castShadow
-      receiveShadow
-    >
-      {geometry}
-      <meshStandardMaterial
-        color={color}
-        emissive={getEmissiveColor()}
-        emissiveIntensity={getEmissiveIntensity()}
-      />
+  // Check if this part is a door with handle metadata
+  const isDoor = part.cabinetMetadata?.role === 'DOOR';
+  const handleMetadata = part.cabinetMetadata?.handleMetadata;
 
-      {showEdges && (
-        <Edges color={getEdgeColor()} />
+  return (
+    <group position={part.position} rotation={part.rotation}>
+      <mesh
+        ref={meshRef}
+        onClick={handleClick}
+        castShadow
+        receiveShadow
+      >
+        {geometry}
+        <meshStandardMaterial
+          color={color}
+          emissive={getEmissiveColor()}
+          emissiveIntensity={getEmissiveIntensity()}
+        />
+
+        {showEdges && (
+          <Edges color={getEdgeColor()} />
+        )}
+      </mesh>
+
+      {/* Render handle for door parts */}
+      {isDoor && handleMetadata && (
+        <Handle3D handleMetadata={handleMetadata} doorDepth={part.depth} />
       )}
-    </mesh>
+    </group>
   );
 }

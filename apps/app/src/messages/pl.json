@@ -72,7 +72,8 @@
     "duplicateAll": "Powiel wszystkie",
     "deleteAll": "Usuń wszystkie",
     "mixedMaterials": "Różne materiały",
-    "clearSelection": "Odznacz wszystkie"
+    "clearSelection": "Odznacz wszystkie",
+    "applyChanges": "Zastosuj zmiany"
   },
   "PartsTable": {
     "title": "Lista części",
@@ -158,6 +159,7 @@
     "description": "Wybierz kolumny do eksportu i sprawdź podgląd danych.",
     "selectColumns": "Wybierz kolumny",
     "preview": "Podgląd (pierwsze 5 wierszy)",
+    "csvPreview": "Podgląd CSV",
     "noData": "Brak danych do wyświetlenia",
     "showingFirst": "Pokazuję {count} z {total} wierszy",
     "export": "Eksportuj",
@@ -167,6 +169,7 @@
       "group": "Grupa",
       "partId": "ID Części",
       "partName": "Nazwa Części",
+      "friendlyPartId": "Przyjazne ID Części",
       "material": "Materiał",
       "thickness": "Grubość (mm)",
       "length": "Długość X (mm)",

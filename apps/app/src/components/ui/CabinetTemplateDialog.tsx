@@ -22,8 +22,18 @@ import {
 } from '@meble/ui';
 import { useShallow } from 'zustand/react/shallow';
 import { useStore } from '@/lib/store';
-import { CabinetType, CabinetParams, CabinetMaterials, TopBottomPlacement } from '@/types';
-import { CABINET_PRESETS, DEFAULT_BACK_OVERLAP_RATIO } from '@/lib/config';
+import {
+  CabinetType,
+  CabinetParams,
+  CabinetMaterials,
+  TopBottomPlacement,
+  DoorLayout,
+  DoorOpeningDirection,
+  HingeSide,
+  KitchenCabinetParams,
+} from '@/types';
+import { CABINET_PRESETS, DEFAULT_BACK_OVERLAP_RATIO, DEFAULT_DOOR_CONFIG } from '@/lib/config';
+import { HandleSelector } from './HandleSelector';
 import { getDefaultMaterials, getDefaultBackMaterial } from '@/lib/store/utils';
 
 interface CabinetTemplateDialogProps {
@@ -49,6 +59,117 @@ const TemplateCard = ({type, title, description, onClick}: TemplateCardProps) =>
         </CardHeader>
     </Card>
 )
+
+interface DoorConfigSectionProps {
+  params: Partial<CabinetParams>;
+  onChange: (params: Partial<CabinetParams>) => void;
+}
+
+const DoorConfigSection = ({ params, onChange }: DoorConfigSectionProps) => {
+  const kitchenParams = params as Partial<KitchenCabinetParams>;
+  const doorConfig = kitchenParams.doorConfig ?? DEFAULT_DOOR_CONFIG;
+
+  const updateDoorConfig = (updates: Partial<typeof doorConfig>) => {
+    onChange({
+      ...params,
+      doorConfig: { ...doorConfig, ...updates },
+    } as any);
+  };
+
+  return (
+    <div className="border-t pt-4 mt-4">
+      <h4 className="font-medium mb-3 text-sm">Konfiguracja frontów</h4>
+
+      {/* Door layout */}
+      <div className="space-y-2 mb-4">
+        <Label className="text-xs">Układ drzwi</Label>
+        <div className="flex gap-2">
+          <Button
+            variant={doorConfig.layout === 'SINGLE' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => updateDoorConfig({ layout: 'SINGLE' })}
+          >
+            Pojedyncze
+          </Button>
+          <Button
+            variant={doorConfig.layout === 'DOUBLE' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => updateDoorConfig({ layout: 'DOUBLE' })}
+          >
+            Podwójne
+          </Button>
+        </div>
+      </div>
+
+      {/* Opening direction */}
+      <div className="space-y-2 mb-4">
+        <Label className="text-xs">Kierunek otwierania</Label>
+        <div className="flex gap-2">
+          <Button
+            variant={doorConfig.openingDirection === 'HORIZONTAL' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => updateDoorConfig({ openingDirection: 'HORIZONTAL' })}
+          >
+            Na bok
+          </Button>
+          <Button
+            variant={doorConfig.openingDirection === 'LIFT_UP' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => updateDoorConfig({ openingDirection: 'LIFT_UP' })}
+          >
+            Do góry
+          </Button>
+          <Button
+            variant={doorConfig.openingDirection === 'FOLD_DOWN' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => updateDoorConfig({ openingDirection: 'FOLD_DOWN' })}
+          >
+            W dół
+          </Button>
+        </div>
+      </div>
+
+      {/* Hinge side (for single horizontal doors) */}
+      {doorConfig.layout === 'SINGLE' && doorConfig.openingDirection === 'HORIZONTAL' && (
+        <div className="space-y-2 mb-4">
+          <Label className="text-xs">Strona zawiasów</Label>
+          <div className="flex gap-2">
+            <Button
+              variant={doorConfig.hingeSide === 'LEFT' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => updateDoorConfig({ hingeSide: 'LEFT' })}
+            >
+              Lewa
+            </Button>
+            <Button
+              variant={doorConfig.hingeSide === 'RIGHT' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => updateDoorConfig({ hingeSide: 'RIGHT' })}
+            >
+              Prawa
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Handle configuration */}
+      <div className="mt-4">
+        <h4 className="font-medium mb-3 text-sm">Uchwyt</h4>
+        <HandleSelector
+          value={kitchenParams.handleConfig}
+          onChange={(handleConfig) =>
+            onChange({
+              ...params,
+              handleConfig,
+            } as any)
+          }
+          doorWidth={(params.width ?? 800) - 4}
+          doorHeight={(params.height ?? 720) - 4}
+        />
+      </div>
+    </div>
+  );
+};
 
 interface ParameterFormProps {
   type: CabinetType;
@@ -136,6 +257,11 @@ const ParameterForm = ({type, params, onChange}: ParameterFormProps) => {
                         <Label>Drzwi</Label>
                         <Switch checked={getHasDoors()} onCheckedChange={val => updateParams({hasDoors: val} as any)} />
                     </div>
+
+                    {/* Door configuration */}
+                    {getHasDoors() && (
+                        <DoorConfigSection params={params} onChange={onChange} />
+                    )}
                 </>
             )}
             {type === 'WARDROBE' && (
@@ -273,7 +399,7 @@ export function CabinetTemplateDialog({ open, onOpenChange, furnitureId }: Cabin
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Dodaj szafkę</DialogTitle>
         </DialogHeader>

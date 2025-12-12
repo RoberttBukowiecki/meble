@@ -36,7 +36,11 @@ import type {
   CabinetParams,
   CabinetType,
   TopBottomPlacement,
+  KitchenCabinetParams,
+  DoorConfig,
 } from '@/types';
+import { DEFAULT_DOOR_CONFIG } from '@/lib/config';
+import { HandleSelector } from './HandleSelector';
 import {
   Alert,
   AlertDescription,
@@ -54,6 +58,107 @@ import { getCabinetTypeLabel } from '@/lib/cabinetHelpers';
 // ============================================================================
 // Helper Components
 // ============================================================================
+
+interface KitchenDoorConfigSectionProps {
+  params: KitchenCabinetParams;
+  onUpdate: (newParams: Partial<CabinetParams>) => void;
+}
+
+const KitchenDoorConfigSection = ({ params, onUpdate }: KitchenDoorConfigSectionProps) => {
+  const doorConfig = params.doorConfig ?? DEFAULT_DOOR_CONFIG;
+
+  const updateDoorConfig = (updates: Partial<DoorConfig>) => {
+    onUpdate({
+      doorConfig: { ...doorConfig, ...updates },
+    } as any);
+  };
+
+  return (
+    <Accordion type="multiple" defaultValue={['door-config']} className="w-full border-t pt-2 mt-2">
+      <AccordionItem value="door-config" className="border-b-0">
+        <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
+          Konfiguracja frontów
+        </AccordionTrigger>
+        <AccordionContent className="pb-2 pt-0">
+          <div className="space-y-2">
+            {/* Door layout */}
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] text-muted-foreground">Układ</span>
+              <div className="flex gap-1">
+                <Button
+                  variant={doorConfig.layout === 'SINGLE' ? 'default' : 'outline'}
+                  size="sm"
+                  className="h-6 text-[10px] px-2"
+                  onClick={() => updateDoorConfig({ layout: 'SINGLE' })}
+                >
+                  Pojedyncze
+                </Button>
+                <Button
+                  variant={doorConfig.layout === 'DOUBLE' ? 'default' : 'outline'}
+                  size="sm"
+                  className="h-6 text-[10px] px-2"
+                  onClick={() => updateDoorConfig({ layout: 'DOUBLE' })}
+                >
+                  Podwójne
+                </Button>
+              </div>
+            </div>
+
+            {/* Opening direction */}
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] text-muted-foreground">Otwieranie</span>
+              <Select
+                value={doorConfig.openingDirection}
+                onValueChange={(value) => updateDoorConfig({ openingDirection: value as any })}
+              >
+                <SelectTrigger className="h-6 text-[10px] w-24">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="HORIZONTAL">Na bok</SelectItem>
+                  <SelectItem value="LIFT_UP">Do góry</SelectItem>
+                  <SelectItem value="FOLD_DOWN">W dół</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Hinge side (for single horizontal doors) */}
+            {doorConfig.layout === 'SINGLE' && doorConfig.openingDirection === 'HORIZONTAL' && (
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[10px] text-muted-foreground">Zawiasy</span>
+                <div className="flex gap-1">
+                  <Button
+                    variant={doorConfig.hingeSide === 'LEFT' ? 'default' : 'outline'}
+                    size="sm"
+                    className="h-6 text-[10px] px-2"
+                    onClick={() => updateDoorConfig({ hingeSide: 'LEFT' })}
+                  >
+                    Lewa
+                  </Button>
+                  <Button
+                    variant={doorConfig.hingeSide === 'RIGHT' ? 'default' : 'outline'}
+                    size="sm"
+                    className="h-6 text-[10px] px-2"
+                    onClick={() => updateDoorConfig({ hingeSide: 'RIGHT' })}
+                  >
+                    Prawa
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+      {/* Handle configuration */}
+      <HandleSelector
+        value={params.handleConfig}
+        onChange={(handleConfig) => onUpdate({ handleConfig } as any)}
+        doorWidth={(params.width ?? 800) - 4}
+        doorHeight={(params.height ?? 720) - 4}
+      />
+    </Accordion>
+  );
+};
 
 interface CabinetParameterEditorProps {
   type: CabinetType;
@@ -112,9 +217,9 @@ const CabinetParameterEditor = ({ type, params, onChange }: CabinetParameterEdit
     <div className="space-y-2">
       <div className="grid grid-cols-3 gap-1">
         <div>
-          <span className="text-xs text-muted-foreground">{t('width')}</span>
+          <span className="text-[10px] text-muted-foreground">{t('width')}</span>
           <NumberInput
-            className="h-8"
+            className="h-7 text-xs"
             value={localParams.width}
             onChange={(val) => updateParams({ width: val })}
             min={1}
@@ -122,9 +227,9 @@ const CabinetParameterEditor = ({ type, params, onChange }: CabinetParameterEdit
           />
         </div>
         <div>
-          <span className="text-xs text-muted-foreground">{t('height')}</span>
+          <span className="text-[10px] text-muted-foreground">{t('height')}</span>
           <NumberInput
-            className="h-8"
+            className="h-7 text-xs"
             value={localParams.height}
             onChange={(val) => updateParams({ height: val })}
             min={1}
@@ -132,9 +237,9 @@ const CabinetParameterEditor = ({ type, params, onChange }: CabinetParameterEdit
           />
         </div>
         <div>
-          <span className="text-xs text-muted-foreground">{t('depth')}</span>
+          <span className="text-[10px] text-muted-foreground">{t('depth')}</span>
           <NumberInput
-            className="h-8"
+            className="h-7 text-xs"
             value={localParams.depth}
             onChange={(val) => updateParams({ depth: val })}
             min={1}
@@ -143,26 +248,26 @@ const CabinetParameterEditor = ({ type, params, onChange }: CabinetParameterEdit
         </div>
       </div>
       <div>
-        <span className="text-xs text-muted-foreground">{t('topBottomPlacement')}</span>
+        <span className="text-[10px] text-muted-foreground">{t('topBottomPlacement')}</span>
         <Select
           value={localParams.topBottomPlacement}
           onValueChange={(value) =>
             updateParams({ topBottomPlacement: value as TopBottomPlacement } as any)
           }
         >
-          <SelectTrigger className="h-8">
+          <SelectTrigger className="h-7 text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="inset">{t('topBottomPlacementInset')}</SelectItem>
-            <SelectItem value="overlay">{t('topBottomPlacementOverlay')}</SelectItem>
+            <SelectItem value="inset" className="text-xs">{t('topBottomPlacementInset')}</SelectItem>
+            <SelectItem value="overlay" className="text-xs">{t('topBottomPlacementOverlay')}</SelectItem>
           </SelectContent>
         </Select>
       </div>
       {type === 'KITCHEN' && (
         <>
           <div className="flex items-center justify-between gap-2">
-            <span className="text-xs text-muted-foreground whitespace-nowrap">{t('shelvesWithCount', { count: getShelfCount() })}</span>
+            <span className="text-[10px] text-muted-foreground whitespace-nowrap">{t('shelvesWithCount', { count: getShelfCount() })}</span>
             <Slider
               className="w-24"
               value={[getShelfCount()]}
@@ -173,18 +278,27 @@ const CabinetParameterEditor = ({ type, params, onChange }: CabinetParameterEdit
             />
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">{t('doors')}</span>
+            <span className="text-[10px] text-muted-foreground">{t('doors')}</span>
             <Switch
+              className="scale-75"
               checked={getHasDoors()}
               onCheckedChange={(val) => updateParams({ hasDoors: val } as any)}
             />
           </div>
+
+          {/* Door configuration */}
+          {getHasDoors() && (
+            <KitchenDoorConfigSection
+              params={localParams as KitchenCabinetParams}
+              onUpdate={updateParams}
+            />
+          )}
         </>
       )}
       {type === 'WARDROBE' && (
         <>
           <div className="flex items-center justify-between gap-2">
-            <span className="text-xs text-muted-foreground whitespace-nowrap">{t('shelvesWithCount', { count: getShelfCount() })}</span>
+            <span className="text-[10px] text-muted-foreground whitespace-nowrap">{t('shelvesWithCount', { count: getShelfCount() })}</span>
             <Slider
               className="w-24"
               value={[getShelfCount()]}
@@ -195,7 +309,7 @@ const CabinetParameterEditor = ({ type, params, onChange }: CabinetParameterEdit
             />
           </div>
           <div className="flex items-center justify-between gap-2">
-            <span className="text-xs text-muted-foreground whitespace-nowrap">{t('doorsWithCount', { count: getDoorCount() })}</span>
+            <span className="text-[10px] text-muted-foreground whitespace-nowrap">{t('doorsWithCount', { count: getDoorCount() })}</span>
             <Slider
               className="w-24"
               value={[getDoorCount()]}
@@ -210,7 +324,7 @@ const CabinetParameterEditor = ({ type, params, onChange }: CabinetParameterEdit
       {type === 'BOOKSHELF' && (
         <>
           <div className="flex items-center justify-between gap-2">
-            <span className="text-xs text-muted-foreground whitespace-nowrap">{t('shelvesWithCount', { count: getShelfCount() })}</span>
+            <span className="text-[10px] text-muted-foreground whitespace-nowrap">{t('shelvesWithCount', { count: getShelfCount() })}</span>
             <Slider
               className="w-24"
               value={[getShelfCount()]}
@@ -221,8 +335,9 @@ const CabinetParameterEditor = ({ type, params, onChange }: CabinetParameterEdit
             />
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">{t('backPanel')}</span>
+            <span className="text-[10px] text-muted-foreground">{t('backPanel')}</span>
             <Switch
+              className="scale-75"
               checked={getHasBack()}
               onCheckedChange={(val) => updateParams({ hasBack: val } as any)}
             />
@@ -231,7 +346,7 @@ const CabinetParameterEditor = ({ type, params, onChange }: CabinetParameterEdit
       )}
       {type === 'DRAWER' && (
         <div className="flex items-center justify-between gap-2">
-          <span className="text-xs text-muted-foreground whitespace-nowrap">{t('drawersWithCount', { count: getDrawerCount() })}</span>
+          <span className="text-[10px] text-muted-foreground whitespace-nowrap">{t('drawersWithCount', { count: getDrawerCount() })}</span>
           <Slider
             className="w-24"
             value={[getDrawerCount()]}
@@ -477,7 +592,7 @@ export function PropertiesPanel() {
         <div className="mb-2">
           <span className="text-xs font-medium text-muted-foreground">{t('cabinetName')}</span>
           <Input
-            className="h-8 mt-0.5"
+            className="h-7 text-xs mt-0.5"
             value={selectedCabinet.name}
             onChange={(e) =>
               updateCabinet(selectedCabinet.id, { name: e.target.value })

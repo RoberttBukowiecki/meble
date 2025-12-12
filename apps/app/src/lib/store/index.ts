@@ -11,7 +11,7 @@ import { createUISlice } from './slices/uiSlice';
 import { createSnapSlice } from './slices/snapSlice';
 import { HISTORY_MAX_LENGTH, HISTORY_MAX_MILESTONES } from './history/constants';
 import { MATERIAL_IDS, INITIAL_MATERIALS } from './constants';
-import { DEFAULT_BACK_OVERLAP_RATIO } from '../config';
+import { DEFAULT_BACK_OVERLAP_RATIO, DEFAULT_DOOR_CONFIG } from '../config';
 import type { StoreState } from './types';
 
 export const useStore = create<StoreState>()(
@@ -29,7 +29,7 @@ export const useStore = create<StoreState>()(
     }),
     {
       name: 'meblarz-storage',
-      version: 4,
+      version: 5,
       migrate: (persistedState: any, version: number) => {
         // Migrate from version 1 to 2
         if (version === 1) {
@@ -92,6 +92,25 @@ export const useStore = create<StoreState>()(
                 backMaterialId: cabinet.materials.backMaterialId ?? MATERIAL_IDS.HDF_BIALY,
               },
             }));
+          }
+        }
+
+        // Migrate from version 4 to 5 (add door configuration)
+        if (version < 5) {
+          // Add default doorConfig to existing kitchen cabinets with doors
+          if (persistedState.cabinets) {
+            persistedState.cabinets = persistedState.cabinets.map((cabinet: any) => {
+              if (cabinet.params?.type === 'KITCHEN' && cabinet.params?.hasDoors && !cabinet.params.doorConfig) {
+                return {
+                  ...cabinet,
+                  params: {
+                    ...cabinet.params,
+                    doorConfig: DEFAULT_DOOR_CONFIG,
+                  },
+                };
+              }
+              return cabinet;
+            });
           }
         }
 

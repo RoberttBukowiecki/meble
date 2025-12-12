@@ -3,7 +3,7 @@
  * Centralized keyboard shortcuts and settings
  */
 
-import { CabinetParams, CabinetType } from "@/types";
+import { CabinetParams, CabinetType, DoorConfig } from "@/types";
 
 // Utility types/helpers for keyboard shortcuts
 export type ShortcutKeys = string | string[];
@@ -128,6 +128,13 @@ export const PART_CONFIG = {
 // Default back panel overlap ratio (2/3 of body material thickness)
 export const DEFAULT_BACK_OVERLAP_RATIO = 0.667;
 
+// Default door configuration
+export const DEFAULT_DOOR_CONFIG: DoorConfig = {
+  layout: 'DOUBLE',
+  openingDirection: 'HORIZONTAL',
+  hingeSide: 'LEFT', // For single doors
+};
+
 export const CABINET_PRESETS: Record<CabinetType, Partial<CabinetParams>> = {
   KITCHEN: {
     type: 'KITCHEN',
@@ -140,6 +147,7 @@ export const CABINET_PRESETS: Record<CabinetType, Partial<CabinetParams>> = {
     hasBack: true,
     backOverlapRatio: DEFAULT_BACK_OVERLAP_RATIO,
     backMountType: 'overlap',
+    doorConfig: DEFAULT_DOOR_CONFIG,
   },
   WARDROBE: {
     type: 'WARDROBE',

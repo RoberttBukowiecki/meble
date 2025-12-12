@@ -37,6 +37,23 @@ export const AVAILABLE_COLUMNS: CSVColumn[] = [
     accessor: (part) => part.name,
   },
   {
+    id: 'friendly_part_id',
+    label: 'friendlyPartId',
+    accessor: (part, _, furnitures) => {
+      const furnitureName =
+        furnitures.find((f) => f.id === part.furnitureId)?.name || 'unknown';
+      // simple slugify
+      const slugify = (str: string) =>
+        str
+          .toLowerCase()
+          .trim()
+          .replace(/[^\w\s-]/g, '')
+          .replace(/[\s_-]+/g, '-')
+          .replace(/^-+|-+$/g, '');
+      return `${slugify(furnitureName)}-${slugify(part.name)}`;
+    },
+  },
+  {
     id: 'material',
     label: 'material',
     accessor: (part, materials) =>
@@ -73,8 +90,7 @@ export const AVAILABLE_COLUMNS: CSVColumn[] = [
 export const DEFAULT_COLUMNS = AVAILABLE_COLUMNS.filter((col) =>
   [
     'furniture',
-    'group',
-    'part_id',
+    'friendly_part_id',
     'part_name',
     'material',
     'thickness_mm',

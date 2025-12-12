@@ -50,13 +50,15 @@ export function roundPosition(pos: [number, number, number]): [number, number, n
 }
 
 /**
- * Round rotation tuple to 2 decimal places (only values with more than 2 decimals)
+ * Round rotation tuple to 4 decimal places to preserve precision for standard angles.
+ * Radians require higher precision than positions because values like PI/2 (90°)
+ * are ~1.5708, and 2 decimal places would cause visible drift (e.g., -89.95° instead of -90°).
  */
 export function roundRotation(rot: [number, number, number]): [number, number, number] {
   return [
-    roundToDecimals(rot[0]),
-    roundToDecimals(rot[1]),
-    roundToDecimals(rot[2]),
+    roundToDecimals(rot[0], 4),
+    roundToDecimals(rot[1], 4),
+    roundToDecimals(rot[2], 4),
   ];
 }
 

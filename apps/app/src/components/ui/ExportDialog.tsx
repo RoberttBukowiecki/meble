@@ -17,7 +17,12 @@ import {
   Label,
 } from '@meble/ui';
 import { useStore } from '@/lib/store';
-import { AVAILABLE_COLUMNS, generateCSV, downloadCSV, DEFAULT_COLUMNS } from '@/lib/csv';
+import {
+  AVAILABLE_COLUMNS,
+  generateCSV,
+  downloadCSV,
+  DEFAULT_COLUMNS,
+} from '@/lib/csv';
 import { Download } from 'lucide-react';
 
 interface ExportDialogProps {
@@ -47,6 +52,10 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
     return parts.slice(0, 5);
   }, [parts]);
 
+  const csvPreviewContent = useMemo(() => {
+    return generateCSV(parts, materials, furnitures, selectedColumns);
+  }, [parts, materials, furnitures, selectedColumns]);
+
   const handleExport = () => {
     const csv = generateCSV(parts, materials, furnitures, selectedColumns);
     const timestamp = new Date().toISOString().split('T')[0];
@@ -75,7 +84,10 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                     onChange={() => toggleColumn(col.id)}
                     className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                   />
-                  <Label htmlFor={`col-${col.id}`} className="cursor-pointer text-sm">
+                  <Label
+                    htmlFor={`col-${col.id}`}
+                    className="cursor-pointer text-sm"
+                  >
                     {t(`columns.${col.label}`)}
                   </Label>
                 </div>
@@ -90,7 +102,9 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                 <TableHeader>
                   <TableRow>
                     {selectedColumns.map((col) => (
-                      <TableHead key={col.id}>{t(`columns.${col.label}`)}</TableHead>
+                      <TableHead key={col.id}>
+                        {t(`columns.${col.label}`)}
+                      </TableHead>
                     ))}
                   </TableRow>
                 </TableHeader>
@@ -123,13 +137,26 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
               </p>
             )}
           </div>
+
+          <div className="space-y-4">
+            <h3 className="text-sm font-medium">{t('csvPreview')}</h3>
+            <textarea
+              readOnly
+              value={csvPreviewContent}
+              className="h-48 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 font-mono text-xs"
+              placeholder={t('noData')}
+            />
+          </div>
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {t('cancel')}
           </Button>
-          <Button onClick={handleExport} disabled={parts.length === 0 || selectedColumns.length === 0}>
+          <Button
+            onClick={handleExport}
+            disabled={parts.length === 0 || selectedColumns.length === 0}
+          >
             <Download className="mr-2 h-4 w-4" />
             {t('export')}
           </Button>
