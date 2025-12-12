@@ -213,7 +213,7 @@ const CabinetParameterEditor = ({ type, params, onChange }: CabinetParameterEdit
   };
 
   const getDrawerCount = (): number => {
-    if ('drawerCount' in localParams) return localParams.drawerCount;
+    if ('drawerCount' in localParams && localParams.drawerCount !== undefined) return localParams.drawerCount;
     return 2;
   };
 
