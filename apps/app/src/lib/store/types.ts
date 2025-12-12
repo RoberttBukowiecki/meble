@@ -2,8 +2,9 @@ import type { StateCreator } from 'zustand';
 import type { ProjectState, HistoryEntry, HistoryEntryType, TransformMode } from '@/types';
 import type { UISlice } from './slices/uiSlice';
 import type { SnapSlice } from './slices/snapSlice';
+import type { DimensionSlice } from './slices/dimensionSlice';
 
-export type StoreState = ProjectState & HistorySlice & UISlice & SnapSlice;
+export type StoreState = ProjectState & HistorySlice & UISlice & SnapSlice & DimensionSlice;
 export type StoreMutators = [['zustand/persist', unknown]];
 export type StoreSlice<T> = StateCreator<StoreState, StoreMutators, [], T>;
 

@@ -25,7 +25,7 @@ import {
   SelectValue,
 } from '@meble/ui';
 import { Switch } from '@meble/ui';
-import { Trash2, Copy, AlertCircle } from 'lucide-react';
+import { Trash2, Copy, AlertCircle, PanelLeftDashed } from 'lucide-react';
 import type {
   ShapeParamsRect,
   EdgeBandingRect,
@@ -40,10 +40,13 @@ import type {
   DrawerCabinetParams,
   DoorConfig,
   DrawerSlideType,
+  SideFrontsConfig,
 } from '@/types';
 import { DEFAULT_DOOR_CONFIG, DRAWER_SLIDE_PRESETS } from '@/lib/config';
 import { HandleSelector } from './HandleSelector';
+import { SideFrontsConfigDialog } from './SideFrontsConfigDialog';
 import { generateHandleMetadata, DoorType } from '@/lib/handlePresets';
+import { hasSideFronts, getSideFrontsSummary } from '@/lib/cabinetGenerators';
 import type { HandleConfig } from '@/types';
 import {
   Alert,
@@ -58,379 +61,86 @@ import {
 } from '@meble/ui';
 
 import { getCabinetTypeLabel } from '@/lib/cabinetHelpers';
+import { DimensionsConfig } from './DimensionsConfig';
+import { AssemblyConfig } from './AssemblyConfig';
+import { BackWallConfig } from './BackWallConfig';
+import { ShelvesConfig } from './ShelvesConfig';
+import { FrontsConfig } from './FrontsConfig';
+import { HandlesConfig } from './HandlesConfig';
+import { Ruler, Settings, Rows, DoorClosed, Wrench, Scaling, Grip } from 'lucide-react';
 
 // ============================================================================
-// Helper Components
+// Side Fronts Section
 // ============================================================================
 
-interface KitchenDoorConfigSectionProps {
-  params: KitchenCabinetParams;
-  onUpdate: (newParams: Partial<CabinetParams>) => void;
-}
-
-const KitchenDoorConfigSection = ({ params, onUpdate }: KitchenDoorConfigSectionProps) => {
-  const doorConfig = params.doorConfig ?? DEFAULT_DOOR_CONFIG;
-
-  const updateDoorConfig = (updates: Partial<DoorConfig>) => {
-    onUpdate({
-      doorConfig: { ...doorConfig, ...updates },
-    } as any);
-  };
-
-  return (
-    <Accordion type="multiple" defaultValue={['door-config']} className="w-full border-t pt-2 mt-2">
-      <AccordionItem value="door-config" className="border-b-0">
-        <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
-          Konfiguracja frontów
-        </AccordionTrigger>
-        <AccordionContent className="pb-2 pt-0">
-          <div className="space-y-2">
-            {/* Door layout */}
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-[10px] text-muted-foreground">Układ</span>
-              <div className="flex gap-1">
-                <Button
-                  variant={doorConfig.layout === 'SINGLE' ? 'default' : 'outline'}
-                  size="sm"
-                  className="h-6 text-[10px] px-2"
-                  onClick={() => updateDoorConfig({ layout: 'SINGLE' })}
-                >
-                  Pojedyncze
-                </Button>
-                <Button
-                  variant={doorConfig.layout === 'DOUBLE' ? 'default' : 'outline'}
-                  size="sm"
-                  className="h-6 text-[10px] px-2"
-                  onClick={() => updateDoorConfig({ layout: 'DOUBLE' })}
-                >
-                  Podwójne
-                </Button>
-              </div>
-            </div>
-
-            {/* Opening direction */}
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-[10px] text-muted-foreground">Otwieranie</span>
-              <Select
-                value={doorConfig.openingDirection}
-                onValueChange={(value) => updateDoorConfig({ openingDirection: value as any })}
-              >
-                <SelectTrigger className="h-6 text-[10px] w-24">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="HORIZONTAL">Na bok</SelectItem>
-                  <SelectItem value="LIFT_UP">Do góry</SelectItem>
-                  <SelectItem value="FOLD_DOWN">W dół</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Hinge side (for single horizontal doors) */}
-            {doorConfig.layout === 'SINGLE' && doorConfig.openingDirection === 'HORIZONTAL' && (
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[10px] text-muted-foreground">Zawiasy</span>
-                <div className="flex gap-1">
-                  <Button
-                    variant={doorConfig.hingeSide === 'LEFT' ? 'default' : 'outline'}
-                    size="sm"
-                    className="h-6 text-[10px] px-2"
-                    onClick={() => updateDoorConfig({ hingeSide: 'LEFT' })}
-                  >
-                    Lewa
-                  </Button>
-                  <Button
-                    variant={doorConfig.hingeSide === 'RIGHT' ? 'default' : 'outline'}
-                    size="sm"
-                    className="h-6 text-[10px] px-2"
-                    onClick={() => updateDoorConfig({ hingeSide: 'RIGHT' })}
-                  >
-                    Prawa
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-        </AccordionContent>
-      </AccordionItem>
-      {/* Handle configuration */}
-      <HandleSelector
-        value={params.handleConfig}
-        onChange={(handleConfig) => onUpdate({ handleConfig } as any)}
-        doorWidth={(params.width ?? 800) - 4}
-        doorHeight={(params.height ?? 720) - 4}
-      />
-    </Accordion>
-  );
-};
-
-interface CabinetParameterEditorProps {
-  type: CabinetType;
+interface SideFrontsSectionProps {
+  cabinetId: string;
   params: CabinetParams;
-  onChange: (params: CabinetParams) => void;
+  materials: { id: string; name: string; thickness: number; category?: string }[];
+  defaultFrontMaterialId: string;
+  onUpdateParams: (params: CabinetParams) => void;
 }
 
-const CabinetParameterEditor = ({ type, params, onChange }: CabinetParameterEditorProps) => {
-  const t = useTranslations('PropertiesPanel');
-  const [localParams, setLocalParams] = React.useState(params);
-  const [hasChanges, setHasChanges] = React.useState(false);
+const SideFrontsSection = ({
+  cabinetId,
+  params,
+  materials,
+  defaultFrontMaterialId,
+  onUpdateParams,
+}: SideFrontsSectionProps) => {
+  const [dialogOpen, setDialogOpen] = React.useState(false);
+  const sideFrontsConfig = params.sideFronts;
+  const hasConfig = hasSideFronts(sideFrontsConfig);
+  const summary = getSideFrontsSummary(sideFrontsConfig);
 
-  // Update local params when external params change
-  React.useEffect(() => {
-    setLocalParams(params);
-    setHasChanges(false);
-  }, [params]);
-
-  const updateParams = (newParams: Partial<CabinetParams>) => {
-    setLocalParams(prev => ({ ...prev, ...newParams } as CabinetParams));
-    setHasChanges(true);
-  };
-
-  const handleApply = () => {
-    onChange(localParams);
-    setHasChanges(false);
-  };
-
-  // Type-safe accessors for discriminated union properties
-  const getShelfCount = (): number => {
-    if ('shelfCount' in localParams) return localParams.shelfCount;
-    return 0;
-  };
-
-  const getDoorCount = (): number => {
-    if ('doorCount' in localParams) return localParams.doorCount;
-    return 1;
-  };
-
-  const getHasDoors = (): boolean => {
-    if ('hasDoors' in localParams) return localParams.hasDoors;
-    return false;
-  };
-
-  const getHasBack = (): boolean => {
-    if ('hasBack' in localParams) return localParams.hasBack;
-    return false;
-  };
-
-  const getDrawerCount = (): number => {
-    if ('drawerCount' in localParams && localParams.drawerCount !== undefined) return localParams.drawerCount;
-    return 2;
-  };
-
-  const getDrawerSlideType = (): DrawerSlideType => {
-    if ('drawerSlideType' in localParams && localParams.drawerSlideType) return localParams.drawerSlideType;
-    return 'SIDE_MOUNT';
-  };
-
-  const getHasInternalDrawers = (): boolean => {
-    if ('hasInternalDrawers' in localParams && localParams.hasInternalDrawers !== undefined) return localParams.hasInternalDrawers;
-    return false;
-  };
-
-  // Drawer slide type labels
-  const DRAWER_SLIDE_LABELS: Record<DrawerSlideType, string> = {
-    SIDE_MOUNT: 'Boczne (13mm)',
-    UNDERMOUNT: 'Podszufladowe (21mm)',
-    BOTTOM_MOUNT: 'Dolne (13mm)',
-    CENTER_MOUNT: 'Centralne (0mm)',
+  const handleConfigChange = (config: SideFrontsConfig) => {
+    onUpdateParams({ ...params, sideFronts: config });
   };
 
   return (
-    <div className="space-y-2">
-      <div className="grid grid-cols-3 gap-1">
-        <div>
-          <span className="text-[10px] text-muted-foreground">{t('width')}</span>
-          <NumberInput
-            className="h-7 text-xs"
-            value={localParams.width}
-            onChange={(val) => updateParams({ width: val })}
-            min={1}
-            allowNegative={false}
-          />
-        </div>
-        <div>
-          <span className="text-[10px] text-muted-foreground">{t('height')}</span>
-          <NumberInput
-            className="h-7 text-xs"
-            value={localParams.height}
-            onChange={(val) => updateParams({ height: val })}
-            min={1}
-            allowNegative={false}
-          />
-        </div>
-        <div>
-          <span className="text-[10px] text-muted-foreground">{t('depth')}</span>
-          <NumberInput
-            className="h-7 text-xs"
-            value={localParams.depth}
-            onChange={(val) => updateParams({ depth: val })}
-            min={1}
-            allowNegative={false}
-          />
-        </div>
-      </div>
-      <div>
-        <span className="text-[10px] text-muted-foreground">{t('topBottomPlacement')}</span>
-        <Select
-          value={localParams.topBottomPlacement}
-          onValueChange={(value) =>
-            updateParams({ topBottomPlacement: value as TopBottomPlacement } as any)
-          }
-        >
-          <SelectTrigger className="h-7 text-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="inset" className="text-xs">{t('topBottomPlacementInset')}</SelectItem>
-            <SelectItem value="overlay" className="text-xs">{t('topBottomPlacementOverlay')}</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      {type === 'KITCHEN' && (
-        <>
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-[10px] text-muted-foreground whitespace-nowrap">{t('shelvesWithCount', { count: getShelfCount() })}</span>
-            <Slider
-              className="w-24"
-              value={[getShelfCount()]}
-              onValueChange={([val]) => updateParams({ shelfCount: val } as any)}
-              min={0}
-              max={5}
-              step={1}
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] text-muted-foreground">{t('doors')}</span>
-            <Switch
-              className="scale-75"
-              checked={getHasDoors()}
-              onCheckedChange={(val) => updateParams({ hasDoors: val } as any)}
-            />
-          </div>
-
-          {/* Door configuration */}
-          {getHasDoors() && (
-            <KitchenDoorConfigSection
-              params={localParams as KitchenCabinetParams}
-              onUpdate={updateParams}
-            />
+    <AccordionItem value="sidefronts" className="border-b-0">
+      <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
+        <div className="flex items-center gap-2">
+          <PanelLeftDashed className="h-3 w-3" />
+          Fronty boczne
+          {hasConfig && (
+            <Badge variant="secondary" className="text-[10px] px-1 py-0">
+              {summary}
+            </Badge>
           )}
-        </>
-      )}
-      {type === 'WARDROBE' && (
-        <>
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-[10px] text-muted-foreground whitespace-nowrap">{t('shelvesWithCount', { count: getShelfCount() })}</span>
-            <Slider
-              className="w-24"
-              value={[getShelfCount()]}
-              onValueChange={([val]) => updateParams({ shelfCount: val } as any)}
-              min={0}
-              max={10}
-              step={1}
-            />
-          </div>
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-[10px] text-muted-foreground whitespace-nowrap">{t('doorsWithCount', { count: getDoorCount() })}</span>
-            <Slider
-              className="w-24"
-              value={[getDoorCount()]}
-              onValueChange={([val]) => updateParams({ doorCount: val } as any)}
-              min={1}
-              max={4}
-              step={1}
-            />
-          </div>
-        </>
-      )}
-      {type === 'BOOKSHELF' && (
-        <>
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-[10px] text-muted-foreground whitespace-nowrap">{t('shelvesWithCount', { count: getShelfCount() })}</span>
-            <Slider
-              className="w-24"
-              value={[getShelfCount()]}
-              onValueChange={([val]) => updateParams({ shelfCount: val } as any)}
-              min={1}
-              max={10}
-              step={1}
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] text-muted-foreground">{t('backPanel')}</span>
-            <Switch
-              className="scale-75"
-              checked={getHasBack()}
-              onCheckedChange={(val) => updateParams({ hasBack: val } as any)}
-            />
-          </div>
-        </>
-      )}
-      {type === 'DRAWER' && (
-        <>
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-[10px] text-muted-foreground whitespace-nowrap">{t('drawersWithCount', { count: getDrawerCount() })}</span>
-            <Slider
-              className="w-24"
-              value={[getDrawerCount()]}
-              onValueChange={([val]) => updateParams({ drawerCount: val } as any)}
-              min={1}
-              max={8}
-              step={1}
-            />
-          </div>
-          <div>
-            <span className="text-[10px] text-muted-foreground">{t('slideType')}</span>
-            <Select
-              value={getDrawerSlideType()}
-              onValueChange={(value) =>
-                updateParams({ drawerSlideType: value as DrawerSlideType } as any)
-              }
-            >
-              <SelectTrigger className="h-7 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {(Object.keys(DRAWER_SLIDE_PRESETS) as DrawerSlideType[]).map((slideType) => (
-                  <SelectItem key={slideType} value={slideType} className="text-xs">
-                    {DRAWER_SLIDE_LABELS[slideType]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] text-muted-foreground">{t('internalDrawers')}</span>
-            <Switch
-              className="scale-75"
-              checked={getHasInternalDrawers()}
-              onCheckedChange={(val) => updateParams({ hasInternalDrawers: val } as any)}
-            />
-          </div>
-          {/* Handle configuration for drawer fronts */}
-          {!getHasInternalDrawers() && (
-            <div className="border-t pt-2 mt-2">
-              <HandleSelector
-                value={(localParams as DrawerCabinetParams).handleConfig}
-                onChange={(handleConfig) => updateParams({ handleConfig } as any)}
-                doorWidth={(localParams.width ?? 600) - 40}
-                doorHeight={((localParams.height ?? 800) - 36) / getDrawerCount() - 3}
-              />
-            </div>
-          )}
-        </>
-      )}
+        </div>
+      </AccordionTrigger>
+      <AccordionContent className="pb-2 pt-0">
+        <div className="space-y-2">
+          <p className="text-[10px] text-muted-foreground">
+            {hasConfig
+              ? `Skonfigurowane: ${summary}`
+              : 'Brak skonfigurowanych frontów bocznych'}
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full h-7 text-xs"
+            onClick={() => setDialogOpen(true)}
+          >
+            <PanelLeftDashed className="h-3 w-3 mr-2" />
+            Konfiguruj fronty boczne
+          </Button>
+        </div>
 
-      {/* Apply button */}
-      {hasChanges && (
-        <Button onClick={handleApply} size="sm" className="w-full">
-          {t('applyChanges')}
-        </Button>
-      )}
-    </div>
+        <SideFrontsConfigDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          config={sideFrontsConfig}
+          onConfigChange={handleConfigChange}
+          materials={materials as any}
+          defaultFrontMaterialId={defaultFrontMaterialId}
+          cabinetHeight={params.height}
+        />
+      </AccordionContent>
+    </AccordionItem>
   );
 };
-
 
 // ============================================================================
 // Main Panel Component
@@ -577,12 +287,26 @@ export function PropertiesPanel() {
 
   if (selectedCabinet) {
     // ================= Render Cabinet Mode =================
-    const handleParamsChange = (id: string, newParams: CabinetParams) => {
-      if (window.confirm(t('parametersConfirm'))) {
-        updateCabinetParams(id, newParams);
-      }
-    };
+    const [localParams, setLocalParams] = React.useState(selectedCabinet.params);
+    const [hasChanges, setHasChanges] = React.useState(false);
 
+    React.useEffect(() => {
+        setLocalParams(selectedCabinet.params);
+        setHasChanges(false);
+    }, [selectedCabinet.params]);
+
+    const updateLocalParams = (newParams: Partial<CabinetParams>) => {
+        setLocalParams(prev => ({ ...prev, ...newParams }) as CabinetParams);
+        setHasChanges(true);
+    }
+
+    const handleApplyChanges = () => {
+        if (window.confirm(t('parametersConfirm'))) {
+            updateCabinetParams(selectedCabinet.id, localParams);
+            setHasChanges(false);
+        }
+    };
+    
     const handleDeleteCabinet = () => {
       if (window.confirm(t('deleteCabinetConfirm', { name: selectedCabinet.name }))) {
         removeCabinet(selectedCabinet.id);
@@ -625,7 +349,7 @@ export function PropertiesPanel() {
     };
 
     return (
-      <div className="p-2">
+      <div className="p-2 flex flex-col h-full">
         {/* Cabinet header */}
         <div className="flex items-center justify-between mb-2">
           <Badge variant="outline" className="text-xs">
@@ -663,152 +387,234 @@ export function PropertiesPanel() {
           />
         </div>
 
-        <Accordion type="multiple" defaultValue={[]} className="w-full">
-          {/* Parameters */}
-          <AccordionItem value="params" className="border-b-0">
-            <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
-              <div className="flex items-center gap-1">
-                {t('parameters')}
-                <AlertCircle className="h-3 w-3 text-amber-500" />
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="pb-2 pt-0">
-              <p className="text-[10px] text-muted-foreground mb-2">{t('parametersWarning')}</p>
-              <CabinetParameterEditor
-                type={selectedCabinet.type}
-                params={selectedCabinet.params}
-                onChange={(newParams) => handleParamsChange(selectedCabinet.id, newParams)}
+        {/* Hide fronts toggle */}
+        <div className="flex items-center justify-between mb-2 py-1">
+          <span className="text-xs text-muted-foreground">Ukryj fronty</span>
+          <Switch
+            className="scale-75"
+            checked={selectedCabinet.hideFronts ?? false}
+            onCheckedChange={(checked) =>
+              updateCabinet(selectedCabinet.id, { hideFronts: checked })
+            }
+          />
+        </div>
+        
+        <div className='flex-grow overflow-y-auto'>
+            <Accordion type="multiple" defaultValue={['dimensions']} className="w-full">
+                <AccordionItem value="dimensions" className="border-b-0">
+                    <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
+                        <div className="flex items-center gap-2">
+                            <Ruler className="h-3 w-3" />
+                            Wymiary
+                        </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-4 pt-2 bg-muted/20 border-t">
+                        <DimensionsConfig params={localParams} onChange={updateLocalParams} />
+                    </AccordionContent>
+                </AccordionItem>
+                
+                <AccordionItem value="assembly" className="border-b-0">
+                    <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
+                        <div className="flex items-center gap-2">
+                            <Settings className="h-3 w-3" />
+                            Montaż
+                        </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-4 pt-2 space-y-4 bg-muted/20 border-t">
+                        <AssemblyConfig params={localParams} onChange={updateLocalParams} />
+                        <BackWallConfig params={localParams} onChange={updateLocalParams} />
+                    </AccordionContent>
+                </AccordionItem>
+
+                {selectedCabinet.type === 'KITCHEN' && (
+                    <>
+                        <AccordionItem value="shelves" className="border-b-0">
+                            <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
+                                <div className="flex items-center gap-2">
+                                    <Rows className="h-3 w-3" />
+                                    Półki
+                                </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="pb-4 pt-2 bg-muted/20 border-t">
+                                <ShelvesConfig params={localParams} onChange={updateLocalParams} maxShelves={5}/>
+                            </AccordionContent>
+                        </AccordionItem>
+                        <AccordionItem value="fronts" className="border-b-0">
+                            <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
+                                <div className="flex items-center gap-2">
+                                    <DoorClosed className="h-3 w-3" />
+                                    Fronty
+                                </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="pb-4 pt-2 bg-muted/20 border-t">
+                                <FrontsConfig params={localParams} onChange={updateLocalParams} />
+                            </AccordionContent>
+                        </AccordionItem>
+                        <AccordionItem value="handles" className="border-b-0">
+                            <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
+                                <div className="flex items-center gap-2">
+                                    <Grip className="h-3 w-3" />
+                                    Uchwyty
+                                </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="pb-4 pt-2 bg-muted/20 border-t">
+                                <HandlesConfig params={localParams} onChange={updateLocalParams} />
+                            </AccordionContent>
+                        </AccordionItem>
+                    </>
+                )}
+
+              {/* Side Fronts */}
+              <SideFrontsSection
+                cabinetId={selectedCabinet.id}
+                params={localParams}
+                materials={materials}
+                defaultFrontMaterialId={selectedCabinet.materials.frontMaterialId}
+                onUpdateParams={updateLocalParams}
               />
-            </AccordionContent>
-          </AccordionItem>
-
-          {/* Transform (Position & Rotation) */}
-          <AccordionItem value="transform" className="border-b-0">
-            <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
-              {t('transform')}
-            </AccordionTrigger>
-            <AccordionContent className="pb-2 pt-0">
-              <div className="space-y-2">
-                <div>
-                  <span className="text-[10px] text-muted-foreground">{t('position')}</span>
-                  <div className="grid grid-cols-3 gap-1">
+              
+              {/* Materials */}
+              <AccordionItem value="materials" className="border-b-0">
+                <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
+                  <div className="flex items-center gap-2">
+                      <Wrench className="h-3 w-3" />
+                      Materiały
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pb-4 pt-2 bg-muted/20 border-t">
+                  <div className="space-y-2">
                     <div>
-                      <span className="text-[10px] text-muted-foreground">X</span>
-                      <NumberInput
-                        className="h-7 text-xs"
-                        value={cabinetCenter[0]}
-                        onChange={(val) => handleCabinetPositionUpdate(0, val)}
-                      />
+                      <span className="text-[10px] text-muted-foreground">{t('bodyMaterial')}</span>
+                      <Select
+                        value={selectedCabinet.materials.bodyMaterialId}
+                        onValueChange={(id) =>
+                          updateCabinet(selectedCabinet.id, {
+                            materials: { ...selectedCabinet.materials, bodyMaterialId: id },
+                          })
+                        }
+                      >
+                        <SelectTrigger className="h-7 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {materials.map((m) => (
+                            <SelectItem key={m.id} value={m.id}>
+                              {m.name} ({m.thickness}mm)
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div>
-                      <span className="text-[10px] text-muted-foreground">Y</span>
-                      <NumberInput
-                        className="h-7 text-xs"
-                        value={cabinetCenter[1]}
-                        onChange={(val) => handleCabinetPositionUpdate(1, val)}
-                      />
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-muted-foreground">Z</span>
-                      <NumberInput
-                        className="h-7 text-xs"
-                        value={cabinetCenter[2]}
-                        onChange={(val) => handleCabinetPositionUpdate(2, val)}
-                      />
+                      <span className="text-[10px] text-muted-foreground">{t('frontMaterial')}</span>
+                      <Select
+                        value={selectedCabinet.materials.frontMaterialId}
+                        onValueChange={(id) =>
+                          updateCabinet(selectedCabinet.id, {
+                            materials: { ...selectedCabinet.materials, frontMaterialId: id },
+                          })
+                        }
+                      >
+                        <SelectTrigger className="h-7 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {materials.map((m) => (
+                            <SelectItem key={m.id} value={m.id}>
+                              {m.name} ({m.thickness}mm)
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
-                </div>
-                <div>
-                  <span className="text-[10px] text-muted-foreground">{t('rotation')}</span>
-                  <div className="grid grid-cols-3 gap-1">
+                </AccordionContent>
+              </AccordionItem>
+              
+              {/* Transform (Position & Rotation) */}
+              <AccordionItem value="transform" className="border-b-0">
+                <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
+                  <div className="flex items-center gap-2">
+                        <Scaling className="h-3 w-3" />
+                        {t('transform')}
+                    </div>
+                </AccordionTrigger>
+                <AccordionContent className="pb-4 pt-2 bg-muted/20 border-t">
+                  <div className="space-y-2">
                     <div>
-                      <span className="text-[10px] text-muted-foreground">X</span>
-                      <NumberInput
-                        className="h-7 text-xs"
-                        value={cabinetRotationDegrees[0]}
-                        onChange={(val) => handleCabinetRotationUpdate(0, val)}
-                        allowDecimals
-                      />
+                      <span className="text-[10px] text-muted-foreground">{t('position')}</span>
+                      <div className="grid grid-cols-3 gap-1">
+                        <div>
+                          <span className="text-[10px] text-muted-foreground">X</span>
+                          <NumberInput
+                            className="h-7 text-xs"
+                            value={cabinetCenter[0]}
+                            onChange={(val) => handleCabinetPositionUpdate(0, val)}
+                          />
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-muted-foreground">Y</span>
+                          <NumberInput
+                            className="h-7 text-xs"
+                            value={cabinetCenter[1]}
+                            onChange={(val) => handleCabinetPositionUpdate(1, val)}
+                          />
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-muted-foreground">Z</span>
+                          <NumberInput
+                            className="h-7 text-xs"
+                            value={cabinetCenter[2]}
+                            onChange={(val) => handleCabinetPositionUpdate(2, val)}
+                          />
+                        </div>
+                      </div>
                     </div>
                     <div>
-                      <span className="text-[10px] text-muted-foreground">Y</span>
-                      <NumberInput
-                        className="h-7 text-xs"
-                        value={cabinetRotationDegrees[1]}
-                        onChange={(val) => handleCabinetRotationUpdate(1, val)}
-                        allowDecimals
-                      />
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-muted-foreground">Z</span>
-                      <NumberInput
-                        className="h-7 text-xs"
-                        value={cabinetRotationDegrees[2]}
-                        onChange={(val) => handleCabinetRotationUpdate(2, val)}
-                        allowDecimals
-                      />
+                      <span className="text-[10px] text-muted-foreground">{t('rotation')}</span>
+                      <div className="grid grid-cols-3 gap-1">
+                        <div>
+                          <span className="text-[10px] text-muted-foreground">X</span>
+                          <NumberInput
+                            className="h-7 text-xs"
+                            value={cabinetRotationDegrees[0]}
+                            onChange={(val) => handleCabinetRotationUpdate(0, val)}
+                            allowDecimals
+                          />
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-muted-foreground">Y</span>
+                          <NumberInput
+                            className="h-7 text-xs"
+                            value={cabinetRotationDegrees[1]}
+                            onChange={(val) => handleCabinetRotationUpdate(1, val)}
+                            allowDecimals
+                          />
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-muted-foreground">Z</span>
+                          <NumberInput
+                            className="h-7 text-xs"
+                            value={cabinetRotationDegrees[2]}
+                            onChange={(val) => handleCabinetRotationUpdate(2, val)}
+                            allowDecimals
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
+                </AccordionContent>
+              </AccordionItem>
 
-          {/* Materials */}
-          <AccordionItem value="materials" className="border-b-0">
-            <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
-              {t('materials')}
-            </AccordionTrigger>
-            <AccordionContent className="pb-2 pt-0">
-              <div className="space-y-2">
-                <div>
-                  <span className="text-[10px] text-muted-foreground">{t('bodyMaterial')}</span>
-                  <Select
-                    value={selectedCabinet.materials.bodyMaterialId}
-                    onValueChange={(id) =>
-                      updateCabinet(selectedCabinet.id, {
-                        materials: { ...selectedCabinet.materials, bodyMaterialId: id },
-                      })
-                    }
-                  >
-                    <SelectTrigger className="h-7 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {materials.map((m) => (
-                        <SelectItem key={m.id} value={m.id}>
-                          {m.name} ({m.thickness}mm)
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <span className="text-[10px] text-muted-foreground">{t('frontMaterial')}</span>
-                  <Select
-                    value={selectedCabinet.materials.frontMaterialId}
-                    onValueChange={(id) =>
-                      updateCabinet(selectedCabinet.id, {
-                        materials: { ...selectedCabinet.materials, frontMaterialId: id },
-                      })
-                    }
-                  >
-                    <SelectTrigger className="h-7 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {materials.map((m) => (
-                        <SelectItem key={m.id} value={m.id}>
-                          {m.name} ({m.thickness}mm)
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
+            </Accordion>
+        </div>
+        {hasChanges && (
+            <div className="mt-auto pt-2">
+                <Button onClick={handleApplyChanges} size="sm" className="w-full">
+                    Zastosuj zmiany
+                </Button>
+            </div>
+        )}
       </div>
     );
   }

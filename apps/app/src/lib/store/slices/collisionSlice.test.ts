@@ -14,8 +14,8 @@ type CollisionTestState = CollisionSlice & {
 };
 
 const createCollisionStore = () =>
-  create<CollisionTestState>()((set, get) => ({
-    ...createCollisionSlice(set as unknown as any, get as unknown as any),
+  create<CollisionTestState>()((set, get, api) => ({
+    ...createCollisionSlice(set as unknown as any, get as unknown as any, api as unknown as any),
     parts: [],
     selectedFurnitureId: 'f-1',
   }));

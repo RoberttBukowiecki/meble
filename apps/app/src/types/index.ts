@@ -288,7 +288,7 @@ export interface ProjectState {
     skipHistory?: boolean
   ) => void;
   renameCabinet: (id: string, name: string, skipHistory?: boolean) => void;
-  updateCabinetParams: (id: string, params: CabinetParams, skipHistory?: boolean) => void;
+  updateCabinetParams: (id: string, params: CabinetParams, skipHistory?: boolean, centerOffset?: [number, number, number]) => void;
   updateCabinetTransform: (
     id: string,
     transform: {
@@ -490,11 +490,15 @@ export interface CabinetBaseParams {
   hasBack: boolean;           // Whether to add back panel
   backOverlapRatio: number;   // How much back panel overlaps onto body edges (0-1, default 2/3)
   backMountType: BackMountType; // How back panel is mounted (default 'overlap')
-  // Optional drawer configuration (available for all cabinet types)
+  // Zone-based drawer configuration (new system)
+  drawerConfig?: DrawerConfiguration;
+  // Legacy drawer configuration (for backward compatibility)
   drawerCount?: number; // Number of drawers (0 = no drawers)
   drawerSlideType?: DrawerSlideType; // Type of drawer slides
   hasInternalDrawers?: boolean; // If true, no drawer fronts (for use behind doors)
   drawerHandleConfig?: HandleConfig; // Handle configuration for drawer fronts
+  // Side front panels (decorative end panels)
+  sideFronts?: SideFrontsConfig; // Optional side fronts configuration
 }
 
 /**
@@ -545,17 +549,103 @@ export interface DrawerSlideConfig {
   depthOffset: number; // mm - how much shorter drawer is than cabinet depth
 }
 
+// ============================================================================
+// Drawer Zone System (for drawer-in-drawer support)
+// ============================================================================
+
+/**
+ * Front configuration for a drawer zone
+ */
+export interface DrawerZoneFront {
+  /** Handle configuration for this front */
+  handleConfig?: HandleConfig;
+}
+
+/**
+ * A drawer box within a zone
+ */
+export interface DrawerZoneBox {
+  /** Height ratio within the zone (for multiple boxes) */
+  heightRatio: number;
+}
+
+/**
+ * A drawer zone represents a vertical section of the cabinet
+ * that can have one decorative front covering multiple internal boxes
+ */
+export interface DrawerZone {
+  id: string;
+  /** Height ratio relative to other zones (default: 1) */
+  heightRatio: number;
+  /** Decorative front configuration (null = internal zone, no visible front) */
+  front: DrawerZoneFront | null;
+  /** Drawer boxes within this zone (can be multiple for drawer-in-drawer) */
+  boxes: DrawerZoneBox[];
+}
+
+/**
+ * Complete drawer configuration using zone-based system
+ */
+export interface DrawerConfiguration {
+  zones: DrawerZone[];
+  slideType: DrawerSlideType;
+  /** Default handle config (can be overridden per zone) */
+  defaultHandleConfig?: HandleConfig;
+}
+
+// ============================================================================
+// Side Front Panel Types
+// ============================================================================
+
+/**
+ * Configuration for a single side front panel (decorative end panel)
+ */
+export interface SideFrontConfig {
+  enabled: boolean;
+
+  /** Material ID for this side front (defaults to cabinet.materials.frontMaterialId) */
+  materialId?: string;
+
+  /** How far the side front extends beyond the cabinet front face (mm) */
+  forwardProtrusion: number;
+
+  /** Distance from cabinet bottom to start of side front (mm) */
+  bottomOffset: number;
+
+  /** Distance from cabinet top to end of side front (mm) */
+  topOffset: number;
+}
+
+/**
+ * Configuration for both side fronts
+ */
+export interface SideFrontsConfig {
+  left: SideFrontConfig | null;  // null = disabled
+  right: SideFrontConfig | null; // null = disabled
+}
+
+/**
+ * Default side front configuration
+ */
+export const DEFAULT_SIDE_FRONT_CONFIG: SideFrontConfig = {
+  enabled: true,
+  materialId: undefined, // Uses frontMaterialId
+  forwardProtrusion: 0,  // 0 means use front material thickness as default
+  bottomOffset: 0,
+  topOffset: 0,
+};
+
 /**
  * Drawer cabinet specific parameters
  */
 export interface DrawerCabinetParams extends CabinetBaseParams {
   type: 'DRAWER';
-  drawerCount: number; // Number of drawers (1-8)
-  drawerSlideType: DrawerSlideType; // Type of drawer slides
-  hasInternalDrawers: boolean; // If true, no drawer fronts (for cabinets with doors)
-  drawerHeights?: number[]; // Optional custom heights per drawer (mm)
+  drawerCount: number; // Number of drawers (1-8) - legacy, use drawerConfig instead
+  drawerSlideType: DrawerSlideType; // Type of drawer slides - legacy
+  hasInternalDrawers: boolean; // If true, no drawer fronts - legacy
+  drawerHeights?: number[]; // Optional custom heights per drawer (mm) - legacy
   bottomMaterialId?: string; // Optional separate material for drawer bottoms (thinner)
-  handleConfig?: HandleConfig; // Handle configuration for drawer fronts
+  handleConfig?: HandleConfig; // Handle configuration for drawer fronts - legacy
 }
 
 /**
@@ -582,6 +672,8 @@ export interface Cabinet {
   partIds: string[];  // Array of part IDs that belong to this cabinet
   createdAt: Date;
   updatedAt: Date;
+  /** Visual-only: hide fronts (doors, drawer fronts) in 3D view */
+  hideFronts?: boolean;
 }
 
 /**
@@ -597,11 +689,14 @@ export type CabinetPartRole =
   | 'SHELF'
   | 'DOOR'
   | 'DRAWER_FRONT'
+  | 'DRAWER_BOX_FRONT' // Front wall of drawer box (body material) - for internal drawers
   | 'DRAWER_SIDE'
   | 'DRAWER_SIDE_LEFT'
   | 'DRAWER_SIDE_RIGHT'
   | 'DRAWER_BACK'
-  | 'DRAWER_BOTTOM';
+  | 'DRAWER_BOTTOM'
+  | 'SIDE_FRONT_LEFT'   // Decorative side panel on left
+  | 'SIDE_FRONT_RIGHT'; // Decorative side panel on right
 
 /**
  * Extended metadata for parts that belong to cabinets
@@ -851,4 +946,106 @@ export interface ResizeResult {
   snapPoints: SnapPoint[];
   collision: boolean;
   collisionPartIds: string[];
+}
+
+// ============================================================================
+// Cabinet Resize
+// ============================================================================
+
+/**
+ * Cabinet resize handle type - 6 faces of bounding box
+ */
+export type CabinetResizeHandle =
+  | 'width+'   // +X face (right)
+  | 'width-'   // -X face (left)
+  | 'height+'  // +Y face (top)
+  | 'height-'  // -Y face (bottom)
+  | 'depth+'   // +Z face (front)
+  | 'depth-';  // -Z face (back)
+
+/**
+ * Bounding box for cabinet resize calculations
+ */
+export interface CabinetBoundingBox {
+  min: [number, number, number];
+  max: [number, number, number];
+  center: [number, number, number];
+  size: [number, number, number];
+}
+
+/**
+ * Preview transform for a single part during cabinet resize
+ */
+export interface CabinetPartPreview {
+  position: [number, number, number];
+  rotation: [number, number, number];
+  width: number;
+  height: number;
+  depth: number;
+}
+
+/**
+ * Initial transform data captured at drag start
+ */
+export interface CabinetPartInitialTransform {
+  position: [number, number, number];
+  rotation: [number, number, number];
+  dimensions: [number, number, number];
+}
+
+/**
+ * Result of cabinet resize calculation
+ */
+export interface CabinetResizeResult {
+  /** New cabinet dimensions */
+  newSize: [number, number, number];
+  /** Preview transforms for each part (proportionally scaled) */
+  partPreviews: Map<string, CabinetPartPreview>;
+  /** New bounding box for dimension display */
+  boundingBox: CabinetBoundingBox;
+}
+
+// ============================================================================
+// Transform Dimensions Display
+// ============================================================================
+
+/**
+ * Axis-aligned bounding box for dimension calculations
+ */
+export interface DimensionBoundingBox {
+  min: [number, number, number];
+  max: [number, number, number];
+  center: [number, number, number];
+  groupId: string; // Cabinet ID, manual group ID, or part ID
+  groupType: 'cabinet' | 'group' | 'part';
+}
+
+/**
+ * Dimension line for visualization during transform
+ */
+export interface DimensionLine {
+  id: string;
+  axis: 'X' | 'Y' | 'Z';
+  /** Start point (on moving object's face) */
+  startPoint: [number, number, number];
+  /** End point (on target object's face) */
+  endPoint: [number, number, number];
+  /** Distance in mm */
+  distance: number;
+  /** ID of target cabinet/group/part */
+  targetId: string;
+}
+
+/**
+ * Settings for dimension display during transform
+ */
+export interface DimensionSettings {
+  /** Enable/disable dimension display */
+  enabled: boolean;
+  /** Maximum number of dimensions to show per axis */
+  maxVisiblePerAxis: number;
+  /** Hide dimensions beyond this distance (mm) */
+  maxDistanceThreshold: number;
+  /** Use different colors per axis */
+  showAxisColors: boolean;
 }

@@ -97,12 +97,19 @@ function HandleMesh({
     return [euler.x, euler.y, euler.z] as [number, number, number];
   }, [normal]);
 
-  // Handle color based on state
+  // Handle color based on state - using config colors
   const color = useMemo(() => {
-    if (hasCollision) return 'hsl(0, 70%, 50%)'; // Red for collision
-    if (isDragging) return 'hsl(var(--accent))';
-    if (isHovered) return 'hsl(var(--primary))';
-    return 'hsl(var(--muted-foreground))';
+    if (hasCollision) return PART_CONFIG.COLLISION_EMISSIVE_COLOR;
+    if (isDragging) return PART_CONFIG.RESIZE_HANDLE_ACTIVE_COLOR;
+    if (isHovered) return PART_CONFIG.RESIZE_HANDLE_HOVER_COLOR;
+    return PART_CONFIG.RESIZE_HANDLE_COLOR;
+  }, [isDragging, isHovered, hasCollision]);
+
+  const emissiveIntensity = useMemo(() => {
+    if (hasCollision) return PART_CONFIG.COLLISION_EMISSIVE_INTENSITY;
+    if (isDragging) return PART_CONFIG.RESIZE_HANDLE_ACTIVE_EMISSIVE_INTENSITY;
+    if (isHovered) return PART_CONFIG.RESIZE_HANDLE_HOVER_EMISSIVE_INTENSITY;
+    return PART_CONFIG.RESIZE_HANDLE_EMISSIVE_INTENSITY;
   }, [isDragging, isHovered, hasCollision]);
 
   const scale = isHovered || isDragging ? 1.2 : 1;
@@ -124,8 +131,8 @@ function HandleMesh({
         <boxGeometry args={[HANDLE_SIZE, 5, HANDLE_SIZE]} />
         <meshStandardMaterial
           color={color}
-          emissive={isDragging || isHovered ? color : 'black'}
-          emissiveIntensity={isDragging ? 0.3 : isHovered ? 0.2 : 0}
+          emissive={color}
+          emissiveIntensity={emissiveIntensity}
         />
       </mesh>
     </group>

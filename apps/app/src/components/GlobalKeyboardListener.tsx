@@ -162,8 +162,72 @@ export function GlobalKeyboardListener() {
 
       if (matchesShortcut(KEYBOARD_SHORTCUTS.TOGGLE_GRID, key)) {
         event.preventDefault();
-        // Dispatch custom event for grid toggle
-        window.dispatchEvent(new CustomEvent('keyboard:toggleGrid'));
+        useStore.getState().toggleGrid();
+        return;
+      }
+
+      // ============================================================================
+      // Visibility shortcuts (H, Ctrl+H)
+      // ============================================================================
+
+      // Ctrl+H = Toggle cabinet front visibility (hideFronts)
+      if (isMod && matchesShortcut(KEYBOARD_SHORTCUTS.TOGGLE_HIDE_FRONTS, key)) {
+        event.preventDefault();
+        const state = useStore.getState();
+
+        // If cabinet is selected, toggle its hideFronts
+        if (state.selectedCabinetId) {
+          const cabinet = state.cabinets.find((c) => c.id === state.selectedCabinetId);
+          if (cabinet) {
+            state.updateCabinet(cabinet.id, { hideFronts: !cabinet.hideFronts });
+          }
+          return;
+        }
+
+        // If part is selected and belongs to a cabinet, toggle that cabinet's hideFronts
+        if (state.selectedPartId) {
+          const part = state.parts.find((p) => p.id === state.selectedPartId);
+          if (part?.cabinetMetadata?.cabinetId) {
+            const cabinet = state.cabinets.find((c) => c.id === part.cabinetMetadata?.cabinetId);
+            if (cabinet) {
+              state.updateCabinet(cabinet.id, { hideFronts: !cabinet.hideFronts });
+            }
+          }
+        }
+        return;
+      }
+
+      // H = Hide/show selected parts (without Ctrl/Cmd)
+      if (!isMod && matchesShortcut(KEYBOARD_SHORTCUTS.HIDE_SELECTED, key)) {
+        event.preventDefault();
+        const state = useStore.getState();
+        const partIdsToToggle: string[] = [];
+
+        // Collect all part IDs to toggle
+        if (state.selectedCabinetId) {
+          // Cabinet selected - toggle all its parts
+          const cabinet = state.cabinets.find((c) => c.id === state.selectedCabinetId);
+          if (cabinet) {
+            partIdsToToggle.push(...cabinet.partIds);
+          }
+        } else if (state.selectedPartIds.size > 0) {
+          // Multiple parts selected
+          partIdsToToggle.push(...Array.from(state.selectedPartIds));
+        } else if (state.selectedPartId) {
+          // Single part - check if it has a group
+          const part = state.parts.find((p) => p.id === state.selectedPartId);
+          if (part?.group) {
+            // Toggle all parts in the same group
+            const groupParts = state.parts.filter((p) => p.group === part.group);
+            partIdsToToggle.push(...groupParts.map((p) => p.id));
+          } else {
+            partIdsToToggle.push(state.selectedPartId);
+          }
+        }
+
+        if (partIdsToToggle.length > 0) {
+          state.togglePartsHidden(partIdsToToggle);
+        }
         return;
       }
     };

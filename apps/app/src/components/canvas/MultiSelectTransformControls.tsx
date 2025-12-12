@@ -16,7 +16,10 @@ import * as THREE from 'three';
 import { Part } from '@/types';
 import { SCENE_CONFIG, PART_CONFIG, MATERIAL_CONFIG } from '@/lib/config';
 import { useSnapContext } from '@/lib/snap-context';
+import { useDimensionContext } from '@/lib/dimension-context';
 import { calculateSnapSimple, calculateCabinetBounds } from '@/lib/snapping';
+import { calculateDimensions } from '@/lib/dimension-calculator';
+import { getMultiselectBoundingBoxWithOffset, getOtherBoundingBoxes } from '@/lib/bounding-box-utils';
 import type { TransformControls as TransformControlsImpl } from 'three-stdlib';
 
 type PartTransform = Pick<Part, 'position' | 'rotation'>;
@@ -68,12 +71,16 @@ export function MultiSelectTransformControls({
   onTransformEnd,
 }: MultiSelectTransformControlsProps) {
   const { setSnapPoints, clearSnapPoints } = useSnapContext();
+  const { setDimensionLines, clearDimensionLines, setActiveAxis } = useDimensionContext();
 
   // Get selected parts
   const selectedParts = useSelectedParts();
 
   // Get all parts for snap calculations
   const allParts = useStore((state) => state.parts);
+
+  // Get all cabinets for dimension calculations
+  const allCabinets = useStore((state) => state.cabinets);
 
   const {
     updatePartsBatch,
@@ -86,6 +93,7 @@ export function MultiSelectTransformControls({
     detectCollisions,
     snapEnabled,
     snapSettings,
+    dimensionSettings,
   } = useStore(
     useShallow((state) => ({
       updatePartsBatch: state.updatePartsBatch,
@@ -98,6 +106,7 @@ export function MultiSelectTransformControls({
       detectCollisions: state.detectCollisions,
       snapEnabled: state.snapEnabled,
       snapSettings: state.snapSettings,
+      dimensionSettings: state.dimensionSettings,
     }))
   );
 
@@ -153,44 +162,80 @@ export function MultiSelectTransformControls({
     pivotPoint = pivotPoint.add(groupTranslation);
 
     // Apply snap for translate mode (only on the dragged axis)
-    if (mode === 'translate' && snapEnabled) {
+    if (mode === 'translate') {
       const axis = getDragAxis();
 
       if (axis) {
-        const selectionBounds = calculateCabinetBounds(parts);
-        if (selectionBounds) {
-          // Update bounds position based on group translation
-          selectionBounds.position = [
-            selectionBounds.position[0] + groupTranslation.x,
-            selectionBounds.position[1] + groupTranslation.y,
-            selectionBounds.position[2] + groupTranslation.z,
+        if (snapEnabled) {
+          const selectionBounds = calculateCabinetBounds(parts);
+          if (selectionBounds) {
+            // Update bounds position based on group translation
+            selectionBounds.position = [
+              selectionBounds.position[0] + groupTranslation.x,
+              selectionBounds.position[1] + groupTranslation.y,
+              selectionBounds.position[2] + groupTranslation.z,
+            ];
+
+            // Exclude selected parts from snap targets
+            const selectedIds = new Set(parts.map(p => p.id));
+            const otherParts = allParts.filter(p => !selectedIds.has(p.id));
+
+            const snapResult = calculateSnapSimple(
+              selectionBounds,
+              selectionBounds.position,
+              otherParts,
+              snapSettings,
+              axis
+            );
+
+            if (snapResult.snapped && snapResult.snapPoints.length > 0) {
+              // Apply snap offset ONLY on the drag axis
+              const axisIndex = axis === 'X' ? 0 : axis === 'Y' ? 1 : 2;
+              const snapOffset = snapResult.position[axisIndex] - selectionBounds.position[axisIndex];
+
+              if (axisIndex === 0) pivotPoint.x += snapOffset;
+              else if (axisIndex === 1) pivotPoint.y += snapOffset;
+              else pivotPoint.z += snapOffset;
+
+              group.position.copy(pivotPoint);
+              setSnapPoints(snapResult.snapPoints);
+            } else {
+              clearSnapPoints();
+            }
+          }
+        }
+
+        // Calculate dimension lines
+        if (dimensionSettings.enabled) {
+          setActiveAxis(axis);
+
+          const offset: [number, number, number] = [
+            pivotPoint.x - initialSelectionCenter.current.x,
+            pivotPoint.y - initialSelectionCenter.current.y,
+            pivotPoint.z - initialSelectionCenter.current.z,
           ];
 
-          // Exclude selected parts from snap targets
-          const selectedIds = new Set(parts.map(p => p.id));
-          const otherParts = allParts.filter(p => !selectedIds.has(p.id));
+          const movingBounds = getMultiselectBoundingBoxWithOffset(selectedPartIds, allParts, offset);
 
-          const snapResult = calculateSnapSimple(
-            selectionBounds,
-            selectionBounds.position,
-            otherParts,
-            snapSettings,
-            axis
-          );
+          if (movingBounds) {
+            const excludePartIds = selectedPartIds;
+            const excludeCabinetIds = new Set<string>();
 
-          if (snapResult.snapped && snapResult.snapPoints.length > 0) {
-            // Apply snap offset ONLY on the drag axis
-            const axisIndex = axis === 'X' ? 0 : axis === 'Y' ? 1 : 2;
-            const snapOffset = snapResult.position[axisIndex] - selectionBounds.position[axisIndex];
+            const otherBounds = getOtherBoundingBoxes(
+              excludePartIds,
+              excludeCabinetIds,
+              allParts,
+              allCabinets
+            );
 
-            if (axisIndex === 0) pivotPoint.x += snapOffset;
-            else if (axisIndex === 1) pivotPoint.y += snapOffset;
-            else pivotPoint.z += snapOffset;
+            const dimensions = calculateDimensions(
+              movingBounds,
+              otherBounds,
+              axis,
+              dimensionSettings
+            );
 
-            group.position.copy(pivotPoint);
-            setSnapPoints(snapResult.snapPoints);
-          } else {
-            clearSnapPoints();
+            setDimensionLines(dimensions);
           }
         }
       }
@@ -217,7 +262,7 @@ export function MultiSelectTransformControls({
     // Update preview ref and trigger re-render
     previewTransformsRef.current = newTransforms;
     setPreviewVersion(v => v + 1);
-  }, [parts, target, mode, snapEnabled, snapSettings, allParts, setSnapPoints, clearSnapPoints, getDragAxis]);
+  }, [parts, target, mode, snapEnabled, snapSettings, dimensionSettings, allParts, allCabinets, selectedPartIds, setSnapPoints, clearSnapPoints, setDimensionLines, setActiveAxis, getDragAxis]);
 
   const handleTransformStart = useCallback(() => {
     if (!target) return;
@@ -287,6 +332,7 @@ export function MultiSelectTransformControls({
     }
 
     clearSnapPoints();
+    clearDimensionLines();
 
     // Get final transforms from preview ref
     const updates: Array<{ id: string; patch: Partial<Part> }> = [];
@@ -320,7 +366,7 @@ export function MultiSelectTransformControls({
     setIsTransforming(false);
     onTransformEnd();
     detectCollisions();
-  }, [target, updatePartsBatch, commitBatch, selectionCenter, setIsTransforming, setTransformingPartIds, onTransformEnd, detectCollisions, clearSnapPoints]);
+  }, [target, updatePartsBatch, commitBatch, selectionCenter, setIsTransforming, setTransformingPartIds, onTransformEnd, detectCollisions, clearSnapPoints, clearDimensionLines]);
 
   // Handle change during drag
   const handleChange = useCallback(() => {

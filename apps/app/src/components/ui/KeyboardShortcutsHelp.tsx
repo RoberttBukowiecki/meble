@@ -19,10 +19,46 @@ import { KEYBOARD_SHORTCUTS, formatShortcutLabel, type ShortcutKeys } from '@/li
 const withMod = (shortcut: ShortcutKeys) =>
   `CTRL/CMD + ${formatShortcutLabel(shortcut)}`;
 
+interface ShortcutItem {
+  key: string;
+  description: string;
+}
+
+interface ShortcutSectionData {
+  category: string;
+  items: ShortcutItem[];
+}
+
+function ShortcutSection({ section }: { section: ShortcutSectionData }) {
+  return (
+    <div>
+      <h3 className="mb-2 text-sm font-semibold text-foreground">
+        {section.category}
+      </h3>
+      <div className="space-y-1.5">
+        {section.items.map((item) => (
+          <div
+            key={item.key}
+            className="flex items-center justify-between gap-2 rounded-md bg-muted p-2"
+          >
+            <span className="text-sm text-muted-foreground">
+              {item.description}
+            </span>
+            <kbd className="shrink-0 rounded bg-background px-2 py-1 text-xs font-semibold text-foreground shadow-sm">
+              {item.key}
+            </kbd>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function KeyboardShortcutsHelp() {
   const [open, setOpen] = useState(false);
 
-  const shortcuts = [
+  // Left column: Selection and editing
+  const leftColumn = [
     {
       category: 'Zaznaczanie',
       items: [
@@ -37,9 +73,20 @@ export function KeyboardShortcutsHelp() {
       items: [
         { key: withMod('z'), description: 'Cofnij ostatnią akcję' },
         { key: `CTRL/CMD + SHIFT + ${formatShortcutLabel('z')}`, description: 'Przywróć cofniętą akcję' },
-        { key: withMod('y'), description: 'Przywróć cofniętą akcję (alternatywa)' },
+        { key: withMod('y'), description: 'Przywróć (alternatywa)' },
       ],
     },
+    {
+      category: 'Części',
+      items: [
+        { key: withMod(KEYBOARD_SHORTCUTS.DUPLICATE_PART), description: 'Duplikuj zaznaczone' },
+        { key: formatShortcutLabel(KEYBOARD_SHORTCUTS.DELETE_PART), description: 'Usuń zaznaczone' },
+      ],
+    },
+  ];
+
+  // Right column: Transform, view, visibility
+  const rightColumn = [
     {
       category: 'Tryby transformacji',
       items: [
@@ -50,16 +97,17 @@ export function KeyboardShortcutsHelp() {
       ],
     },
     {
-      category: 'Kamera',
+      category: 'Widok',
       items: [
         { key: formatShortcutLabel(KEYBOARD_SHORTCUTS.RESET_CAMERA), description: 'Reset widoku kamery' },
+        { key: formatShortcutLabel(KEYBOARD_SHORTCUTS.TOGGLE_GRID), description: 'Pokaż/ukryj siatkę' },
       ],
     },
     {
-      category: 'Części',
+      category: 'Widoczność',
       items: [
-        { key: withMod(KEYBOARD_SHORTCUTS.DUPLICATE_PART), description: 'Duplikuj zaznaczoną część' },
-        { key: formatShortcutLabel(KEYBOARD_SHORTCUTS.DELETE_PART), description: 'Usuń zaznaczoną część' },
+        { key: formatShortcutLabel(KEYBOARD_SHORTCUTS.HIDE_SELECTED), description: 'Ukryj/pokaż zaznaczone' },
+        { key: withMod(KEYBOARD_SHORTCUTS.TOGGLE_HIDE_FRONTS), description: 'Ukryj/pokaż fronty' },
       ],
     },
   ];
@@ -77,7 +125,7 @@ export function KeyboardShortcutsHelp() {
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>Skróty klawiszowe</DialogTitle>
             <DialogDescription>
@@ -85,29 +133,22 @@ export function KeyboardShortcutsHelp() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
-            {shortcuts.map((section) => (
-              <div key={section.category}>
-                <h3 className="mb-2 text-sm font-semibold text-foreground">
-                  {section.category}
-                </h3>
-                <div className="space-y-2">
-                  {section.items.map((item) => (
-                    <div
-                      key={item.key}
-                      className="flex items-center justify-between rounded-md bg-muted p-2"
-                    >
-                      <span className="text-sm text-muted-foreground">
-                        {item.description}
-                      </span>
-                      <kbd className="rounded bg-background px-2 py-1 text-xs font-semibold text-foreground shadow-sm">
-                        {item.key}
-                      </kbd>
-                    </div>
-                  ))}
-                </div>
+          <div className="max-h-[60vh] overflow-y-auto pr-2">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              {/* Left column */}
+              <div className="space-y-4">
+                {leftColumn.map((section) => (
+                  <ShortcutSection key={section.category} section={section} />
+                ))}
               </div>
-            ))}
+
+              {/* Right column */}
+              <div className="space-y-4">
+                {rightColumn.map((section) => (
+                  <ShortcutSection key={section.category} section={section} />
+                ))}
+              </div>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

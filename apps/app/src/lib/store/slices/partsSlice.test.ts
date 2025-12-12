@@ -46,14 +46,14 @@ const createBasePart = (overrides: Partial<Part> = {}): Part => ({
 });
 
 const createPartsStore = (initial: Partial<PartsTestState> = {}) =>
-  create<PartsTestState>()((set, get) => ({
+  create<PartsTestState>()((set, get, api) => ({
     materials: baseMaterials,
     pushEntry: jest.fn(),
     detectCollisions: jest.fn(),
     selectedPartId: null,
     selectedFurnitureId: 'f1',
     cabinets: [],
-    ...createPartsSlice(set as unknown as any, get as unknown as any),
+    ...createPartsSlice(set as unknown as any, get as unknown as any, api as unknown as any),
     ...initial,
   }));
 

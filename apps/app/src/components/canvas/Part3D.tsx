@@ -11,7 +11,7 @@ import { Mesh } from 'three';
 import { ThreeEvent } from '@react-three/fiber';
 import { Edges } from '@react-three/drei';
 import { useShallow } from 'zustand/react/shallow';
-import { useMaterial, useStore } from '@/lib/store';
+import { useMaterial, useStore, useIsPartHidden } from '@/lib/store';
 import { PART_CONFIG, MATERIAL_CONFIG } from '@/lib/config';
 import type { Part } from '@/types';
 import { isPartColliding, isGroupColliding, getGroupId } from '@/lib/collisionDetection';
@@ -66,11 +66,23 @@ export function Part3D({ part }: Part3DProps) {
 
   const material = useMaterial(part.materialId);
 
+  // PERFORMANCE: Use optimized selector - only re-renders when THIS part's hidden status changes
+  const isManuallyHidden = useIsPartHidden(part.id);
+
   // Hide this part when it or its cabinet is being transformed (preview mesh is shown instead)
   const isBeingTransformed =
     transformingPartId === part.id ||
     transformingPartIds.has(part.id) ||
     (transformingCabinetId !== null && part.cabinetMetadata?.cabinetId === transformingCabinetId);
+
+  // Check if this part should be hidden (front parts when cabinet.hideFronts is true)
+  const isFrontPart =
+    part.cabinetMetadata?.role === 'DOOR' ||
+    part.cabinetMetadata?.role === 'DRAWER_FRONT' ||
+    part.cabinetMetadata?.role === 'SIDE_FRONT_LEFT' ||
+    part.cabinetMetadata?.role === 'SIDE_FRONT_RIGHT';
+  const parentCabinet = part.cabinetMetadata ? cabinets.find(c => c.id === part.cabinetMetadata?.cabinetId) : null;
+  const shouldHideFront = isFrontPart && parentCabinet?.hideFronts === true;
 
   // Selection states
   const isPartSelected = selectedPartIds.has(part.id);
@@ -161,8 +173,11 @@ export function Part3D({ part }: Part3DProps) {
     }
   }, [part.shapeType, part.width, part.height, part.depth, part.shapeParams]);
 
-  // Hide this part when it or its cabinet is being transformed (preview mesh is shown instead)
-  if (isBeingTransformed) {
+  // Hide this part when:
+  // - Being transformed (preview mesh is shown instead)
+  // - Front parts when cabinet.hideFronts is enabled
+  // - Manually hidden via H shortcut
+  if (isBeingTransformed || shouldHideFront || isManuallyHidden) {
     return null;
   }
 

@@ -16,7 +16,10 @@ import * as THREE from 'three';
 import { Part } from '@/types';
 import { SCENE_CONFIG, PART_CONFIG, MATERIAL_CONFIG } from '@/lib/config';
 import { useSnapContext } from '@/lib/snap-context';
+import { useDimensionContext } from '@/lib/dimension-context';
 import { calculateCabinetBounds, calculateSnapSimple } from '@/lib/snapping';
+import { calculateDimensions } from '@/lib/dimension-calculator';
+import { getCabinetBoundingBoxWithOffset, getOtherBoundingBoxes } from '@/lib/bounding-box-utils';
 import type { TransformControls as TransformControlsImpl } from 'three-stdlib';
 
 type PartTransform = Pick<Part, 'position' | 'rotation'>;
@@ -58,6 +61,7 @@ function PreviewPartMesh({ part, previewPosition, previewRotation }: PreviewPart
 
 export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
   const { setSnapPoints, clearSnapPoints } = useSnapContext();
+  const { setDimensionLines, clearDimensionLines, setActiveAxis } = useDimensionContext();
 
   // Get cabinet parts using useShallow
   const cabinetParts = useStore(
@@ -68,6 +72,9 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
 
   // Get all parts for snap calculations
   const allParts = useStore((state) => state.parts);
+
+  // Get all cabinets for dimension calculations
+  const allCabinets = useStore((state) => state.cabinets);
 
   const {
     updatePartsBatch,
@@ -80,6 +87,7 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
     detectCollisions,
     snapEnabled,
     snapSettings,
+    dimensionSettings,
   } = useStore(
     useShallow((state) => ({
       updatePartsBatch: state.updatePartsBatch,
@@ -92,6 +100,7 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
       detectCollisions: state.detectCollisions,
       snapEnabled: state.snapEnabled,
       snapSettings: state.snapSettings,
+      dimensionSettings: state.dimensionSettings,
     }))
   );
 
@@ -148,44 +157,80 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
     pivotPoint = pivotPoint.add(groupTranslation);
 
     // Apply snap for translate mode (only on the dragged axis)
-    if (transformMode === 'translate' && snapEnabled) {
+    if (transformMode === 'translate') {
       const axis = getDragAxis();
 
       if (axis) {
-        const cabinetBounds = calculateCabinetBounds(parts);
-        if (cabinetBounds) {
-          // Update bounds position based on group translation
-          cabinetBounds.position = [
-            cabinetBounds.position[0] + groupTranslation.x,
-            cabinetBounds.position[1] + groupTranslation.y,
-            cabinetBounds.position[2] + groupTranslation.z,
+        if (snapEnabled) {
+          const cabinetBounds = calculateCabinetBounds(parts);
+          if (cabinetBounds) {
+            // Update bounds position based on group translation
+            cabinetBounds.position = [
+              cabinetBounds.position[0] + groupTranslation.x,
+              cabinetBounds.position[1] + groupTranslation.y,
+              cabinetBounds.position[2] + groupTranslation.z,
+            ];
+
+            const otherParts = allParts.filter(
+              (p) => p.cabinetMetadata?.cabinetId !== cabinetId
+            );
+
+            const snapResult = calculateSnapSimple(
+              cabinetBounds,
+              cabinetBounds.position,
+              otherParts,
+              snapSettings,
+              axis
+            );
+
+            if (snapResult.snapped && snapResult.snapPoints.length > 0) {
+              // Apply snap offset ONLY on the drag axis
+              const axisIndex = axis === 'X' ? 0 : axis === 'Y' ? 1 : 2;
+              const snapOffset = snapResult.position[axisIndex] - cabinetBounds.position[axisIndex];
+
+              if (axisIndex === 0) pivotPoint.x += snapOffset;
+              else if (axisIndex === 1) pivotPoint.y += snapOffset;
+              else pivotPoint.z += snapOffset;
+
+              group.position.copy(pivotPoint);
+              setSnapPoints(snapResult.snapPoints);
+            } else {
+              clearSnapPoints();
+            }
+          }
+        }
+
+        // Calculate dimension lines
+        if (dimensionSettings.enabled) {
+          setActiveAxis(axis);
+
+          const offset: [number, number, number] = [
+            pivotPoint.x - initialCabinetCenter.current.x,
+            pivotPoint.y - initialCabinetCenter.current.y,
+            pivotPoint.z - initialCabinetCenter.current.z,
           ];
 
-          const otherParts = allParts.filter(
-            (p) => p.cabinetMetadata?.cabinetId !== cabinetId
-          );
+          const movingBounds = getCabinetBoundingBoxWithOffset(cabinetId, allParts, offset);
 
-          const snapResult = calculateSnapSimple(
-            cabinetBounds,
-            cabinetBounds.position,
-            otherParts,
-            snapSettings,
-            axis
-          );
+          if (movingBounds) {
+            const excludePartIds = new Set(parts.map((p) => p.id));
+            const excludeCabinetIds = new Set([cabinetId]);
 
-          if (snapResult.snapped && snapResult.snapPoints.length > 0) {
-            // Apply snap offset ONLY on the drag axis
-            const axisIndex = axis === 'X' ? 0 : axis === 'Y' ? 1 : 2;
-            const snapOffset = snapResult.position[axisIndex] - cabinetBounds.position[axisIndex];
+            const otherBounds = getOtherBoundingBoxes(
+              excludePartIds,
+              excludeCabinetIds,
+              allParts,
+              allCabinets
+            );
 
-            if (axisIndex === 0) pivotPoint.x += snapOffset;
-            else if (axisIndex === 1) pivotPoint.y += snapOffset;
-            else pivotPoint.z += snapOffset;
+            const dimensions = calculateDimensions(
+              movingBounds,
+              otherBounds,
+              axis,
+              dimensionSettings
+            );
 
-            group.position.copy(pivotPoint);
-            setSnapPoints(snapResult.snapPoints);
-          } else {
-            clearSnapPoints();
+            setDimensionLines(dimensions);
           }
         }
       }
@@ -212,7 +257,7 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
     // Update preview ref and trigger re-render
     previewTransformsRef.current = newTransforms;
     setPreviewVersion(v => v + 1);
-  }, [parts, target, transformMode, snapEnabled, snapSettings, allParts, cabinetId, setSnapPoints, clearSnapPoints, getDragAxis]);
+  }, [parts, target, transformMode, snapEnabled, snapSettings, dimensionSettings, allParts, allCabinets, cabinetId, setSnapPoints, clearSnapPoints, setDimensionLines, setActiveAxis, getDragAxis]);
 
   const handleTransformStart = useCallback(() => {
     if (!target) return;
@@ -279,6 +324,7 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
     }
 
     clearSnapPoints();
+    clearDimensionLines();
 
     // Get final transforms from preview ref
     const updates: Array<{ id: string; patch: Partial<Part> }> = [];
@@ -310,7 +356,7 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
 
     // Clear preview
     previewTransformsRef.current.clear();
-  }, [target, setIsTransforming, setTransformingCabinetId, commitBatch, detectCollisions, clearSnapPoints, updatePartsBatch]);
+  }, [target, setIsTransforming, setTransformingCabinetId, commitBatch, detectCollisions, clearSnapPoints, clearDimensionLines, updatePartsBatch]);
 
   // Get current preview state
   const isShowingPreview = isDraggingRef.current && previewTransformsRef.current.size > 0;

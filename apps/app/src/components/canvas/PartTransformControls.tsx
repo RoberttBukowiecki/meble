@@ -9,7 +9,10 @@ import type { Part } from '@/types';
 import { pickTransform } from '@/lib/store/history/utils';
 import { SCENE_CONFIG, PART_CONFIG, MATERIAL_CONFIG } from '@/lib/config';
 import { useSnapContext } from '@/lib/snap-context';
+import { useDimensionContext } from '@/lib/dimension-context';
 import { calculateSnapSimple } from '@/lib/snapping';
+import { calculateDimensions } from '@/lib/dimension-calculator';
+import { getPartBoundingBoxAtPosition, getOtherBoundingBoxes } from '@/lib/bounding-box-utils';
 import type { TransformControls as TransformControlsImpl } from 'three-stdlib';
 
 interface PartTransformControlsProps {
@@ -48,6 +51,7 @@ export function PartTransformControls({
 }: PartTransformControlsProps) {
   const [target, setTarget] = useState<THREE.Group | null>(null);
   const { setSnapPoints, clearSnapPoints } = useSnapContext();
+  const { setDimensionLines, clearDimensionLines, setActiveAxis } = useDimensionContext();
 
   const {
     updatePart,
@@ -56,8 +60,10 @@ export function PartTransformControls({
     isShiftPressed,
     detectCollisions,
     parts,
+    cabinets,
     snapEnabled,
     snapSettings,
+    dimensionSettings,
     setTransformingPartId,
   } = useStore(
     useShallow((state) => ({
@@ -67,8 +73,10 @@ export function PartTransformControls({
       isShiftPressed: state.isShiftPressed,
       detectCollisions: state.detectCollisions,
       parts: state.parts,
+      cabinets: state.cabinets,
       snapEnabled: state.snapEnabled,
       snapSettings: state.snapSettings,
+      dimensionSettings: state.dimensionSettings,
       setTransformingPartId: state.setTransformingPartId,
     }))
   );
@@ -101,8 +109,8 @@ export function PartTransformControls({
 
     const position = target.position.toArray() as [number, number, number];
 
-    // Apply snap only for translate mode when enabled
-    if (mode === 'translate' && snapEnabled) {
+    // Only process for translate mode
+    if (mode === 'translate') {
       const axis = getDragAxis();
 
       // If no specific axis detected, try to determine from movement
@@ -110,36 +118,72 @@ export function PartTransformControls({
       const effectiveAxis = axis || detectMovementAxis(originalPos, position);
 
       if (effectiveAxis) {
-        const otherParts = parts.filter(
-          (p) =>
-            p.id !== part.id &&
-            (!part.cabinetMetadata?.cabinetId ||
-              p.cabinetMetadata?.cabinetId !== part.cabinetMetadata.cabinetId)
-        );
+        // Apply snap when enabled
+        if (snapEnabled) {
+          const otherParts = parts.filter(
+            (p) =>
+              p.id !== part.id &&
+              (!part.cabinetMetadata?.cabinetId ||
+                p.cabinetMetadata?.cabinetId !== part.cabinetMetadata.cabinetId)
+          );
 
-        const snapResult = calculateSnapSimple(
-          part,
-          position,
-          otherParts,
-          snapSettings,
-          effectiveAxis
-        );
+          const snapResult = calculateSnapSimple(
+            part,
+            position,
+            otherParts,
+            snapSettings,
+            effectiveAxis
+          );
 
-        if (snapResult.snapped && snapResult.snapPoints.length > 0) {
-          // Apply snap offset ONLY on the drag axis
-          const axisIndex = effectiveAxis === 'X' ? 0 : effectiveAxis === 'Y' ? 1 : 2;
-          position[axisIndex] = snapResult.position[axisIndex];
-          target.position.setComponent(axisIndex, position[axisIndex]);
-          setSnapPoints(snapResult.snapPoints);
-        } else {
-          clearSnapPoints();
+          if (snapResult.snapped && snapResult.snapPoints.length > 0) {
+            // Apply snap offset ONLY on the drag axis
+            const axisIndex = effectiveAxis === 'X' ? 0 : effectiveAxis === 'Y' ? 1 : 2;
+            position[axisIndex] = snapResult.position[axisIndex];
+            target.position.setComponent(axisIndex, position[axisIndex]);
+            setSnapPoints(snapResult.snapPoints);
+          } else {
+            clearSnapPoints();
+          }
+        }
+
+        // Calculate dimension lines (independent of snap)
+        if (dimensionSettings?.enabled) {
+          setActiveAxis(effectiveAxis);
+
+          // Get current position (after snap if applied)
+          const currentPosition = target.position.toArray() as [number, number, number];
+
+          // Get bounding box of the moving part at current position
+          const movingBounds = getPartBoundingBoxAtPosition(part, currentPosition);
+
+          // Get bounding boxes of all other objects (excluding this part and its cabinet)
+          const excludePartIds = new Set([part.id]);
+          const excludeCabinetIds = part.cabinetMetadata?.cabinetId
+            ? new Set([part.cabinetMetadata.cabinetId])
+            : new Set<string>();
+
+          const otherBounds = getOtherBoundingBoxes(
+            excludePartIds,
+            excludeCabinetIds,
+            parts,
+            cabinets
+          );
+
+          const dimensions = calculateDimensions(
+            movingBounds,
+            otherBounds,
+            effectiveAxis,
+            dimensionSettings
+          );
+
+          setDimensionLines(dimensions);
         }
       }
     }
 
     // PERFORMANCE: NO store update here - preview mesh follows target directly
     // Store will be updated on mouseUp
-  }, [target, part, mode, snapEnabled, snapSettings, parts, setSnapPoints, clearSnapPoints, getDragAxis]);
+  }, [target, part, mode, snapEnabled, snapSettings, dimensionSettings, parts, cabinets, setSnapPoints, clearSnapPoints, setDimensionLines, setActiveAxis, getDragAxis]);
 
   const handleTransformStart = useCallback(() => {
     isDraggingRef.current = true;
@@ -164,6 +208,7 @@ export function PartTransformControls({
     }
 
     clearSnapPoints();
+    clearDimensionLines();
 
     const position = target.position.toArray() as [number, number, number];
     const rotation = target.rotation.toArray().slice(0, 3) as [number, number, number];
@@ -178,7 +223,7 @@ export function PartTransformControls({
     setTransformingPartId(null); // Show original Part3D again
     onTransformEnd();
     detectCollisions();
-  }, [target, updatePart, part.id, commitBatch, onTransformEnd, detectCollisions, clearSnapPoints, setTransformingPartId]);
+  }, [target, updatePart, part.id, commitBatch, onTransformEnd, detectCollisions, clearSnapPoints, clearDimensionLines, setTransformingPartId]);
 
   // Sync target position with part when part changes externally
   useEffect(() => {

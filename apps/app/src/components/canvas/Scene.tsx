@@ -18,11 +18,15 @@ import { CollisionWarning } from '@/components/ui/CollisionWarning';
 import { SCENE_CONFIG, KEYBOARD_SHORTCUTS, formatShortcutLabel } from '@/lib/config';
 import type { OrbitControls as OrbitControlsType } from 'three-stdlib';
 import { CabinetGroupTransform } from './CabinetGroupTransform';
+import { CabinetResizeControls } from './CabinetResizeControls';
 import { PartTransformControls } from './PartTransformControls';
 import { PartResizeControls } from './PartResizeControls';
 import { MultiSelectTransformControls } from './MultiSelectTransformControls';
+import { MultiSelectResizeControls } from './MultiSelectResizeControls';
 import { SnapGuidesRenderer } from './SnapGuidesRenderer';
+import { DimensionRenderer } from './DimensionRenderer';
 import { SnapProvider } from '@/lib/snap-context';
+import { DimensionProvider } from '@/lib/dimension-context';
 import { SnapControlPanel } from '@/components/layout/SnapControlPanel';
 
 export function Scene() {
@@ -45,6 +49,8 @@ export function Scene() {
     selectCabinet,
     clearSelection,
     snapEnabled,
+    dimensionSettings,
+    showGrid,
   } = useStore(
       useShallow((state) => ({
         isTransforming: state.isTransforming,
@@ -62,6 +68,8 @@ export function Scene() {
         selectCabinet: state.selectCabinet,
         clearSelection: state.clearSelection,
         snapEnabled: state.snapEnabled,
+        dimensionSettings: state.dimensionSettings,
+        showGrid: state.showGrid,
       }))
     );
   const controlsRef = useRef<OrbitControlsType>(null);
@@ -174,17 +182,18 @@ export function Scene() {
         <KeyboardShortcutsHelp />
       </div>
 
-      <SnapProvider>
-        <Canvas
-          camera={{
-            position: SCENE_CONFIG.CAMERA_INITIAL_POSITION,
-            fov: SCENE_CONFIG.CAMERA_FOV,
-            near: 0.1,
-            far: 100000,
-          }}
-          shadows
-          onPointerMissed={handlePointerMissed}
-        >
+      <DimensionProvider>
+        <SnapProvider>
+          <Canvas
+            camera={{
+              position: SCENE_CONFIG.CAMERA_INITIAL_POSITION,
+              fov: SCENE_CONFIG.CAMERA_FOV,
+              near: 0.1,
+              far: 100000,
+            }}
+            shadows
+            onPointerMissed={handlePointerMissed}
+          >
           {/* Controls */}
           <OrbitControls
             ref={controlsRef}
@@ -205,32 +214,51 @@ export function Scene() {
           />
 
           {/* Grid */}
-          <Grid
-            args={[SCENE_CONFIG.GRID_SIZE, SCENE_CONFIG.GRID_SIZE]}
-            cellSize={SCENE_CONFIG.GRID_CELL_SIZE}
-            cellThickness={0.5}
-            cellColor="#6b7280"
-            sectionSize={500}
-            sectionThickness={1}
-            sectionColor="#374151"
-            fadeDistance={SCENE_CONFIG.GRID_FADE_DISTANCE}
-            followCamera={false}
-            infiniteGrid={false}
-          />
+          {showGrid && (
+            <Grid
+              args={[SCENE_CONFIG.GRID_SIZE, SCENE_CONFIG.GRID_SIZE]}
+              cellSize={SCENE_CONFIG.GRID_CELL_SIZE}
+              cellThickness={0.5}
+              cellColor="#6b7280"
+              sectionSize={500}
+              sectionThickness={1}
+              sectionColor="#374151"
+              fadeDistance={SCENE_CONFIG.GRID_FADE_DISTANCE}
+              followCamera={false}
+              infiniteGrid={false}
+            />
+          )}
 
           {parts.map((part) => (
             <Part3D key={part.id} part={part} />
           ))}
 
-          {/* Transform controls for cabinet groups (translate/rotate only, no resize) */}
+          {/* Transform controls for cabinet groups (translate/rotate) */}
           {selectedCabinetId && (transformMode === 'translate' || transformMode === 'rotate') && (
             <CabinetGroupTransform cabinetId={selectedCabinetId} />
+          )}
+
+          {/* Resize controls for cabinet groups */}
+          {selectedCabinetId && transformMode === 'resize' && (
+            <CabinetResizeControls
+              cabinetId={selectedCabinetId}
+              onTransformStart={() => setIsTransforming(true)}
+              onTransformEnd={handlePartTransformEnd}
+            />
           )}
 
           {/* Transform controls for multiselect (translate/rotate modes) */}
           {isMultiSelect && !selectedCabinetId && (transformMode === 'translate' || transformMode === 'rotate') && (
             <MultiSelectTransformControls
               mode={transformMode}
+              onTransformStart={() => setIsTransforming(true)}
+              onTransformEnd={handlePartTransformEnd}
+            />
+          )}
+
+          {/* Resize controls for multiselect (resize mode) */}
+          {isMultiSelect && !selectedCabinetId && transformMode === 'resize' && (
+            <MultiSelectResizeControls
               onTransformStart={() => setIsTransforming(true)}
               onTransformEnd={handlePartTransformEnd}
             />
@@ -246,7 +274,7 @@ export function Scene() {
             />
           )}
 
-          {/* Resize controls for individual parts (resize mode) - not available for multiselect */}
+          {/* Resize controls for individual parts (resize mode) */}
           {selectedPart && !isMultiSelect && !selectedCabinetId && transformMode === 'resize' && (
             <PartResizeControls
               part={selectedPart}
@@ -257,8 +285,12 @@ export function Scene() {
 
           {/* Snap guides (rendered based on snap context) */}
           {snapEnabled && <SnapGuidesRenderer />}
-        </Canvas>
-      </SnapProvider>
+
+          {/* Dimension lines (rendered based on dimension context) */}
+          {dimensionSettings?.enabled && <DimensionRenderer />}
+          </Canvas>
+        </SnapProvider>
+      </DimensionProvider>
 
       {/* Collision warning overlay */}
       <CollisionWarning />

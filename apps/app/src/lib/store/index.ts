@@ -9,6 +9,7 @@ import { createCollisionSlice } from './slices/collisionSlice';
 import { createHistorySlice } from './slices/historySlice';
 import { createUISlice } from './slices/uiSlice';
 import { createSnapSlice } from './slices/snapSlice';
+import { createDimensionSlice } from './slices/dimensionSlice';
 import { HISTORY_MAX_LENGTH, HISTORY_MAX_MILESTONES } from './history/constants';
 import { MATERIAL_IDS, INITIAL_MATERIALS } from './constants';
 import { DEFAULT_BACK_OVERLAP_RATIO, DEFAULT_DOOR_CONFIG } from '../config';
@@ -26,6 +27,7 @@ export const useStore = create<StoreState>()(
       ...createHistorySlice(...args),
       ...createUISlice(...args),
       ...createSnapSlice(...args),
+      ...createDimensionSlice(...args),
     }),
     {
       name: 'meblarz-storage',
@@ -176,12 +178,20 @@ export const useStore = create<StoreState>()(
           runWithHistory,
           // UI functions
           setShiftPressed,
-          // UI state (don't persist keyboard state)
+          togglePartsHidden,
+          hideParts,
+          showParts,
+          showAllParts,
+          // UI state (don't persist transient state)
           isShiftPressed,
+          hiddenPartIds,
           // Snap functions (snapEnabled and snapSettings ARE persisted)
           toggleSnap,
           setSnapEnabled,
           updateSnapSettings,
+          // Dimension functions (dimensionSettings IS persisted)
+          setDimensionEnabled,
+          updateDimensionSettings,
           ...rest
         } = state as any;
         return rest;
@@ -236,4 +246,20 @@ export const useSelectedParts = () => {
  */
 export const useIsMultiSelectActive = () => {
   return useStore((state) => state.selectedPartIds.size > 1);
+};
+
+/**
+ * PERFORMANCE: Check if a specific part is hidden
+ * This selector returns a primitive boolean, so Part3D only re-renders
+ * when THIS part's hidden status changes, not when ANY hidden part changes.
+ */
+export const useIsPartHidden = (partId: string) => {
+  return useStore((state) => state.hiddenPartIds.has(partId));
+};
+
+/**
+ * Get total count of hidden parts (for UI indicators)
+ */
+export const useHiddenPartsCount = () => {
+  return useStore((state) => state.hiddenPartIds.size);
 };

@@ -16,8 +16,8 @@ type FurnitureTestState = FurnitureSlice & {
 };
 
 const createFurnitureStore = () =>
-  create<FurnitureTestState>()((set, get) => ({
-    ...createFurnitureSlice(set as unknown as any, get as unknown as any),
+  create<FurnitureTestState>()((set, get, api) => ({
+    ...createFurnitureSlice(set as unknown as any, get as unknown as any, api as unknown as any),
     parts: [],
     selectedFurnitureId: DEFAULT_FURNITURE_ID,
     selectedPartId: null,

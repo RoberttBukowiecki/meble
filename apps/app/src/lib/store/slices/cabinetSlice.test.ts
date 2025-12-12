@@ -47,6 +47,9 @@ const defaultParams: CabinetParams = {
   shelfCount: 1,
   hasDoors: false,
   topBottomPlacement: 'inset',
+  hasBack: true,
+  backOverlapRatio: 2 / 3,
+  backMountType: 'overlap',
 };
 
 const makeGeneratedPart = (name: string, cabinetId: string, furnitureId: string) => ({
@@ -66,8 +69,8 @@ const makeGeneratedPart = (name: string, cabinetId: string, furnitureId: string)
 });
 
 const createCabinetStore = (initial: Partial<CabinetTestState> = {}) =>
-  create<CabinetTestState>()((set, get) => ({
-    ...createCabinetSlice(set as unknown as any, get as unknown as any),
+  create<CabinetTestState>()((set, get, api) => ({
+    ...createCabinetSlice(set as unknown as any, get as unknown as any, api as unknown as any),
     materials: baseMaterials,
     parts: [],
     cabinets: [],
@@ -142,8 +145,8 @@ describe('cabinetSlice', () => {
       makeGeneratedPart('New', cabinetId, furnitureId),
     ]);
     (getGeneratorForType as jest.Mock).mockReturnValue(generator);
-    (applyCabinetTransform as jest.Mock).mockImplementation((parts) =>
-      parts.map((p) => ({ ...p, position: [1, 2, 3] as [number, number, number] }))
+    (applyCabinetTransform as jest.Mock).mockImplementation((parts: Part[]) =>
+      parts.map((p: Part) => ({ ...p, position: [1, 2, 3] as [number, number, number] }))
     );
 
     store.getState().updateCabinet('cab-1', { topBottomPlacement: 'overlay' });

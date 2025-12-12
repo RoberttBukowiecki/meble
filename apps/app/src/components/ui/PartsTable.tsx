@@ -2,10 +2,10 @@
 
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { useStore } from '@/lib/store';
+import { useStore, useIsPartHidden, useHiddenPartsCount } from '@/lib/store';
 import type { Part } from '@/types';
-import { Accordion, AccordionContent, AccordionItem, Badge, Card, CardContent, CardHeader, CardTitle, Checkbox, cn } from '@meble/ui';
-import { CircleDot, FolderTree, Layers, Package, ChevronDown } from 'lucide-react';
+import { Accordion, AccordionContent, AccordionItem, Badge, Button, Card, CardContent, CardHeader, CardTitle, Checkbox, cn } from '@meble/ui';
+import { CircleDot, FolderTree, Layers, Package, ChevronDown, Eye, EyeOff } from 'lucide-react';
 import { InlineEditableText } from './InlineEditableText';
 import { buildManualGroupId } from '@/lib/groups';
 import { NAME_MAX_LENGTH, sanitizeName } from '@/lib/naming';
@@ -40,6 +40,7 @@ interface PartRowProps {
   furnitureLabelMap: Map<string, string>;
   onSelect: (id: string, e: React.MouseEvent) => void;
   onToggleSelect: (id: string) => void;
+  onToggleVisibility: (id: string) => void;
   onRename: (id: string, name: string) => void;
   isSelected: boolean;
   isMultiSelected: boolean;
@@ -52,6 +53,7 @@ const PartRow = memo(function PartRow({
   furnitureLabelMap,
   onSelect,
   onToggleSelect,
+  onToggleVisibility,
   onRename,
   isSelected,
   isMultiSelected,
@@ -60,6 +62,9 @@ const PartRow = memo(function PartRow({
   const part = useStore(
     useCallback((state) => state.parts.find((p) => p.id === partId), [partId])
   );
+
+  // PERFORMANCE: Optimized selector - only re-renders when THIS part's hidden status changes
+  const isHidden = useIsPartHidden(partId);
 
   if (!part) return null;
 
@@ -82,8 +87,9 @@ const PartRow = memo(function PartRow({
   }
 
   const handleRowClick = (e: React.MouseEvent) => {
-    // Don't interfere with checkbox clicks
-    if ((e.target as HTMLElement).closest('button[role="checkbox"]')) {
+    // Don't interfere with checkbox or visibility button clicks
+    if ((e.target as HTMLElement).closest('button[role="checkbox"]') ||
+        (e.target as HTMLElement).closest('[data-visibility-toggle]')) {
       return;
     }
     onSelect(part.id, e);
@@ -91,6 +97,11 @@ const PartRow = memo(function PartRow({
 
   const handleCheckboxChange = () => {
     onToggleSelect(part.id);
+  };
+
+  const handleVisibilityClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onToggleVisibility(part.id);
   };
 
   return (
@@ -102,7 +113,8 @@ const PartRow = memo(function PartRow({
       className={cn(
         'flex w-full items-center justify-between px-2 py-1 text-left transition hover:bg-muted/30 focus:outline-none',
         isSelected && 'bg-[#4c82fb1a]',
-        isMultiSelected && 'bg-primary/10'
+        isMultiSelected && 'bg-primary/10',
+        isHidden && 'opacity-50'
       )}
     >
       <div className="flex items-center gap-3">
@@ -112,6 +124,22 @@ const PartRow = memo(function PartRow({
           onClick={(e) => e.stopPropagation()}
           aria-label={t('selectPart')}
         />
+        <button
+          type="button"
+          data-visibility-toggle
+          onClick={handleVisibilityClick}
+          className={cn(
+            'p-0.5 rounded hover:bg-muted/50 transition-colors',
+            isHidden ? 'text-muted-foreground/50' : 'text-muted-foreground'
+          )}
+          title={isHidden ? 'Pokaż' : 'Ukryj'}
+        >
+          {isHidden ? (
+            <EyeOff className="h-4 w-4" />
+          ) : (
+            <Eye className="h-4 w-4" />
+          )}
+        </button>
         <Layers className="h-4 w-4 text-muted-foreground" />
         <div className="flex flex-col">
           <InlineEditableText
@@ -125,7 +153,14 @@ const PartRow = memo(function PartRow({
           <span className="text-xs text-muted-foreground">{meta.join(' • ')}</span>
         </div>
       </div>
-      <span className="text-[10px] uppercase tracking-wide text-muted-foreground">{part.shapeType}</span>
+      <div className="flex items-center gap-2">
+        {isHidden && (
+          <Badge variant="outline" className="text-[10px] px-1 py-0 text-muted-foreground">
+            ukryta
+          </Badge>
+        )}
+        <span className="text-[10px] uppercase tracking-wide text-muted-foreground">{part.shapeType}</span>
+      </div>
     </div>
   );
 });
@@ -149,6 +184,8 @@ export function PartsTable() {
     renamePart,
     renameManualGroup,
     renameCabinet,
+    togglePartsHidden,
+    showAllParts,
     selectedPartIds,
     selectedCabinetId,
     multiSelectAnchorId,
@@ -167,6 +204,8 @@ export function PartsTable() {
         renamePart: state.renamePart,
         renameManualGroup: state.renameManualGroup,
         renameCabinet: state.renameCabinet,
+        togglePartsHidden: state.togglePartsHidden,
+        showAllParts: state.showAllParts,
         selectedPartIds: state.selectedPartIds,
         selectedCabinetId: state.selectedCabinetId,
         multiSelectAnchorId: state.multiSelectAnchorId,
@@ -178,6 +217,7 @@ export function PartsTable() {
     ),
   );
   const totalParts = parts.length;
+  const hiddenCount = useHiddenPartsCount();
 
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
 
@@ -344,6 +384,13 @@ export function PartsTable() {
     [renamePart]
   );
 
+  const handleToggleVisibility = useCallback(
+    (partId: string) => {
+      togglePartsHidden([partId]);
+    },
+    [togglePartsHidden]
+  );
+
   const handleManualGroupRename = useCallback(
     (group: ManualGroup, nextName: string) => {
       const normalized = sanitizeName(nextName, NAME_MAX_LENGTH);
@@ -379,6 +426,29 @@ export function PartsTable() {
     [selectedPartIds]
   );
 
+  // Get hidden part IDs for visibility checks
+  const hiddenPartIds = useStore((state) => state.hiddenPartIds);
+
+  // Check group visibility status
+  const getGroupHiddenStatus = useCallback(
+    (group: PartsGroup): 'all' | 'some' | 'none' => {
+      if (group.partIds.length === 0) return 'none';
+      const hiddenCount = group.partIds.filter((id) => hiddenPartIds.has(id)).length;
+      if (hiddenCount === 0) return 'none';
+      if (hiddenCount === group.partIds.length) return 'all';
+      return 'some';
+    },
+    [hiddenPartIds]
+  );
+
+  // Toggle visibility for all parts in a group
+  const handleToggleGroupVisibility = useCallback(
+    (group: PartsGroup) => {
+      togglePartsHidden(group.partIds);
+    },
+    [togglePartsHidden]
+  );
+
   if (totalParts === 0) {
     return (
       <Card>
@@ -397,11 +467,24 @@ export function PartsTable() {
       <CardHeader className="px-0 pt-0 pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base">{t('titleWithCount', { count: totalParts })}</CardTitle>
-          {selectedPartIds.size > 0 && (
-            <Badge variant="secondary" className="ml-2">
-              {selectedPartIds.size} {t('selected')}
-            </Badge>
-          )}
+          <div className="flex items-center gap-2">
+            {hiddenCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-xs gap-1"
+                onClick={showAllParts}
+              >
+                <Eye className="h-3 w-3" />
+                Pokaż ukryte ({hiddenCount})
+              </Button>
+            )}
+            {selectedPartIds.size > 0 && (
+              <Badge variant="secondary">
+                {selectedPartIds.size} {t('selected')}
+              </Badge>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent className="p-0">
@@ -430,16 +513,18 @@ export function PartsTable() {
 
             const groupFullySelected = isGroupFullySelected(group);
             const groupPartiallySelected = isGroupPartiallySelected(group);
+            const groupHiddenStatus = getGroupHiddenStatus(group);
 
             return (
               <AccordionItem key={group.id} value={group.id} className="border-b-0">
                 <div
                   className={cn(
                     'flex items-stretch gap-1 px-1.5 py-1 transition',
-                    isGroupSelected ? 'bg-[#4c82fb1a]' : 'hover:bg-muted/30'
+                    isGroupSelected ? 'bg-[#4c82fb1a]' : 'hover:bg-muted/30',
+                    groupHiddenStatus === 'all' && 'opacity-50'
                   )}
                 >
-                  <div className="flex items-center px-1">
+                  <div className="flex items-center gap-1 px-1">
                     <Checkbox
                       checked={groupFullySelected}
                       indeterminate={groupPartiallySelected}
@@ -447,6 +532,27 @@ export function PartsTable() {
                       onClick={(e) => e.stopPropagation()}
                       aria-label={t('selectAll')}
                     />
+                    <button
+                      type="button"
+                      data-visibility-toggle
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleToggleGroupVisibility(group);
+                      }}
+                      className={cn(
+                        'p-0.5 rounded hover:bg-muted/50 transition-colors',
+                        groupHiddenStatus !== 'none' ? 'text-muted-foreground/50' : 'text-muted-foreground'
+                      )}
+                      title={groupHiddenStatus !== 'none' ? 'Pokaż wszystkie' : 'Ukryj wszystkie'}
+                    >
+                      {groupHiddenStatus === 'all' ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : groupHiddenStatus === 'some' ? (
+                        <Eye className="h-4 w-4 opacity-50" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
                   </div>
                   <button
                     type="button"
@@ -479,9 +585,18 @@ export function PartsTable() {
                       )}
                       <span className="text-xs text-muted-foreground">{subtitleParts.join(' • ')}</span>
                     </div>
-                    <Badge variant="secondary" className="shrink-0 pointer-events-none">
-                      {t('partsCount', { count: group.partIds.length })}
-                    </Badge>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {groupHiddenStatus !== 'none' && (
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground pointer-events-none">
+                          {groupHiddenStatus === 'all'
+                            ? 'ukryte'
+                            : `${group.partIds.filter(id => hiddenPartIds.has(id)).length} ukrytych`}
+                        </Badge>
+                      )}
+                      <Badge variant="secondary" className="pointer-events-none">
+                        {t('partsCount', { count: group.partIds.length })}
+                      </Badge>
+                    </div>
                   </button>
                   <button
                     type="button"
@@ -514,6 +629,7 @@ export function PartsTable() {
                         furnitureLabelMap={furnitureLabelMap}
                         onSelect={handlePartSelect}
                         onToggleSelect={handleTogglePartSelect}
+                        onToggleVisibility={handleToggleVisibility}
                         onRename={handlePartRename}
                         isSelected={selectedPartIds.has(partId)}
                         isMultiSelected={selectedPartIds.has(partId) && selectedPartIds.size > 1}

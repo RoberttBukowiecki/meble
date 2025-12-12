@@ -198,7 +198,7 @@ export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
     }
   },
 
-  updateCabinetParams: (id: string, params: CabinetParams, skipHistory = false) => {
+  updateCabinetParams: (id: string, params: CabinetParams, skipHistory = false, centerOffset?: [number, number, number]) => {
     const state = get();
     const cabinet = state.cabinets.find((c) => c.id === id);
     if (!cabinet) return;
@@ -214,9 +214,14 @@ export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
     const oldParts = state.parts.filter((p) => cabinet.partIds.includes(p.id));
     const { center, rotation } = getCabinetTransform(oldParts);
 
+    // Apply center offset if provided (for resize with fixed edge)
+    const targetCenter = centerOffset
+      ? center.clone().add(new Vector3().fromArray(centerOffset))
+      : center;
+
     const generator = getGeneratorForType(params.type);
     const generatedParts = generator(id, cabinet.furnitureId, params, cabinet.materials, bodyMaterial, backMaterial);
-    const transformedParts = applyCabinetTransform(generatedParts, center, rotation);
+    const transformedParts = applyCabinetTransform(generatedParts, targetCenter, rotation);
 
     const now = new Date();
     const newParts = transformedParts.map((part) => ({

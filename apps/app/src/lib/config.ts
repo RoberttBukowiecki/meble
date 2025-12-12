@@ -3,7 +3,7 @@
  * Centralized keyboard shortcuts and settings
  */
 
-import { CabinetParams, CabinetType, DoorConfig, DrawerSlideType, DrawerSlideConfig } from "@/types";
+import { CabinetParams, CabinetType, DoorConfig, DrawerSlideType, DrawerSlideConfig, DrawerConfiguration } from "@/types";
 
 // Utility types/helpers for keyboard shortcuts
 export type ShortcutKeys = string | string[];
@@ -39,6 +39,10 @@ export const KEYBOARD_SHORTCUTS = {
   // Selection shortcuts (Cmd/Ctrl modifier required)
   SELECT_ALL: 'a',
   CLEAR_SELECTION: 'Escape',
+
+  // Visibility shortcuts
+  HIDE_SELECTED: 'h',           // H - Hide selected parts/groups
+  TOGGLE_HIDE_FRONTS: 'h',      // Ctrl+H - Toggle cabinet front visibility
 } as const satisfies Record<string, ShortcutKeys>;
 
 // ============================================================================
@@ -118,6 +122,14 @@ export const PART_CONFIG = {
   MULTISELECT_BBOX_LINE_WIDTH: 2,
   MULTISELECT_BBOX_DASH_SIZE: 10,
   MULTISELECT_BBOX_GAP_SIZE: 5,
+
+  // Resize handle colors
+  RESIZE_HANDLE_COLOR: '#f5a623',           // Yellow/orange - default state
+  RESIZE_HANDLE_HOVER_COLOR: '#ffc107',     // Brighter yellow - hover state
+  RESIZE_HANDLE_ACTIVE_COLOR: '#ffeb3b',    // Bright yellow - active/dragging state
+  RESIZE_HANDLE_EMISSIVE_INTENSITY: 0.4,
+  RESIZE_HANDLE_HOVER_EMISSIVE_INTENSITY: 0.5,
+  RESIZE_HANDLE_ACTIVE_EMISSIVE_INTENSITY: 0.6,
 } as const;
 
 
@@ -161,6 +173,146 @@ export const DRAWER_CONFIG = {
   BOTTOM_THICKNESS: 3, // mm - default drawer bottom thickness
   BOX_FRONT_OFFSET: 20, // mm - gap between box front and front panel
 } as const;
+
+// ============================================================================
+// Drawer Zone Presets
+// ============================================================================
+
+/**
+ * Preset configurations for quick drawer setup
+ * Each preset defines a DrawerConfiguration with zones
+ */
+export const DRAWER_ZONE_PRESETS: Record<string, { label: string; labelPl: string; config: DrawerConfiguration }> = {
+  STANDARD_4: {
+    label: '4 Standard',
+    labelPl: '4 Standardowe',
+    config: {
+      slideType: 'SIDE_MOUNT',
+      zones: [
+        { id: 'z1', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
+        { id: 'z2', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
+        { id: 'z3', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
+        { id: 'z4', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
+      ],
+    },
+  },
+
+  STANDARD_3: {
+    label: '3 Standard',
+    labelPl: '3 Standardowe',
+    config: {
+      slideType: 'SIDE_MOUNT',
+      zones: [
+        { id: 'z1', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
+        { id: 'z2', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
+        { id: 'z3', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
+      ],
+    },
+  },
+
+  TALL_2: {
+    label: '2 Tall (drawer-in-drawer)',
+    labelPl: '2 Wysokie (szuflada w szufladzie)',
+    config: {
+      slideType: 'SIDE_MOUNT',
+      zones: [
+        { id: 'z1', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }, { heightRatio: 1 }] },
+        { id: 'z2', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }, { heightRatio: 1 }] },
+      ],
+    },
+  },
+
+  INTERNAL_3: {
+    label: '3 Internal',
+    labelPl: '3 Wewnętrzne',
+    config: {
+      slideType: 'SIDE_MOUNT',
+      zones: [
+        { id: 'z1', heightRatio: 1, front: null, boxes: [{ heightRatio: 1 }] },
+        { id: 'z2', heightRatio: 1, front: null, boxes: [{ heightRatio: 1 }] },
+        { id: 'z3', heightRatio: 1, front: null, boxes: [{ heightRatio: 1 }] },
+      ],
+    },
+  },
+
+  MIXED: {
+    label: 'Mixed (2 internal + 2 external)',
+    labelPl: 'Mieszane (2 wewnętrzne + 2 zewnętrzne)',
+    config: {
+      slideType: 'SIDE_MOUNT',
+      zones: [
+        { id: 'z1', heightRatio: 1, front: null, boxes: [{ heightRatio: 1 }] },
+        { id: 'z2', heightRatio: 1, front: null, boxes: [{ heightRatio: 1 }] },
+        { id: 'z3', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
+        { id: 'z4', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
+      ],
+    },
+  },
+};
+
+// ============================================================================
+// Drawer Configuration Helpers
+// ============================================================================
+
+/**
+ * Generate a unique zone ID
+ */
+export function generateZoneId(): string {
+  return `z${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
+}
+
+/**
+ * Get total drawer box count from configuration
+ */
+export function getTotalBoxCount(config: DrawerConfiguration): number {
+  return config.zones.reduce((sum, zone) => sum + zone.boxes.length, 0);
+}
+
+/**
+ * Get front count (visible drawer fronts)
+ */
+export function getFrontCount(config: DrawerConfiguration): number {
+  return config.zones.filter(zone => zone.front !== null).length;
+}
+
+/**
+ * Check if drawer configuration has any external fronts (visible drawer fronts)
+ */
+export function hasDrawerFronts(config: DrawerConfiguration | undefined): boolean {
+  if (!config || config.zones.length === 0) return false;
+  return config.zones.some(zone => zone.front !== null);
+}
+
+/**
+ * Convert drawer configuration to internal (remove all external fronts)
+ * This is used when doors are added to a cabinet with drawer fronts
+ */
+export function convertDrawersToInternal(config: DrawerConfiguration): DrawerConfiguration {
+  return {
+    ...config,
+    zones: config.zones.map(zone => ({
+      ...zone,
+      front: null, // Remove external front
+    })),
+  };
+}
+
+/**
+ * Create a default drawer configuration with specified zone count
+ */
+export function createDefaultDrawerConfig(zoneCount: number, hasExternalFronts: boolean = true): DrawerConfiguration {
+  const zones = Array.from({ length: zoneCount }, (_, i) => ({
+    id: `z${i + 1}`,
+    heightRatio: 1,
+    front: hasExternalFronts ? {} : null,
+    boxes: [{ heightRatio: 1 }],
+  }));
+
+  return {
+    slideType: 'SIDE_MOUNT',
+    zones,
+  };
+}
 
 export const CABINET_PRESETS: Record<CabinetType, Partial<CabinetParams>> = {
   KITCHEN: {
