@@ -31,8 +31,10 @@ import {
   DoorOpeningDirection,
   HingeSide,
   KitchenCabinetParams,
+  DrawerCabinetParams,
+  DrawerSlideType,
 } from '@/types';
-import { CABINET_PRESETS, DEFAULT_BACK_OVERLAP_RATIO, DEFAULT_DOOR_CONFIG } from '@/lib/config';
+import { CABINET_PRESETS, DEFAULT_BACK_OVERLAP_RATIO, DEFAULT_DOOR_CONFIG, DRAWER_SLIDE_PRESETS } from '@/lib/config';
 import { HandleSelector } from './HandleSelector';
 import { getDefaultMaterials, getDefaultBackMaterial } from '@/lib/store/utils';
 
@@ -171,6 +173,94 @@ const DoorConfigSection = ({ params, onChange }: DoorConfigSectionProps) => {
   );
 };
 
+// Drawer slide type labels
+const DRAWER_SLIDE_LABELS: Record<DrawerSlideType, string> = {
+  SIDE_MOUNT: 'Boczne (13mm)',
+  UNDERMOUNT: 'Podszufladowe (21mm)',
+  BOTTOM_MOUNT: 'Dolne (13mm)',
+  CENTER_MOUNT: 'Centralne (0mm)',
+};
+
+interface DrawerConfigSectionProps {
+  params: Partial<CabinetParams>;
+  onChange: (params: Partial<CabinetParams>) => void;
+}
+
+const DrawerConfigSection = ({ params, onChange }: DrawerConfigSectionProps) => {
+  const drawerParams = params as Partial<DrawerCabinetParams>;
+  const slideType = drawerParams.drawerSlideType ?? 'SIDE_MOUNT';
+  const hasInternalDrawers = drawerParams.hasInternalDrawers ?? false;
+
+  // Calculate drawer front dimensions for handle selector
+  const drawerCount = drawerParams.drawerCount ?? 4;
+  const height = drawerParams.height ?? 800;
+  const width = drawerParams.width ?? 600;
+  const thickness = 18; // Default body thickness
+  const interiorHeight = height - 2 * thickness;
+  const drawerFrontHeight = interiorHeight / drawerCount - 3;
+  const drawerFrontWidth = width - 2 * thickness - 4;
+
+  return (
+    <div className="border-t pt-4 mt-4">
+      <h4 className="font-medium mb-3 text-sm">Konfiguracja szuflad</h4>
+
+      {/* Drawer slide type */}
+      <div className="space-y-2 mb-4">
+        <Label className="text-xs">Typ prowadnic</Label>
+        <Select
+          value={slideType}
+          onValueChange={(value: DrawerSlideType) =>
+            onChange({ ...params, drawerSlideType: value } as any)
+          }
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {(Object.keys(DRAWER_SLIDE_PRESETS) as DrawerSlideType[]).map((type) => (
+              <SelectItem key={type} value={type}>
+                {DRAWER_SLIDE_LABELS[type]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <p className="text-xs text-muted-foreground">
+          Offset boczny: {DRAWER_SLIDE_PRESETS[slideType].sideOffset}mm na stronę
+        </p>
+      </div>
+
+      {/* Internal drawers toggle */}
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <Label className="text-xs">Szuflady wewnętrzne</Label>
+          <p className="text-xs text-muted-foreground">Bez frontów (dla szafek z drzwiami)</p>
+        </div>
+        <Switch
+          checked={hasInternalDrawers}
+          onCheckedChange={(checked) =>
+            onChange({ ...params, hasInternalDrawers: checked } as any)
+          }
+        />
+      </div>
+
+      {/* Handle configuration (only if not internal drawers) */}
+      {!hasInternalDrawers && (
+        <div className="mt-4">
+          <h4 className="font-medium mb-3 text-sm">Uchwyty do szuflad</h4>
+          <HandleSelector
+            value={drawerParams.handleConfig}
+            onChange={(handleConfig) =>
+              onChange({ ...params, handleConfig } as any)
+            }
+            doorWidth={drawerFrontWidth}
+            doorHeight={drawerFrontHeight}
+          />
+        </div>
+      )}
+    </div>
+  );
+};
+
 interface ParameterFormProps {
   type: CabinetType;
   params: Partial<CabinetParams>;
@@ -288,8 +378,9 @@ const ParameterForm = ({type, params, onChange}: ParameterFormProps) => {
                 <>
                     <div className="flex items-center justify-between">
                         <Label>Szuflady ({getDrawerCount()})</Label>
-                        <Slider value={[getDrawerCount()]} onValueChange={([val]) => updateParams({drawerCount: val} as any)} min={2} max={8} step={1} />
+                        <Slider value={[getDrawerCount()]} onValueChange={([val]) => updateParams({drawerCount: val} as any)} min={1} max={8} step={1} />
                     </div>
+                    <DrawerConfigSection params={params} onChange={onChange} />
                 </>
             )}
 

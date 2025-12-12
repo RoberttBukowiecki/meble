@@ -490,6 +490,11 @@ export interface CabinetBaseParams {
   hasBack: boolean;           // Whether to add back panel
   backOverlapRatio: number;   // How much back panel overlaps onto body edges (0-1, default 2/3)
   backMountType: BackMountType; // How back panel is mounted (default 'overlap')
+  // Optional drawer configuration (available for all cabinet types)
+  drawerCount?: number; // Number of drawers (0 = no drawers)
+  drawerSlideType?: DrawerSlideType; // Type of drawer slides
+  hasInternalDrawers?: boolean; // If true, no drawer fronts (for use behind doors)
+  drawerHandleConfig?: HandleConfig; // Handle configuration for drawer fronts
 }
 
 /**
@@ -522,12 +527,35 @@ export interface BookshelfCabinetParams extends CabinetBaseParams {
   // hasBack is inherited from CabinetBaseParams
 }
 
+// ============================================================================
+// Drawer Slide Types
+// ============================================================================
+
+/**
+ * Type of drawer slide mechanism
+ */
+export type DrawerSlideType = 'SIDE_MOUNT' | 'UNDERMOUNT' | 'BOTTOM_MOUNT' | 'CENTER_MOUNT';
+
+/**
+ * Configuration for drawer slide including clearances
+ */
+export interface DrawerSlideConfig {
+  type: DrawerSlideType;
+  sideOffset: number; // mm - clearance per side for drawer box
+  depthOffset: number; // mm - how much shorter drawer is than cabinet depth
+}
+
 /**
  * Drawer cabinet specific parameters
  */
 export interface DrawerCabinetParams extends CabinetBaseParams {
   type: 'DRAWER';
-  drawerCount: number; // Number of drawers (2-8)
+  drawerCount: number; // Number of drawers (1-8)
+  drawerSlideType: DrawerSlideType; // Type of drawer slides
+  hasInternalDrawers: boolean; // If true, no drawer fronts (for cabinets with doors)
+  drawerHeights?: number[]; // Optional custom heights per drawer (mm)
+  bottomMaterialId?: string; // Optional separate material for drawer bottoms (thinner)
+  handleConfig?: HandleConfig; // Handle configuration for drawer fronts
 }
 
 /**
@@ -570,6 +598,8 @@ export type CabinetPartRole =
   | 'DOOR'
   | 'DRAWER_FRONT'
   | 'DRAWER_SIDE'
+  | 'DRAWER_SIDE_LEFT'
+  | 'DRAWER_SIDE_RIGHT'
   | 'DRAWER_BACK'
   | 'DRAWER_BOTTOM';
 
@@ -580,6 +610,7 @@ export interface CabinetPartMetadata {
   cabinetId: string;
   role: CabinetPartRole;
   index?: number; // For shelves, doors, drawers (0-based)
+  drawerIndex?: number; // Which drawer this part belongs to (0-based)
   // Door-specific metadata
   doorMetadata?: DoorMetadata;
   handleMetadata?: HandleMetadata;

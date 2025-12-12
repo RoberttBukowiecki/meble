@@ -37,10 +37,14 @@ import type {
   CabinetType,
   TopBottomPlacement,
   KitchenCabinetParams,
+  DrawerCabinetParams,
   DoorConfig,
+  DrawerSlideType,
 } from '@/types';
-import { DEFAULT_DOOR_CONFIG } from '@/lib/config';
+import { DEFAULT_DOOR_CONFIG, DRAWER_SLIDE_PRESETS } from '@/lib/config';
 import { HandleSelector } from './HandleSelector';
+import { generateHandleMetadata, DoorType } from '@/lib/handlePresets';
+import type { HandleConfig } from '@/types';
 import {
   Alert,
   AlertDescription,
@@ -213,6 +217,24 @@ const CabinetParameterEditor = ({ type, params, onChange }: CabinetParameterEdit
     return 2;
   };
 
+  const getDrawerSlideType = (): DrawerSlideType => {
+    if ('drawerSlideType' in localParams && localParams.drawerSlideType) return localParams.drawerSlideType;
+    return 'SIDE_MOUNT';
+  };
+
+  const getHasInternalDrawers = (): boolean => {
+    if ('hasInternalDrawers' in localParams && localParams.hasInternalDrawers !== undefined) return localParams.hasInternalDrawers;
+    return false;
+  };
+
+  // Drawer slide type labels
+  const DRAWER_SLIDE_LABELS: Record<DrawerSlideType, string> = {
+    SIDE_MOUNT: 'Boczne (13mm)',
+    UNDERMOUNT: 'Podszufladowe (21mm)',
+    BOTTOM_MOUNT: 'Dolne (13mm)',
+    CENTER_MOUNT: 'Centralne (0mm)',
+  };
+
   return (
     <div className="space-y-2">
       <div className="grid grid-cols-3 gap-1">
@@ -345,17 +367,58 @@ const CabinetParameterEditor = ({ type, params, onChange }: CabinetParameterEdit
         </>
       )}
       {type === 'DRAWER' && (
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-[10px] text-muted-foreground whitespace-nowrap">{t('drawersWithCount', { count: getDrawerCount() })}</span>
-          <Slider
-            className="w-24"
-            value={[getDrawerCount()]}
-            onValueChange={([val]) => updateParams({ drawerCount: val } as any)}
-            min={2}
-            max={8}
-            step={1}
-          />
-        </div>
+        <>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] text-muted-foreground whitespace-nowrap">{t('drawersWithCount', { count: getDrawerCount() })}</span>
+            <Slider
+              className="w-24"
+              value={[getDrawerCount()]}
+              onValueChange={([val]) => updateParams({ drawerCount: val } as any)}
+              min={1}
+              max={8}
+              step={1}
+            />
+          </div>
+          <div>
+            <span className="text-[10px] text-muted-foreground">{t('slideType')}</span>
+            <Select
+              value={getDrawerSlideType()}
+              onValueChange={(value) =>
+                updateParams({ drawerSlideType: value as DrawerSlideType } as any)
+              }
+            >
+              <SelectTrigger className="h-7 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {(Object.keys(DRAWER_SLIDE_PRESETS) as DrawerSlideType[]).map((slideType) => (
+                  <SelectItem key={slideType} value={slideType} className="text-xs">
+                    {DRAWER_SLIDE_LABELS[slideType]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] text-muted-foreground">{t('internalDrawers')}</span>
+            <Switch
+              className="scale-75"
+              checked={getHasInternalDrawers()}
+              onCheckedChange={(val) => updateParams({ hasInternalDrawers: val } as any)}
+            />
+          </div>
+          {/* Handle configuration for drawer fronts */}
+          {!getHasInternalDrawers() && (
+            <div className="border-t pt-2 mt-2">
+              <HandleSelector
+                value={(localParams as DrawerCabinetParams).handleConfig}
+                onChange={(handleConfig) => updateParams({ handleConfig } as any)}
+                doorWidth={(localParams.width ?? 600) - 40}
+                doorHeight={((localParams.height ?? 800) - 36) / getDrawerCount() - 3}
+              />
+            </div>
+          )}
+        </>
       )}
 
       {/* Apply button */}
@@ -1114,6 +1177,53 @@ export function PropertiesPanel() {
                     />
                   </div>
                 </div>
+              </AccordionContent>
+            </AccordionItem>
+          )}
+
+          {/* Handle Configuration - only for DOOR or DRAWER_FRONT parts */}
+          {(selectedPart.cabinetMetadata?.role === 'DOOR' || selectedPart.cabinetMetadata?.role === 'DRAWER_FRONT') && (
+            <AccordionItem value="handle" className="border-b-0">
+              <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
+                {t('handleConfig')}
+              </AccordionTrigger>
+              <AccordionContent className="pb-2 pt-0">
+                <HandleSelector
+                  value={selectedPart.cabinetMetadata?.handleMetadata?.config}
+                  onChange={(handleConfig: HandleConfig | undefined) => {
+                    if (!selectedPart.cabinetMetadata) return;
+
+                    // Determine door type based on metadata
+                    let doorType: DoorType = 'SINGLE';
+                    const doorMeta = selectedPart.cabinetMetadata.doorMetadata;
+                    if (doorMeta?.hingeSide === 'LEFT' && selectedPart.name?.toLowerCase().includes('lewy')) {
+                      doorType = 'DOUBLE_LEFT';
+                    } else if (doorMeta?.hingeSide === 'RIGHT' && selectedPart.name?.toLowerCase().includes('prawy')) {
+                      doorType = 'DOUBLE_RIGHT';
+                    }
+
+                    // Generate new handle metadata or clear it
+                    const handleMetadata = handleConfig
+                      ? generateHandleMetadata(
+                          handleConfig,
+                          selectedPart.width ?? 400,
+                          selectedPart.height ?? 400,
+                          doorType,
+                          doorMeta?.hingeSide
+                        )
+                      : undefined;
+
+                    // Update the part with new cabinet metadata
+                    updatePart(selectedPart.id, {
+                      cabinetMetadata: {
+                        ...selectedPart.cabinetMetadata,
+                        handleMetadata,
+                      },
+                    });
+                  }}
+                  doorWidth={selectedPart.width ?? 400}
+                  doorHeight={selectedPart.height ?? 400}
+                />
               </AccordionContent>
             </AccordionItem>
           )}

@@ -192,8 +192,8 @@ export function Part3D({ part }: Part3DProps) {
 
   const showEdges = isColliding || isPartSelected || isCabinetSelected;
 
-  // Check if this part is a door with handle metadata
-  const isDoor = part.cabinetMetadata?.role === 'DOOR';
+  // Check if this part is a door or drawer front with handle metadata
+  const isDoorOrDrawerFront = part.cabinetMetadata?.role === 'DOOR' || part.cabinetMetadata?.role === 'DRAWER_FRONT';
   const handleMetadata = part.cabinetMetadata?.handleMetadata;
 
   return (
@@ -216,8 +216,8 @@ export function Part3D({ part }: Part3DProps) {
         )}
       </mesh>
 
-      {/* Render handle for door parts */}
-      {isDoor && handleMetadata && (
+      {/* Render handle for door and drawer front parts */}
+      {isDoorOrDrawerFront && handleMetadata && (
         <Handle3D handleMetadata={handleMetadata} doorDepth={part.depth} />
       )}
     </group>

@@ -85,6 +85,19 @@ export const AVAILABLE_COLUMNS: CSVColumn[] = [
     accessor: (part) =>
       part.cabinetMetadata ? part.cabinetMetadata.cabinetId : '',
   },
+  {
+    id: 'cabinet_role',
+    label: 'cabinetRole',
+    accessor: (part) => part.cabinetMetadata?.role || '',
+  },
+  {
+    id: 'drawer_index',
+    label: 'drawerIndex',
+    accessor: (part) =>
+      part.cabinetMetadata?.drawerIndex !== undefined
+        ? (part.cabinetMetadata.drawerIndex + 1).toString()
+        : '',
+  },
 ];
 
 export const DEFAULT_COLUMNS = AVAILABLE_COLUMNS.filter((col) =>

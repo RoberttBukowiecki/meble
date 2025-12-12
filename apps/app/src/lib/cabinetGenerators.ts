@@ -12,9 +12,11 @@ import {
   DoorConfig,
   HandleConfig,
   KitchenCabinetParams,
+  DrawerCabinetParams,
+  DrawerSlideConfig,
 } from '@/types';
 import { generateHandleMetadata, DoorType } from './handlePresets';
-import { DEFAULT_DOOR_CONFIG } from './config';
+import { DEFAULT_DOOR_CONFIG, DRAWER_SLIDE_PRESETS, DRAWER_CONFIG } from './config';
 
 /**
  * Generator function type
@@ -753,6 +755,222 @@ export function generateBookshelf(
   return parts;
 }
 
+// ============================================================================
+// Drawer Generation
+// ============================================================================
+
+interface DrawerGenerationParams {
+  cabinetId: string;
+  furnitureId: string;
+  drawerIndex: number;
+  // Box positioning (inside cabinet interior)
+  boxYOffset: number; // vertical position for drawer box (inside cabinet body)
+  boxSpaceHeight: number; // height available for drawer box in interior
+  // Front positioning (overlapping cabinet body like doors)
+  frontYCenter: number; // Y center for drawer front
+  frontHeight: number; // height of the drawer front
+  frontWidth: number; // width of the drawer front
+  // Cabinet dimensions
+  cabinetWidth: number;
+  cabinetDepth: number;
+  // Materials
+  bodyMaterialId: string;
+  frontMaterialId: string;
+  bottomMaterialId?: string;
+  // Configuration
+  slideConfig: DrawerSlideConfig;
+  hasInternalDrawer: boolean;
+  handleConfig?: HandleConfig;
+  // Thicknesses
+  bodyThickness: number;
+  frontThickness: number;
+  bottomThickness: number;
+}
+
+/**
+ * Calculate drawer box dimensions based on slide type and cabinet dimensions
+ */
+function calculateDrawerBoxDimensions(
+  cabinetWidth: number,
+  cabinetDepth: number,
+  boxSpaceHeight: number,
+  sideThickness: number,
+  slideConfig: DrawerSlideConfig,
+  hasInternalDrawer: boolean,
+  bottomThickness: number
+) {
+  // Drawer box width = cabinet interior width - slide clearances
+  const boxWidth = cabinetWidth
+    - 2 * sideThickness           // subtract cabinet sides
+    - 2 * slideConfig.sideOffset; // subtract slide clearance
+
+  // Drawer box depth
+  const boxDepth = cabinetDepth
+    - slideConfig.depthOffset     // rear clearance
+    - (hasInternalDrawer ? 0 : DRAWER_CONFIG.BOX_FRONT_OFFSET); // front clearance for front panel
+
+  // Drawer box height (sides height) - smaller than the space available
+  const boxSideHeight = Math.max(boxSpaceHeight - DRAWER_CONFIG.BOX_HEIGHT_REDUCTION, 50);
+
+  return { boxWidth, boxDepth, boxSideHeight, bottomThickness };
+}
+
+/**
+ * Generate all parts for a single drawer (box + optional front)
+ */
+function generateSingleDrawer(
+  params: DrawerGenerationParams
+): Omit<Part, 'id' | 'createdAt' | 'updatedAt'>[] {
+  const parts: Omit<Part, 'id' | 'createdAt' | 'updatedAt'>[] = [];
+
+  const dims = calculateDrawerBoxDimensions(
+    params.cabinetWidth,
+    params.cabinetDepth,
+    params.boxSpaceHeight,
+    params.bodyThickness,
+    params.slideConfig,
+    params.hasInternalDrawer,
+    params.bottomThickness
+  );
+
+  // Calculate box positions
+  // Box is centered in X, positioned at boxYOffset + some clearance from bottom
+  const boxCenterX = 0;
+  const boxBottomY = params.boxYOffset + (params.boxSpaceHeight - dims.boxSideHeight) / 2;
+  const boxCenterY = boxBottomY + dims.boxSideHeight / 2;
+
+  // Z positioning: box sits behind the front panel
+  const boxCenterZ = -params.cabinetDepth / 2 + params.slideConfig.depthOffset / 2 + dims.boxDepth / 2;
+
+  // Inner dimensions for bottom and back panels
+  const innerWidth = dims.boxWidth - 2 * params.bodyThickness;
+
+  // 1. Drawer Bottom
+  parts.push({
+    name: `Szuflada ${params.drawerIndex + 1} - dno`,
+    furnitureId: params.furnitureId,
+    group: params.cabinetId,
+    shapeType: 'RECT',
+    shapeParams: { type: 'RECT', x: innerWidth, y: dims.boxDepth - params.bodyThickness },
+    width: innerWidth,
+    height: dims.boxDepth - params.bodyThickness,
+    depth: dims.bottomThickness,
+    position: [boxCenterX, boxBottomY + dims.bottomThickness / 2, boxCenterZ - params.bodyThickness / 2],
+    rotation: [-Math.PI / 2, 0, 0],
+    materialId: params.bottomMaterialId || params.bodyMaterialId,
+    edgeBanding: { type: 'RECT', top: false, bottom: false, left: false, right: false },
+    cabinetMetadata: {
+      cabinetId: params.cabinetId,
+      role: 'DRAWER_BOTTOM',
+      drawerIndex: params.drawerIndex,
+    },
+  });
+
+  // 2. Drawer Left Side
+  parts.push({
+    name: `Szuflada ${params.drawerIndex + 1} - bok lewy`,
+    furnitureId: params.furnitureId,
+    group: params.cabinetId,
+    shapeType: 'RECT',
+    shapeParams: { type: 'RECT', x: dims.boxDepth, y: dims.boxSideHeight },
+    width: dims.boxDepth,
+    height: dims.boxSideHeight,
+    depth: params.bodyThickness,
+    position: [-dims.boxWidth / 2 + params.bodyThickness / 2, boxCenterY, boxCenterZ],
+    rotation: [0, Math.PI / 2, 0],
+    materialId: params.bodyMaterialId,
+    edgeBanding: { type: 'RECT', top: true, bottom: false, left: false, right: false },
+    cabinetMetadata: {
+      cabinetId: params.cabinetId,
+      role: 'DRAWER_SIDE_LEFT',
+      drawerIndex: params.drawerIndex,
+    },
+  });
+
+  // 3. Drawer Right Side
+  parts.push({
+    name: `Szuflada ${params.drawerIndex + 1} - bok prawy`,
+    furnitureId: params.furnitureId,
+    group: params.cabinetId,
+    shapeType: 'RECT',
+    shapeParams: { type: 'RECT', x: dims.boxDepth, y: dims.boxSideHeight },
+    width: dims.boxDepth,
+    height: dims.boxSideHeight,
+    depth: params.bodyThickness,
+    position: [dims.boxWidth / 2 - params.bodyThickness / 2, boxCenterY, boxCenterZ],
+    rotation: [0, Math.PI / 2, 0],
+    materialId: params.bodyMaterialId,
+    edgeBanding: { type: 'RECT', top: true, bottom: false, left: false, right: false },
+    cabinetMetadata: {
+      cabinetId: params.cabinetId,
+      role: 'DRAWER_SIDE_RIGHT',
+      drawerIndex: params.drawerIndex,
+    },
+  });
+
+  // 4. Drawer Back
+  parts.push({
+    name: `Szuflada ${params.drawerIndex + 1} - tył`,
+    furnitureId: params.furnitureId,
+    group: params.cabinetId,
+    shapeType: 'RECT',
+    shapeParams: { type: 'RECT', x: innerWidth, y: dims.boxSideHeight },
+    width: innerWidth,
+    height: dims.boxSideHeight,
+    depth: params.bodyThickness,
+    position: [boxCenterX, boxCenterY, boxCenterZ - dims.boxDepth / 2 + params.bodyThickness / 2],
+    rotation: [0, 0, 0],
+    materialId: params.bodyMaterialId,
+    edgeBanding: { type: 'RECT', top: true, bottom: false, left: false, right: false },
+    cabinetMetadata: {
+      cabinetId: params.cabinetId,
+      role: 'DRAWER_BACK',
+      drawerIndex: params.drawerIndex,
+    },
+  });
+
+  // 5. Drawer Front (if not internal drawer) - positioned to overlap cabinet body
+  if (!params.hasInternalDrawer && params.frontWidth > 0 && params.frontHeight > 0) {
+    // Front is positioned relative to full cabinet height (like doors)
+    const frontCenterZ = params.cabinetDepth / 2 + params.frontThickness / 2;
+
+    // Generate handle metadata if handle config is provided
+    const handleMetadata = params.handleConfig
+      ? generateHandleMetadata(
+          params.handleConfig,
+          params.frontWidth,
+          params.frontHeight,
+          'SINGLE', // Drawer fronts are always single
+          undefined // No hinge side for drawers
+        )
+      : undefined;
+
+    parts.push({
+      name: `Szuflada ${params.drawerIndex + 1} - front`,
+      furnitureId: params.furnitureId,
+      group: params.cabinetId,
+      shapeType: 'RECT',
+      shapeParams: { type: 'RECT', x: params.frontWidth, y: params.frontHeight },
+      width: params.frontWidth,
+      height: params.frontHeight,
+      depth: params.frontThickness,
+      position: [boxCenterX, params.frontYCenter, frontCenterZ],
+      rotation: [0, 0, 0],
+      materialId: params.frontMaterialId,
+      edgeBanding: { type: 'RECT', top: true, bottom: true, left: true, right: true },
+      cabinetMetadata: {
+        cabinetId: params.cabinetId,
+        role: 'DRAWER_FRONT',
+        index: params.drawerIndex,
+        drawerIndex: params.drawerIndex,
+        handleMetadata,
+      },
+    });
+  }
+
+  return parts;
+}
+
 export function generateDrawerCabinet(
   cabinetId: string,
   furnitureId: string,
@@ -763,9 +981,13 @@ export function generateDrawerCabinet(
 ): Omit<Part, 'id' | 'createdAt' | 'updatedAt'>[] {
   if (params.type !== 'DRAWER') throw new Error('Invalid params type');
 
+  const drawerParams = params as DrawerCabinetParams;
   const parts: Omit<Part, 'id' | 'createdAt' | 'updatedAt'>[] = [];
-  const { width, height, depth, drawerCount, topBottomPlacement, hasBack, backOverlapRatio, backMountType } = params;
+  const { width, height, depth, drawerCount, topBottomPlacement, hasBack, backOverlapRatio, backMountType } = drawerParams;
   const thickness = bodyMaterial.thickness;
+
+  // Get slide configuration
+  const slideConfig = DRAWER_SLIDE_PRESETS[drawerParams.drawerSlideType || 'SIDE_MOUNT'];
 
   const isInset = topBottomPlacement === 'inset';
   const sideHeight = isInset ? height : Math.max(height - thickness * 2, 0);
@@ -842,29 +1064,65 @@ export function generateDrawerCabinet(
     cabinetMetadata: { cabinetId, role: 'TOP' },
   });
 
-  // 5. DRAWER FRONTS (evenly spaced)
-  const actualDrawerCount = Math.max(2, Math.min(8, drawerCount));
+  // 5. DRAWERS (box + front)
+  const actualDrawerCount = Math.max(1, Math.min(8, drawerCount));
   const interiorHeight = Math.max(height - thickness * 2, 0);
-  const drawerFrontHeight = (interiorHeight - (actualDrawerCount - 1) * DOOR_GAP) / actualDrawerCount;
-  const drawerFrontWidth = Math.max(width - FRONT_MARGIN * 2, 0);
+
+  // Calculate drawer box heights (inside cabinet)
+  let boxHeights: number[];
+  if (drawerParams.drawerHeights && drawerParams.drawerHeights.length === actualDrawerCount) {
+    boxHeights = drawerParams.drawerHeights;
+  } else {
+    const singleBoxHeight = interiorHeight / actualDrawerCount;
+    boxHeights = Array(actualDrawerCount).fill(singleBoxHeight);
+  }
+
+  // Calculate front dimensions (overlapping cabinet body like doors)
+  // Total front area = cabinet height - FRONT_MARGIN on top and bottom
+  const totalFrontHeight = height - FRONT_MARGIN * 2;
+  const totalGapHeight = (actualDrawerCount - 1) * DOOR_GAP;
+  const singleFrontHeight = (totalFrontHeight - totalGapHeight) / actualDrawerCount;
+  const frontWidth = width - FRONT_MARGIN * 2; // Full width minus margins (like doors)
+
+  // Get front material thickness (assume same as body if not specified separately)
+  const frontMaterial = bodyMaterial; // In practice, frontMaterialId should map to a material
+  const frontThickness = frontMaterial.thickness;
+
+  // Get bottom material thickness
+  const bottomThickness = DRAWER_CONFIG.BOTTOM_THICKNESS;
+
+  // Generate each drawer
+  let currentBoxY = thickness; // Box starts above bottom panel (interior)
 
   for (let i = 0; i < actualDrawerCount; i++) {
-    const drawerY = thickness + drawerFrontHeight / 2 + i * (drawerFrontHeight + DOOR_GAP);
-    parts.push({
-      name: `Front szuflady ${i + 1}`,
+    // Calculate front Y position (from bottom, overlapping body)
+    // First front starts at FRONT_MARGIN + half its height
+    const frontYCenter = FRONT_MARGIN + singleFrontHeight / 2 + i * (singleFrontHeight + DOOR_GAP);
+
+    const drawerParts = generateSingleDrawer({
+      cabinetId,
       furnitureId,
-      group: cabinetId,
-      shapeType: 'RECT',
-      shapeParams: { type: 'RECT', x: drawerFrontWidth, y: drawerFrontHeight },
-      width: drawerFrontWidth,
-      height: drawerFrontHeight,
-      depth: thickness,
-      position: [0, drawerY, depth / 2 + thickness / 2],
-      rotation: [0, 0, 0],
-      materialId: materials.frontMaterialId,
-      edgeBanding: { type: 'RECT', top: true, bottom: true, left: true, right: true },
-      cabinetMetadata: { cabinetId, role: 'DRAWER_FRONT', index: i },
+      drawerIndex: i,
+      boxYOffset: currentBoxY,
+      boxSpaceHeight: boxHeights[i],
+      frontYCenter,
+      frontHeight: singleFrontHeight,
+      frontWidth,
+      cabinetWidth: width,
+      cabinetDepth: depth,
+      bodyMaterialId: materials.bodyMaterialId,
+      frontMaterialId: materials.frontMaterialId,
+      bottomMaterialId: drawerParams.bottomMaterialId,
+      slideConfig,
+      hasInternalDrawer: drawerParams.hasInternalDrawers || false,
+      handleConfig: drawerParams.handleConfig,
+      bodyThickness: thickness,
+      frontThickness,
+      bottomThickness,
     });
+
+    parts.push(...drawerParts);
+    currentBoxY += boxHeights[i];
   }
 
   // 6. BACK PANEL

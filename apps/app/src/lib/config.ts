@@ -3,7 +3,7 @@
  * Centralized keyboard shortcuts and settings
  */
 
-import { CabinetParams, CabinetType, DoorConfig } from "@/types";
+import { CabinetParams, CabinetType, DoorConfig, DrawerSlideType, DrawerSlideConfig } from "@/types";
 
 // Utility types/helpers for keyboard shortcuts
 export type ShortcutKeys = string | string[];
@@ -135,6 +135,33 @@ export const DEFAULT_DOOR_CONFIG: DoorConfig = {
   hingeSide: 'LEFT', // For single doors
 };
 
+// ============================================================================
+// Drawer Slide Configuration
+// ============================================================================
+
+/**
+ * Preset configurations for different drawer slide types
+ * - sideOffset: clearance needed per side for the drawer box
+ * - depthOffset: how much shorter the drawer is than cabinet depth
+ */
+export const DRAWER_SLIDE_PRESETS: Record<DrawerSlideType, DrawerSlideConfig> = {
+  SIDE_MOUNT: { type: 'SIDE_MOUNT', sideOffset: 13, depthOffset: 50 },
+  UNDERMOUNT: { type: 'UNDERMOUNT', sideOffset: 21, depthOffset: 50 },
+  BOTTOM_MOUNT: { type: 'BOTTOM_MOUNT', sideOffset: 13, depthOffset: 50 },
+  CENTER_MOUNT: { type: 'CENTER_MOUNT', sideOffset: 0, depthOffset: 50 },
+};
+
+// Default drawer configuration
+export const DEFAULT_DRAWER_SLIDE_TYPE: DrawerSlideType = 'SIDE_MOUNT';
+
+// Drawer construction constants
+export const DRAWER_CONFIG = {
+  FRONT_GAP: 3, // mm gap between drawer fronts
+  BOX_HEIGHT_REDUCTION: 30, // mm - how much smaller the box is than the front
+  BOTTOM_THICKNESS: 3, // mm - default drawer bottom thickness
+  BOX_FRONT_OFFSET: 20, // mm - gap between box front and front panel
+} as const;
+
 export const CABINET_PRESETS: Record<CabinetType, Partial<CabinetParams>> = {
   KITCHEN: {
     type: 'KITCHEN',
@@ -178,6 +205,8 @@ export const CABINET_PRESETS: Record<CabinetType, Partial<CabinetParams>> = {
     height: 800,
     depth: 500,
     drawerCount: 4,
+    drawerSlideType: 'SIDE_MOUNT',
+    hasInternalDrawers: false,
     topBottomPlacement: 'inset',
     hasBack: true,
     backOverlapRatio: DEFAULT_BACK_OVERLAP_RATIO,

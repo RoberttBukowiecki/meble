@@ -61,7 +61,19 @@
     "edgeTop": "Top (Y+)",
     "edgeBottom": "Bottom (Y-)",
     "edgeLeft": "Left (X-)",
-    "edgeRight": "Right (X+)"
+    "edgeRight": "Right (X+)",
+    "transform": "Transform",
+    "rotation": "Rotation (°)",
+    "multiselect": "{count} parts selected",
+    "selectedParts": "Selected parts",
+    "duplicateAll": "Duplicate all",
+    "deleteAll": "Delete all",
+    "mixedMaterials": "Mixed materials",
+    "clearSelection": "Clear selection",
+    "applyChanges": "Apply changes",
+    "slideType": "Slide type",
+    "internalDrawers": "Internal drawers",
+    "handleConfig": "Handle"
   },
   "PartsTable": {
     "title": "Parts List",
@@ -86,7 +98,10 @@
     "noDash": "-",
     "renamePart": "Rename part",
     "renameGroup": "Rename group",
-    "renameCabinet": "Rename cabinet"
+    "renameCabinet": "Rename cabinet",
+    "selectPart": "Select part",
+    "selectAll": "Select all",
+    "selected": "selected"
   },
   "CabinetTemplateDialog": {
     "title": "Add Cabinet",
@@ -153,12 +168,15 @@
       "group": "Group",
       "partId": "Part ID",
       "partName": "Part Name",
+      "friendlyPartId": "Friendly Part ID",
       "material": "Material",
       "thickness": "Thickness (mm)",
       "length": "Length X (mm)",
       "width": "Width Y (mm)",
       "notes": "Notes",
-      "cabinet": "Cabinet ID"
+      "cabinet": "Cabinet ID",
+      "cabinetRole": "Cabinet Role",
+      "drawerIndex": "Drawer No."
     }
   }
 }

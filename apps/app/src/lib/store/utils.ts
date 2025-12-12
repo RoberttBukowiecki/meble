@@ -5,6 +5,30 @@ let collisionDetectionTimeout: NodeJS.Timeout | null = null;
 
 const COLLISION_DETECTION_DEBOUNCE_MS = 100;
 
+/**
+ * Default construction rotations for cabinet parts.
+ * These are the rotations parts have when the cabinet has no world rotation.
+ */
+const DEFAULT_PART_ROTATIONS: Record<string, [number, number, number]> = {
+  BOTTOM: [-Math.PI / 2, 0, 0],
+  TOP: [-Math.PI / 2, 0, 0],
+  LEFT_SIDE: [0, Math.PI / 2, 0],
+  RIGHT_SIDE: [0, Math.PI / 2, 0],
+  SHELF: [-Math.PI / 2, 0, 0],
+  BACK: [0, 0, 0],
+  DOOR: [0, 0, 0],
+  DRAWER_FRONT: [0, 0, 0],
+  DRAWER_BOTTOM: [-Math.PI / 2, 0, 0],
+  DRAWER_SIDE_LEFT: [0, Math.PI / 2, 0],
+  DRAWER_SIDE_RIGHT: [0, Math.PI / 2, 0],
+  DRAWER_BACK: [0, 0, 0],
+};
+
+/**
+ * Get the cabinet's world transform (position and rotation).
+ * The rotation returned is the CABINET's rotation, not the part's full rotation.
+ * This is calculated by factoring out the part's default construction rotation.
+ */
 export const getCabinetTransform = (parts: Part[]) => {
   const center = new Vector3();
   if (parts.length > 0) {
@@ -15,11 +39,27 @@ export const getCabinetTransform = (parts: Part[]) => {
   const referencePart =
     parts.find((p) => p.cabinetMetadata?.role === 'BOTTOM') ?? parts[0];
 
-  const rotation = referencePart?.rotation
-    ? new Quaternion().setFromEuler(new Euler().fromArray(referencePart.rotation))
-    : new Quaternion();
+  if (!referencePart?.rotation) {
+    return { center, rotation: new Quaternion() };
+  }
 
-  return { center, rotation };
+  // Get the part's current full rotation
+  const currentRotation = new Quaternion().setFromEuler(
+    new Euler().fromArray(referencePart.rotation)
+  );
+
+  // Get the part's default construction rotation
+  const role = referencePart.cabinetMetadata?.role ?? 'BOTTOM';
+  const defaultRotationArray = DEFAULT_PART_ROTATIONS[role] ?? [0, 0, 0];
+  const defaultRotation = new Quaternion().setFromEuler(
+    new Euler().fromArray(defaultRotationArray)
+  );
+
+  // Cabinet rotation = currentRotation * inverse(defaultRotation)
+  // This gives us just the world rotation applied to the cabinet
+  const cabinetRotation = currentRotation.clone().multiply(defaultRotation.clone().invert());
+
+  return { center, rotation: cabinetRotation };
 };
 
 export const applyCabinetTransform = <

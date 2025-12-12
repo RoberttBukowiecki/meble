@@ -44,6 +44,30 @@ interface HandleSelectorProps {
 
 type CategoryOrNone = HandleCategory | 'NONE';
 
+// Internal component interfaces
+interface HandleTypeSelectorProps {
+  category: HandleCategory;
+  value: HandleType;
+  onChange: (type: HandleType) => void;
+}
+
+interface HandleDimensionSelectorProps {
+  config: HandleConfig;
+  onChange: (config: HandleConfig) => void;
+}
+
+interface HandlePositionSelectorProps {
+  config: HandleConfig;
+  onChange: (config: HandleConfig) => void;
+  doorWidth: number;
+  doorHeight: number;
+}
+
+interface HandleFinishSelectorProps {
+  config: HandleConfig;
+  onChange: (config: HandleConfig) => void;
+}
+
 export function HandleSelector({ value, onChange, doorWidth, doorHeight }: HandleSelectorProps) {
   const [category, setCategory] = useState<CategoryOrNone>(value?.category ?? 'NONE');
 

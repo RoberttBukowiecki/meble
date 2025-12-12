@@ -73,7 +73,10 @@
     "deleteAll": "Usuń wszystkie",
     "mixedMaterials": "Różne materiały",
     "clearSelection": "Odznacz wszystkie",
-    "applyChanges": "Zastosuj zmiany"
+    "applyChanges": "Zastosuj zmiany",
+    "slideType": "Typ prowadnic",
+    "internalDrawers": "Szuflady wewnętrzne",
+    "handleConfig": "Uchwyt"
   },
   "PartsTable": {
     "title": "Lista części",
@@ -175,7 +178,9 @@
       "length": "Długość X (mm)",
       "width": "Szerokość Y (mm)",
       "notes": "Notatki",
-      "cabinet": "ID Szafki"
+      "cabinet": "ID Szafki",
+      "cabinetRole": "Rola w szafce",
+      "drawerIndex": "Nr szuflady"
     }
   }
 }

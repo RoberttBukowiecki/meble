@@ -55,6 +55,45 @@ export const HANDLE_DIMENSIONS: Record<string, HandleDimensions> = {
 
 export type DoorType = 'SINGLE' | 'DOUBLE_LEFT' | 'DOUBLE_RIGHT';
 
+/**
+ * Mirror a position preset for double doors.
+ * For DOUBLE_LEFT door: handles should be on RIGHT side (near center gap)
+ * For DOUBLE_RIGHT door: handles should be on LEFT side (near center gap)
+ */
+function adjustPresetForDoubleDoor(
+  preset: HandlePositionPreset,
+  doorType: DoorType
+): HandlePositionPreset {
+  // Only adjust for double doors
+  if (doorType === 'SINGLE') return preset;
+
+  // Map presets to their mirrored versions
+  const leftRightMirror: Record<string, HandlePositionPreset> = {
+    TOP_LEFT: 'TOP_RIGHT',
+    TOP_RIGHT: 'TOP_LEFT',
+    MIDDLE_LEFT: 'MIDDLE_RIGHT',
+    MIDDLE_RIGHT: 'MIDDLE_LEFT',
+    BOTTOM_LEFT: 'BOTTOM_RIGHT',
+    BOTTOM_RIGHT: 'BOTTOM_LEFT',
+  };
+
+  // For DOUBLE_LEFT (left door, hinged on left): handle should be on RIGHT
+  // For DOUBLE_RIGHT (right door, hinged on right): handle should be on LEFT
+  if (doorType === 'DOUBLE_LEFT') {
+    // If preset is on LEFT side, move to RIGHT
+    if (preset === 'TOP_LEFT' || preset === 'MIDDLE_LEFT' || preset === 'BOTTOM_LEFT') {
+      return leftRightMirror[preset] ?? preset;
+    }
+  } else if (doorType === 'DOUBLE_RIGHT') {
+    // If preset is on RIGHT side, move to LEFT
+    if (preset === 'TOP_RIGHT' || preset === 'MIDDLE_RIGHT' || preset === 'BOTTOM_RIGHT') {
+      return leftRightMirror[preset] ?? preset;
+    }
+  }
+
+  return preset;
+}
+
 export function calculateHandlePosition(
   config: HandleConfig,
   doorWidth: number,
@@ -62,36 +101,64 @@ export function calculateHandlePosition(
   doorType: DoorType,
   hingeSide?: HingeSide
 ): { x: number; y: number } {
-  const { preset, offsetFromEdge = 30 } = config.position;
+  const { preset: originalPreset, offsetFromEdge = 30 } = config.position;
 
-  // Default offset from edge (mm)
-  const edgeOffset = offsetFromEdge;
+  // Auto-adjust preset for double doors
+  const preset = adjustPresetForDoubleDoor(originalPreset, doorType);
 
-  // For bars/strips, position is at center of handle
-  // For knobs, position is at center of knob
+  // Get handle dimensions to calculate proper offset
+  const handleLength = config.dimensions?.length ?? 128;
+  const isVertical = config.orientation === 'VERTICAL';
+
+  // Calculate the offset needed so handle doesn't extend beyond door edge
+  // For horizontal handles: add half the length to the edge offset
+  // For vertical handles: the length extends in Y direction, so only use edge offset for X
+  const halfLength = handleLength / 2;
+
+  // Edge offset for positioning (from door edge to handle's outer edge)
+  const baseEdgeOffset = offsetFromEdge;
+
+  // Calculate actual center offset based on handle orientation and position
+  const getXOffset = (isLeftSide: boolean) => {
+    if (isVertical) {
+      // Vertical handle: X position just needs base offset
+      return baseEdgeOffset;
+    }
+    // Horizontal handle: center needs to be offset by half the length
+    return baseEdgeOffset + halfLength;
+  };
+
+  const getYOffset = (isTopSide: boolean) => {
+    if (!isVertical) {
+      // Horizontal handle: Y position just needs base offset
+      return baseEdgeOffset;
+    }
+    // Vertical handle: center needs to be offset by half the length
+    return baseEdgeOffset + halfLength;
+  };
 
   switch (preset) {
     case 'TOP_LEFT':
-      return { x: -doorWidth / 2 + edgeOffset, y: doorHeight / 2 - edgeOffset };
+      return { x: -doorWidth / 2 + getXOffset(true), y: doorHeight / 2 - getYOffset(true) };
     case 'TOP_RIGHT':
-      return { x: doorWidth / 2 - edgeOffset, y: doorHeight / 2 - edgeOffset };
+      return { x: doorWidth / 2 - getXOffset(false), y: doorHeight / 2 - getYOffset(true) };
     case 'TOP_CENTER':
-      return { x: 0, y: doorHeight / 2 - edgeOffset };
+      return { x: 0, y: doorHeight / 2 - getYOffset(true) };
     case 'MIDDLE_LEFT':
-      return { x: -doorWidth / 2 + edgeOffset, y: 0 };
+      return { x: -doorWidth / 2 + getXOffset(true), y: 0 };
     case 'MIDDLE_RIGHT':
-      return { x: doorWidth / 2 - edgeOffset, y: 0 };
+      return { x: doorWidth / 2 - getXOffset(false), y: 0 };
     case 'BOTTOM_LEFT':
-      return { x: -doorWidth / 2 + edgeOffset, y: -doorHeight / 2 + edgeOffset };
+      return { x: -doorWidth / 2 + getXOffset(true), y: -doorHeight / 2 + getYOffset(false) };
     case 'BOTTOM_RIGHT':
-      return { x: doorWidth / 2 - edgeOffset, y: -doorHeight / 2 + edgeOffset };
+      return { x: doorWidth / 2 - getXOffset(false), y: -doorHeight / 2 + getYOffset(false) };
     case 'BOTTOM_CENTER':
-      return { x: 0, y: -doorHeight / 2 + edgeOffset };
+      return { x: 0, y: -doorHeight / 2 + getYOffset(false) };
     case 'CUSTOM':
       return { x: config.position.x ?? 0, y: config.position.y ?? 0 };
     default:
       // Smart positioning based on door type and hinge side
-      return getSmartHandlePosition(doorWidth, doorHeight, doorType, hingeSide, edgeOffset);
+      return getSmartHandlePosition(doorWidth, doorHeight, doorType, hingeSide, baseEdgeOffset, halfLength, isVertical);
   }
 }
 
@@ -100,23 +167,28 @@ function getSmartHandlePosition(
   doorHeight: number,
   doorType: DoorType,
   hingeSide?: HingeSide,
-  edgeOffset: number = 30
+  edgeOffset: number = 30,
+  halfLength: number = 64,
+  isVertical: boolean = false
 ): { x: number; y: number } {
+  // Calculate actual offset including handle length for horizontal handles
+  const xOffset = isVertical ? edgeOffset : edgeOffset + halfLength;
+
   // Handle should be on opposite side of hinge
   if (doorType === 'SINGLE') {
     const handleSide = hingeSide === 'LEFT' ? 'RIGHT' : 'LEFT';
-    const x = handleSide === 'LEFT' ? -doorWidth / 2 + edgeOffset : doorWidth / 2 - edgeOffset;
+    const x = handleSide === 'LEFT' ? -doorWidth / 2 + xOffset : doorWidth / 2 - xOffset;
     return { x, y: 0 }; // Middle height
   }
 
   if (doorType === 'DOUBLE_LEFT') {
     // Left door - handle on right side (near center gap)
-    return { x: doorWidth / 2 - edgeOffset, y: 0 };
+    return { x: doorWidth / 2 - xOffset, y: 0 };
   }
 
   if (doorType === 'DOUBLE_RIGHT') {
     // Right door - handle on left side (near center gap)
-    return { x: -doorWidth / 2 + edgeOffset, y: 0 };
+    return { x: -doorWidth / 2 + xOffset, y: 0 };
   }
 
   return { x: 0, y: 0 };

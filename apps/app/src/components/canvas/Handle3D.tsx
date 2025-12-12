@@ -86,24 +86,30 @@ function BarHandle({ dimensions, orientation }: BarHandleProps) {
   const length = dimensions?.length ?? 128;
   const height = dimensions?.height ?? 35;
   const barRadius = 6; // 12mm diameter bar
+  const postRadius = barRadius * 0.6;
+  const postHeight = height; // Full height from door surface to bar center
 
   const isVertical = orientation === 'VERTICAL';
 
+  // Calculate hole spacing for mounting posts
+  const holeSpacing = dimensions?.holeSpacing ?? length - 2 * barRadius;
+  const postOffset = holeSpacing / 2;
+
   return (
     <group rotation={isVertical ? [0, 0, Math.PI / 2] : [0, 0, 0]}>
-      {/* Main bar */}
-      <mesh position={[0, 0, height / 2]}>
+      {/* Main bar - rotated 90° around Z to lie along X axis */}
+      <mesh position={[0, 0, height]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[barRadius, barRadius, length, 16]} />
         <meshStandardMaterial color="#C0C0C0" metalness={0.8} roughness={0.2} />
       </mesh>
-      {/* Left mounting post */}
-      <mesh position={[-length / 2 + barRadius, 0, height / 4]}>
-        <cylinderGeometry args={[barRadius * 0.6, barRadius * 0.6, height / 2, 16]} />
+      {/* Left mounting post - rotated 90° around X to point along Z axis */}
+      <mesh position={[-postOffset, 0, height / 2]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[postRadius, postRadius, postHeight, 16]} />
         <meshStandardMaterial color="#C0C0C0" metalness={0.8} roughness={0.2} />
       </mesh>
-      {/* Right mounting post */}
-      <mesh position={[length / 2 - barRadius, 0, height / 4]}>
-        <cylinderGeometry args={[barRadius * 0.6, barRadius * 0.6, height / 2, 16]} />
+      {/* Right mounting post - rotated 90° around X to point along Z axis */}
+      <mesh position={[postOffset, 0, height / 2]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[postRadius, postRadius, postHeight, 16]} />
         <meshStandardMaterial color="#C0C0C0" metalness={0.8} roughness={0.2} />
       </mesh>
     </group>
@@ -137,17 +143,19 @@ interface KnobHandleProps {
 function KnobHandle({ dimensions }: KnobHandleProps) {
   const diameter = dimensions?.diameter ?? 32;
   const height = dimensions?.height ?? 30;
+  const stemRadius = diameter * 0.15;
+  const stemHeight = height - diameter / 2; // Stem from door to bottom of sphere
 
   return (
     <group>
-      {/* Knob sphere */}
-      <mesh position={[0, 0, height / 2]}>
+      {/* Knob sphere - positioned at full height */}
+      <mesh position={[0, 0, height]}>
         <sphereGeometry args={[diameter / 2, 16, 16]} />
         <meshStandardMaterial color="#C0C0C0" metalness={0.8} roughness={0.2} />
       </mesh>
-      {/* Mounting stem */}
-      <mesh position={[0, 0, height / 4]}>
-        <cylinderGeometry args={[diameter * 0.2, diameter * 0.2, height / 2, 16]} />
+      {/* Mounting stem - rotated 90° around X to point along Z axis */}
+      <mesh position={[0, 0, stemHeight / 2]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[stemRadius, stemRadius, stemHeight, 16]} />
         <meshStandardMaterial color="#C0C0C0" metalness={0.8} roughness={0.2} />
       </mesh>
     </group>
@@ -216,7 +224,7 @@ function HandlelessIndicator({ type }: HandlelessIndicatorProps) {
   const color = type === 'TIP_ON' ? '#404040' : '#303030';
 
   return (
-    <mesh>
+    <mesh rotation={[Math.PI / 2, 0, 0]}>
       <cylinderGeometry args={[10, 10, 5, 8]} />
       <meshStandardMaterial color={color} metalness={0.3} roughness={0.7} />
     </mesh>

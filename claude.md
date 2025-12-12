@@ -97,6 +97,10 @@ apps/app/src/
     └── globals.css     # Global styles + CSS variables
 ```
 
+### Flow
+- Nie odpalaj sam serwera (robie to recznie)
+- Zrealizowany plan oznaczaj jako DONE-nazwa-planu.md i przenoś do foldernu app/apps/docs/DONE
+
 ### TypeScript
 - Używaj **strict mode** w tsconfig.json
 - Wszystkie typy powinny być zdefiniowane w `src/types/index.ts`
