@@ -12,6 +12,8 @@ import { GeneratedPart } from './types';
 import { generateBackPanel } from './backPanel';
 import { generateDrawers } from './drawers';
 import { generateSideFronts } from './sideFronts';
+import { generateDecorativePanels } from './decorativePanels';
+import { generateInterior } from './interior';
 
 export function generateDrawerCabinet(
   cabinetId: string,
@@ -103,8 +105,24 @@ export function generateDrawerCabinet(
     cabinetMetadata: { cabinetId, role: 'TOP' },
   });
 
-  // 5. DRAWERS (if configured)
-  if (drawerParams.drawerConfig && drawerParams.drawerConfig.zones.length > 0) {
+  // 5. INTERIOR (unified config or legacy drawers)
+  if (drawerParams.interiorConfig && drawerParams.interiorConfig.sections.length > 0) {
+    // Use new unified interior system
+    const interiorParts = generateInterior({
+      cabinetId,
+      furnitureId,
+      cabinetWidth: width,
+      cabinetHeight: height,
+      cabinetDepth: depth,
+      bodyMaterialId: materials.bodyMaterialId,
+      frontMaterialId: materials.frontMaterialId,
+      bodyThickness: thickness,
+      frontThickness: thickness,
+      interiorConfig: drawerParams.interiorConfig,
+    });
+    parts.push(...interiorParts);
+  } else if (drawerParams.drawerConfig && drawerParams.drawerConfig.zones.length > 0) {
+    // Legacy: DRAWERS (if configured)
     const drawerParts = generateDrawers({
       cabinetId,
       furnitureId,
@@ -153,6 +171,22 @@ export function generateDrawerCabinet(
       defaultFrontMaterialId: materials.frontMaterialId,
     });
     parts.push(...sideFrontParts);
+  }
+
+  // 8. DECORATIVE PANELS (if configured)
+  if (drawerParams.decorativePanels && (drawerParams.decorativePanels.top?.enabled || drawerParams.decorativePanels.bottom?.enabled)) {
+    const decorativeParts = generateDecorativePanels({
+      cabinetId,
+      furnitureId,
+      cabinetWidth: width,
+      cabinetHeight: height,
+      cabinetDepth: depth,
+      frontMaterialId: materials.frontMaterialId,
+      frontThickness: thickness,
+      bodyThickness: thickness,
+      decorativePanels: drawerParams.decorativePanels,
+    });
+    parts.push(...decorativeParts);
   }
 
   return parts;

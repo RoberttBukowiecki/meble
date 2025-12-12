@@ -83,19 +83,23 @@ const SideFrontEditor = ({
 
   const handleBottomOffsetChange = (value: number) => {
     if (!config) return;
+    // Allow negative values for extension below cabinet
+    // Limit positive values to prevent panel from being too short
     const maxOffset = cabinetHeight - (config.topOffset ?? 0) - 100;
     onUpdate({
       ...config,
-      bottomOffset: Math.max(0, Math.min(maxOffset, value)),
+      bottomOffset: Math.min(maxOffset, value),
     });
   };
 
   const handleTopOffsetChange = (value: number) => {
     if (!config) return;
+    // Allow negative values for extension above cabinet
+    // Limit positive values to prevent panel from being too short
     const maxOffset = cabinetHeight - (config.bottomOffset ?? 0) - 100;
     onUpdate({
       ...config,
-      topOffset: Math.max(0, Math.min(maxOffset, value)),
+      topOffset: Math.min(maxOffset, value),
     });
   };
 
@@ -170,12 +174,11 @@ const SideFrontEditor = ({
             <NumberInput
               value={config.bottomOffset}
               onChange={handleBottomOffsetChange}
-              min={0}
-              allowNegative={false}
+              allowNegative={true}
               className="w-full h-9"
             />
             <p className="text-xs text-muted-foreground">
-              Odległość od dołu szafki do początku frontu bocznego
+              <span className="text-foreground/70">+</span> skraca od dołu • <span className="text-foreground/70">−</span> wydłuża poniżej szafki
             </p>
           </div>
 
@@ -185,12 +188,11 @@ const SideFrontEditor = ({
             <NumberInput
               value={config.topOffset}
               onChange={handleTopOffsetChange}
-              min={0}
-              allowNegative={false}
+              allowNegative={true}
               className="w-full h-9"
             />
             <p className="text-xs text-muted-foreground">
-              Odległość od góry szafki do końca frontu bocznego
+              <span className="text-foreground/70">+</span> skraca od góry • <span className="text-foreground/70">−</span> wydłuża powyżej szafki
             </p>
           </div>
 
@@ -211,6 +213,7 @@ const SideFrontEditor = ({
 
 /**
  * Visual preview of the cabinet with side fronts
+ * Supports negative offsets (extension beyond cabinet)
  */
 interface PreviewProps {
   config: SideFrontsConfig;
@@ -221,26 +224,45 @@ const Preview = ({ config, cabinetHeight }: PreviewProps) => {
   const hasLeft = config.left?.enabled;
   const hasRight = config.right?.enabled;
 
-  const leftTopPercent = hasLeft ? ((config.left?.topOffset ?? 0) / cabinetHeight) * 100 : 0;
-  const leftBottomPercent = hasLeft ? ((config.left?.bottomOffset ?? 0) / cabinetHeight) * 100 : 0;
-  const rightTopPercent = hasRight ? ((config.right?.topOffset ?? 0) / cabinetHeight) * 100 : 0;
-  const rightBottomPercent = hasRight ? ((config.right?.bottomOffset ?? 0) / cabinetHeight) * 100 : 0;
+  // Calculate percentages - negative values mean extension beyond cabinet
+  const leftTopOffset = config.left?.topOffset ?? 0;
+  const leftBottomOffset = config.left?.bottomOffset ?? 0;
+  const rightTopOffset = config.right?.topOffset ?? 0;
+  const rightBottomOffset = config.right?.bottomOffset ?? 0;
+
+  // Check if any panel extends beyond cabinet
+  const hasExtension = leftTopOffset < 0 || leftBottomOffset < 0 || rightTopOffset < 0 || rightBottomOffset < 0;
+
+  // Calculate extension amounts for visual padding
+  const maxTopExtension = Math.max(0, -leftTopOffset, -rightTopOffset);
+  const maxBottomExtension = Math.max(0, -leftBottomOffset, -rightBottomOffset);
+  const extensionPadding = 20; // px padding for extensions in preview
 
   return (
     <div className="border rounded-lg bg-muted/30 p-6 flex flex-col items-center justify-center">
-      <Label className="text-xs font-medium mb-4 block text-center text-muted-foreground uppercase tracking-wider">Podgląd (widok z przodu)</Label>
-      <div className="relative h-48 w-32 flex justify-center shadow-sm">
+      <Label className="text-xs font-medium mb-4 block text-center text-muted-foreground uppercase tracking-wider">
+        Podgląd (widok z przodu)
+      </Label>
+
+      {/* Container with overflow visible for extensions */}
+      <div
+        className="relative w-32 flex justify-center"
+        style={{
+          height: `${192 + (hasExtension ? extensionPadding * 2 : 0)}px`,
+          paddingTop: maxTopExtension > 0 ? extensionPadding : 0,
+          paddingBottom: maxBottomExtension > 0 ? extensionPadding : 0,
+        }}
+      >
         {/* Cabinet body */}
-        <div className="w-24 h-full border-2 border-border bg-background rounded-sm shadow-inner relative z-10" />
+        <div className="w-24 border-2 border-border bg-background rounded-sm shadow-inner relative z-10" style={{ height: '192px' }} />
 
         {/* Left side front */}
         {hasLeft && (
           <div
-            className="absolute left-1 w-3 bg-primary/20 border border-primary rounded-l-sm z-20"
+            className="absolute left-0 w-3 bg-primary/20 border border-primary rounded-l-sm z-20"
             style={{
-              top: `${leftTopPercent}%`,
-              bottom: `${leftBottomPercent}%`,
-              left: 0,
+              top: `${(maxTopExtension > 0 ? extensionPadding : 0) + (leftTopOffset / cabinetHeight) * 192}px`,
+              height: `${((cabinetHeight - leftTopOffset - leftBottomOffset) / cabinetHeight) * 192}px`,
             }}
           />
         )}
@@ -248,15 +270,31 @@ const Preview = ({ config, cabinetHeight }: PreviewProps) => {
         {/* Right side front */}
         {hasRight && (
           <div
-            className="absolute right-1 w-3 bg-primary/20 border border-primary rounded-r-sm z-20"
+            className="absolute right-0 w-3 bg-primary/20 border border-primary rounded-r-sm z-20"
             style={{
-              top: `${rightTopPercent}%`,
-              bottom: `${rightBottomPercent}%`,
-              right: 0,
+              top: `${(maxTopExtension > 0 ? extensionPadding : 0) + (rightTopOffset / cabinetHeight) * 192}px`,
+              height: `${((cabinetHeight - rightTopOffset - rightBottomOffset) / cabinetHeight) * 192}px`,
             }}
           />
         )}
+
+        {/* Extension indicators */}
+        {hasExtension && (
+          <>
+            {/* Top cabinet edge line */}
+            <div
+              className="absolute left-0 right-0 border-t border-dashed border-muted-foreground/50 z-0"
+              style={{ top: maxTopExtension > 0 ? extensionPadding : 0 }}
+            />
+            {/* Bottom cabinet edge line */}
+            <div
+              className="absolute left-0 right-0 border-t border-dashed border-muted-foreground/50 z-0"
+              style={{ top: (maxTopExtension > 0 ? extensionPadding : 0) + 192 }}
+            />
+          </>
+        )}
       </div>
+
       <div className="mt-4 text-xs text-muted-foreground text-center font-medium">
         {hasLeft && hasRight
           ? 'Obie strony skonfigurowane'
@@ -266,6 +304,12 @@ const Preview = ({ config, cabinetHeight }: PreviewProps) => {
           ? 'Prawa strona skonfigurowana'
           : 'Brak frontów bocznych'}
       </div>
+
+      {hasExtension && (
+        <div className="mt-2 text-[10px] text-amber-600 dark:text-amber-500 text-center">
+          Panel wystaje poza szafkę
+        </div>
+      )}
     </div>
   );
 };

@@ -50,9 +50,11 @@ import {
 } from '@/lib/config';
 import { DrawerConfigDialog } from './DrawerConfigDialog';
 import { SideFrontsConfigDialog } from './SideFrontsConfigDialog';
+import { DecorativePanelsConfigDialog } from './DecorativePanelsConfigDialog';
+import { InteriorConfigDialog } from './InteriorConfigDialog';
 import { getDefaultMaterials, getDefaultBackMaterial } from '@/lib/store/utils';
-import { getSideFrontsSummary, hasSideFronts } from '@/lib/cabinetGenerators';
-import { Settings2, PanelLeftDashed, AlertTriangle, RectangleHorizontal, Grip, Box, Warehouse, Library, Layers } from 'lucide-react';
+import { getSideFrontsSummary, hasSideFronts, hasDecorativePanels, getDecorativePanelsSummary, hasInteriorContent, getInteriorSummary } from '@/lib/cabinetGenerators';
+import { Settings2, PanelLeftDashed, AlertTriangle, RectangleHorizontal, Grip, Box, Warehouse, Library, Layers, PanelTop, LayoutGrid } from 'lucide-react';
 import { FrontsConfigDialog } from './FrontsConfigDialog';
 import { HandlesConfigDialog } from './HandlesConfigDialog';
 import { cn } from '@/lib/utils';
@@ -147,6 +149,8 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
     const [handlesDialogOpen, setHandlesDialogOpen] = useState(false);
     const [drawerDialogOpen, setDrawerDialogOpen] = useState(false);
     const [sideFrontsDialogOpen, setSideFrontsDialogOpen] = useState(false);
+    const [decorativePanelsDialogOpen, setDecorativePanelsDialogOpen] = useState(false);
+    const [interiorDialogOpen, setInteriorDialogOpen] = useState(false);
 
     const updateParams = (newParams: Partial<CabinetParams>) => {
         onChange({...params, ...newParams});
@@ -206,6 +210,16 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
     const sideFrontsConfig = params.sideFronts;
     const hasSideFrontsConfig = hasSideFronts(sideFrontsConfig);
     const sideFrontsSummary = getSideFrontsSummary(sideFrontsConfig);
+
+    // Decorative panels summary
+    const decorativePanelsConfig = params.decorativePanels;
+    const hasDecorativePanelsConfig = hasDecorativePanels(decorativePanelsConfig);
+    const decorativePanelsSummary = getDecorativePanelsSummary(decorativePanelsConfig);
+
+    // Interior config summary
+    const interiorConfig = params.interiorConfig;
+    const hasInterior = hasInteriorContent(interiorConfig);
+    const interiorSummary = getInteriorSummary(interiorConfig);
 
     // Door config summary
     const kitchenParams = params as Partial<KitchenCabinetParams>;
@@ -436,7 +450,7 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
                         <div className="flex items-center justify-between p-3 rounded-lg border bg-card shadow-sm">
                              <div className="space-y-1">
                                 <div className="flex items-center gap-2">
-                                    <h4 className="text-sm font-medium">Drzwi</h4>
+                                    <h4 className="text-sm font-medium">Fronty</h4>
                                     {drawerHasFronts && !getHasDoors() && (
                                         <Badge variant="outline" className="text-xs text-muted-foreground border-dashed">
                                             Konflikt: szuflady
@@ -529,6 +543,30 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
                             </Button>
                         }
                     />
+
+                    {/* Decorative Panels Configuration */}
+                    <ConfigRow
+                        title="Panele ozdobne"
+                        description={hasDecorativePanelsConfig ? decorativePanelsSummary : 'Brak (standardowa konstrukcja)'}
+                        icon={<PanelTop className="h-4 w-4" />}
+                        action={
+                            <Button variant="outline" size="sm" onClick={() => setDecorativePanelsDialogOpen(true)}>
+                                Konfiguruj
+                            </Button>
+                        }
+                    />
+
+                    {/* Interior Configuration (Unified Shelves + Drawers) */}
+                    <ConfigRow
+                        title="Wnętrze (zaawansowane)"
+                        description={hasInterior ? interiorSummary : 'Użyj konfiguracji półek/szuflad powyżej lub skonfiguruj zaawansowane sekcje'}
+                        icon={<LayoutGrid className="h-4 w-4" />}
+                        action={
+                            <Button variant="outline" size="sm" onClick={() => setInteriorDialogOpen(true)}>
+                                Konfiguruj
+                            </Button>
+                        }
+                    />
                 </div>
             </div>
 
@@ -551,6 +589,7 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
                 config={drawerConfig}
                 onConfigChange={handleDrawerConfigChange}
                 cabinetHeight={params.height ?? 720}
+                cabinetWidth={params.width ?? 600}
             />
             <SideFrontsConfigDialog
                 open={sideFrontsDialogOpen}
@@ -560,6 +599,28 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
                 materials={materials}
                 defaultFrontMaterialId={defaultFrontMaterialId}
                 cabinetHeight={params.height ?? 720}
+            />
+            <DecorativePanelsConfigDialog
+                open={decorativePanelsDialogOpen}
+                onOpenChange={setDecorativePanelsDialogOpen}
+                config={decorativePanelsConfig}
+                onConfigChange={(config) => onChange({ ...params, decorativePanels: config } as any)}
+                materials={materials}
+                defaultFrontMaterialId={defaultFrontMaterialId}
+                cabinetHeight={params.height ?? 720}
+                cabinetWidth={params.width ?? 600}
+                cabinetDepth={params.depth ?? 500}
+            />
+            <InteriorConfigDialog
+                open={interiorDialogOpen}
+                onOpenChange={setInteriorDialogOpen}
+                config={interiorConfig}
+                onConfigChange={(config) => onChange({ ...params, interiorConfig: config } as any)}
+                cabinetHeight={params.height ?? 720}
+                cabinetWidth={params.width ?? 600}
+                cabinetDepth={params.depth ?? 500}
+                hasDoors={getHasDoors()}
+                onRemoveDoors={() => updateParams({ hasDoors: false } as any)}
             />
         </div>
     )

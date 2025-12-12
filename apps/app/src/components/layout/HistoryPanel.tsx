@@ -20,37 +20,39 @@ export function HistoryPanel({ onHistoryDrawerOpen }: HistoryPanelProps) {
   return (
     <div
       className={cn(
-        'fixed bottom-0 left-0 right-0 z-30 transition-transform duration-300 ease-in-out',
+        'fixed bottom-0 left-0 right-0 lg:right-[25%] z-30 transition-transform duration-300 ease-in-out pointer-events-none',
         isOpen ? 'transform-none' : `translate-y-[calc(100%-48px)]`
       )}
     >
-      <div className="flex justify-center">
-        <div className="flex items-end gap-2">
-            <Button
-              variant="secondary"
-              className="rounded-b-none rounded-t-lg"
-              onClick={onHistoryDrawerOpen}
-            >
-              <LayoutList className="h-4 w-4 mr-2" />
-              {t('listTitle')}
-            </Button>
-            <Button
-              variant="secondary"
-              className="rounded-b-none rounded-t-lg"
-              onClick={() => setIsOpen(!isOpen)}
-            >
-              {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-              <History className="h-4 w-4 mx-2" />
-              {t('timelineTitle')}
-            </Button>
+      <div className="pointer-events-auto">
+        <div className="flex justify-center">
+          <div className="flex items-end gap-2">
+              <Button
+                variant="secondary"
+                className="rounded-b-none rounded-t-lg"
+                onClick={onHistoryDrawerOpen}
+              >
+                <LayoutList className="h-4 w-4 mr-2" />
+                {t('listTitle')}
+              </Button>
+              <Button
+                variant="secondary"
+                className="rounded-b-none rounded-t-lg"
+                onClick={() => setIsOpen(!isOpen)}
+              >
+                {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+                <History className="h-4 w-4 mx-2" />
+                {t('timelineTitle')}
+              </Button>
+          </div>
         </div>
-      </div>
 
-      <div
-        className="bg-background border-t border-border shadow-lg p-4"
-        style={{ height: PANEL_HEIGHT }}
-      >
-        <HorizontalTimeline />
+        <div
+          className="bg-background border-t border-border shadow-lg p-4"
+          style={{ height: PANEL_HEIGHT }}
+        >
+          <HorizontalTimeline />
+        </div>
       </div>
     </div>
   );

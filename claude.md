@@ -101,6 +101,7 @@ apps/app/src/
 - Nie odpalaj sam serwera (robie to recznie)
 - Zrealizowany plan oznaczaj jako DONE-nazwa-planu.md i przenoś do foldernu app/apps/docs/DONE
 - Jesli chcesz dodac input typu number to dodaj NumberInput
+- Aplikacja nie jest jeszcze produkcjna, nie musisz robic migracji starych wersji, api itp.
 
 ### TypeScript
 - Używaj **strict mode** w tsconfig.json

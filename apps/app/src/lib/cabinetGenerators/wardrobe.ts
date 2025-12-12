@@ -12,6 +12,8 @@ import { FRONT_MARGIN, DOOR_GAP } from './constants';
 import { generateBackPanel } from './backPanel';
 import { generateDrawers } from './drawers';
 import { generateSideFronts } from './sideFronts';
+import { generateDecorativePanels } from './decorativePanels';
+import { generateInterior } from './interior';
 
 export function generateWardrobe(
   cabinetId: string,
@@ -103,27 +105,62 @@ export function generateWardrobe(
     cabinetMetadata: { cabinetId, role: 'TOP' },
   });
 
-  // 5. SHELVES
-  const interiorHeight = Math.max(height - thickness * 2, 0);
-  const shelfSpacing = interiorHeight / (shelfCount + 1);
-
-  for (let i = 0; i < shelfCount; i++) {
-    const shelfY = thickness + shelfSpacing * (i + 1);
-    parts.push({
-      name: `Półka ${i + 1}`,
+  // 5. INTERIOR (unified config or legacy shelves/drawers)
+  if (params.interiorConfig && params.interiorConfig.sections.length > 0) {
+    // Use new unified interior system
+    const interiorParts = generateInterior({
+      cabinetId,
       furnitureId,
-      group: cabinetId,
-      shapeType: 'RECT',
-      shapeParams: { type: 'RECT', x: shelfWidth, y: depth - 10 },
-      width: shelfWidth,
-      height: depth - 10,
-      depth: thickness,
-      position: [0, shelfY, -5],
-      rotation: [-Math.PI / 2, 0, 0],
-      materialId: materials.bodyMaterialId,
-      edgeBanding: { type: 'RECT', top: true, bottom: false, left: false, right: false },
-      cabinetMetadata: { cabinetId, role: 'SHELF', index: i },
+      cabinetWidth: width,
+      cabinetHeight: height,
+      cabinetDepth: depth,
+      bodyMaterialId: materials.bodyMaterialId,
+      frontMaterialId: materials.frontMaterialId,
+      bodyThickness: thickness,
+      frontThickness: thickness,
+      interiorConfig: params.interiorConfig,
     });
+    parts.push(...interiorParts);
+  } else {
+    // Legacy: SHELVES (evenly spaced)
+    const interiorHeight = Math.max(height - thickness * 2, 0);
+    const shelfSpacing = interiorHeight / (shelfCount + 1);
+
+    for (let i = 0; i < shelfCount; i++) {
+      const shelfY = thickness + shelfSpacing * (i + 1);
+      parts.push({
+        name: `Półka ${i + 1}`,
+        furnitureId,
+        group: cabinetId,
+        shapeType: 'RECT',
+        shapeParams: { type: 'RECT', x: shelfWidth, y: depth - 10 },
+        width: shelfWidth,
+        height: depth - 10,
+        depth: thickness,
+        position: [0, shelfY, -5],
+        rotation: [-Math.PI / 2, 0, 0],
+        materialId: materials.bodyMaterialId,
+        edgeBanding: { type: 'RECT', top: true, bottom: false, left: false, right: false },
+        cabinetMetadata: { cabinetId, role: 'SHELF', index: i },
+      });
+    }
+
+    // Legacy: DRAWERS (if configured)
+    if (params.drawerConfig && params.drawerConfig.zones.length > 0) {
+      const drawerParts = generateDrawers({
+        cabinetId,
+        furnitureId,
+        cabinetWidth: width,
+        cabinetHeight: height,
+        cabinetDepth: depth,
+        bodyMaterialId: materials.bodyMaterialId,
+        frontMaterialId: materials.frontMaterialId,
+        bodyThickness: thickness,
+        frontThickness: thickness,
+        drawerConfig: params.drawerConfig,
+      });
+      parts.push(...drawerParts);
+    }
   }
 
   // 6. DOORS (1-4 doors based on doorCount)
@@ -152,24 +189,7 @@ export function generateWardrobe(
     });
   }
 
-  // 7. DRAWERS (if configured)
-  if (params.drawerConfig && params.drawerConfig.zones.length > 0) {
-    const drawerParts = generateDrawers({
-      cabinetId,
-      furnitureId,
-      cabinetWidth: width,
-      cabinetHeight: height,
-      cabinetDepth: depth,
-      bodyMaterialId: materials.bodyMaterialId,
-      frontMaterialId: materials.frontMaterialId,
-      bodyThickness: thickness,
-      frontThickness: thickness,
-      drawerConfig: params.drawerConfig,
-    });
-    parts.push(...drawerParts);
-  }
-
-  // 8. BACK PANEL
+  // 7. BACK PANEL
   if (hasBack && backMaterial) {
     const backPanel = generateBackPanel({
       cabinetId,
@@ -201,6 +221,22 @@ export function generateWardrobe(
       defaultFrontMaterialId: materials.frontMaterialId,
     });
     parts.push(...sideFrontParts);
+  }
+
+  // DECORATIVE PANELS (if configured)
+  if (params.decorativePanels && (params.decorativePanels.top?.enabled || params.decorativePanels.bottom?.enabled)) {
+    const decorativeParts = generateDecorativePanels({
+      cabinetId,
+      furnitureId,
+      cabinetWidth: width,
+      cabinetHeight: height,
+      cabinetDepth: depth,
+      frontMaterialId: materials.frontMaterialId,
+      frontThickness: thickness,
+      bodyThickness: thickness,
+      decorativePanels: params.decorativePanels,
+    });
+    parts.push(...decorativeParts);
   }
 
   return parts;

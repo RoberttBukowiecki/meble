@@ -41,12 +41,14 @@ import type {
   DoorConfig,
   DrawerSlideType,
   SideFrontsConfig,
+  CabinetInteriorConfig,
 } from '@/types';
-import { DEFAULT_DOOR_CONFIG, DRAWER_SLIDE_PRESETS } from '@/lib/config';
+import { hasDrawerFronts, convertDrawersToInternal } from '@/lib/config';
 import { HandleSelector } from './HandleSelector';
 import { SideFrontsConfigDialog } from './SideFrontsConfigDialog';
+import { InteriorConfigDialog } from './InteriorConfigDialog';
 import { generateHandleMetadata, DoorType } from '@/lib/handlePresets';
-import { hasSideFronts, getSideFrontsSummary } from '@/lib/cabinetGenerators';
+import { hasSideFronts, getSideFrontsSummary, hasInteriorContent, getInteriorSummary } from '@/lib/cabinetGenerators';
 import type { HandleConfig } from '@/types';
 import {
   Alert,
@@ -60,6 +62,7 @@ import {
   AccordionContent,
   Label,
 } from '@meble/ui';
+import { cn } from '@/lib/utils';
 
 import { getCabinetTypeLabel } from '@/lib/cabinetHelpers';
 import { DimensionsConfig } from './DimensionsConfig';
@@ -68,7 +71,7 @@ import { BackWallConfig } from './BackWallConfig';
 import { ShelvesConfig } from './ShelvesConfig';
 import { FrontsConfig } from './FrontsConfig';
 import { HandlesConfig } from './HandlesConfig';
-import { Ruler, Settings, Rows, DoorClosed, Wrench, Scaling, Grip } from 'lucide-react';
+import { Ruler, Settings, Rows, DoorClosed, Wrench, Scaling, Grip, Eye, EyeOff, LayoutGrid } from 'lucide-react';
 
 // ============================================================================
 // Side Fronts Section
@@ -137,6 +140,82 @@ const SideFrontsSection = ({
           materials={materials as any}
           defaultFrontMaterialId={defaultFrontMaterialId}
           cabinetHeight={params.height}
+        />
+      </AccordionContent>
+    </AccordionItem>
+  );
+};
+
+// ============================================================================
+// Interior Config Section
+// ============================================================================
+
+interface InteriorConfigSectionProps {
+  cabinetId: string;
+  params: CabinetParams;
+  onUpdateParams: (params: CabinetParams) => void;
+}
+
+const InteriorConfigSection = ({
+  cabinetId,
+  params,
+  onUpdateParams,
+}: InteriorConfigSectionProps) => {
+  const [dialogOpen, setDialogOpen] = React.useState(false);
+  const interiorConfig = params.interiorConfig;
+  const hasConfig = hasInteriorContent(interiorConfig);
+  const summary = getInteriorSummary(interiorConfig);
+  const hasFrontsEnabled = (params as Partial<KitchenCabinetParams>).hasDoors ?? false;
+
+  const handleConfigChange = (config: CabinetInteriorConfig) => {
+    onUpdateParams({ ...params, interiorConfig: config });
+  };
+
+  const handleRemoveDoors = () => {
+    onUpdateParams({ ...params, hasDoors: false } as CabinetParams);
+  };
+
+  return (
+    <AccordionItem value="interior" className="border-b-0">
+      <AccordionTrigger className="py-3 text-xs font-medium hover:no-underline">
+        <div className="flex items-center gap-2">
+          <LayoutGrid className="h-4 w-4 text-muted-foreground" />
+          Wnętrze szafki
+          {hasConfig && (
+            <Badge variant="secondary" className="text-xs px-1.5 py-0 h-5">
+              {summary}
+            </Badge>
+          )}
+        </div>
+      </AccordionTrigger>
+      <AccordionContent className="pb-4 pt-0">
+        <div className="space-y-3 px-1">
+          <p className="text-xs text-muted-foreground">
+            {hasConfig
+              ? `Skonfigurowane: ${summary}`
+              : 'Brak konfiguracji wnętrza'}
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full h-8 text-xs"
+            onClick={() => setDialogOpen(true)}
+          >
+            <LayoutGrid className="h-3.5 w-3.5 mr-2" />
+            Konfiguruj wnętrze
+          </Button>
+        </div>
+
+        <InteriorConfigDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          config={interiorConfig}
+          onConfigChange={handleConfigChange}
+          cabinetHeight={params.height}
+          cabinetWidth={params.width}
+          cabinetDepth={params.depth}
+          hasDoors={hasFrontsEnabled}
+          onRemoveDoors={handleRemoveDoors}
         />
       </AccordionContent>
     </AccordionItem>
@@ -349,6 +428,26 @@ export function PropertiesPanel() {
       updateCabinetTransform(selectedCabinet.id, { rotation: newRotation });
     };
 
+    const hasFrontsEnabled = (localParams as Partial<KitchenCabinetParams>).hasDoors ?? false;
+    const drawerHasFronts = hasDrawerFronts(localParams.drawerConfig);
+
+    const handleFrontsToggle = (checked: boolean) => {
+      if (checked && drawerHasFronts && localParams.drawerConfig) {
+        const confirmConversion = window.confirm(
+          'Szuflady mają fronty. Czy chcesz je ukryć, aby dodać fronty?'
+        );
+        if (!confirmConversion) return;
+
+        updateLocalParams({
+          hasDoors: true,
+          drawerConfig: convertDrawersToInternal(localParams.drawerConfig),
+        } as Partial<CabinetParams>);
+        return;
+      }
+
+      updateLocalParams({ hasDoors: checked } as Partial<CabinetParams>);
+    };
+
     return (
       <div className="flex flex-col h-full">
         {/* Cabinet header */}
@@ -394,13 +493,23 @@ export function PropertiesPanel() {
             {/* Hide fronts toggle */}
             <div className="flex items-center justify-between py-1">
                 <Label className="text-xs text-muted-foreground font-normal">Ukryj fronty</Label>
-                <Switch
-                    className="scale-90"
-                    checked={selectedCabinet.hideFronts ?? false}
-                    onCheckedChange={(checked) =>
-                    updateCabinet(selectedCabinet.id, { hideFronts: checked })
+                <button
+                    type="button"
+                    onClick={() =>
+                        updateCabinet(selectedCabinet.id, { hideFronts: !(selectedCabinet.hideFronts ?? false) })
                     }
-                />
+                    className={cn(
+                        'p-0.5 rounded hover:bg-muted/50 transition-colors',
+                        (selectedCabinet.hideFronts ?? false) ? 'text-muted-foreground/70' : 'text-muted-foreground'
+                    )}
+                    title={(selectedCabinet.hideFronts ?? false) ? 'Pokaż fronty' : 'Ukryj fronty'}
+                >
+                    {(selectedCabinet.hideFronts ?? false) ? (
+                        <EyeOff className="h-4 w-4" />
+                    ) : (
+                        <Eye className="h-4 w-4" />
+                    )}
+                </button>
             </div>
         </div>
         
@@ -452,7 +561,33 @@ export function PropertiesPanel() {
                                 </div>
                             </AccordionTrigger>
                             <AccordionContent className="pb-4 pt-1 border-t mt-1">
-                                <FrontsConfig params={localParams} onChange={updateLocalParams} />
+                                <div className="flex items-center justify-between pb-3">
+                                    <div className="space-y-1">
+                                        <Label className="text-xs text-muted-foreground font-normal">Fronty</Label>
+                                        {!hasFrontsEnabled && (
+                                            <p className="text-[11px] text-muted-foreground">
+                                                Fronty są wyłączone.
+                                            </p>
+                                        )}
+                                        {drawerHasFronts && !hasFrontsEnabled && (
+                                            <p className="text-[11px] text-amber-600">
+                                                Szuflady mają fronty - zostaną ukryte po włączeniu frontów.
+                                            </p>
+                                        )}
+                                    </div>
+                                    <Switch
+                                        className="scale-90"
+                                        checked={hasFrontsEnabled}
+                                        onCheckedChange={handleFrontsToggle}
+                                    />
+                                </div>
+                                {hasFrontsEnabled ? (
+                                    <FrontsConfig params={localParams} onChange={updateLocalParams} />
+                                ) : (
+                                    <p className="text-xs text-muted-foreground">
+                                        Włącz fronty, aby je skonfigurować.
+                                    </p>
+                                )}
                             </AccordionContent>
                         </AccordionItem>
                         <AccordionItem value="handles" className="border rounded-md px-2 bg-card">
@@ -479,7 +614,16 @@ export function PropertiesPanel() {
                     onUpdateParams={updateLocalParams}
                 />
               </div>
-              
+
+              {/* Interior Config */}
+              <div className="border rounded-md px-2 bg-card">
+                 <InteriorConfigSection
+                    cabinetId={selectedCabinet.id}
+                    params={localParams}
+                    onUpdateParams={updateLocalParams}
+                />
+              </div>
+
               {/* Materials */}
               <AccordionItem value="materials" className="border rounded-md px-2 bg-card">
                 <AccordionTrigger className="py-3 text-xs font-medium hover:no-underline">

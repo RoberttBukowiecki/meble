@@ -248,6 +248,18 @@ export const DRAWER_ZONE_PRESETS: Record<string, { label: string; labelPl: strin
       ],
     },
   },
+
+  EXTERNAL_INTERNAL: {
+    label: '1 External + 1 Internal',
+    labelPl: '1 Zewnętrzna + 1 Wewnętrzna',
+    config: {
+      slideType: 'SIDE_MOUNT',
+      zones: [
+        { id: 'z1', heightRatio: 1, front: null, boxes: [{ heightRatio: 1 }] },
+        { id: 'z2', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
+      ],
+    },
+  },
 };
 
 // ============================================================================

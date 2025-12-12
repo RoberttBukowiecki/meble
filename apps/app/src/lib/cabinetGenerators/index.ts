@@ -37,6 +37,16 @@ export {
   hasSideFronts,
   getSideFrontsSummary,
 } from './sideFronts';
+export {
+  generateDecorativePanels,
+  hasDecorativePanels,
+  getDecorativePanelsSummary,
+} from './decorativePanels';
+export {
+  generateInterior,
+  hasInteriorContent,
+  getInteriorSummary,
+} from './interior';
 
 // Import generators for the factory function
 import { generateKitchenCabinet } from './kitchenCabinet';

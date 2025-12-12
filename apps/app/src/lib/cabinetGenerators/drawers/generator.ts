@@ -116,11 +116,15 @@ export function generateDrawers(config: DrawerGeneratorConfig): GeneratedPart[] 
     }
 
     // Generate boxes within this zone
+    // boxToFrontRatio controls how much of the zone interior height is used by boxes
+    // (the rest is empty space above the boxes, while front still covers full zone)
+    const boxToFrontRatio = zone.boxToFrontRatio ?? 1.0;
+    const effectiveBoxHeight = zoneInteriorHeight * boxToFrontRatio;
     const totalBoxRatio = zone.boxes.reduce((sum, b) => sum + b.heightRatio, 0);
 
     for (let boxIndex = 0; boxIndex < boxCount; boxIndex++) {
       const box = zone.boxes[boxIndex];
-      const boxHeight = (box.heightRatio / totalBoxRatio) * zoneInteriorHeight;
+      const boxHeight = (box.heightRatio / totalBoxRatio) * effectiveBoxHeight;
 
       // Determine if box should be closed (have front panel)
       // - Zone with external front: only first box (behind decorative front) is open
@@ -149,6 +153,67 @@ export function generateDrawers(config: DrawerGeneratorConfig): GeneratedPart[] 
       globalBoxIndex++;
     }
 
+    // Generate shelves above drawer boxes (if configured and boxToFrontRatio < 1.0)
+    const shelves = zone.aboveBoxContent?.shelves ?? [];
+
+    if (shelves.length > 0 && boxToFrontRatio < 1.0) {
+      const shelfSpaceHeight = zoneInteriorHeight - effectiveBoxHeight;
+      const shelfCount = shelves.length;
+      const shelfWidth = cabinetWidth - bodyThickness * 2;
+      const baseDepth = cabinetDepth - 10;
+
+      shelves.forEach((shelf, shelfIdx) => {
+        // First shelf directly above box, others evenly distributed
+        // For n shelves: first at 0%, rest at idx/n of remaining space
+        const shelfYOffset = shelfIdx === 0
+          ? 0
+          : (shelfIdx / shelfCount) * shelfSpaceHeight;
+        const shelfY = currentBoxY + shelfYOffset;
+
+        // Calculate shelf depth based on preset
+        let shelfDepth: number;
+        switch (shelf.depthPreset) {
+          case 'FULL':
+            shelfDepth = baseDepth;
+            break;
+          case 'HALF':
+            shelfDepth = Math.round(baseDepth / 2);
+            break;
+          case 'CUSTOM':
+            shelfDepth = shelf.customDepth ?? Math.round(baseDepth / 2);
+            break;
+          default:
+            shelfDepth = baseDepth;
+        }
+
+        // Z offset for recessed shelves
+        const depthOffset = (cabinetDepth - shelfDepth) / 2;
+        const shelfZ = -depthOffset;
+
+        parts.push({
+          name: `Półka ${shelfIdx + 1} nad szufladą ${zoneIndex + 1}`,
+          furnitureId,
+          group: cabinetId,
+          shapeType: 'RECT',
+          shapeParams: { type: 'RECT', x: shelfWidth, y: shelfDepth },
+          width: shelfWidth,
+          height: shelfDepth,
+          depth: bodyThickness,
+          position: [0, shelfY, shelfZ],
+          rotation: [-Math.PI / 2, 0, 0],
+          materialId: bodyMaterialId,
+          edgeBanding: { type: 'RECT', top: true, bottom: false, left: false, right: false },
+          cabinetMetadata: {
+            cabinetId,
+            role: 'SHELF',
+            index: shelfIdx,
+          },
+        });
+      });
+    }
+
+    // Skip the remaining empty space above boxes (when boxToFrontRatio < 1.0)
+    currentBoxY += zoneInteriorHeight - effectiveBoxHeight;
     currentFrontY += zoneFrontHeight;
   }
 

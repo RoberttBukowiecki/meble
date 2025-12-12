@@ -25,7 +25,7 @@ import {
   getTotalBoxCount,
   getFrontCount,
 } from '@/lib/config';
-import { Plus, Trash2, GripVertical, ChevronUp, ChevronDown, LayoutTemplate } from 'lucide-react';
+import { Plus, Trash2, ChevronUp, ChevronDown, LayoutTemplate } from 'lucide-react';
 
 // Drawer slide type labels
 const DRAWER_SLIDE_LABELS: Record<DrawerSlideType, string> = {
@@ -35,35 +35,69 @@ const DRAWER_SLIDE_LABELS: Record<DrawerSlideType, string> = {
   CENTER_MOUNT: 'Centralne (0mm)',
 };
 
+// Default body material thickness for drawer box calculations
+const DEFAULT_BODY_THICKNESS = 18;
+
 interface DrawerConfigDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   config: DrawerConfiguration | undefined;
   onConfigChange: (config: DrawerConfiguration) => void;
   cabinetHeight: number;
+  cabinetWidth: number;
 }
 
 /**
- * Interactive 2D preview of drawer zones
+ * Interactive 2D preview of drawer zones with dimensions
  */
 interface ZonePreviewProps {
   zones: DrawerZone[];
   selectedZoneId: string | null;
   onSelectZone: (id: string) => void;
   onMoveZone: (id: string, direction: 'up' | 'down') => void;
+  cabinetHeight: number;
+  cabinetWidth: number;
+  slideType: DrawerSlideType;
 }
 
-const ZonePreview = ({ zones, selectedZoneId, onSelectZone, onMoveZone }: ZonePreviewProps) => {
+const ZonePreview = ({
+  zones,
+  selectedZoneId,
+  onSelectZone,
+  onMoveZone,
+  cabinetHeight,
+  cabinetWidth,
+  slideType,
+}: ZonePreviewProps) => {
   const totalRatio = zones.reduce((sum, z) => sum + z.heightRatio, 0);
 
+  // Calculate interior height (cabinet height - 2x body thickness)
+  const interiorHeight = Math.max(cabinetHeight - DEFAULT_BODY_THICKNESS * 2, 0);
+
+  // Calculate drawer box width based on slide type
+  const slideConfig = DRAWER_SLIDE_PRESETS[slideType];
+  const drawerBoxWidth = cabinetWidth - 2 * slideConfig.sideOffset - 2 * DEFAULT_BODY_THICKNESS;
+
+  // Calculate actual heights in mm for each zone
+  const zoneHeights = zones.map(zone =>
+    Math.round((zone.heightRatio / totalRatio) * interiorHeight)
+  );
+
   return (
-    <div className="border rounded-lg bg-muted/20 p-4 h-full min-h-[320px] flex flex-col">
+    <div className="border rounded-lg bg-muted/20 p-4 h-full min-h-[360px] flex flex-col">
+      {/* Drawer width header */}
+      <div className="text-center mb-3 pb-2 border-b border-dashed">
+        <div className="text-xs text-muted-foreground">Szerokość szuflad</div>
+        <div className="text-sm font-mono font-semibold">{Math.round(drawerBoxWidth)} mm</div>
+      </div>
+
       <div className="flex-1 flex flex-col gap-1 w-full max-w-[200px] mx-auto relative">
         {zones.map((zone, index) => {
           const heightPercent = (zone.heightRatio / totalRatio) * 100;
           const isSelected = zone.id === selectedZoneId;
           const hasExternalFront = zone.front !== null;
           const boxCount = zone.boxes.length;
+          const zoneHeightMm = zoneHeights[index];
 
           return (
             <div
@@ -75,24 +109,49 @@ const ZonePreview = ({ zones, selectedZoneId, onSelectZone, onMoveZone }: ZonePr
                   : 'border-border hover:border-primary/50 bg-background',
                 hasExternalFront ? '' : 'border-dashed opacity-80'
               )}
-              style={{ height: `${heightPercent}%`, minHeight: '40px' }}
+              style={{ height: `${heightPercent}%`, minHeight: '48px' }}
               onClick={() => onSelectZone(zone.id)}
             >
-              {/* Zone content */}
-              <div className="absolute inset-0 flex items-center justify-center p-2">
+              {/* Internal drawer boxes visualization (dashed) */}
+              {hasExternalFront && (
+                <div className="absolute inset-2 border border-dashed border-muted-foreground/40 rounded-sm pointer-events-none">
+                  {/* Show dividers for multiple boxes */}
+                  {boxCount > 1 && (
+                    <div className="absolute inset-0 flex flex-col">
+                      {zone.boxes.map((box, boxIdx) => {
+                        const boxTotalRatio = zone.boxes.reduce((s, b) => s + b.heightRatio, 0);
+                        const boxPercent = (box.heightRatio / boxTotalRatio) * 100;
+                        return (
+                          <div
+                            key={boxIdx}
+                            className={cn(
+                              "flex-shrink-0",
+                              boxIdx < boxCount - 1 && "border-b border-dashed border-muted-foreground/40"
+                            )}
+                            style={{ height: `${boxPercent}%` }}
+                          />
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Zone content label */}
+              <div className="absolute inset-0 flex items-center justify-center p-2 pointer-events-none">
                 <div className="text-center w-full overflow-hidden">
                   <div className="text-xs font-semibold truncate">
                     {hasExternalFront ? 'Front' : 'Wewnętrzna'}
                   </div>
                   {boxCount > 1 && (
-                    <div className="text-xs text-muted-foreground">
-                      {boxCount} boxy
+                    <div className="text-[10px] text-muted-foreground">
+                      {boxCount} {boxCount === 1 ? 'box' : boxCount < 5 ? 'boxy' : 'boxów'}
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Reorder buttons (only visible on hover or selection) */}
+              {/* Reorder buttons (only visible on selection) */}
               {isSelected && (
                 <div className="absolute -right-8 top-1/2 -translate-y-1/2 flex flex-col gap-1">
                   {index > 0 && (
@@ -124,13 +183,20 @@ const ZonePreview = ({ zones, selectedZoneId, onSelectZone, onMoveZone }: ZonePr
                 </div>
               )}
 
-              {/* Height ratio indicator */}
-              <div className="absolute left-2 top-1/2 -translate-y-1/2 -translate-x-full pr-3 text-xs font-mono text-muted-foreground">
-                {zone.heightRatio}
+              {/* Height dimension label (mm) */}
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-full pr-2 text-xs font-mono text-muted-foreground whitespace-nowrap">
+                <span className="text-foreground font-medium">{zoneHeightMm}</span>
+                <span className="text-[10px] ml-0.5">mm</span>
               </div>
             </div>
           );
         })}
+      </div>
+
+      {/* Cabinet total height footer */}
+      <div className="text-center mt-3 pt-2 border-t border-dashed">
+        <div className="text-xs text-muted-foreground">Wysokość szafki</div>
+        <div className="text-sm font-mono font-semibold">{cabinetHeight} mm</div>
       </div>
     </div>
   );
@@ -297,6 +363,7 @@ export function DrawerConfigDialog({
   config,
   onConfigChange,
   cabinetHeight,
+  cabinetWidth,
 }: DrawerConfigDialogProps) {
   // Internal state for editing
   const [localConfig, setLocalConfig] = useState<DrawerConfiguration>(() => {
@@ -414,6 +481,9 @@ export function DrawerConfigDialog({
                     selectedZoneId={selectedZoneId}
                     onSelectZone={setSelectedZoneId}
                     onMoveZone={handleMoveZone}
+                    cabinetHeight={cabinetHeight}
+                    cabinetWidth={cabinetWidth}
+                    slideType={localConfig.slideType}
                   />
                   <div className="mt-2 text-xs text-center text-muted-foreground bg-muted/20 py-2 rounded">
                     {totalFronts} frontów • {totalBoxes} szuflad łącznie

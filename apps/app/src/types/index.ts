@@ -499,6 +499,10 @@ export interface CabinetBaseParams {
   drawerHandleConfig?: HandleConfig; // Handle configuration for drawer fronts
   // Side front panels (decorative end panels)
   sideFronts?: SideFrontsConfig; // Optional side fronts configuration
+  // Top/bottom decorative panels (blenda, plinth, trim strips)
+  decorativePanels?: DecorativePanelsConfig; // Optional decorative panels
+  // Unified interior configuration (shelves + drawers in sections)
+  interiorConfig?: CabinetInteriorConfig; // Optional unified interior
 }
 
 /**
@@ -570,6 +574,33 @@ export interface DrawerZoneBox {
 }
 
 /**
+ * Configuration for a single shelf above the drawer box
+ */
+export interface AboveBoxShelfConfig {
+  id: string;
+  /** Shelf depth preset */
+  depthPreset: ShelfDepthPreset;
+  /** Custom depth in mm (when depthPreset is CUSTOM) */
+  customDepth?: number;
+}
+
+/**
+ * Content configuration for the space above the drawer box
+ * Supports multiple shelves with different depths
+ */
+export interface DrawerZoneAboveBoxContent {
+  /** Array of shelves above the drawer box */
+  shelves: AboveBoxShelfConfig[];
+}
+
+/**
+ * Generate unique ID for above-box shelf
+ */
+export function generateAboveBoxShelfId(): string {
+  return `abs_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
+}
+
+/**
  * A drawer zone represents a vertical section of the cabinet
  * that can have one decorative front covering multiple internal boxes
  */
@@ -581,6 +612,17 @@ export interface DrawerZone {
   front: DrawerZoneFront | null;
   /** Drawer boxes within this zone (can be multiple for drawer-in-drawer) */
   boxes: DrawerZoneBox[];
+  /**
+   * Ratio of actual drawer box height to front height (0.0-1.0, default 1.0)
+   * E.g., 0.5 means the drawer box is half the front height, positioned at bottom
+   * Useful for tall fronts with smaller actual drawers inside
+   */
+  boxToFrontRatio?: number;
+  /**
+   * Content above the drawer box (shelves)
+   * Only relevant when boxToFrontRatio < 1.0
+   */
+  aboveBoxContent?: DrawerZoneAboveBoxContent;
 }
 
 /**
@@ -591,6 +633,118 @@ export interface DrawerConfiguration {
   slideType: DrawerSlideType;
   /** Default handle config (can be overridden per zone) */
   defaultHandleConfig?: HandleConfig;
+}
+
+// ============================================================================
+// Cabinet Interior System (Unified Shelves + Drawers)
+// ============================================================================
+
+/**
+ * Type of content in a cabinet section
+ */
+export type SectionContentType = 'EMPTY' | 'SHELVES' | 'DRAWERS';
+
+/**
+ * Shelf depth preset
+ */
+export type ShelfDepthPreset = 'FULL' | 'HALF' | 'CUSTOM';
+
+/**
+ * Configuration for a single shelf
+ */
+export interface ShelfConfig {
+  /** Shelf ID */
+  id: string;
+
+  /** Position from section bottom (mm) - for manual mode */
+  positionY?: number;
+
+  /** Depth preset */
+  depthPreset: ShelfDepthPreset;
+
+  /** Custom depth in mm (when depthPreset is CUSTOM) */
+  customDepth?: number;
+
+  /** Material ID (defaults to bodyMaterialId) */
+  materialId?: string;
+}
+
+/**
+ * Shelf configuration for a section
+ */
+export interface ShelvesConfiguration {
+  /** Distribution mode */
+  mode: 'UNIFORM' | 'MANUAL';
+
+  /** Number of shelves (for UNIFORM mode) */
+  count: number;
+
+  /** Depth preset for all shelves (UNIFORM mode) or default for new shelves (MANUAL mode) */
+  depthPreset: ShelfDepthPreset;
+
+  /** Custom depth in mm (when depthPreset is CUSTOM) */
+  customDepth?: number;
+
+  /** Individual shelf configs (for MANUAL mode) */
+  shelves: ShelfConfig[];
+}
+
+/**
+ * A horizontal section of the cabinet interior
+ */
+export interface CabinetSection {
+  id: string;
+
+  /** Height ratio relative to other sections */
+  heightRatio: number;
+
+  /** What this section contains */
+  contentType: SectionContentType;
+
+  /** Shelf configuration (when contentType is SHELVES) */
+  shelvesConfig?: ShelvesConfiguration;
+
+  /** Drawer configuration (when contentType is DRAWERS) */
+  drawerConfig?: DrawerConfiguration;
+}
+
+/**
+ * Complete cabinet interior configuration
+ */
+export interface CabinetInteriorConfig {
+  /** Horizontal sections from bottom to top */
+  sections: CabinetSection[];
+}
+
+/**
+ * Default shelf configuration
+ */
+export const DEFAULT_SHELF_CONFIG: Omit<ShelfConfig, 'id'> = {
+  depthPreset: 'FULL',
+};
+
+/**
+ * Default shelves configuration
+ */
+export const DEFAULT_SHELVES_CONFIG: ShelvesConfiguration = {
+  mode: 'UNIFORM',
+  count: 2,
+  depthPreset: 'FULL',
+  shelves: [],
+};
+
+/**
+ * Generate unique section ID
+ */
+export function generateSectionId(): string {
+  return `sec_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
+}
+
+/**
+ * Generate unique shelf ID
+ */
+export function generateShelfId(): string {
+  return `shelf_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
 }
 
 // ============================================================================
@@ -633,6 +787,85 @@ export const DEFAULT_SIDE_FRONT_CONFIG: SideFrontConfig = {
   forwardProtrusion: 0,  // 0 means use front material thickness as default
   bottomOffset: 0,
   topOffset: 0,
+};
+
+// ============================================================================
+// Top/Bottom Decorative Panels
+// ============================================================================
+
+/**
+ * Type of top/bottom decorative panel
+ */
+export type DecorativePanelType =
+  | 'BLENDA'      // Top panel covering space above doors
+  | 'PLINTH'      // Bottom plinth (cokół) - base of cabinet
+  | 'TRIM_STRIP'  // Thin decorative trim strip
+  | 'FULL_PANEL'; // Full decorative panel like side fronts
+
+/**
+ * Position of decorative panel
+ */
+export type DecorativePanelPosition = 'TOP' | 'BOTTOM';
+
+/**
+ * Configuration for a single decorative panel
+ */
+export interface DecorativePanelConfig {
+  enabled: boolean;
+  type: DecorativePanelType;
+  position: DecorativePanelPosition;
+
+  /** Material ID (defaults to frontMaterialId) */
+  materialId?: string;
+
+  /** Height of the panel in mm */
+  height: number;
+
+  /** Depth of panel (for PLINTH - how far it's recessed from front) */
+  recess?: number;
+
+  /** For TRIM_STRIP: thickness of the trim */
+  thickness?: number;
+}
+
+/**
+ * Full decorative panels configuration
+ */
+export interface DecorativePanelsConfig {
+  top: DecorativePanelConfig | null;
+  bottom: DecorativePanelConfig | null;
+}
+
+/**
+ * Default configurations for each panel type
+ */
+export const DECORATIVE_PANEL_DEFAULTS: Record<DecorativePanelType, Partial<DecorativePanelConfig>> = {
+  BLENDA: {
+    height: 50,
+    recess: 0,
+  },
+  PLINTH: {
+    height: 100,
+    recess: 50, // How far plinth is recessed from front
+  },
+  TRIM_STRIP: {
+    height: 20,
+    thickness: 10,
+  },
+  FULL_PANEL: {
+    height: 100,
+    recess: 0,
+  },
+};
+
+/**
+ * Default decorative panel configuration
+ */
+export const DEFAULT_DECORATIVE_PANEL_CONFIG: Omit<DecorativePanelConfig, 'position'> = {
+  enabled: true,
+  type: 'BLENDA',
+  height: 50,
+  recess: 0,
 };
 
 /**
@@ -696,7 +929,9 @@ export type CabinetPartRole =
   | 'DRAWER_BACK'
   | 'DRAWER_BOTTOM'
   | 'SIDE_FRONT_LEFT'   // Decorative side panel on left
-  | 'SIDE_FRONT_RIGHT'; // Decorative side panel on right
+  | 'SIDE_FRONT_RIGHT'  // Decorative side panel on right
+  | 'DECORATIVE_TOP'    // Top decorative panel (blenda, trim, full panel)
+  | 'DECORATIVE_BOTTOM'; // Bottom decorative panel (plinth, trim, full panel)
 
 /**
  * Extended metadata for parts that belong to cabinets
