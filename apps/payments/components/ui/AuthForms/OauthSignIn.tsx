@@ -4,12 +4,12 @@ import Button from '@/components/ui/Button';
 import { signInWithOAuth } from '@/utils/auth-helpers/client';
 import { type Provider } from '@supabase/supabase-js';
 import { Github } from 'lucide-react';
-import { useState } from 'react';
+import React, { useState } from 'react';
 
 type OAuthProviders = {
   name: Provider;
   displayName: string;
-  icon: JSX.Element;
+  icon: React.ReactElement;
 };
 
 export default function OauthSignIn() {

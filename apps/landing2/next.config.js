@@ -4,7 +4,7 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ["@meble/i18n"],
+  transpilePackages: ["@meble/ui", "@meble/i18n"],
 };
 
 module.exports = withNextIntl(nextConfig);

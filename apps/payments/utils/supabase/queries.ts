@@ -1,7 +1,7 @@
 import { cache } from 'react';
 import type { createClient } from './server';
 
-type TypedSupabaseClient = ReturnType<typeof createClient>;
+type TypedSupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
 export const getUser = cache(async (supabase: TypedSupabaseClient) => {
   const {
