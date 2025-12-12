@@ -43,3 +43,12 @@ export const APP_META = {
   name: APP_NAME,
   repository: 'https://github.com/RoberttBukowiecki/meble.git',
 } as const;
+
+/**
+ * Branding assets paths (relative to public folder)
+ */
+export const BRANDING = {
+  logo: '/logo.svg',
+  favicon: '/favico.svg',
+  logoColor: '#1a1a2e',
+} as const;

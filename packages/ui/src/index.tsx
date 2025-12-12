@@ -15,6 +15,7 @@ export * from "./components/ui/slider";
 export * from "./components/ui/switch";
 export * from "./components/ui/table";
 export * from "./components/ui/tooltip";
+export * from "./components/ui/logo";
 
 // Lib
 export * from "./lib/utils";
