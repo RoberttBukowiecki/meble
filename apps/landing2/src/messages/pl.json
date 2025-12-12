@@ -1,0 +1,103 @@
+{
+  "metadata": {
+    "title": "Meble - Projektowanie mebli 3D",
+    "description": "Profesjonalne narzędzie do projektowania mebli w 3D. Twórz, wizualizuj i eksportuj projekty mebli."
+  },
+  "hero": {
+    "title": "Projektuj meble w 3D jak profesjonalista",
+    "description": "Profesjonalne narzędzie do projektowania mebli. Twórz projekty szaf, komód i innych mebli w przeglądarce. Eksportuj listy cięcia do produkcji.",
+    "cta": "Rozpocznij projektowanie",
+    "learnMore": "Dowiedz się więcej"
+  },
+  "nav": {
+    "product": "Produkt",
+    "features": "Funkcje",
+    "pricing": "Cennik",
+    "about": "O nas",
+    "getStarted": "Rozpocznij"
+  },
+  "benefits": {
+    "pretitle": "Korzyści",
+    "title": "Dlaczego warto używać naszego narzędzia",
+    "description": "Kompleksowe rozwiązanie do projektowania mebli - od wizualizacji 3D po gotowe listy cięcia.",
+    "one": {
+      "title": "Wizualizacja 3D",
+      "description": "Podgląd projektu w czasie rzeczywistym",
+      "bullets": {
+        "1": {
+          "title": "Interaktywny podgląd",
+          "description": "Obracaj i przybliżaj projekt w czasie rzeczywistym."
+        },
+        "2": {
+          "title": "Materiały i kolory",
+          "description": "Wybieraj z biblioteki materiałów i kolorów."
+        },
+        "3": {
+          "title": "Wymiary na żywo",
+          "description": "Wszystkie wymiary aktualizują się automatycznie."
+        }
+      }
+    },
+    "two": {
+      "title": "Eksport do produkcji",
+      "description": "Generuj gotowe do użycia dokumenty",
+      "bullets": {
+        "1": {
+          "title": "Listy cięcia CSV",
+          "description": "Eksportuj listy elementów do cięcia."
+        },
+        "2": {
+          "title": "Obliczanie okleiny",
+          "description": "Automatyczne wyliczanie okleiny krawędzi."
+        },
+        "3": {
+          "title": "Raport materiałów",
+          "description": "Zestawienie użytych materiałów."
+        }
+      }
+    }
+  },
+  "video": {
+    "pretitle": "Zobacz w akcji",
+    "title": "Jak to działa",
+    "description": "Obejrzyj krótką prezentację pokazującą proces projektowania mebli od pomysłu do listy cięcia."
+  },
+  "testimonials": {
+    "pretitle": "Opinie",
+    "title": "Co mówią nasi użytkownicy",
+    "description": "Dołącz do grona zadowolonych projektantów mebli."
+  },
+  "faq": {
+    "pretitle": "FAQ",
+    "title": "Często zadawane pytania",
+    "description": "Odpowiedzi na najczęściej zadawane pytania.",
+    "items": {
+      "1": {
+        "question": "Czy aplikacja jest darmowa?",
+        "answer": "Tak, podstawowa wersja aplikacji jest całkowicie darmowa."
+      },
+      "2": {
+        "question": "Czy mogę używać do celów komercyjnych?",
+        "answer": "Tak, możesz używać aplikacji do projektowania mebli na sprzedaż."
+      },
+      "3": {
+        "question": "Jak eksportować projekty?",
+        "answer": "Użyj funkcji eksportu CSV, aby wygenerować listę cięcia gotową do produkcji."
+      },
+      "4": {
+        "question": "Czy oferujecie wsparcie techniczne?",
+        "answer": "Tak, oferujemy wsparcie przez email oraz dokumentację online."
+      }
+    }
+  },
+  "cta": {
+    "title": "Gotowy do projektowania?",
+    "description": "Zacznij tworzyć profesjonalne projekty mebli już dziś.",
+    "button": "Rozpocznij za darmo"
+  },
+  "footer": {
+    "description": "Profesjonalne narzędzie do projektowania mebli w 3D. Twórz, wizualizuj i eksportuj projekty.",
+    "followUs": "Obserwuj nas",
+    "copyright": "Wszelkie prawa zastrzeżone."
+  }
+}

@@ -16,7 +16,11 @@ export const metadata: Metadata = {
   openGraph: {
     title: title,
     description: description
-  }
+  },
+  icons: {
+    icon: '/favico.svg',
+    apple: '/favico.svg',
+  },
 };
 
 export default async function RootLayout({ children }: PropsWithChildren) {

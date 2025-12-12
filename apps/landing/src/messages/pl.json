@@ -124,13 +124,13 @@
           { "text": "Historie użytkowników", "url": "#testimonials" },
           { "text": "FAQ", "url": "#faq" }
         ],
-        "email": "hello@meblarz3d.pl",
-        "telephone": "+48 123 456 789",
-        "socials": {
-          "linkedin": "https://www.linkedin.com",
-          "facebook": "https://facebook.com",
-          "instagram": "https://www.instagram.com"
-        }
+        "quickLinksTitle": "Szybkie linki",
+        "contactTitle": "Kontakt",
+        "rights": "Wszelkie prawa zastrzeżone.",
+        "builtBy": "Tworzone w Polsce z myślą o zespołach stolarskich.",
+        "emailPrefix": "Email:",
+        "phonePrefix": "Tel:",
+        "nipPrefix": "NIP:"
       }
     },
     "sections": {

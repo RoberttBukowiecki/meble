@@ -13,7 +13,7 @@ interface Props {
 }
 
 const PricingColumn: React.FC<Props> = ({ tier, highlight }: Props) => {
-  const t = useTranslations('landing.pricing');
+  const t = useTranslations('landing.sections.pricing');
   const { name, price, features } = tier;
 
   return (
@@ -43,7 +43,7 @@ const PricingColumn: React.FC<Props> = ({ tier, highlight }: Props) => {
       </p>
       <Button
         variant={highlight ? 'default' : 'outline'}
-        className="mt-6 w-full"
+        className="mt-6 w-full flex items-center justify-center"
         size="lg"
       >
         {t('ctaLabel')}

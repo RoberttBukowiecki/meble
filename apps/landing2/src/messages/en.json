@@ -1,0 +1,103 @@
+{
+  "metadata": {
+    "title": "Meble - 3D Furniture Design",
+    "description": "Professional 3D furniture design tool. Create, visualize and export furniture projects."
+  },
+  "hero": {
+    "title": "Design furniture in 3D like a pro",
+    "description": "Professional furniture design tool. Create wardrobe, cabinet and other furniture projects in your browser. Export cut lists for production.",
+    "cta": "Start designing",
+    "learnMore": "Learn more"
+  },
+  "nav": {
+    "product": "Product",
+    "features": "Features",
+    "pricing": "Pricing",
+    "about": "About",
+    "getStarted": "Get Started"
+  },
+  "benefits": {
+    "pretitle": "Benefits",
+    "title": "Why use our tool",
+    "description": "Complete furniture design solution - from 3D visualization to ready cut lists.",
+    "one": {
+      "title": "3D Visualization",
+      "description": "Real-time project preview",
+      "bullets": {
+        "1": {
+          "title": "Interactive preview",
+          "description": "Rotate and zoom your project in real-time."
+        },
+        "2": {
+          "title": "Materials and colors",
+          "description": "Choose from a library of materials and colors."
+        },
+        "3": {
+          "title": "Live dimensions",
+          "description": "All dimensions update automatically."
+        }
+      }
+    },
+    "two": {
+      "title": "Production export",
+      "description": "Generate ready-to-use documents",
+      "bullets": {
+        "1": {
+          "title": "CSV cut lists",
+          "description": "Export element lists for cutting."
+        },
+        "2": {
+          "title": "Edge banding calculation",
+          "description": "Automatic edge banding calculation."
+        },
+        "3": {
+          "title": "Material report",
+          "description": "Summary of materials used."
+        }
+      }
+    }
+  },
+  "video": {
+    "pretitle": "See it in action",
+    "title": "How it works",
+    "description": "Watch a short presentation showing the furniture design process from idea to cut list."
+  },
+  "testimonials": {
+    "pretitle": "Testimonials",
+    "title": "What our users say",
+    "description": "Join our community of satisfied furniture designers."
+  },
+  "faq": {
+    "pretitle": "FAQ",
+    "title": "Frequently Asked Questions",
+    "description": "Answers to the most common questions.",
+    "items": {
+      "1": {
+        "question": "Is the app free?",
+        "answer": "Yes, the basic version of the app is completely free."
+      },
+      "2": {
+        "question": "Can I use it commercially?",
+        "answer": "Yes, you can use the app to design furniture for sale."
+      },
+      "3": {
+        "question": "How do I export projects?",
+        "answer": "Use the CSV export function to generate a production-ready cut list."
+      },
+      "4": {
+        "question": "Do you offer technical support?",
+        "answer": "Yes, we offer email support and online documentation."
+      }
+    }
+  },
+  "cta": {
+    "title": "Ready to design?",
+    "description": "Start creating professional furniture designs today.",
+    "button": "Start for free"
+  },
+  "footer": {
+    "description": "Professional 3D furniture design tool. Create, visualize and export projects.",
+    "followUs": "Follow us",
+    "copyright": "All rights reserved."
+  }
+}

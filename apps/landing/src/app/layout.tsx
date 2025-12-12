@@ -16,6 +16,10 @@ const sourceSans = Source_Sans_3({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: APP_NAME,
   description: "Modeluj meble na wymiar w przeglądarce i eksportuj CSV gotowe do produkcji.",
+  icons: {
+    icon: "/favico.svg",
+    apple: "/favico.svg",
+  },
 };
 
 export default async function RootLayout({

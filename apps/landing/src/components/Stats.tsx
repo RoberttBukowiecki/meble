@@ -6,7 +6,7 @@ import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 
 const Stats = () => {
-  const t = useTranslations('landing.stats');
+  const t = useTranslations('landing.sections.stats');
 
   const stats = useMemo(
     () => [

@@ -24,7 +24,7 @@ const FAQ: React.FC<Props> = ({ faqs }) => {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.5 }}
-        className="mx-auto max-w-4xl divide-y divide-border"
+        className="mx-auto max-w-4xl" // Removed divide-y divide-border here
       >
         <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
           {t('title')}
@@ -32,17 +32,26 @@ const FAQ: React.FC<Props> = ({ faqs }) => {
         <p className="mt-4 text-lg leading-8 text-muted-foreground">
           {t('description')}
         </p>
-        <div className="mt-10 space-y-6 divide-y divide-border">
+        <div className="mt-10"> {/* Removed space-y-6 divide-y divide-border here */}
           <Accordion type="single" collapsible className="w-full">
             {faqs.map((faq, index) => (
-              <AccordionItem key={index} value={`item-${index}`}>
-                <AccordionTrigger className="text-left text-base font-semibold">
-                  {faq.question}
-                </AccordionTrigger>
-                <AccordionContent className="text-base text-muted-foreground">
-                  {faq.answer}
-                </AccordionContent>
-              </AccordionItem>
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.5 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                className="mb-4 last:mb-0 border-b border-border" // Added bottom border for separation
+              >
+                <AccordionItem value={`item-${index}`} className="border-none"> {/* Removed default border */}
+                  <AccordionTrigger className="text-left py-4 text-lg font-medium hover:no-underline [&[data-state=open]>svg]:rotate-180 transition-transform"> {/* Adjusted padding and font size */}
+                    {faq.question}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-base text-muted-foreground pb-4"> {/* Adjusted padding */}
+                    {faq.answer}
+                  </AccordionContent>
+                </AccordionItem>
+              </motion.div>
             ))}
           </Accordion>
         </div>

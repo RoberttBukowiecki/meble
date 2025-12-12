@@ -13,7 +13,7 @@ interface Props {
 }
 
 const Hero: React.FC<Props> = ({ hero }) => {
-  const t = useTranslations('landing.header');
+  const t = useTranslations('landing.content.header');
 
   return (
     <section id="hero" className="relative overflow-hidden bg-background pt-16 md:pt-20 lg:pt-24">
@@ -41,7 +41,7 @@ const Hero: React.FC<Props> = ({ hero }) => {
             transition={{ duration: 0.5, delay: 0.4 }}
             className="mt-10 flex items-center justify-center gap-x-6"
           >
-            <Button asChild size="lg" className="h-12 px-8 text-lg">
+            <Button asChild size="lg" className="h-12 px-8 text-lg flex items-center justify-center">
               <Link href="/app">{t('primaryCtaLabel')}</Link>
             </Button>
           </motion.div>

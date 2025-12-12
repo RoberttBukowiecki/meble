@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import React from 'react';
 import { FaFingerprint } from 'react-icons/fa';
+import { useTranslations } from 'next-intl';
 
 import { Locale } from '@meble/i18n';
 import { COMPANY_INFO, SOCIAL_LINKS } from '@meble/constants';
@@ -15,16 +16,7 @@ interface Props {
 }
 
 const Footer: React.FC<Props> = ({ siteDetails, footerDetails, locale }) => {
-  const quickLinksLabel = locale === 'pl' ? 'Szybkie linki' : 'Quick Links';
-  const contactLabel = locale === 'pl' ? 'Kontakt' : 'Contact';
-  const rightsText =
-    locale === 'pl'
-      ? `Wszelkie prawa zastrzeżone.`
-      : `All rights reserved.`;
-  const builtByLabel =
-    locale === 'pl'
-      ? 'Tworzone w Polsce z myślą o zespołach stolarskich.'
-      : 'Built in Poland for modern woodworking teams.';
+  const t = useTranslations('landing.content.footer');
 
   return (
     <footer className="bg-muted text-foreground py-10 mt-12 border-t border-border">
@@ -41,7 +33,7 @@ const Footer: React.FC<Props> = ({ siteDetails, footerDetails, locale }) => {
           </p>
         </div>
         <div>
-          <h4 className="text-lg font-semibold mb-4">{quickLinksLabel}</h4>
+          <h4 className="text-lg font-semibold mb-4">{t('quickLinksTitle')}</h4>
           <ul className="text-foreground-accent">
             {footerDetails.quickLinks.map(link => (
               <li key={link.text} className="mb-2">
@@ -51,11 +43,11 @@ const Footer: React.FC<Props> = ({ siteDetails, footerDetails, locale }) => {
           </ul>
         </div>
         <div>
-          <h4 className="text-lg font-semibold mb-4">{contactLabel}</h4>
+          <h4 className="text-lg font-semibold mb-4">{t('contactTitle')}</h4>
           <div className="space-y-2">
-            <a href={`mailto:${COMPANY_INFO.email}`}  className="block text-foreground-accent hover:text-foreground">Email: {COMPANY_INFO.email}</a>
-            <a href={`tel:${COMPANY_INFO.phone}`} className="block text-foreground-accent hover:text-foreground">Tel: {COMPANY_INFO.phone}</a>
-            <p className="text-foreground-accent">NIP: {COMPANY_INFO.nip}</p>
+            <a href={`mailto:${COMPANY_INFO.email}`}  className="block text-foreground-accent hover:text-foreground">{t('emailPrefix')} {COMPANY_INFO.email}</a>
+            <a href={`tel:${COMPANY_INFO.phone}`} className="block text-foreground-accent hover:text-foreground">{t('phonePrefix')} {COMPANY_INFO.phone}</a>
+            <p className="text-foreground-accent">{t('nipPrefix')} {COMPANY_INFO.nip}</p>
             <p className="text-foreground-accent">{COMPANY_INFO.fullAddress}</p>
           </div>
 
@@ -82,8 +74,8 @@ const Footer: React.FC<Props> = ({ siteDetails, footerDetails, locale }) => {
         </div>
       </div>
       <div className="mt-8 md:text-center text-foreground-accent px-6 space-y-1">
-        <p>Copyright &copy; {new Date().getFullYear()} {siteDetails.siteName}. {rightsText}</p>
-        <p className="text-sm">{builtByLabel}</p>
+        <p>Copyright &copy; {new Date().getFullYear()} {siteDetails.siteName}. {t('rights')}</p>
+        <p className="text-sm">{t('builtBy')}</p>
       </div>
     </footer>
   );

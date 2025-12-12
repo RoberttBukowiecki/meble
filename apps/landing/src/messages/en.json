@@ -124,13 +124,13 @@
           { "text": "Customer stories", "url": "#testimonials" },
           { "text": "FAQ", "url": "#faq" }
         ],
-        "email": "hello@meblarz3d.com",
-        "telephone": "+48 123 456 789",
-        "socials": {
-          "linkedin": "https://www.linkedin.com",
-          "facebook": "https://facebook.com",
-          "instagram": "https://www.instagram.com"
-        }
+        "quickLinksTitle": "Quick Links",
+        "contactTitle": "Contact",
+        "rights": "All rights reserved.",
+        "builtBy": "Built in Poland for modern woodworking teams.",
+        "emailPrefix": "Email:",
+        "phonePrefix": "Phone:",
+        "nipPrefix": "NIP:"
       }
     },
     "sections": {

@@ -9,6 +9,10 @@ import "../styles/globals.css";
 export const metadata: Metadata = {
   title: APP_NAME,
   description: 'Browser-based 3D furniture design tool',
+  icons: {
+    icon: '/favico.svg',
+    apple: '/favico.svg',
+  },
 };
 
 export default async function RootLayout({
