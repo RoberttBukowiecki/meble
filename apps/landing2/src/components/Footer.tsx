@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import { Logo } from "@meble/ui";
 import { Container } from "./Container";
 
 export function Footer() {
@@ -31,15 +31,7 @@ export function Footer() {
                 href="/"
                 className="flex items-center space-x-2 text-2xl font-medium text-indigo-500 dark:text-gray-100"
               >
-                <span>
-                  <Image
-                    src="/img/logo.svg"
-                    alt="Logo"
-                    width={32}
-                    height={32}
-                    className="w-8"
-                  />
-                </span>
+                <Logo size={32} className="rounded-lg" />
                 <span>Meble</span>
               </Link>
             </div>

@@ -1,9 +1,9 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 import { Disclosure, DisclosureButton, DisclosurePanel } from "@headlessui/react";
+import { Logo } from "@meble/ui";
 import { ThemeChanger } from "./DarkSwitch";
 
 export function Navbar() {
@@ -24,15 +24,7 @@ export function Navbar() {
             <>
               <div className="flex flex-wrap items-center justify-between w-full lg:w-auto">
                 <Link href="/" className="flex items-center space-x-2 text-2xl font-medium text-indigo-500 dark:text-gray-100">
-                  <span>
-                    <Image
-                      src="/img/logo.svg"
-                      alt="Logo"
-                      width={32}
-                      height={32}
-                      className="w-8"
-                    />
-                  </span>
+                  <Logo size={32} className="rounded-lg" />
                   <span>Meble</span>
                 </Link>
 
