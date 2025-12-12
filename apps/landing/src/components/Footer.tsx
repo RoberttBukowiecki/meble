@@ -1,10 +1,10 @@
 import Link from 'next/link';
 import React from 'react';
-import { FaFingerprint } from 'react-icons/fa';
 import { useTranslations } from 'next-intl';
 
 import { Locale } from '@meble/i18n';
 import { COMPANY_INFO, SOCIAL_LINKS } from '@meble/constants';
+import { Logo } from '@meble/ui';
 
 import { FooterDetails, SiteDetails } from '@/types';
 import { getPlatformIconByName } from '@/utils';
@@ -23,7 +23,7 @@ const Footer: React.FC<Props> = ({ siteDetails, footerDetails, locale }) => {
       <div className="max-w-7xl w-full mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-10">
         <div>
           <Link href={`/${locale}`} className="flex items-center gap-2">
-            <FaFingerprint className="min-w-fit w-5 h-5 md:w-7 md:h-7" />
+            <Logo size={28} className="rounded-lg" />
             <h3 className="manrope text-xl font-semibold cursor-pointer">
               {siteDetails.siteName}
             </h3>

@@ -30,7 +30,7 @@ const Header: React.FC<Props> = ({ siteName, menuItems, primaryCtaLabel, locale 
       <nav className="shadow-sm md:shadow-none bg-card/90 backdrop-blur-md border border-border/60 md:bg-transparent mx-auto flex justify-between items-center py-2 px-5 md:py-6 rounded-2xl md:border-0 md:rounded-none max-w-7xl">
         {/* Logo */}
         <Link href={`/${locale}`} className="flex items-center gap-2">
-          <Logo size={32} withBackground className="rounded-lg" />
+          <Logo size={32} className="rounded-lg" />
           <span className="manrope text-xl font-semibold text-foreground cursor-pointer">
             {siteName}
           </span>
