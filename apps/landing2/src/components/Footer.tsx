@@ -16,87 +16,120 @@ export function Footer() {
   ];
 
   const legal = [
-    { label: "Terms", href: "#" },
-    { label: "Privacy", href: "#" },
-    { label: "Legal", href: "#" },
+    { key: "footer.legal.terms", href: "/terms" },
+    { key: "footer.legal.privacy", href: "/privacy" },
+    { key: "footer.legal.cookies", href: "/cookies" },
+  ];
+
+  const socialLinks = [
+    { name: "Twitter", href: "https://twitter.com/meble_app", icon: Twitter, label: "Twitter - Meble 3D" },
+    { name: "Facebook", href: "https://facebook.com/meble.app", icon: Facebook, label: "Facebook - Meble 3D" },
+    { name: "Instagram", href: "https://instagram.com/meble.app", icon: Instagram, label: "Instagram - Meble 3D" },
+    { name: "LinkedIn", href: "https://linkedin.com/company/meble-app", icon: Linkedin, label: "LinkedIn - Meble 3D" },
   ];
 
   return (
-    <div className="relative">
+    <footer role="contentinfo" className="relative" itemScope itemType="https://schema.org/WPFooter">
       <Container>
         <div className="grid max-w-screen-xl grid-cols-1 gap-10 pt-10 mx-auto mt-5 border-t border-gray-100 dark:border-trueGray-700 lg:grid-cols-5">
-          <div className="lg:col-span-2">
-            <div>
-              <Link
-                href="/"
-                className="flex items-center space-x-2 text-2xl font-medium text-indigo-500 dark:text-gray-100"
-              >
-                <Logo size={32} className="rounded-lg" />
-                <span>Meble</span>
-              </Link>
-            </div>
+          {/* Brand section */}
+          <div className="lg:col-span-2" itemScope itemType="https://schema.org/Organization">
+            <Link
+              href="/"
+              className="flex items-center space-x-2 text-2xl font-medium text-indigo-500 dark:text-gray-100"
+              aria-label="Meble - Strona główna"
+              itemProp="url"
+            >
+              <Logo size={32} className="rounded-lg" />
+              <span itemProp="name">Meble</span>
+            </Link>
 
-            <div className="max-w-md mt-4 text-gray-500 dark:text-gray-400">
+            <p className="max-w-md mt-4 text-gray-500 dark:text-gray-400" itemProp="description">
               {t("footer.description")}
-            </div>
+            </p>
+
+            {/* Contact email for SEO */}
+            <address className="mt-4 not-italic text-sm text-gray-500 dark:text-gray-400">
+              <a
+                href="mailto:kontakt@meble.app"
+                className="hover:text-indigo-500"
+                itemProp="email"
+              >
+                kontakt@meble.app
+              </a>
+            </address>
           </div>
 
-          <div>
-            <div className="flex flex-wrap w-full -mt-2 -ml-3 lg:ml-0">
+          {/* Navigation */}
+          <nav aria-label={t("footer.navLabel")}>
+            <h3 className="font-semibold text-gray-800 dark:text-white mb-3">
+              {t("footer.navigation")}
+            </h3>
+            <ul className="flex flex-wrap w-full -mt-2 -ml-3 lg:ml-0">
               {navigation.map((item) => (
-                <Link
-                  key={item.key}
-                  href={item.href}
-                  className="w-full px-4 py-2 text-gray-500 rounded-md dark:text-gray-300 hover:text-indigo-500 focus:text-indigo-500 focus:bg-indigo-100 focus:outline-none dark:focus:bg-trueGray-700"
-                >
-                  {t(item.key)}
-                </Link>
+                <li key={item.key} className="w-full">
+                  <Link
+                    href={item.href}
+                    className="block px-4 py-2 text-gray-500 rounded-md dark:text-gray-300 hover:text-indigo-500 focus:text-indigo-500 focus:bg-indigo-100 focus:outline-none dark:focus:bg-trueGray-700"
+                  >
+                    {t(item.key)}
+                  </Link>
+                </li>
               ))}
-            </div>
-          </div>
+            </ul>
+          </nav>
 
-          <div>
-            <div className="flex flex-wrap w-full -mt-2 -ml-3 lg:ml-0">
+          {/* Legal */}
+          <nav aria-label={t("footer.legalLabel")}>
+            <h3 className="font-semibold text-gray-800 dark:text-white mb-3">
+              {t("footer.legalTitle")}
+            </h3>
+            <ul className="flex flex-wrap w-full -mt-2 -ml-3 lg:ml-0">
               {legal.map((item) => (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  className="w-full px-4 py-2 text-gray-500 rounded-md dark:text-gray-300 hover:text-indigo-500 focus:text-indigo-500 focus:bg-indigo-100 focus:outline-none dark:focus:bg-trueGray-700"
-                >
-                  {item.label}
-                </Link>
+                <li key={item.key} className="w-full">
+                  <Link
+                    href={item.href}
+                    className="block px-4 py-2 text-gray-500 rounded-md dark:text-gray-300 hover:text-indigo-500 focus:text-indigo-500 focus:bg-indigo-100 focus:outline-none dark:focus:bg-trueGray-700"
+                  >
+                    {t(item.key)}
+                  </Link>
+                </li>
               ))}
-            </div>
-          </div>
+            </ul>
+          </nav>
 
+          {/* Social media */}
           <div>
-            <div>{t("footer.followUs")}</div>
-            <div className="flex mt-5 space-x-5 text-gray-400 dark:text-gray-500">
-              <a href="#" rel="noopener noreferrer">
-                <span className="sr-only">Twitter</span>
-                <Twitter />
-              </a>
-              <a href="#" rel="noopener noreferrer">
-                <span className="sr-only">Facebook</span>
-                <Facebook />
-              </a>
-              <a href="#" rel="noopener noreferrer">
-                <span className="sr-only">Instagram</span>
-                <Instagram />
-              </a>
-              <a href="#" rel="noopener noreferrer">
-                <span className="sr-only">Linkedin</span>
-                <Linkedin />
-              </a>
-            </div>
+            <h3 className="font-semibold text-gray-800 dark:text-white mb-3">
+              {t("footer.followUs")}
+            </h3>
+            <ul className="flex mt-2 space-x-5 text-gray-400 dark:text-gray-500" aria-label="Social media links">
+              {socialLinks.map((social) => (
+                <li key={social.name}>
+                  <a
+                    href={social.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={social.label}
+                    className="hover:text-indigo-500 transition-colors"
+                  >
+                    <span className="sr-only">{social.name}</span>
+                    <social.icon />
+                  </a>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
 
+        {/* Copyright */}
         <div className="my-10 text-sm text-center text-gray-600 dark:text-gray-400">
-          Copyright © {new Date().getFullYear()}. {t("footer.copyright")}
+          <p>
+            © {new Date().getFullYear()} Meble. {t("footer.copyright")}
+          </p>
         </div>
       </Container>
-    </div>
+    </footer>
   );
 }
 

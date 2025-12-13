@@ -3,10 +3,11 @@ import { useTranslations } from 'next-intl';
 import { useShallow } from 'zustand/react/shallow';
 import { useStore, useSelectedPart, useSelectedCabinet } from '@/lib/store';
 import { Button } from '@meble/ui';
-import { Plus, Download, Settings, List, Package } from 'lucide-react';
+import { Plus, Download, Settings, List, Package, House } from 'lucide-react';
 import { APP_NAME } from '@meble/constants';
 import { PropertiesPanel } from './PropertiesPanel';
 import { PartsTable } from './PartsTable';
+import { RoomPanel } from './RoomPanel';
 import { validateParts } from '@/lib/csv';
 import { CabinetTemplateDialog } from './CabinetTemplateDialog';
 import { HistoryButtons } from './HistoryButtons';
@@ -20,18 +21,20 @@ import {
   DialogDescription,
 } from '@meble/ui';
 
-type TabType = 'properties' | 'list';
+type TabType = 'properties' | 'list' | 'room';
 
 export function Sidebar() {
   const t = useTranslations('Sidebar');
+  const tRoom = useTranslations('RoomPanel');
   // PERFORMANCE: Use useShallow to prevent re-renders during 3D transforms
-  const { selectedFurnitureId, addPart, parts, materials, furnitures } = useStore(
+  const { selectedFurnitureId, addPart, parts, materials, furnitures, featureFlags } = useStore(
     useShallow((state) => ({
       selectedFurnitureId: state.selectedFurnitureId,
       addPart: state.addPart,
       parts: state.parts,
       materials: state.materials,
       furnitures: state.furnitures,
+      featureFlags: state.featureFlags,
     }))
   );
   const selectedPart = useSelectedPart();
@@ -126,6 +129,19 @@ export function Sidebar() {
           <List className="h-4 w-4" />
           {t('listTabWithCount', { count: parts.length })}
         </button>
+        {!featureFlags.HIDE_ROOMS_TAB && (
+          <button
+            onClick={() => setActiveTab('room')}
+            className={`flex flex-1 items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
+              activeTab === 'room'
+                ? 'border-b-2 border-primary bg-muted text-foreground'
+                : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+            }`}
+          >
+            <House className="h-4 w-4" />
+            {tRoom('roomTab')}
+          </button>
+        )}
       </div>
 
       {/* Content */}
@@ -138,10 +154,12 @@ export function Sidebar() {
               {t('selectPartToEdit')}
             </div>
           )
-        ) : (
+        ) : activeTab === 'list' ? (
           <div className="p-4">
             <PartsTable />
           </div>
+        ) : (
+          <RoomPanel />
         )}
       </div>
 

@@ -11,6 +11,13 @@
     "validationErrorsDescription": "Przed eksportem należy naprawić następujące błędy:",
     "historyListTitle": "Pokaż listę historii"
   },
+  "RoomPanel": {
+    "title": "Pomieszczenia",
+    "addRoom": "Dodaj pokój",
+    "noRooms": "Brak pomieszczeń. Dodaj nowe.",
+    "selectedRoom": "Wybrany pokój",
+    "roomTab": "Pokój"
+  },
   "PropertiesPanel": {
     "width": "Szerokość (mm)",
     "height": "Wysokość (mm)",

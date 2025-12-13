@@ -1,4 +1,6 @@
 import type { StoreSlice } from '../types';
+import { FeatureFlags } from '@/types';
+import { UI_FEATURES } from '@/lib/config';
 
 export interface UISlice {
   isShiftPressed: boolean;
@@ -7,6 +9,10 @@ export interface UISlice {
   // Grid visibility
   showGrid: boolean;
   toggleGrid: () => void;
+
+  // Feature Flags
+  featureFlags: FeatureFlags;
+  toggleFeatureFlag: (key: keyof FeatureFlags) => void;
 
   // Hidden parts (transient state - not persisted)
   hiddenPartIds: Set<string>;
@@ -27,6 +33,16 @@ export const createUISlice: StoreSlice<UISlice> = (set, get) => ({
   // Grid visibility
   showGrid: true,
   toggleGrid: () => set((state) => ({ showGrid: !state.showGrid })),
+
+  // Feature Flags
+  featureFlags: { ...UI_FEATURES },
+  toggleFeatureFlag: (key) =>
+    set((state) => ({
+      featureFlags: {
+        ...state.featureFlags,
+        [key]: !state.featureFlags[key],
+      },
+    })),
 
   // Hidden parts
   hiddenPartIds: new Set<string>(),

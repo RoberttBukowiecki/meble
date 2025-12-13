@@ -23,11 +23,12 @@ import {
   DrawerSlideType,
   ShelfDepthPreset,
   ShelfConfig,
+  Material,
   DEFAULT_SHELVES_CONFIG,
   generateShelfId,
   generateAboveBoxShelfId,
 } from '@/types';
-import { DRAWER_SLIDE_PRESETS, DRAWER_ZONE_PRESETS, generateZoneId, getTotalBoxCount, getFrontCount } from '@/lib/config';
+import { DRAWER_SLIDE_PRESETS, DRAWER_ZONE_PRESETS, DRAWER_CONFIG, INTERIOR_CONFIG, DEFAULT_BODY_THICKNESS, generateZoneId, getTotalBoxCount, getFrontCount } from '@/lib/config';
 import { Trash2, Package, Layers, Box, Plus, Minus, ChevronUp, ChevronDown, LayoutTemplate } from 'lucide-react';
 
 // ============================================================================
@@ -123,68 +124,89 @@ function DrawerZonesPreview({
       </div>
 
       {/* Container with fixed height for proper proportions */}
-      <div className="h-[180px] flex flex-col gap-0.5 w-full max-w-[160px] mx-auto relative">
+      {/* Padding on left for reorder buttons, right for dimension labels */}
+      <div className="h-[180px] flex flex-col gap-0.5 w-full max-w-[160px] mx-auto relative pl-7 pr-6">
         {displayZones.map((zone, displayIndex) => {
           // Get original index for correct operations
           const originalIndex = zones.length - 1 - displayIndex;
-          const heightPercent = (zone.heightRatio / totalRatio) * 100;
           const isSelected = zone.id === selectedZoneId;
           const hasExternalFront = zone.front !== null;
           const boxCount = zone.boxes.length;
           const zoneHeightMm = displayHeights[displayIndex];
-          const boxToFrontRatio = zone.boxToFrontRatio ?? 1.0;
-          const hasReducedBox = boxToFrontRatio < 1.0;
+          // For internal zones, box takes full zone height
+          const boxToFrontRatio = hasExternalFront ? (zone.boxToFrontRatio ?? 1.0) : 1.0;
+          const hasReducedBox = hasExternalFront && boxToFrontRatio < 1.0;
+          const totalBoxHeightMm = Math.round(zoneHeightMm * boxToFrontRatio);
+
+          // Calculate individual box heights
+          const boxTotalRatio = zone.boxes.reduce((s, b) => s + b.heightRatio, 0);
+          const boxHeightsMm = zone.boxes.map(box =>
+            Math.round((box.heightRatio / boxTotalRatio) * totalBoxHeightMm)
+          );
 
           return (
             <div
               key={zone.id}
               className={cn(
-                'relative rounded border-2 transition-all cursor-pointer overflow-hidden',
+                'relative rounded border-2 transition-all cursor-pointer overflow-visible',
                 isSelected
                   ? 'border-primary bg-primary/5 ring-2 ring-primary/20 z-10'
                   : 'border-border hover:border-primary/50 bg-background',
-                !hasExternalFront && 'border-dashed opacity-80'
+                !hasExternalFront && 'border-dashed opacity-70'
               )}
               style={{ flex: zone.heightRatio }}
               onClick={() => onSelectZone(zone.id)}
             >
-              {/* Drawer box visualization */}
-              {hasExternalFront && (
-                <div
-                  className="absolute left-1 right-1 border border-dashed border-muted-foreground/50 rounded-sm pointer-events-none bg-amber-50/20 dark:bg-amber-950/20"
-                  style={{
-                    bottom: '4px',
-                    height: `calc(${boxToFrontRatio * 100}% - 8px)`,
-                  }}
-                >
-                  {/* Show dividers for multiple boxes */}
-                  {boxCount > 1 && (
-                    <div className="absolute inset-0 flex flex-col">
-                      {zone.boxes.map((box, boxIdx) => {
-                        const boxTotalRatio = zone.boxes.reduce((s, b) => s + b.heightRatio, 0);
-                        const boxPercent = (box.heightRatio / boxTotalRatio) * 100;
-                        return (
-                          <div
-                            key={boxIdx}
-                            className={cn(
-                              "flex-shrink-0",
-                              boxIdx < boxCount - 1 && "border-b border-dashed border-muted-foreground/40"
-                            )}
-                            style={{ height: `${boxPercent}%` }}
-                          />
-                        );
-                      })}
-                    </div>
-                  )}
+              {/* Drawer box visualization - shows for both external and internal */}
+              <div
+                className={cn(
+                  "absolute left-1 right-1 border border-dashed rounded-sm pointer-events-none",
+                  hasExternalFront
+                    ? "border-amber-400/60 bg-amber-50/20 dark:bg-amber-950/20"
+                    : "border-muted-foreground/30 bg-muted/10"
+                )}
+                style={{
+                  bottom: '4px',
+                  height: `calc(${boxToFrontRatio * 100}% - 8px)`,
+                }}
+              >
+                {/* Show individual boxes with their heights */}
+                <div className="absolute inset-0 flex flex-col-reverse">
+                  {zone.boxes.map((box, boxIdx) => {
+                    const boxPercent = (box.heightRatio / boxTotalRatio) * 100;
+                    const boxHeightMm = boxHeightsMm[boxIdx];
+                    return (
+                      <div
+                        key={boxIdx}
+                        className={cn(
+                          "flex-shrink-0 relative",
+                          boxIdx < boxCount - 1 && "border-t border-dashed border-muted-foreground/40"
+                        )}
+                        style={{ height: `${boxPercent}%` }}
+                      >
+                        {/* Individual box height - vertical text */}
+                        <div
+                          className={cn(
+                            "absolute right-0.5 top-1/2 -translate-y-1/2 text-[7px] font-mono whitespace-nowrap",
+                            hasExternalFront
+                              ? "text-amber-600/80 dark:text-amber-400/80"
+                              : "text-muted-foreground/80"
+                          )}
+                          style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
+                        >
+                          {boxHeightMm}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              )}
+              </div>
 
               {/* Shelves above drawer box visualization */}
               {hasExternalFront && hasReducedBox && zone.aboveBoxContent?.shelves && zone.aboveBoxContent.shelves.length > 0 && (
                 <>
                   {zone.aboveBoxContent.shelves.map((shelf, shelfIdx) => {
                     const shelfCount = zone.aboveBoxContent!.shelves.length;
-                    // First shelf at box top, others distributed in remaining space
                     const boxTopPercent = boxToFrontRatio * 100;
                     const remainingPercent = 100 - boxTopPercent;
                     const shelfPositionPercent = shelfIdx === 0
@@ -217,14 +239,21 @@ function DrawerZonesPreview({
                 </div>
               </div>
 
-              {/* Height dimension */}
-              <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-full pr-1 text-[10px] font-mono text-muted-foreground whitespace-nowrap">
+              {/* Zone/Front height - vertical text on right side only */}
+              <div
+                className={cn(
+                  "absolute -right-5 top-1/2 -translate-y-1/2 text-[8px] font-mono whitespace-nowrap",
+                  hasExternalFront ? "text-primary/70" : "text-muted-foreground/70"
+                )}
+                style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
+                title={hasExternalFront ? `Front: ${zoneHeightMm}mm` : `Strefa: ${zoneHeightMm}mm`}
+              >
                 {zoneHeightMm}
               </div>
 
-              {/* Reorder buttons - use original index for movement */}
+              {/* Reorder buttons - on left side */}
               {isSelected && (
-                <div className="absolute -right-6 top-1/2 -translate-y-1/2 flex flex-col gap-0.5">
+                <div className="absolute -left-6 top-1/2 -translate-y-1/2 flex flex-col gap-0.5">
                   {originalIndex < zones.length - 1 && (
                     <Button
                       variant="outline"
@@ -323,7 +352,7 @@ function DrawerZoneEditor({ zone, onUpdate, onDelete, canDelete, zoneIndex, zone
   const handleAddAboveBoxShelf = () => {
     const newShelf: AboveBoxShelfConfig = {
       id: generateAboveBoxShelfId(),
-      depthPreset: 'HALF',
+      depthPreset: INTERIOR_CONFIG.DEFAULT_ABOVE_BOX_SHELF_PRESET,
     };
     const currentShelves = zone.aboveBoxContent?.shelves ?? [];
     onUpdate({
@@ -381,8 +410,8 @@ function DrawerZoneEditor({ zone, onUpdate, onDelete, canDelete, zoneIndex, zone
         <Slider
           value={[zone.heightRatio]}
           onValueChange={handleHeightRatioChange}
-          min={1}
-          max={4}
+          min={INTERIOR_CONFIG.SECTION_HEIGHT_RATIO_MIN}
+          max={INTERIOR_CONFIG.SECTION_HEIGHT_RATIO_MAX}
           step={1}
         />
       </div>
@@ -416,9 +445,9 @@ function DrawerZoneEditor({ zone, onUpdate, onDelete, canDelete, zoneIndex, zone
           <Slider
             value={[Math.round(boxToFrontRatio * 100)]}
             onValueChange={handleBoxToFrontRatioChange}
-            min={25}
-            max={100}
-            step={25}
+            min={DRAWER_CONFIG.BOX_TO_FRONT_RATIO.MIN}
+            max={DRAWER_CONFIG.BOX_TO_FRONT_RATIO.MAX}
+            step={DRAWER_CONFIG.BOX_TO_FRONT_RATIO.STEP}
           />
           <p className="text-[9px] text-muted-foreground">
             {boxToFrontRatio < 1.0
@@ -428,29 +457,47 @@ function DrawerZoneEditor({ zone, onUpdate, onDelete, canDelete, zoneIndex, zone
         </div>
       )}
 
-      {/* Shelves above drawer box - only show when boxToFrontRatio < 1.0 */}
-      {hasExternalFront && boxToFrontRatio < 1.0 && (
+      {/* Shelves above drawer box - always visible when has external front */}
+      {hasExternalFront && (
         <div className="space-y-2 pt-2 border-t border-dashed">
           <div className="flex items-center justify-between">
             <div>
               <Label className="text-xs font-medium">Półki nad szufladą</Label>
-              <p className="text-[9px] text-muted-foreground">
-                Wolna przestrzeń: {zoneHeightMm - boxHeightMm}mm
-              </p>
+              {boxToFrontRatio < 1.0 ? (
+                <p className="text-[9px] text-muted-foreground">
+                  Wolna przestrzeń: {zoneHeightMm - boxHeightMm}mm
+                </p>
+              ) : (
+                <p className="text-[9px] text-blue-600 dark:text-blue-400">
+                  Zmniejsz wysokość szuflady aby dodać półki
+                </p>
+              )}
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-6 text-[10px] px-2"
-              onClick={handleAddAboveBoxShelf}
-              disabled={(zone.aboveBoxContent?.shelves.length ?? 0) >= 4}
-            >
-              <Plus className="h-3 w-3 mr-1" />
-              Dodaj
-            </Button>
+            {boxToFrontRatio < 1.0 ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-6 text-[10px] px-2"
+                onClick={handleAddAboveBoxShelf}
+                disabled={(zone.aboveBoxContent?.shelves.length ?? 0) >= INTERIOR_CONFIG.MAX_SHELVES_ABOVE_DRAWER}
+              >
+                <Plus className="h-3 w-3 mr-1" />
+                Dodaj
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-6 text-[10px] px-2"
+                onClick={() => handleBoxToFrontRatioChange([75])}
+              >
+                <Layers className="h-3 w-3 mr-1" />
+                Włącz
+              </Button>
+            )}
           </div>
 
-          {zone.aboveBoxContent?.shelves && zone.aboveBoxContent.shelves.length > 0 && (
+          {boxToFrontRatio < 1.0 && zone.aboveBoxContent?.shelves && zone.aboveBoxContent.shelves.length > 0 && (
             <div className="space-y-1.5 max-h-[150px] overflow-y-auto">
               {zone.aboveBoxContent.shelves.map((shelf, shelfIdx) => {
                 const shelfCount = zone.aboveBoxContent!.shelves.length;
@@ -488,8 +535,8 @@ function DrawerZoneEditor({ zone, onUpdate, onDelete, canDelete, zoneIndex, zone
                       <NumberInput
                         value={shelf.customDepth ?? 150}
                         onChange={(v) => handleUpdateAboveBoxShelf(shelf.id, { customDepth: v })}
-                        min={50}
-                        max={500}
+                        min={INTERIOR_CONFIG.CUSTOM_SHELF_DEPTH_MIN}
+                        max={INTERIOR_CONFIG.CUSTOM_SHELF_DEPTH_MAX}
                         allowNegative={false}
                         className="w-16 h-5 text-[10px]"
                       />
@@ -511,7 +558,7 @@ function DrawerZoneEditor({ zone, onUpdate, onDelete, canDelete, zoneIndex, zone
             </div>
           )}
 
-          {zone.aboveBoxContent?.shelves && zone.aboveBoxContent.shelves.length > 0 && (
+          {boxToFrontRatio < 1.0 && zone.aboveBoxContent?.shelves && zone.aboveBoxContent.shelves.length > 0 && (
             <p className="text-[8px] text-blue-600 dark:text-blue-400">
               Pierwsza półka bezpośrednio nad boxem, kolejne rozłożone równomiernie
             </p>
@@ -570,6 +617,22 @@ interface SectionEditorProps {
   cabinetDepth: number;
   totalRatio: number;
   interiorHeight: number;
+  /** Available materials for selection */
+  materials: Material[];
+  /** Default body material ID from cabinet */
+  bodyMaterialId: string;
+  /** Last used material for shelves (from preferences, defaults to body material) */
+  lastUsedShelfMaterial: string;
+  /** Last used material for drawer box (from preferences, defaults to body material) */
+  lastUsedDrawerBoxMaterial: string;
+  /** Last used material for drawer bottom (from preferences, defaults to HDF) */
+  lastUsedDrawerBottomMaterial: string;
+  /** Callback when shelf material is changed (to save preference) */
+  onShelfMaterialChange?: (materialId: string) => void;
+  /** Callback when drawer box material is changed (to save preference) */
+  onDrawerBoxMaterialChange?: (materialId: string) => void;
+  /** Callback when drawer bottom material is changed (to save preference) */
+  onDrawerBottomMaterialChange?: (materialId: string) => void;
 }
 
 const CONTENT_TYPE_OPTIONS: { value: SectionContentType; label: string; icon: typeof Package }[] = [
@@ -591,7 +654,7 @@ const DEPTH_PRESET_LABELS: Record<ShelfDepthPreset, string> = {
   CUSTOM: 'Własna',
 };
 
-const DEFAULT_BODY_THICKNESS = 18;
+// DEFAULT_BODY_THICKNESS imported from config
 
 // ============================================================================
 // Main Section Editor Component
@@ -607,6 +670,14 @@ export function SectionEditor({
   cabinetDepth,
   totalRatio,
   interiorHeight,
+  materials,
+  bodyMaterialId,
+  lastUsedShelfMaterial,
+  lastUsedDrawerBoxMaterial,
+  lastUsedDrawerBottomMaterial,
+  onShelfMaterialChange,
+  onDrawerBoxMaterialChange,
+  onDrawerBottomMaterialChange,
 }: SectionEditorProps) {
   // State for selected drawer zone within this section
   const [selectedZoneId, setSelectedZoneId] = useState<string | null>(
@@ -661,15 +732,28 @@ export function SectionEditor({
     };
 
     if (contentType === 'SHELVES') {
-      updatedSection.shelvesConfig = { ...DEFAULT_SHELVES_CONFIG };
+      // Apply last used shelf material if different from body material
+      const shelfMaterial = lastUsedShelfMaterial && lastUsedShelfMaterial !== bodyMaterialId
+        ? lastUsedShelfMaterial
+        : undefined;
+      updatedSection.shelvesConfig = {
+        ...DEFAULT_SHELVES_CONFIG,
+        materialId: shelfMaterial,
+      };
     } else if (contentType === 'DRAWERS') {
       const defaultZones = [
         { id: generateZoneId(), heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
         { id: generateZoneId(), heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
       ];
+      // Apply last used drawer materials
+      const boxMaterial = lastUsedDrawerBoxMaterial && lastUsedDrawerBoxMaterial !== bodyMaterialId
+        ? lastUsedDrawerBoxMaterial
+        : undefined;
       updatedSection.drawerConfig = {
         slideType: 'SIDE_MOUNT',
         zones: defaultZones,
+        boxMaterialId: boxMaterial,
+        bottomMaterialId: lastUsedDrawerBottomMaterial ?? undefined,
       };
       setSelectedZoneId(defaultZones[0].id);
     }
@@ -710,7 +794,7 @@ export function SectionEditor({
 
   const handleShelfCountChange = (delta: number) => {
     if (!section.shelvesConfig) return;
-    const newCount = Math.max(0, Math.min(10, section.shelvesConfig.count + delta));
+    const newCount = Math.max(0, Math.min(INTERIOR_CONFIG.MAX_SHELVES_PER_SECTION, section.shelvesConfig.count + delta));
 
     // In MANUAL mode, adjust shelves array
     let shelves = section.shelvesConfig.shelves;
@@ -805,7 +889,7 @@ export function SectionEditor({
 
   const handleAddDrawerZone = () => {
     if (!section.drawerConfig) return;
-    if (section.drawerConfig.zones.length >= 8) return;
+    if (section.drawerConfig.zones.length >= INTERIOR_CONFIG.MAX_DRAWER_ZONES) return;
 
     const newZone: DrawerZone = {
       id: generateZoneId(),
@@ -918,17 +1002,10 @@ export function SectionEditor({
           <Slider
             value={[section.heightRatio]}
             onValueChange={handleHeightRatioChange}
-            min={1}
-            max={4}
+            min={INTERIOR_CONFIG.SECTION_HEIGHT_RATIO_MIN}
+            max={INTERIOR_CONFIG.SECTION_HEIGHT_RATIO_MAX}
             step={1}
           />
-        </div>
-      )}
-
-      {/* Single section info */}
-      {totalRatio === section.heightRatio && (
-        <div className="text-xs text-muted-foreground bg-muted/30 p-2 rounded text-center">
-          Pojedyncza sekcja - zajmuje pełną wysokość wnętrza ({interiorHeight}mm)
         </div>
       )}
 
@@ -993,6 +1070,47 @@ export function SectionEditor({
             </div>
           </div>
 
+          {/* Shelf material selector - only in UNIFORM mode */}
+          {section.shelvesConfig.mode === 'UNIFORM' && (
+            <div className="space-y-2">
+              <Label className="text-sm">Materiał półek</Label>
+              <Select
+                value={section.shelvesConfig.materialId ?? bodyMaterialId}
+                onValueChange={(value) => {
+                  onUpdate({
+                    ...section,
+                    shelvesConfig: {
+                      ...section.shelvesConfig!,
+                      materialId: value === bodyMaterialId ? undefined : value,
+                    },
+                  });
+                  onShelfMaterialChange?.(value);
+                }}
+              >
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Wybierz materiał" />
+                </SelectTrigger>
+                <SelectContent>
+                  {materials.filter(m => m.category === 'board').map((material) => (
+                    <SelectItem key={material.id} value={material.id}>
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-3 h-3 rounded-sm border"
+                          style={{ backgroundColor: material.color }}
+                        />
+                        <span>{material.name}</span>
+                        <span className="text-muted-foreground text-xs">({material.thickness}mm)</span>
+                        {material.id === bodyMaterialId && (
+                          <span className="text-xs text-blue-600">(korpus)</span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           {/* UNIFORM MODE: Single depth preset for all shelves */}
           {section.shelvesConfig.mode === 'UNIFORM' && (
             <>
@@ -1016,8 +1134,8 @@ export function SectionEditor({
                   <NumberInput
                     value={section.shelvesConfig.customDepth ?? cabinetDepth / 2}
                     onChange={handleCustomDepthChange}
-                    min={50}
-                    max={cabinetDepth - 10}
+                    min={INTERIOR_CONFIG.CUSTOM_SHELF_DEPTH_MIN}
+                    max={cabinetDepth - INTERIOR_CONFIG.CUSTOM_SHELF_DEPTH_OFFSET}
                     allowNegative={false}
                     className="w-full h-9"
                   />
@@ -1076,8 +1194,8 @@ export function SectionEditor({
                         <NumberInput
                           value={shelfCustomDepth ?? cabinetDepth / 2}
                           onChange={(v) => handleIndividualShelfCustomDepthChange(i, v)}
-                          min={50}
-                          max={cabinetDepth - 10}
+                          min={INTERIOR_CONFIG.CUSTOM_SHELF_DEPTH_MIN}
+                          max={cabinetDepth - INTERIOR_CONFIG.CUSTOM_SHELF_DEPTH_OFFSET}
                           allowNegative={false}
                           className="w-20 h-7 text-xs"
                         />
@@ -1148,7 +1266,7 @@ export function SectionEditor({
                 size="sm"
                 className="w-full mt-2 border-dashed text-xs h-7"
                 onClick={handleAddDrawerZone}
-                disabled={section.drawerConfig.zones.length >= 8}
+                disabled={section.drawerConfig.zones.length >= INTERIOR_CONFIG.MAX_DRAWER_ZONES}
               >
                 <Plus className="h-3 w-3 mr-1" />
                 Dodaj strefę
@@ -1197,6 +1315,89 @@ export function SectionEditor({
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500"></span>
               Luz boczny: {DRAWER_SLIDE_PRESETS[section.drawerConfig.slideType].sideOffset}mm/stronę
             </p>
+          </div>
+
+          {/* Drawer materials selector */}
+          <div className="space-y-3 bg-muted/10 p-3 rounded-lg border">
+            <Label className="text-sm font-medium">Materiały szuflady</Label>
+
+            {/* Box material (sides, back, front) */}
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Box (boki, tył, przód)</Label>
+              <Select
+                value={section.drawerConfig.boxMaterialId ?? bodyMaterialId}
+                onValueChange={(value) => {
+                  onUpdate({
+                    ...section,
+                    drawerConfig: {
+                      ...section.drawerConfig!,
+                      boxMaterialId: value === bodyMaterialId ? undefined : value,
+                    },
+                  });
+                  onDrawerBoxMaterialChange?.(value);
+                }}
+              >
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder="Wybierz materiał" />
+                </SelectTrigger>
+                <SelectContent>
+                  {materials.filter(m => m.category === 'board').map((material) => (
+                    <SelectItem key={material.id} value={material.id}>
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-3 h-3 rounded-sm border"
+                          style={{ backgroundColor: material.color }}
+                        />
+                        <span>{material.name}</span>
+                        <span className="text-muted-foreground text-xs">({material.thickness}mm)</span>
+                        {material.id === bodyMaterialId && (
+                          <span className="text-xs text-blue-600">(korpus)</span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Bottom material */}
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Dno szuflady</Label>
+              <Select
+                value={section.drawerConfig.bottomMaterialId ?? lastUsedDrawerBottomMaterial}
+                onValueChange={(value) => {
+                  onUpdate({
+                    ...section,
+                    drawerConfig: {
+                      ...section.drawerConfig!,
+                      bottomMaterialId: value,
+                    },
+                  });
+                  onDrawerBottomMaterialChange?.(value);
+                }}
+              >
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder="Wybierz materiał" />
+                </SelectTrigger>
+                <SelectContent>
+                  {materials.map((material) => (
+                    <SelectItem key={material.id} value={material.id}>
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-3 h-3 rounded-sm border"
+                          style={{ backgroundColor: material.color }}
+                        />
+                        <span>{material.name}</span>
+                        <span className="text-muted-foreground text-xs">({material.thickness}mm)</span>
+                        {material.category === 'hdf' && (
+                          <span className="text-xs text-green-600">(HDF)</span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Summary */}

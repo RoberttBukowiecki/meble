@@ -13,7 +13,7 @@ import {
 } from '@/types';
 import { GeneratedPart } from '../types';
 import { generateDrawers } from '../drawers';
-import { DRAWER_SLIDE_PRESETS } from '@/lib/config';
+import { DRAWER_SLIDE_PRESETS, DEFAULT_SHELF_EDGE_BANDING } from '@/lib/config';
 
 // ============================================================================
 // Types
@@ -165,6 +165,11 @@ function generateSectionShelves(
     const depthOffset = (cabinetDepth - shelfDepth) / 2;
     const shelfZ = -depthOffset;
 
+    // Use custom material: individual shelf > global shelves config > body material
+    const shelfMaterialId = individualShelf?.materialId
+      ?? shelvesConfig.materialId
+      ?? bodyMaterialId;
+
     parts.push({
       name: `Półka ${shelfIndex + 1}`,
       furnitureId,
@@ -176,8 +181,8 @@ function generateSectionShelves(
       depth: bodyThickness,
       position: [0, shelfY, shelfZ],
       rotation: [-Math.PI / 2, 0, 0],
-      materialId: individualShelf?.materialId ?? bodyMaterialId,
-      edgeBanding: { type: 'RECT', top: true, bottom: false, left: false, right: false },
+      materialId: shelfMaterialId,
+      edgeBanding: DEFAULT_SHELF_EDGE_BANDING,
       cabinetMetadata: {
         cabinetId,
         role: 'SHELF',
@@ -258,6 +263,10 @@ function generateSectionDrawers(
     frontThickness,
   } = config;
 
+  // Use custom materials from drawer config if specified, otherwise fallback to cabinet defaults
+  const boxMaterialId = drawerConfig.boxMaterialId ?? bodyMaterialId;
+  const bottomMaterialId = drawerConfig.bottomMaterialId;
+
   // Adjust drawer generation to work within section bounds
   // We'll use the existing drawer generator but calculate positions based on section
   return generateDrawers({
@@ -266,8 +275,9 @@ function generateSectionDrawers(
     cabinetWidth,
     cabinetHeight: bounds.height + bodyThickness * 2, // Simulate cabinet height for this section
     cabinetDepth,
-    bodyMaterialId,
+    bodyMaterialId: boxMaterialId,
     frontMaterialId,
+    bottomMaterialId,
     bodyThickness,
     frontThickness,
     drawerConfig,

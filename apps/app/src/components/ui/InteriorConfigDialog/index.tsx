@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -17,13 +17,93 @@ import {
   CabinetSection,
   SectionContentType,
   DrawerSlideType,
+  Material,
   generateSectionId,
   DEFAULT_SHELVES_CONFIG,
 } from '@/types';
-import { DRAWER_ZONE_PRESETS, generateZoneId } from '@/lib/config';
+import { DRAWER_ZONE_PRESETS, INTERIOR_CONFIG, DEFAULT_BODY_THICKNESS, generateZoneId } from '@/lib/config';
 import { Plus, AlertTriangle } from 'lucide-react';
 import { InteriorPreview } from './InteriorPreview';
 import { SectionEditor } from './SectionEditor';
+
+// ============================================================================
+// Scroll Container with Fade Indicator
+// ============================================================================
+
+interface ScrollContainerProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+function ScrollContainer({ children, className }: ScrollContainerProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [canScrollDown, setCanScrollDown] = useState(false);
+  const [canScrollUp, setCanScrollUp] = useState(false);
+
+  const checkScroll = useCallback(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const { scrollTop, scrollHeight, clientHeight } = el;
+    const threshold = 10; // Small threshold to account for rounding
+
+    setCanScrollUp(scrollTop > threshold);
+    setCanScrollDown(scrollTop + clientHeight < scrollHeight - threshold);
+  }, []);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    // Initial check
+    checkScroll();
+
+    // Check on scroll
+    el.addEventListener('scroll', checkScroll, { passive: true });
+
+    // Check on resize
+    const resizeObserver = new ResizeObserver(checkScroll);
+    resizeObserver.observe(el);
+
+    return () => {
+      el.removeEventListener('scroll', checkScroll);
+      resizeObserver.disconnect();
+    };
+  }, [checkScroll]);
+
+  // Also recheck when children change
+  useEffect(() => {
+    checkScroll();
+  }, [children, checkScroll]);
+
+  return (
+    <div className={cn('relative', className)}>
+      {/* Top fade indicator */}
+      <div
+        className={cn(
+          'absolute top-0 left-0 right-0 h-6 bg-gradient-to-b from-background to-transparent pointer-events-none z-10 transition-opacity duration-200',
+          canScrollUp ? 'opacity-100' : 'opacity-0'
+        )}
+      />
+
+      {/* Scrollable content */}
+      <div
+        ref={containerRef}
+        className="h-full overflow-y-auto"
+      >
+        {children}
+      </div>
+
+      {/* Bottom fade indicator */}
+      <div
+        className={cn(
+          'absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-background to-transparent pointer-events-none z-10 transition-opacity duration-200',
+          canScrollDown ? 'opacity-100' : 'opacity-0'
+        )}
+      />
+    </div>
+  );
+}
 
 interface InteriorConfigDialogProps {
   open: boolean;
@@ -37,6 +117,22 @@ interface InteriorConfigDialogProps {
   hasDoors?: boolean;
   /** Callback to remove doors when resolving conflict */
   onRemoveDoors?: () => void;
+  /** Available materials for selection */
+  materials: Material[];
+  /** Default body material ID from cabinet */
+  bodyMaterialId: string;
+  /** Last used material for shelves (from preferences, defaults to body material) */
+  lastUsedShelfMaterial: string;
+  /** Last used material for drawer box (from preferences, defaults to body material) */
+  lastUsedDrawerBoxMaterial: string;
+  /** Last used material for drawer bottom (from preferences, defaults to HDF) */
+  lastUsedDrawerBottomMaterial: string;
+  /** Callback when shelf material is changed (to save preference) */
+  onShelfMaterialChange?: (materialId: string) => void;
+  /** Callback when drawer box material is changed (to save preference) */
+  onDrawerBoxMaterialChange?: (materialId: string) => void;
+  /** Callback when drawer bottom material is changed (to save preference) */
+  onDrawerBottomMaterialChange?: (materialId: string) => void;
 }
 
 type ConflictType = 'drawer-fronts-with-doors' | null;
@@ -86,6 +182,14 @@ export function InteriorConfigDialog({
   cabinetDepth,
   hasDoors = false,
   onRemoveDoors,
+  materials,
+  bodyMaterialId,
+  lastUsedShelfMaterial,
+  lastUsedDrawerBoxMaterial,
+  lastUsedDrawerBottomMaterial,
+  onShelfMaterialChange,
+  onDrawerBoxMaterialChange,
+  onDrawerBottomMaterialChange,
 }: InteriorConfigDialogProps) {
   // Internal state for editing
   const [localConfig, setLocalConfig] = useState<CabinetInteriorConfig>(() => {
@@ -230,7 +334,7 @@ export function InteriorConfigDialog({
 
   // Calculate section heights for display
   const totalRatio = localConfig.sections.reduce((sum, s) => sum + s.heightRatio, 0);
-  const bodyThickness = 18; // Default
+  const bodyThickness = DEFAULT_BODY_THICKNESS;
   const interiorHeight = Math.max(cabinetHeight - bodyThickness * 2, 0);
 
   // Check for additional conflicts
@@ -247,9 +351,9 @@ export function InteriorConfigDialog({
         </DialogHeader>
 
         <div className="flex-1 flex overflow-hidden">
-          {/* Left Column: Preview - Sticky */}
-          <div className="w-full lg:w-5/12 flex-shrink-0 px-4 py-4 border-r overflow-y-auto">
-            <div className="flex flex-col gap-4">
+          {/* Left Column: Preview - with scroll indicator */}
+          <ScrollContainer className="w-full lg:w-5/12 flex-shrink-0 border-r">
+            <div className="px-4 py-4 flex flex-col gap-4">
               <div>
                 <Label className="text-sm font-medium mb-3 block">Podgląd układu</Label>
                 <InteriorPreview
@@ -268,7 +372,7 @@ export function InteriorConfigDialog({
                 variant="outline"
                 className="w-full border-dashed"
                 onClick={handleAddSection}
-                disabled={localConfig.sections.length >= 6}
+                disabled={localConfig.sections.length >= INTERIOR_CONFIG.MAX_SECTIONS}
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Dodaj sekcję
@@ -336,11 +440,11 @@ export function InteriorConfigDialog({
                 </div>
               )}
             </div>
-          </div>
+          </ScrollContainer>
 
-          {/* Right Column: Section Editor - Scrollable */}
-          <div className="flex-1 px-4 py-4 overflow-y-auto">
-            <div className="flex flex-col gap-4">
+          {/* Right Column: Section Editor - with scroll indicator */}
+          <ScrollContainer className="flex-1">
+            <div className="px-4 py-4 flex flex-col gap-4">
               {selectedSection ? (
                 <SectionEditor
                   section={selectedSection}
@@ -352,6 +456,14 @@ export function InteriorConfigDialog({
                   cabinetDepth={cabinetDepth}
                   totalRatio={totalRatio}
                   interiorHeight={interiorHeight}
+                  materials={materials}
+                  bodyMaterialId={bodyMaterialId}
+                  lastUsedShelfMaterial={lastUsedShelfMaterial}
+                  lastUsedDrawerBoxMaterial={lastUsedDrawerBoxMaterial}
+                  lastUsedDrawerBottomMaterial={lastUsedDrawerBottomMaterial}
+                  onShelfMaterialChange={onShelfMaterialChange}
+                  onDrawerBoxMaterialChange={onDrawerBoxMaterialChange}
+                  onDrawerBottomMaterialChange={onDrawerBottomMaterialChange}
                 />
               ) : (
                 <div className="border-2 border-dashed rounded-lg p-8 text-center text-muted-foreground text-sm flex items-center justify-center h-full">
@@ -359,7 +471,7 @@ export function InteriorConfigDialog({
                 </div>
               )}
             </div>
-          </div>
+          </ScrollContainer>
         </div>
 
         {/* Footer */}

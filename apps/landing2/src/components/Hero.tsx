@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useTranslations } from "next-intl";
+import { APP_URLS } from "@meble/constants";
 import { Container } from "./Container";
 import heroImg from "../../public/img/hero.png";
 
@@ -22,7 +23,7 @@ export function Hero() {
 
             <div className="flex flex-col items-start space-x-3 space-y-3 sm:space-y-0 sm:items-center sm:flex-row">
               <a
-                href="#"
+                href={APP_URLS.app}
                 className="px-8 py-4 text-lg font-medium text-center text-white bg-indigo-600 rounded-md"
               >
                 {t("cta")}
@@ -61,29 +62,76 @@ export function Hero() {
           </div>
         </div>
       </Container>
+
+      {/* Savings Value Proposition Section */}
       <Container>
-        <div className="flex flex-col justify-center">
-          <div className="text-xl text-center text-gray-700 dark:text-white">
-            Trusted by <span className="text-indigo-600">2000+</span> customers
-            worldwide
+        <div className="relative mt-10 overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-800 p-8 md:p-12 lg:p-16">
+          {/* Background decoration */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white"></div>
+            <div className="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-white"></div>
           </div>
 
-          <div className="flex flex-wrap justify-center gap-5 mt-10 md:justify-around">
-            <div className="pt-2 text-gray-400 dark:text-gray-400">
-              <AmazonLogo />
+          <div className="relative z-10 flex flex-col items-center text-center">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-2 text-sm font-medium text-white backdrop-blur-sm">
+              <SparklesIcon />
+              {t("savings.badge")}
             </div>
-            <div className="text-gray-400 dark:text-gray-400">
-              <VerizonLogo />
+
+            <h2 className="mb-4 max-w-3xl text-3xl font-bold leading-tight text-white md:text-4xl lg:text-5xl">
+              {t("savings.title")}
+              <span className="block mt-2 bg-gradient-to-r from-yellow-300 to-orange-300 bg-clip-text text-transparent">
+                {t("savings.highlight")}
+              </span>
+            </h2>
+
+            <p className="mb-8 max-w-2xl text-lg text-indigo-100 md:text-xl">
+              {t("savings.description")}
+            </p>
+
+            {/* Stats */}
+            <div className="mb-8 grid w-full max-w-2xl grid-cols-1 gap-6 sm:grid-cols-3">
+              <div className="rounded-2xl bg-white/10 p-6 backdrop-blur-sm">
+                <div className="text-3xl font-bold text-white md:text-4xl">50%</div>
+                <div className="mt-1 text-sm text-indigo-200">{t("savings.stats.savings")}</div>
+              </div>
+              <div className="rounded-2xl bg-white/10 p-6 backdrop-blur-sm">
+                <div className="text-3xl font-bold text-white md:text-4xl">0</div>
+                <div className="mt-1 text-sm text-indigo-200">{t("savings.stats.middlemen")}</div>
+              </div>
+              <div className="rounded-2xl bg-white/10 p-6 backdrop-blur-sm">
+                <div className="text-3xl font-bold text-white md:text-4xl">100%</div>
+                <div className="mt-1 text-sm text-indigo-200">{t("savings.stats.control")}</div>
+              </div>
             </div>
-            <div className="text-gray-400 dark:text-gray-400">
-              <MicrosoftLogo />
+
+            {/* Benefits list */}
+            <div className="mb-8 grid w-full max-w-3xl grid-cols-1 gap-4 text-left sm:grid-cols-2">
+              <div className="flex items-start gap-3 rounded-xl bg-white/5 p-4">
+                <CheckCircleIcon className="h-6 w-6 flex-shrink-0 text-green-400" />
+                <span className="text-white">{t("savings.benefits.direct")}</span>
+              </div>
+              <div className="flex items-start gap-3 rounded-xl bg-white/5 p-4">
+                <CheckCircleIcon className="h-6 w-6 flex-shrink-0 text-green-400" />
+                <span className="text-white">{t("savings.benefits.cutlist")}</span>
+              </div>
+              <div className="flex items-start gap-3 rounded-xl bg-white/5 p-4">
+                <CheckCircleIcon className="h-6 w-6 flex-shrink-0 text-green-400" />
+                <span className="text-white">{t("savings.benefits.quality")}</span>
+              </div>
+              <div className="flex items-start gap-3 rounded-xl bg-white/5 p-4">
+                <CheckCircleIcon className="h-6 w-6 flex-shrink-0 text-green-400" />
+                <span className="text-white">{t("savings.benefits.custom")}</span>
+              </div>
             </div>
-            <div className="pt-1 text-gray-400 dark:text-gray-400">
-              <NetflixLogo />
-            </div>
-            <div className="pt-2 text-gray-400 dark:text-gray-400">
-              <SonyLogo />
-            </div>
+
+            <a
+              href={APP_URLS.app}
+              className="inline-flex items-center gap-2 rounded-full bg-white px-8 py-4 text-lg font-semibold text-indigo-700 shadow-lg transition-all hover:bg-indigo-50 hover:shadow-xl"
+            >
+              {t("savings.cta")}
+              <ArrowRightIcon className="h-5 w-5" />
+            </a>
           </div>
         </div>
       </Container>
@@ -91,111 +139,26 @@ export function Hero() {
   );
 }
 
-function AmazonLogo() {
+function SparklesIcon() {
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="110"
-      height="33"
-      fill="none"
-      viewBox="0 0 110 33"
-    >
-      <g fill="currentColor" clipPath="url(#clip0)">
-        <path
-          fillRule="evenodd"
-          d="M67.776 25.783c-6.323 4.676-15.521 7.167-23.455 7.167-11.114 0-21.079-4.1-28.667-10.923-.575-.536-.077-1.264.651-.843 8.163 4.752 18.243 7.589 28.668 7.589 7.013 0 14.755-1.457 21.884-4.485 1.073-.421 1.954.729.92 1.495z"
-          clipRule="evenodd"
-        />
-        <path
-          fillRule="evenodd"
-          d="M70.42 22.756c-.804-1.035-5.365-.499-7.396-.23-.613.076-.728-.46-.153-.844 3.64-2.567 9.581-1.8 10.271-.958.69.843-.192 6.822-3.603 9.658-.536.422-1.034.192-.804-.383.766-1.916 2.49-6.17 1.686-7.243z"
-          clipRule="evenodd"
-        />
-        <path d="M63.139 3.67V1.177c0-.383.268-.613.613-.613h11.115c.345 0 .651.268.651.613v2.108c0 .345-.306.805-.843 1.571l-5.749 8.202c2.146-.038 4.408.268 6.324 1.341.421.23.536.614.575.959v2.644c0 .383-.383.805-.805.575-3.411-1.801-7.972-1.993-11.728.038-.383.192-.805-.191-.805-.575v-2.529c0-.383 0-1.073.422-1.686l6.669-9.543H63.79c-.344 0-.651-.269-.651-.614zm-40.51 15.445h-3.373c-.306-.039-.575-.269-.613-.575V1.217c0-.345.307-.614.652-.614h3.142c.345 0 .575.269.613.575V3.44h.077C23.932 1.255 25.503.22 27.573.22c2.108 0 3.45 1.035 4.369 3.22.805-2.185 2.683-3.22 4.676-3.22 1.418 0 2.95.575 3.909 1.916 1.073 1.457.843 3.565.843 5.443v10.96c0 .346-.306.614-.651.614h-3.335c-.345-.038-.613-.307-.613-.613V9.342c0-.729.077-2.568-.077-3.258-.268-1.15-.996-1.495-1.992-1.495-.805 0-1.687.537-2.032 1.418-.345.882-.306 2.338-.306 3.335v9.198c0 .345-.307.613-.652.613H28.34c-.345-.038-.613-.307-.613-.613V9.342c0-1.917.307-4.791-2.07-4.791-2.414 0-2.337 2.76-2.337 4.79v9.199c-.038.306-.307.575-.69.575zM85.099.22c5.021 0 7.742 4.293 7.742 9.773 0 5.289-2.99 9.505-7.741 9.505-4.906 0-7.589-4.293-7.589-9.658C77.473 4.436 80.194.22 85.1.22zm0 3.564c-2.49 0-2.644 3.411-2.644 5.52 0 2.107-.038 6.63 2.606 6.63 2.606 0 2.76-3.641 2.76-5.864 0-1.457-.077-3.22-.499-4.6-.383-1.226-1.15-1.686-2.222-1.686zm14.22 15.33h-3.373c-.345-.038-.614-.306-.614-.613V1.14a.662.662 0 01.652-.575h3.143c.306 0 .536.23.613.498v2.645h.077c.958-2.376 2.261-3.488 4.599-3.488 1.494 0 2.989.537 3.947 2.031.882 1.38.882 3.718.882 5.404v10.923c-.039.307-.307.537-.652.537h-3.373c-.306-.039-.574-.269-.613-.537V9.15c0-1.916.23-4.676-2.108-4.676-.804 0-1.571.537-1.954 1.38-.46 1.073-.537 2.108-.537 3.296V18.5a.702.702 0 01-.69.614zm-41.622-.038a.693.693 0 01-.805.077c-1.111-.92-1.341-1.38-1.955-2.261-1.84 1.878-3.18 2.453-5.557 2.453-2.836 0-5.059-1.764-5.059-5.251 0-2.76 1.495-4.6 3.603-5.519 1.84-.805 4.407-.958 6.362-1.188v-.422c0-.804.076-1.763-.422-2.452-.421-.614-1.188-.882-1.878-.882-1.303 0-2.453.652-2.72 2.031-.078.307-.27.614-.576.614l-3.257-.345c-.269-.077-.575-.269-.499-.69.767-3.986 4.331-5.174 7.55-5.174 1.648 0 3.795.421 5.098 1.686 1.648 1.533 1.495 3.603 1.495 5.826v5.25c0 1.571.651 2.261 1.264 3.143.23.307.268.69 0 .881-.728.575-1.954 1.648-2.644 2.223zm-3.411-8.24v-.728c-2.453 0-5.02.537-5.02 3.411 0 1.456.766 2.453 2.069 2.453.958 0 1.801-.575 2.338-1.533.651-1.188.613-2.3.613-3.603zm-41.698 8.317c-1.112-.92-1.342-1.38-1.955-2.261-1.84 1.878-3.181 2.453-5.557 2.453-2.836 0-5.06-1.764-5.06-5.251 0-2.76 1.496-4.6 3.603-5.519 1.84-.805 4.408-.958 6.362-1.188v-.422c0-.804.077-1.763-.421-2.452-.422-.614-1.188-.882-1.878-.882-1.303 0-2.453.652-2.721 2.031-.077.307-.268.614-.575.614L1.128 5.93C.86 5.854.553 5.662.63 5.24 1.397 1.255 4.96.067 8.18.067c1.648 0 3.794.421 5.098 1.686 1.647 1.533 1.494 3.603 1.494 5.826v5.25c0 1.571.652 2.261 1.265 3.143.23.307.268.69 0 .881-.728.575-1.955 1.648-2.644 2.223a.693.693 0 01-.805.077zm-2.568-8.317v-.728c-2.453 0-5.02.537-5.02 3.411 0 1.456.766 2.453 2.069 2.453.958 0 1.801-.575 2.338-1.533.651-1.188.613-2.3.613-3.603z" />
-      </g>
-      <defs>
-        <clipPath id="clip0">
-          <path fill="#fff" d="M0 0H109.272V33H0z" />
-        </clipPath>
-      </defs>
+    <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
     </svg>
   );
 }
 
-function MicrosoftLogo() {
+function CheckCircleIcon({ className }: { className?: string }) {
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="150"
-      height="31"
-      fill="none"
-      viewBox="0 0 150 31"
-    >
-      <path
-        fill="currentColor"
-        d="M150 14.514v-2.647h-3.295V7.75l-.11.034-3.095.945-.061.019v3.118h-4.884V10.13c0-.81.181-1.428.538-1.841.355-.408.863-.615 1.51-.615.465 0 .947.11 1.431.325l.122.054V5.265l-.057-.021c-.452-.162-1.068-.244-1.83-.244-.96 0-1.834.209-2.596.622a4.428 4.428 0 00-1.78 1.757c-.419.751-.631 1.618-.631 2.578v1.91h-2.294v2.647h2.294v11.153h3.293V14.514h4.884v7.088c0 2.919 1.38 4.398 4.1 4.398a6.78 6.78 0 001.4-.155c.488-.105.822-.21 1.018-.322l.043-.026v-2.672l-.134.089c-.204.13-.428.227-.662.288a2.514 2.514 0 01-.65.11c-.638 0-1.11-.171-1.402-.51-.296-.34-.446-.938-.446-1.773v-6.515H150z"
-      />
-      <path
-        fill="currentColor"
-        fillRule="evenodd"
-        d="M15 14H0V0h15v14zm17 0H17V0h15v14zM15 31H0V17h15v14zm17 0H17V17h15v14z"
-        clipRule="evenodd"
-      />
+    <svg className={className} fill="currentColor" viewBox="0 0 20 20">
+      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
     </svg>
   );
 }
 
-function NetflixLogo() {
+function ArrowRightIcon({ className }: { className?: string }) {
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="108"
-      height="29"
-      fill="none"
-      viewBox="0 0 108 29"
-    >
-      <path
-        fill="currentColor"
-        d="M14.714 27.096c-1.61.283-3.248.367-4.942.593L4.603 12.551V28.34c-1.61.17-3.078.395-4.603.621V.04h4.293l5.874 16.409V.039h4.547v27.057zm8.897-16.465c1.75 0 4.434-.085 6.044-.085v4.519c-2.006 0-4.35 0-6.044.085v6.721c2.655-.17 5.31-.395 7.992-.48v4.35l-12.511.988V.039h12.511v4.52h-7.992v6.072zm24.797-6.072h-4.689v20.786c-1.525 0-3.05 0-4.518.056V4.56h-4.688V.039h13.895v4.52zm7.343 5.761h6.185v4.519H55.75V25.09h-4.435V.04h12.625v4.519h-8.19v5.761zm15.533 10.817c2.57.056 5.168.254 7.682.395v4.463c-4.038-.255-8.077-.509-12.2-.594V.04h4.518v21.097zm11.495 5.168c1.44.085 2.965.17 4.434.34V.04h-4.434v26.265zM107.01.04l-5.733 13.754 5.733 15.166c-1.695-.226-3.389-.537-5.084-.819l-3.248-8.36-3.304 7.683c-1.638-.283-3.22-.368-4.857-.594l5.818-13.246L91.082.04h4.858l2.965 7.597L102.07.04h4.942z"
-      />
-    </svg>
-  );
-}
-
-function SonyLogo() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="136"
-      height="24"
-      viewBox="0 0 351 61"
-    >
-      <path
-        fill="currentColor"
-        fillRule="nonzero"
-        d="M345.559 49.001a5.448 5.448 0 00-4.81 2.72 5.538 5.538 0 000 5.559 5.448 5.448 0 004.81 2.719 5.425 5.425 0 003.855-1.618A5.513 5.513 0 00351 54.487c0-1.454-.573-2.85-1.593-3.879a5.42 5.42 0 00-3.848-1.607z"
-      />
-    </svg>
-  );
-}
-
-function VerizonLogo() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="138"
-      height="31"
-      viewBox="0 0 658 146"
-    >
-      <path
-        fill="currentColor"
-        d="M642.7 0L606.8 76.8 593.3 47.7 578.7 47.7 600.9 95.3 612.7 95.3 657.2 0z"
-      />
-      <path
-        fill="currentColor"
-        fillRule="nonzero"
-        d="M488.7 142.6h28.9V89.7c0-12.1 7-20.6 17.4-20.6 10 0 15.2 7 15.2 17.1v56.4h28.9V80.7c0-21-12.6-35.8-33-35.8-13 0-22.1 5.6-28.9 15.8h-.6v-13h-28l.1 94.9z"
-      />
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
     </svg>
   );
 }

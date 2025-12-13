@@ -4,16 +4,27 @@
 
 /**
  * The name of the application
- * Use this constant everywhere instead of hardcoding "Meble"
+ * Use this constant everywhere instead of hardcoding the app name
  */
-export const APP_NAME = 'Meble 3D';
+export const APP_NAME = 'e-meble';
+
+/**
+ * Application URLs
+ */
+export const APP_URLS = {
+  /** Main application URL */
+  app: 'https://app.e-meble.com',
+  /** Landing page URL */
+  landing: 'https://e-meble.com',
+} as const;
 
 /**
  * Company Information
  */
 export const COMPANY_INFO = {
-  name: 'Meble 3D Sp. z o.o.',
-  email: 'hello@meblarz3d.pl',
+  name: 'e-meble',
+  legalName: 'e-meble Sp. z o.o.',
+  email: 'kontakt@e-meble.com',
   phone: '+48 123 456 789',
   nip: '5252525252',
   address: {
@@ -29,11 +40,21 @@ export const COMPANY_INFO = {
  * Social Media Links
  */
 export const SOCIAL_LINKS = {
-  facebook: 'https://facebook.com/meblarz3d',
-  instagram: 'https://instagram.com/meblarz3d',
-  linkedin: 'https://linkedin.com/company/meblarz3d',
-  twitter: 'https://twitter.com/meblarz3d',
+  facebook: 'https://facebook.com/e-meble',
+  instagram: 'https://instagram.com/e-meble',
+  linkedin: 'https://linkedin.com/company/e-meble',
+  twitter: 'https://twitter.com/e_meble',
   github: 'https://github.com/RoberttBukowiecki/meble'
+} as const;
+
+/**
+ * Social media handles (without URLs)
+ */
+export const SOCIAL_HANDLES = {
+  twitter: '@e_meble',
+  facebook: 'e-meble',
+  instagram: 'e-meble',
+  linkedin: 'e-meble',
 } as const;
 
 /**

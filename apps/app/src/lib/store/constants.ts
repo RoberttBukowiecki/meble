@@ -49,6 +49,16 @@ export const default_front_material =
   INITIAL_MATERIALS[1]?.id ?? default_material;
 export const default_back_material = MATERIAL_IDS.HDF_BIALY;
 
+// Default materials for interior components
+export const DEFAULT_INTERIOR_MATERIALS = {
+  /** Default material for shelves - uses same as body (white) */
+  shelf: MATERIAL_IDS.BIALY,
+  /** Default material for drawer box (sides, back, front panel) - uses same as body (white) */
+  drawerBox: MATERIAL_IDS.BIALY,
+  /** Default material for drawer bottom - uses HDF (thinner) */
+  drawerBottom: MATERIAL_IDS.HDF_BIALY,
+} as const;
+
 export const INITIAL_FURNITURES: Furniture[] = [
   {
     id: DEFAULT_FURNITURE_ID,

@@ -1,123 +1,70 @@
-'use client';
-
-import { useCallback } from 'react';
-import { Settings } from 'lucide-react';
-import { Button, Slider } from '@meble/ui';
-import { useTranslations } from 'next-intl';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  DropdownMenuCheckboxItem,
+  Button,
+  Label,
+  Switch,
 } from '@meble/ui';
-import { LanguageSwitcher } from './LanguageSwitcher';
+import { Settings } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useStore } from '@/lib/store';
 import { useShallow } from 'zustand/react/shallow';
+import { LanguageSwitcher } from './LanguageSwitcher';
 
 export function SettingsDropdown() {
   const t = useTranslations('Settings');
 
-  const { dimensionSettings, updateDimensionSettings } = useStore(
+  const {
+    featureFlags,
+    toggleFeatureFlag,
+  } = useStore(
     useShallow((state) => ({
-      dimensionSettings: state.dimensionSettings,
-      updateDimensionSettings: state.updateDimensionSettings,
+      featureFlags: state.featureFlags,
+      toggleFeatureFlag: state.toggleFeatureFlag,
     }))
-  );
-
-  const handleMaxDistanceChange = useCallback(
-    (value: number[]) => {
-      updateDimensionSettings({ maxDistanceThreshold: value[0] });
-    },
-    [updateDimensionSettings]
-  );
-
-  const handleMaxVisibleChange = useCallback(
-    (value: number[]) => {
-      updateDimensionSettings({ maxVisiblePerAxis: value[0] });
-    },
-    [updateDimensionSettings]
   );
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-label={t('settings')}
-        >
+        <Button variant="ghost" size="icon" className="h-8 w-8">
           <Settings className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-72">
+      <DropdownMenuContent align="end" className="w-64">
         <DropdownMenuLabel>{t('settings')}</DropdownMenuLabel>
         <DropdownMenuSeparator />
 
-        {/* Language */}
-        <div className="px-2 py-2">
+        <div className="px-2 py-1.5">
           <LanguageSwitcher />
         </div>
 
         <DropdownMenuSeparator />
-
-        {/* Dimension Settings */}
-        <DropdownMenuLabel className="text-xs text-muted-foreground">
-          Wymiary podczas przesuwania
-        </DropdownMenuLabel>
-
-        {/* Enable dimensions */}
-        <DropdownMenuCheckboxItem
-          checked={dimensionSettings?.enabled ?? true}
-          onCheckedChange={(checked) => updateDimensionSettings({ enabled: checked })}
-        >
-          Pokaż wymiary
-        </DropdownMenuCheckboxItem>
-
-        {/* Show axis colors */}
-        <DropdownMenuCheckboxItem
-          checked={dimensionSettings?.showAxisColors ?? false}
-          onCheckedChange={(checked) => updateDimensionSettings({ showAxisColors: checked })}
-        >
-          Kolory według osi
-        </DropdownMenuCheckboxItem>
-
-        {/* Max distance threshold */}
-        <div className="px-2 py-2">
-          <div className="mb-2 flex items-center justify-between text-sm">
-            <span>Maksymalny zasięg</span>
-            <span className="text-muted-foreground">
-              {dimensionSettings?.maxDistanceThreshold ?? 1000}mm
-            </span>
+        <DropdownMenuLabel>Eksperymentalne</DropdownMenuLabel>
+        
+        <div className="px-2 py-2 space-y-3">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="hide-graphics" className="text-xs">Ukryj ustawienia grafiki</Label>
+            <Switch
+              id="hide-graphics"
+              checked={featureFlags?.HIDE_GRAPHICS_SETTINGS ?? false}
+              onCheckedChange={() => toggleFeatureFlag('HIDE_GRAPHICS_SETTINGS')}
+            />
           </div>
-          <Slider
-            value={[dimensionSettings?.maxDistanceThreshold ?? 1000]}
-            onValueChange={handleMaxDistanceChange}
-            min={100}
-            max={3000}
-            step={100}
-            className="w-full"
-          />
+
+          <div className="flex items-center justify-between">
+            <Label htmlFor="hide-rooms" className="text-xs">Ukryj zakładkę pokoi</Label>
+            <Switch
+              id="hide-rooms"
+              checked={featureFlags?.HIDE_ROOMS_TAB ?? false}
+              onCheckedChange={() => toggleFeatureFlag('HIDE_ROOMS_TAB')}
+            />
+          </div>
         </div>
 
-        {/* Max visible per axis */}
-        <div className="px-2 py-2">
-          <div className="mb-2 flex items-center justify-between text-sm">
-            <span>Ilość wymiarów</span>
-            <span className="text-muted-foreground">
-              {dimensionSettings?.maxVisiblePerAxis ?? 3}
-            </span>
-          </div>
-          <Slider
-            value={[dimensionSettings?.maxVisiblePerAxis ?? 3]}
-            onValueChange={handleMaxVisibleChange}
-            min={1}
-            max={5}
-            step={1}
-            className="w-full"
-          />
-        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   );

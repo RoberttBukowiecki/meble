@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { Disclosure, DisclosureButton, DisclosurePanel } from "@headlessui/react";
+import { APP_NAME, APP_URLS } from "@meble/constants";
 import { Logo } from "@meble/ui";
 import { ThemeChanger } from "./DarkSwitch";
 
@@ -25,7 +26,7 @@ export function Navbar() {
               <div className="flex flex-wrap items-center justify-between w-full lg:w-auto">
                 <Link href="/" className="flex items-center space-x-2 text-2xl font-medium text-indigo-500 dark:text-gray-100">
                   <Logo size={32} className="rounded-lg" />
-                  <span>Meble</span>
+                  <span>{APP_NAME}</span>
                 </Link>
 
                 <DisclosureButton
@@ -63,12 +64,12 @@ export function Navbar() {
                         {t(item.key)}
                       </Link>
                     ))}
-                    <Link
-                      href="#"
+                    <a
+                      href={APP_URLS.app}
                       className="w-full px-6 py-2 mt-3 text-center text-white bg-indigo-600 rounded-md lg:ml-5"
                     >
                       {t("getStarted")}
-                    </Link>
+                    </a>
                   </>
                 </DisclosurePanel>
               </div>
@@ -92,12 +93,12 @@ export function Navbar() {
         </div>
 
         <div className="hidden mr-3 space-x-3 lg:flex nav__item">
-          <Link
-            href="#"
+          <a
+            href={APP_URLS.app}
             className="px-6 py-2 text-white bg-indigo-600 rounded-md md:ml-5"
           >
             {t("getStarted")}
-          </Link>
+          </a>
           <ThemeChanger />
         </div>
       </nav>

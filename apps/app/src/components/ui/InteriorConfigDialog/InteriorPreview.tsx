@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import { Button, cn } from '@meble/ui';
 import { CabinetSection, SectionContentType } from '@/types';
 import { ChevronUp, ChevronDown, Package, Layers, Box } from 'lucide-react';
-import { DRAWER_SLIDE_PRESETS, getTotalBoxCount, getFrontCount } from '@/lib/config';
+import { DRAWER_SLIDE_PRESETS, DEFAULT_BODY_THICKNESS, getTotalBoxCount, getFrontCount } from '@/lib/config';
 
 interface InteriorPreviewProps {
   sections: CabinetSection[];
@@ -38,7 +38,7 @@ const CONTENT_TYPE_CONFIG: Record<
   },
 };
 
-const DEFAULT_BODY_THICKNESS = 18;
+// DEFAULT_BODY_THICKNESS imported from config
 
 export function InteriorPreview({
   sections,
@@ -64,6 +64,17 @@ export function InteriorPreview({
   const displaySections = [...sections].reverse();
   const displayHeights = [...sectionHeights].reverse();
 
+  // Calculate cumulative heights for dimension markers
+  const cumulativeHeights = useMemo(() => {
+    const heights: number[] = [];
+    let cumulative = 0;
+    for (const height of sectionHeights) {
+      cumulative += height;
+      heights.push(cumulative);
+    }
+    return heights;
+  }, [sectionHeights]);
+
   return (
     <div className="border rounded-lg bg-muted/20 p-4 min-h-[400px] flex flex-col">
       {/* Cabinet width header */}
@@ -72,74 +83,62 @@ export function InteriorPreview({
         <div className="text-sm font-mono font-semibold">{cabinetWidth} mm</div>
       </div>
 
-      {/* Sections visualization - use fixed height container for proper flex proportions */}
-      <div className="flex-1 min-h-[300px] flex flex-col gap-1 w-full max-w-[240px] mx-auto relative">
-        {displaySections.map((section, displayIndex) => {
-          // Get original index for correct operations
-          const originalIndex = sections.length - 1 - displayIndex;
-          const isSelected = section.id === selectedSectionId;
-          const sectionHeightMm = displayHeights[displayIndex];
-          const config = CONTENT_TYPE_CONFIG[section.contentType];
-          const Icon = config.icon;
+      {/* Main visualization area with cabinet + dimensions */}
+      <div className="flex-1 min-h-[300px] flex justify-center gap-2">
+        {/* Cabinet body with sections inside */}
+        <div className="flex flex-col gap-0.5 w-full max-w-[200px] border-4 border-muted-foreground/30 rounded bg-background p-1 relative">
+          {displaySections.map((section, displayIndex) => {
+            const originalIndex = sections.length - 1 - displayIndex;
+            const isSelected = section.id === selectedSectionId;
+            const sectionHeightMm = displayHeights[displayIndex];
+            const config = CONTENT_TYPE_CONFIG[section.contentType];
+            const Icon = config.icon;
 
-          // Calculate drawer width if this is a drawer section
-          const drawerBoxWidth = section.drawerConfig
-            ? cabinetWidth - 2 * DRAWER_SLIDE_PRESETS[section.drawerConfig.slideType].sideOffset - 2 * DEFAULT_BODY_THICKNESS
-            : 0;
+            const drawerBoxWidth = section.drawerConfig
+              ? cabinetWidth - 2 * DRAWER_SLIDE_PRESETS[section.drawerConfig.slideType].sideOffset - 2 * DEFAULT_BODY_THICKNESS
+              : 0;
 
-          return (
-            <div
-              key={section.id}
-              className={cn(
-                'relative rounded border-2 transition-all cursor-pointer overflow-hidden',
-                isSelected
-                  ? 'border-primary bg-primary/5 ring-2 ring-primary/20 z-10'
-                  : 'border-border hover:border-primary/50 bg-background',
-                section.contentType === 'EMPTY' && 'border-dashed'
-              )}
-              style={{ flex: section.heightRatio }}
-              onClick={() => onSelectSection(section.id)}
-            >
-              {/* Section content visualization */}
-              {section.contentType === 'SHELVES' && section.shelvesConfig && (
-                <div className="absolute inset-2 pointer-events-none">
-                  {/* Render shelf lines - first shelf at bottom, others distributed above */}
-                  {Array.from({ length: section.shelvesConfig.count }).map((_, i) => {
-                    // Position shelves: first at bottom (~5%), rest distributed evenly above
-                    // For n shelves: positions at i/n (so first at 0%, but we add small offset)
-                    const count = section.shelvesConfig!.count;
-                    const bottomPercent = count === 1
-                      ? 50 // Single shelf in the middle
-                      : (i / count) * 95 + 5; // First at ~5%, rest distributed up to 100%
-                    const isHalfDepth = section.shelvesConfig!.depthPreset === 'HALF';
-                    return (
-                      <div
-                        key={i}
-                        className={cn(
-                          'absolute left-0 h-0.5 bg-blue-400/60',
-                          isHalfDepth ? 'w-1/2' : 'w-full'
-                        )}
-                        style={{ bottom: `${bottomPercent}%` }}
-                      />
-                    );
-                  })}
-                </div>
-              )}
+            return (
+              <div
+                key={section.id}
+                className={cn(
+                  'relative rounded border-2 transition-all cursor-pointer overflow-hidden',
+                  isSelected
+                    ? 'border-primary bg-primary/5 ring-2 ring-primary/20 z-10'
+                    : 'border-border hover:border-primary/50 bg-background',
+                  section.contentType === 'EMPTY' && 'border-dashed'
+                )}
+                style={{ flex: section.heightRatio }}
+                onClick={() => onSelectSection(section.id)}
+              >
+                {/* Section content visualization */}
+                {section.contentType === 'SHELVES' && section.shelvesConfig && (
+                  <div className="absolute inset-1 pointer-events-none">
+                    {Array.from({ length: section.shelvesConfig.count }).map((_, i) => {
+                      const count = section.shelvesConfig!.count;
+                      const bottomPercent = count === 1
+                        ? 50
+                        : (i / count) * 95 + 5;
+                      const isHalfDepth = section.shelvesConfig!.depthPreset === 'HALF';
+                      return (
+                        <div
+                          key={i}
+                          className={cn(
+                            'absolute left-0 h-0.5 bg-blue-400/60',
+                            isHalfDepth ? 'w-1/2' : 'w-full'
+                          )}
+                          style={{ bottom: `${bottomPercent}%` }}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
 
-              {section.contentType === 'DRAWERS' && section.drawerConfig && (
-                <div className="absolute inset-2 pointer-events-none flex flex-col-reverse gap-0.5">
-                  {/* Render drawer zones - first zone at bottom (flex-col-reverse) */}
-                  {(() => {
-                    const zones = section.drawerConfig.zones;
-                    const zoneTotalRatio = zones.reduce((s, z) => s + z.heightRatio, 0);
-                    const zoneHeights = zones.map(zone =>
-                      Math.round((zone.heightRatio / zoneTotalRatio) * sectionHeightMm)
-                    );
-
-                    return zones.map((zone, zoneIdx) => {
+                {section.contentType === 'DRAWERS' && section.drawerConfig && (
+                  <div className="absolute inset-1 pointer-events-none flex flex-col-reverse gap-0.5">
+                    {section.drawerConfig.zones.map((zone) => {
                       const hasFront = zone.front !== null;
                       const boxCount = zone.boxes.length;
-                      const zoneHeightMm = zoneHeights[zoneIdx];
                       const boxToFrontRatio = zone.boxToFrontRatio ?? 1.0;
 
                       return (
@@ -149,162 +148,124 @@ export function InteriorPreview({
                             'rounded-sm border relative overflow-hidden',
                             hasFront
                               ? 'border-amber-400/60 bg-amber-50/30 dark:bg-amber-950/20'
-                              : 'border-dashed border-amber-300/40'
+                              : 'border-dashed border-muted-foreground/30 bg-muted/10'
                           )}
                           style={{ flex: zone.heightRatio }}
                         >
-                          {/* Drawer box visualization - positioned at bottom */}
-                          {hasFront && (
-                            <div
-                              className="absolute left-0 right-0 border-t border-dashed border-muted-foreground/40"
-                              style={{
-                                bottom: 0,
-                                height: `${boxToFrontRatio * 100}%`,
-                              }}
-                            >
-                              {/* Internal boxes visualization */}
-                              {boxCount > 1 && (
-                                <div className="absolute inset-0 flex flex-col-reverse">
-                                  {zone.boxes.map((box, boxIdx) => {
-                                    const boxTotalRatio = zone.boxes.reduce((s, b) => s + b.heightRatio, 0);
-                                    const boxPercent = (box.heightRatio / boxTotalRatio) * 100;
-                                    return (
-                                      <div
-                                        key={boxIdx}
-                                        className={cn(
-                                          "flex-shrink-0",
-                                          boxIdx < boxCount - 1 && "border-t border-dashed border-amber-400/40"
-                                        )}
-                                        style={{ height: `${boxPercent}%` }}
-                                      />
-                                    );
-                                  })}
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                          {/* Shelves above drawer box visualization */}
-                          {hasFront && boxToFrontRatio < 1.0 && zone.aboveBoxContent?.shelves && zone.aboveBoxContent.shelves.length > 0 && (
-                            <>
-                              {zone.aboveBoxContent.shelves.map((shelf, shelfIdx) => {
-                                const shelfCount = zone.aboveBoxContent!.shelves.length;
-                                // First shelf at box top, others distributed in remaining space
-                                const boxTopPercent = boxToFrontRatio * 100;
-                                const remainingPercent = 100 - boxTopPercent;
-                                const shelfPositionPercent = shelfIdx === 0
-                                  ? boxTopPercent
-                                  : boxTopPercent + (shelfIdx / shelfCount) * remainingPercent;
-
-                                return (
-                                  <div
-                                    key={shelf.id}
-                                    className="absolute left-0 h-px bg-blue-400/80"
-                                    style={{
-                                      bottom: `${shelfPositionPercent}%`,
-                                      width: shelf.depthPreset === 'HALF' ? '50%' : '100%',
-                                    }}
-                                  />
-                                );
-                              })}
-                            </>
-                          )}
-
-                          {/* Zone label */}
                           <div className="absolute inset-0 flex items-center justify-center">
                             <span className={cn(
-                              'text-[9px] font-medium',
+                              'text-[8px] font-medium',
                               hasFront ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'
                             )}>
                               {hasFront ? 'F' : 'W'}
                               {boxCount > 1 && `×${boxCount}`}
-                              {boxToFrontRatio < 1.0 && <span className="text-[8px] text-blue-500 ml-0.5">({Math.round(boxToFrontRatio * 100)}%)</span>}
-                              {zone.aboveBoxContent?.shelves && zone.aboveBoxContent.shelves.length > 0 && (
-                                <span className="text-[8px] text-blue-400 ml-0.5">+{zone.aboveBoxContent.shelves.length}p</span>
-                              )}
                             </span>
-                          </div>
-
-                          {/* Zone height in mm */}
-                          <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-full pr-1 text-[9px] font-mono text-muted-foreground">
-                            {zoneHeightMm}
                           </div>
                         </div>
                       );
-                    });
-                  })()}
-                </div>
-              )}
-
-              {/* Section label */}
-              <div className="absolute inset-0 flex items-center justify-center p-2 pointer-events-none">
-                <div className="text-center w-full overflow-hidden flex flex-col items-center gap-0.5">
-                  <Icon className={cn('h-4 w-4', config.color)} />
-                  <div className={cn('text-xs font-medium', config.color)}>
-                    {config.label}
+                    })}
                   </div>
-                  {section.contentType === 'SHELVES' && section.shelvesConfig && (
-                    <div className="text-[10px] text-muted-foreground">
-                      {section.shelvesConfig.count} szt.
+                )}
+
+                {/* Section label */}
+                <div className="absolute inset-0 flex items-center justify-center p-1 pointer-events-none">
+                  <div className="text-center w-full overflow-hidden flex flex-col items-center gap-0.5">
+                    <Icon className={cn('h-3 w-3', config.color)} />
+                    <div className={cn('text-[10px] font-medium', config.color)}>
+                      {config.label}
                     </div>
-                  )}
-                  {section.contentType === 'DRAWERS' && section.drawerConfig && (
-                    <div className="text-[10px] text-muted-foreground">
-                      {getFrontCount(section.drawerConfig)}F / {getTotalBoxCount(section.drawerConfig)}B
-                    </div>
-                  )}
+                    {section.contentType === 'SHELVES' && section.shelvesConfig && (
+                      <div className="text-[9px] text-muted-foreground">
+                        {section.shelvesConfig.count} szt.
+                      </div>
+                    )}
+                    {section.contentType === 'DRAWERS' && section.drawerConfig && (
+                      <div className="text-[9px] text-muted-foreground">
+                        {getFrontCount(section.drawerConfig)}F/{getTotalBoxCount(section.drawerConfig)}B
+                      </div>
+                    )}
+                  </div>
                 </div>
+
+                {/* Drawer width indicator (for drawer sections) */}
+                {section.contentType === 'DRAWERS' && section.drawerConfig && (
+                  <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 text-[8px] font-mono text-muted-foreground bg-background/80 px-0.5 rounded">
+                    {Math.round(drawerBoxWidth)}mm
+                  </div>
+                )}
               </div>
+            );
+          })}
+        </div>
 
-              {/* Drawer width indicator (for drawer sections) */}
-              {section.contentType === 'DRAWERS' && section.drawerConfig && (
-                <div className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[9px] font-mono text-muted-foreground bg-background/80 px-1 rounded">
-                  szer. {Math.round(drawerBoxWidth)}mm
+        {/* Dimension scale on the right side of cabinet */}
+        <div className="flex flex-col-reverse relative w-16">
+          {displaySections.map((section, displayIndex) => {
+            const originalIndex = sections.length - 1 - displayIndex;
+            const isSelected = section.id === selectedSectionId;
+            const sectionHeightMm = displayHeights[displayIndex];
+
+            return (
+              <div
+                key={section.id}
+                className="relative flex items-center"
+                style={{ flex: section.heightRatio }}
+              >
+                {/* Dimension bracket */}
+                <div className="absolute left-0 top-0 bottom-0 w-2 flex flex-col">
+                  <div className="w-full h-px bg-muted-foreground/50" />
+                  <div className="flex-1 border-l border-muted-foreground/50" />
+                  <div className="w-full h-px bg-muted-foreground/50" />
                 </div>
-              )}
 
-              {/* Reorder buttons - use original index for movement */}
-              {isSelected && sections.length > 1 && (
-                <div className="absolute -right-9 top-1/2 -translate-y-1/2 flex flex-col gap-1">
-                  {originalIndex < sections.length - 1 && (
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-6 w-6 rounded-full shadow-sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onMoveSection(section.id, 'up');
-                      }}
-                      title="Przesuń wyżej"
-                    >
-                      <ChevronUp className="h-3 w-3" />
-                    </Button>
-                  )}
-                  {originalIndex > 0 && (
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-6 w-6 rounded-full shadow-sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onMoveSection(section.id, 'down');
-                      }}
-                      title="Przesuń niżej"
-                    >
-                      <ChevronDown className="h-3 w-3" />
-                    </Button>
-                  )}
+                {/* Dimension value */}
+                <div className={cn(
+                  "ml-3 text-[10px] font-mono whitespace-nowrap",
+                  isSelected ? "text-primary font-semibold" : "text-muted-foreground"
+                )}>
+                  {sectionHeightMm}mm
                 </div>
-              )}
 
-              {/* Height dimension label */}
-              <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-full pr-2 text-xs font-mono text-muted-foreground whitespace-nowrap">
-                <span className="text-foreground font-medium">{sectionHeightMm}</span>
-                <span className="text-[10px] ml-0.5">mm</span>
+                {/* Reorder buttons */}
+                {sections.length > 1 && (
+                  <div className={cn(
+                    "absolute right-0 top-1/2 -translate-y-1/2 flex flex-col gap-0.5 transition-opacity",
+                    isSelected ? "opacity-100" : "opacity-40 hover:opacity-100"
+                  )}>
+                    {originalIndex < sections.length - 1 && (
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-5 w-5 rounded-full shadow-sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onMoveSection(section.id, 'up');
+                        }}
+                        title="Przesuń wyżej"
+                      >
+                        <ChevronUp className="h-2.5 w-2.5" />
+                      </Button>
+                    )}
+                    {originalIndex > 0 && (
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-5 w-5 rounded-full shadow-sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onMoveSection(section.id, 'down');
+                        }}
+                        title="Przesuń niżej"
+                      >
+                        <ChevronDown className="h-2.5 w-2.5" />
+                      </Button>
+                    )}
+                  </div>
+                )}
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
 
       {/* Info text */}

@@ -1,13 +1,31 @@
 {
   "metadata": {
-    "title": "Meble - 3D Furniture Design",
-    "description": "Professional 3D furniture design tool. Create, visualize and export furniture projects."
+    "title": "Meble - Free 3D Furniture Designer Online | Save up to 50%",
+    "description": "Design custom furniture in 3D for free. Generate cut lists, order directly from warehouse and save up to 50% compared to a carpenter. Wardrobes, cabinets, kitchen furniture."
   },
   "hero": {
     "title": "Design furniture in 3D like a pro",
     "description": "Professional furniture design tool. Create wardrobe, cabinet and other furniture projects in your browser. Export cut lists for production.",
     "cta": "Start designing",
-    "learnMore": "Learn more"
+    "learnMore": "Learn more",
+    "savings": {
+      "badge": "Revolution in custom furniture",
+      "title": "Dream furniture up to",
+      "highlight": "50% cheaper than a carpenter",
+      "description": "Cut out the middlemen. Design your furniture yourself, and we'll generate a cut list ready to order directly from the furniture board warehouse. From warehouse straight to your home.",
+      "stats": {
+        "savings": "less than a carpenter",
+        "middlemen": "middlemen",
+        "control": "control over design"
+      },
+      "benefits": {
+        "direct": "Order boards directly from the warehouse - no carpenter markup",
+        "cutlist": "Ready cut list in format accepted by warehouses",
+        "quality": "Same quality materials as professionals use",
+        "custom": "Full customization of dimensions and finishes"
+      },
+      "cta": "See how much you can save"
+    }
   },
   "nav": {
     "product": "Product",
@@ -65,28 +83,45 @@
   "testimonials": {
     "pretitle": "Testimonials",
     "title": "What our users say",
-    "description": "Join our community of satisfied furniture designers."
+    "description": "Join our community of satisfied furniture designers.",
+    "reviews": {
+      "1": {
+        "text": "I saved <highlight>over $800</highlight> on a built-in wardrobe. Designed it myself, sent the cut list to the warehouse and assembled it over the weekend. Same quality as a carpenter!",
+        "name": "Thomas Smith",
+        "title": "Homeowner in London"
+      },
+      "2": {
+        "text": "As a carpenter, I use this app for <highlight>quick prototyping</highlight> projects for clients. Generating cut lists takes minutes instead of hours.",
+        "name": "Mark Johnson",
+        "title": "Carpenter with 15 years experience"
+      },
+      "3": {
+        "text": "I always dreamed of <highlight>perfectly fitted furniture</highlight> for my small apartment. Now I design them myself and order ready-cut pieces. Simple and affordable!",
+        "name": "Sarah Brown",
+        "title": "DIY enthusiast from Manchester"
+      }
+    }
   },
   "faq": {
     "pretitle": "FAQ",
     "title": "Frequently Asked Questions",
-    "description": "Answers to the most common questions.",
+    "description": "Answers to the most common questions about custom furniture design.",
     "items": {
       "1": {
-        "question": "Is the app free?",
-        "answer": "Yes, the basic version of the app is completely free."
+        "question": "Is the furniture design app free to use?",
+        "answer": "Yes, the basic version of Meble 3D is completely free. You can design custom furniture, generate cut lists, and export projects at no cost."
       },
       "2": {
-        "question": "Can I use it commercially?",
-        "answer": "Yes, you can use the app to design furniture for sale."
+        "question": "How much can I save by designing furniture myself?",
+        "answer": "By designing furniture yourself and ordering boards directly from the warehouse, you can save up to 50% compared to ordering from a carpenter. You eliminate middleman margins and only pay for materials and cutting."
       },
       "3": {
-        "question": "How do I export projects?",
-        "answer": "Use the CSV export function to generate a production-ready cut list."
+        "question": "How does the cut list export work?",
+        "answer": "The app generates a cut list in CSV format, which is accepted by most furniture board warehouses. Simply download the file and send it to your chosen warehouse, which will prepare pre-cut elements ready for assembly."
       },
       "4": {
-        "question": "Do you offer technical support?",
-        "answer": "Yes, we offer email support and online documentation."
+        "question": "Do I need furniture design experience?",
+        "answer": "No, the app is intuitive and designed for both beginners and professionals. We offer ready-made wardrobe and furniture templates that you can customize to your dimensions. The 3D visualization lets you see the final result before ordering."
       }
     }
   },
@@ -96,8 +131,17 @@
     "button": "Start for free"
   },
   "footer": {
-    "description": "Professional 3D furniture design tool. Create, visualize and export projects.",
+    "description": "Professional 3D furniture design tool. Create, visualize and export projects. Save up to 50% by ordering directly from the warehouse.",
     "followUs": "Follow us",
-    "copyright": "All rights reserved."
+    "copyright": "All rights reserved.",
+    "navigation": "Navigation",
+    "navLabel": "Main navigation",
+    "legalTitle": "Legal",
+    "legalLabel": "Legal links",
+    "legal": {
+      "terms": "Terms of Service",
+      "privacy": "Privacy Policy",
+      "cookies": "Cookie Policy"
+    }
   }
 }

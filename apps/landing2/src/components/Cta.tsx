@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { APP_URLS } from "@meble/constants";
 import { Container } from "./Container";
 
 export function Cta() {
@@ -17,7 +18,7 @@ export function Cta() {
         </div>
         <div className="flex-shrink-0 w-full text-center lg:w-auto">
           <a
-            href="#"
+            href={APP_URLS.app}
             className="inline-block py-3 mx-auto text-lg font-medium text-center text-indigo-600 bg-white rounded-md px-7 lg:px-10 lg:py-5"
           >
             {t("button")}

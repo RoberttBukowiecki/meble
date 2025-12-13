@@ -7,9 +7,12 @@
 
 import { useRef, useCallback, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Grid } from '@react-three/drei';
+import { OrbitControls, Grid, SoftShadows } from '@react-three/drei';
 import { useSelectedFurnitureParts, useStore, useSelectedPart, useIsMultiSelectActive } from '@/lib/store';
 import { Part3D } from './Part3D';
+import { Room3D } from './Room3D';
+import { RoomLighting } from './RoomLighting';
+import { FloorCeiling3D } from './FloorCeiling3D';
 import { Button } from '@meble/ui';
 import { Camera, Move, RotateCw, Maximize2 } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
@@ -28,6 +31,8 @@ import { DimensionRenderer } from './DimensionRenderer';
 import { SnapProvider } from '@/lib/snap-context';
 import { DimensionProvider } from '@/lib/dimension-context';
 import { SnapControlPanel } from '@/components/layout/SnapControlPanel';
+import { GraphicsSettingsPanel } from '@/components/layout/GraphicsSettingsPanel';
+import { DimensionControlPanel } from '@/components/layout/DimensionControlPanel';
 
 export function Scene() {
   const parts = useSelectedFurnitureParts();
@@ -51,6 +56,8 @@ export function Scene() {
     snapEnabled,
     dimensionSettings,
     showGrid,
+    graphicsSettings,
+    rooms
   } = useStore(
       useShallow((state) => ({
         isTransforming: state.isTransforming,
@@ -70,6 +77,8 @@ export function Scene() {
         snapEnabled: state.snapEnabled,
         dimensionSettings: state.dimensionSettings,
         showGrid: state.showGrid,
+        graphicsSettings: state.graphicsSettings,
+        rooms: state.rooms,
       }))
     );
   const controlsRef = useRef<OrbitControlsType>(null);
@@ -166,6 +175,10 @@ export function Scene() {
         {/* Snap Control Panel */}
         <SnapControlPanel />
 
+        <DimensionControlPanel />
+
+        <GraphicsSettingsPanel />
+
         {/* Camera Reset Button */}
         <Button
           variant="outline"
@@ -203,8 +216,11 @@ export function Scene() {
             enabled={!isTransforming}
           />
 
+          {graphicsSettings?.shadows && <SoftShadows size={15} samples={10} focus={0.5} />}
+
           {/* Lighting */}
-          <ambientLight intensity={SCENE_CONFIG.AMBIENT_LIGHT_INTENSITY} />
+          <RoomLighting />
+          
           <directionalLight
             position={[300, 400, 200]}
             intensity={SCENE_CONFIG.DIRECTIONAL_LIGHT_INTENSITY}
@@ -228,6 +244,12 @@ export function Scene() {
               infiniteGrid={false}
             />
           )}
+
+          {/* Room Structure */}
+          <Room3D />
+          {rooms.map(room => (
+              <FloorCeiling3D key={room.id} roomId={room.id} />
+          ))}
 
           {parts.map((part) => (
             <Part3D key={part.id} part={part} />

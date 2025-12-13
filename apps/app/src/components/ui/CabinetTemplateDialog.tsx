@@ -152,6 +152,15 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
     const [decorativePanelsDialogOpen, setDecorativePanelsDialogOpen] = useState(false);
     const [interiorDialogOpen, setInteriorDialogOpen] = useState(false);
 
+    // Get material preferences from store for interior config
+    const interiorMaterialPreferences = useStore((state) => state.interiorMaterialPreferences);
+    const setLastUsedShelfMaterial = useStore((state) => state.setLastUsedShelfMaterial);
+    const setLastUsedDrawerBoxMaterial = useStore((state) => state.setLastUsedDrawerBoxMaterial);
+    const setLastUsedDrawerBottomMaterial = useStore((state) => state.setLastUsedDrawerBottomMaterial);
+
+    // Get default body material ID
+    const defaultBodyMaterialId = materials.find(m => m.isDefault && m.category === 'board')?.id ?? materials[0]?.id ?? '';
+
     const updateParams = (newParams: Partial<CabinetParams>) => {
         onChange({...params, ...newParams});
     }
@@ -539,7 +548,7 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
                         icon={<PanelLeftDashed className="h-4 w-4" />}
                         action={
                             <Button variant="outline" size="sm" onClick={() => setSideFrontsDialogOpen(true)}>
-                                Zmień
+                                Konfiguruj
                             </Button>
                         }
                     />
@@ -621,6 +630,14 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
                 cabinetDepth={params.depth ?? 500}
                 hasDoors={getHasDoors()}
                 onRemoveDoors={() => updateParams({ hasDoors: false } as any)}
+                materials={materials}
+                bodyMaterialId={defaultBodyMaterialId}
+                lastUsedShelfMaterial={interiorMaterialPreferences.shelfMaterialId}
+                lastUsedDrawerBoxMaterial={interiorMaterialPreferences.drawerBoxMaterialId}
+                lastUsedDrawerBottomMaterial={interiorMaterialPreferences.drawerBottomMaterialId}
+                onShelfMaterialChange={setLastUsedShelfMaterial}
+                onDrawerBoxMaterialChange={setLastUsedDrawerBoxMaterial}
+                onDrawerBottomMaterialChange={setLastUsedDrawerBottomMaterial}
             />
         </div>
     )

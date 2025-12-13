@@ -154,18 +154,28 @@ interface InteriorConfigSectionProps {
   cabinetId: string;
   params: CabinetParams;
   onUpdateParams: (params: CabinetParams) => void;
+  materials: { id: string; name: string; color: string; thickness: number; category?: string }[];
+  bodyMaterialId: string;
 }
 
 const InteriorConfigSection = ({
   cabinetId,
   params,
   onUpdateParams,
+  materials,
+  bodyMaterialId,
 }: InteriorConfigSectionProps) => {
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const interiorConfig = params.interiorConfig;
   const hasConfig = hasInteriorContent(interiorConfig);
   const summary = getInteriorSummary(interiorConfig);
   const hasFrontsEnabled = (params as Partial<KitchenCabinetParams>).hasDoors ?? false;
+
+  // Get material preferences from store
+  const interiorMaterialPreferences = useStore((state) => state.interiorMaterialPreferences);
+  const setLastUsedShelfMaterial = useStore((state) => state.setLastUsedShelfMaterial);
+  const setLastUsedDrawerBoxMaterial = useStore((state) => state.setLastUsedDrawerBoxMaterial);
+  const setLastUsedDrawerBottomMaterial = useStore((state) => state.setLastUsedDrawerBottomMaterial);
 
   const handleConfigChange = (config: CabinetInteriorConfig) => {
     onUpdateParams({ ...params, interiorConfig: config });
@@ -216,6 +226,14 @@ const InteriorConfigSection = ({
           cabinetDepth={params.depth}
           hasDoors={hasFrontsEnabled}
           onRemoveDoors={handleRemoveDoors}
+          materials={materials as any}
+          bodyMaterialId={bodyMaterialId}
+          lastUsedShelfMaterial={interiorMaterialPreferences.shelfMaterialId}
+          lastUsedDrawerBoxMaterial={interiorMaterialPreferences.drawerBoxMaterialId}
+          lastUsedDrawerBottomMaterial={interiorMaterialPreferences.drawerBottomMaterialId}
+          onShelfMaterialChange={setLastUsedShelfMaterial}
+          onDrawerBoxMaterialChange={setLastUsedDrawerBoxMaterial}
+          onDrawerBottomMaterialChange={setLastUsedDrawerBottomMaterial}
         />
       </AccordionContent>
     </AccordionItem>
@@ -621,6 +639,8 @@ export function PropertiesPanel() {
                     cabinetId={selectedCabinet.id}
                     params={localParams}
                     onUpdateParams={updateLocalParams}
+                    materials={materials}
+                    bodyMaterialId={selectedCabinet.materials.bodyMaterialId}
                 />
               </div>
 

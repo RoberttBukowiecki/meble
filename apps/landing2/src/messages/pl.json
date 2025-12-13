@@ -1,13 +1,31 @@
 {
   "metadata": {
-    "title": "Meble - Projektowanie mebli 3D",
-    "description": "Profesjonalne narzędzie do projektowania mebli w 3D. Twórz, wizualizuj i eksportuj projekty mebli."
+    "title": "Meble - Darmowy Projektant Mebli 3D Online | Oszczędź do 50%",
+    "description": "Zaprojektuj meble na wymiar w 3D za darmo. Generuj listy cięcia CSV, zamawiaj bezpośrednio z hurtowni i oszczędź nawet 50% w porównaniu do stolarza. Szafy, komody, meble kuchenne na wymiar."
   },
   "hero": {
     "title": "Projektuj meble w 3D jak profesjonalista",
     "description": "Profesjonalne narzędzie do projektowania mebli. Twórz projekty szaf, komód i innych mebli w przeglądarce. Eksportuj listy cięcia do produkcji.",
     "cta": "Rozpocznij projektowanie",
-    "learnMore": "Dowiedz się więcej"
+    "learnMore": "Dowiedz się więcej",
+    "savings": {
+      "badge": "Rewolucja w meblach na wymiar",
+      "title": "Wymarzone meble nawet",
+      "highlight": "50% taniej niż u stolarza",
+      "description": "Pozbądź się pośredników. Zaprojektuj meble sam, a my wygenerujemy listę cięcia gotową do zamówienia bezpośrednio w hurtowni płyt meblowych. Z hurtowni prosto do Twojego domu.",
+      "stats": {
+        "savings": "mniej niż u stolarza",
+        "middlemen": "pośredników",
+        "control": "kontroli nad projektem"
+      },
+      "benefits": {
+        "direct": "Zamów płyty bezpośrednio z hurtowni - bez marży stolarza",
+        "cutlist": "Gotowa lista cięcia w formacie akceptowanym przez hurtownie",
+        "quality": "Ta sama jakość materiałów co u profesjonalistów",
+        "custom": "Pełna personalizacja wymiarów i wykończenia"
+      },
+      "cta": "Zobacz ile możesz zaoszczędzić"
+    }
   },
   "nav": {
     "product": "Produkt",
@@ -65,28 +83,45 @@
   "testimonials": {
     "pretitle": "Opinie",
     "title": "Co mówią nasi użytkownicy",
-    "description": "Dołącz do grona zadowolonych projektantów mebli."
+    "description": "Dołącz do grona zadowolonych projektantów mebli.",
+    "reviews": {
+      "1": {
+        "text": "Zaoszczędziłem <highlight>ponad 3000 zł</highlight> na szafie wnękowej. Zaprojektowałem ją sam, wysłałem listę cięcia do hurtowni i złożyłem w weekend. Jakość taka sama jak u stolarza!",
+        "name": "Tomasz Kowalski",
+        "title": "Właściciel mieszkania w Warszawie"
+      },
+      "2": {
+        "text": "Jako stolarz używam tej aplikacji do <highlight>szybkiego prototypowania</highlight> projektów dla klientów. Generowanie list cięcia zajmuje minuty zamiast godzin.",
+        "name": "Marek Wiśniewski",
+        "title": "Stolarz z 15-letnim doświadczeniem"
+      },
+      "3": {
+        "text": "Zawsze marzyłam o <highlight>idealnie dopasowanych meblach</highlight> do mojego małego mieszkania. Teraz projektuję je sama i zamawiam gotowe elementy. Proste i tanie!",
+        "name": "Anna Nowak",
+        "title": "Entuzjastka DIY z Krakowa"
+      }
+    }
   },
   "faq": {
     "pretitle": "FAQ",
     "title": "Często zadawane pytania",
-    "description": "Odpowiedzi na najczęściej zadawane pytania.",
+    "description": "Odpowiedzi na najczęściej zadawane pytania o projektowanie mebli na wymiar.",
     "items": {
       "1": {
-        "question": "Czy aplikacja jest darmowa?",
-        "answer": "Tak, podstawowa wersja aplikacji jest całkowicie darmowa."
+        "question": "Czy aplikacja do projektowania mebli jest darmowa?",
+        "answer": "Tak, podstawowa wersja aplikacji Meble 3D jest całkowicie darmowa. Możesz projektować meble na wymiar, generować listy cięcia i eksportować projekty bez żadnych opłat."
       },
       "2": {
-        "question": "Czy mogę używać do celów komercyjnych?",
-        "answer": "Tak, możesz używać aplikacji do projektowania mebli na sprzedaż."
+        "question": "Ile mogę zaoszczędzić projektując meble samodzielnie?",
+        "answer": "Projektując meble samodzielnie i zamawiając płyty bezpośrednio z hurtowni, możesz zaoszczędzić nawet 50% w porównaniu do zamówienia u stolarza. Eliminujesz marżę pośredników i płacisz tylko za materiały oraz ewentualne cięcie."
       },
       "3": {
-        "question": "Jak eksportować projekty?",
-        "answer": "Użyj funkcji eksportu CSV, aby wygenerować listę cięcia gotową do produkcji."
+        "question": "Jak działa eksport listy cięcia do hurtowni?",
+        "answer": "Aplikacja generuje listę cięcia w formacie CSV, który jest akceptowany przez większość hurtowni płyt meblowych w Polsce. Wystarczy pobrać plik i wysłać go do wybranej hurtowni, która przygotuje pocięte elementy gotowe do montażu."
       },
       "4": {
-        "question": "Czy oferujecie wsparcie techniczne?",
-        "answer": "Tak, oferujemy wsparcie przez email oraz dokumentację online."
+        "question": "Czy potrzebuję doświadczenia w projektowaniu mebli?",
+        "answer": "Nie, aplikacja jest intuicyjna i przeznaczona zarówno dla początkujących, jak i profesjonalistów. Oferujemy gotowe szablony szaf i mebli, które możesz dostosować do swoich wymiarów. Wizualizacja 3D pozwala zobaczyć efekt końcowy przed zamówieniem."
       }
     }
   },
@@ -96,8 +131,17 @@
     "button": "Rozpocznij za darmo"
   },
   "footer": {
-    "description": "Profesjonalne narzędzie do projektowania mebli w 3D. Twórz, wizualizuj i eksportuj projekty.",
+    "description": "Profesjonalne narzędzie do projektowania mebli w 3D. Twórz, wizualizuj i eksportuj projekty. Oszczędź nawet 50% zamawiając bezpośrednio z hurtowni.",
     "followUs": "Obserwuj nas",
-    "copyright": "Wszelkie prawa zastrzeżone."
+    "copyright": "Wszelkie prawa zastrzeżone.",
+    "navigation": "Nawigacja",
+    "navLabel": "Główna nawigacja",
+    "legalTitle": "Informacje prawne",
+    "legalLabel": "Linki prawne",
+    "legal": {
+      "terms": "Regulamin",
+      "privacy": "Polityka prywatności",
+      "cookies": "Polityka cookies"
+    }
   }
 }

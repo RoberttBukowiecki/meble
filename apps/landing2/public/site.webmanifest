@@ -1,6 +1,10 @@
 {
-  "name": "Meble 3D",
-  "short_name": "Meble",
+  "name": "e-meble - Darmowy Projektant Mebli 3D",
+  "short_name": "e-meble",
+  "description": "Zaprojektuj meble na wymiar w 3D za darmo. Generuj listy cięcia i oszczędź nawet 50%.",
+  "start_url": "/",
+  "scope": "/",
+  "id": "/",
   "icons": [
     {
       "src": "/web-app-manifest-192x192.png",
@@ -13,9 +17,27 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    },
+    {
+      "src": "/favicon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
     }
   ],
-  "theme_color": "#1a1a2e",
+  "theme_color": "#4f46e5",
   "background_color": "#ffffff",
-  "display": "standalone"
+  "display": "standalone",
+  "orientation": "any",
+  "lang": "pl",
+  "dir": "ltr",
+  "categories": ["design", "utilities", "productivity"],
+  "screenshots": [
+    {
+      "src": "/img/hero.png",
+      "sizes": "616x617",
+      "type": "image/png",
+      "label": "e-meble - Projektowanie mebli"
+    }
+  ]
 }

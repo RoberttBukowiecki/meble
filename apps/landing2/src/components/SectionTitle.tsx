@@ -8,6 +8,8 @@ interface SectionTitleProps {
   titleKey?: string;
   descriptionKey?: string;
   align?: "left" | "center";
+  /** ID for the heading element (used for aria-labelledby) */
+  id?: string;
 }
 
 export function SectionTitle({
@@ -15,6 +17,7 @@ export function SectionTitle({
   titleKey,
   descriptionKey,
   align = "center",
+  id,
 }: SectionTitleProps) {
   const t = useTranslations();
 
@@ -31,7 +34,10 @@ export function SectionTitle({
       )}
 
       {titleKey && (
-        <h2 className="max-w-2xl mt-3 text-3xl font-bold leading-snug tracking-tight text-gray-800 lg:leading-tight lg:text-4xl dark:text-white">
+        <h2
+          id={id}
+          className="max-w-2xl mt-3 text-3xl font-bold leading-snug tracking-tight text-gray-800 lg:leading-tight lg:text-4xl dark:text-white"
+        >
           {t(titleKey)}
         </h2>
       )}

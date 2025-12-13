@@ -102,6 +102,7 @@ apps/app/src/
 - Zrealizowany plan oznaczaj jako DONE-nazwa-planu.md i przenoś do foldernu app/apps/docs/DONE
 - Jesli chcesz dodac input typu number to dodaj NumberInput
 - Aplikacja nie jest jeszcze produkcjna, nie musisz robic migracji starych wersji, api itp.
+- Podczsa implementacji jesli uznasz ze jakas zmienna powinna byc w globalnym configu to dodaj ja tam. 
 
 ### TypeScript
 - Używaj **strict mode** w tsconfig.json

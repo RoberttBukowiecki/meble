@@ -1,12 +1,18 @@
 import type { StateCreator } from 'zustand';
-import type { ProjectState, HistoryEntry, HistoryEntryType, TransformMode } from '@/types';
+import type { ProjectState, HistoryEntry, HistoryEntryType, TransformMode, GraphicsSettings } from '@/types';
 import type { UISlice } from './slices/uiSlice';
 import type { SnapSlice } from './slices/snapSlice';
 import type { DimensionSlice } from './slices/dimensionSlice';
+import type { MaterialPreferencesSlice } from './slices/materialPreferencesSlice';
 
-export type StoreState = ProjectState & HistorySlice & UISlice & SnapSlice & DimensionSlice;
+export type StoreState = ProjectState & HistorySlice & UISlice & SnapSlice & DimensionSlice & GraphicsSlice & MaterialPreferencesSlice;
 export type StoreMutators = [['zustand/persist', unknown]];
 export type StoreSlice<T> = StateCreator<StoreState, StoreMutators, [], T>;
+
+export interface GraphicsSlice {
+  graphicsSettings: GraphicsSettings;
+  updateGraphicsSettings: (settings: Partial<GraphicsSettings>) => void;
+}
 
 export type SelectionSlice = {
   selectedPartId: string | null;
@@ -83,6 +89,29 @@ export type CabinetSlice = Pick<
 >;
 
 export type CollisionSlice = Pick<StoreState, 'collisions' | 'detectCollisions'>;
+
+export type RoomSlice = Pick<
+  StoreState,
+  | 'rooms'
+  | 'walls'
+  | 'openings'
+  | 'activeRoomId'
+  | 'addRoom'
+  | 'updateRoom'
+  | 'removeRoom'
+  | 'setActiveRoom'
+  | 'addWall'
+  | 'updateWall'
+  | 'removeWall'
+  | 'updateWalls'
+  | 'setRoomWalls'
+  | 'addOpening'
+  | 'updateOpening'
+  | 'removeOpening'
+  | 'addLight'
+  | 'updateLight'
+  | 'removeLight'
+>;
 
 /**
  * History slice for undo/redo functionality

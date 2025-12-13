@@ -6,7 +6,13 @@
 import { DrawerSlideConfig, DrawerConfiguration } from '@/types';
 import { GeneratedPart } from '../types';
 import { FRONT_MARGIN, DOOR_GAP } from '../constants';
-import { DRAWER_SLIDE_PRESETS, DRAWER_CONFIG } from '../../config';
+import {
+  DRAWER_SLIDE_PRESETS,
+  DRAWER_CONFIG,
+  DEFAULT_SHELF_EDGE_BANDING,
+  DEFAULT_DRAWER_BOX_EDGE_BANDING,
+  DEFAULT_DRAWER_FRONT_EDGE_BANDING,
+} from '../../config';
 import { generateHandleMetadata } from '../../handlePresets';
 import { calculateDrawerBoxDimensions } from './utils';
 
@@ -202,7 +208,7 @@ export function generateDrawers(config: DrawerGeneratorConfig): GeneratedPart[] 
           position: [0, shelfY, shelfZ],
           rotation: [-Math.PI / 2, 0, 0],
           materialId: bodyMaterialId,
-          edgeBanding: { type: 'RECT', top: true, bottom: false, left: false, right: false },
+          edgeBanding: DEFAULT_SHELF_EDGE_BANDING,
           cabinetMetadata: {
             cabinetId,
             role: 'SHELF',
@@ -265,7 +271,7 @@ function generateDrawerFront(params: DrawerFrontParams): GeneratedPart {
     position: [0, params.frontYCenter, frontCenterZ],
     rotation: [0, 0, 0],
     materialId: params.frontMaterialId,
-    edgeBanding: { type: 'RECT', top: true, bottom: true, left: true, right: true },
+    edgeBanding: DEFAULT_DRAWER_FRONT_EDGE_BANDING,
     cabinetMetadata: {
       cabinetId: params.cabinetId,
       role: 'DRAWER_FRONT',
@@ -323,7 +329,7 @@ function generateDrawerBox(params: DrawerBoxParams): GeneratedPart[] {
     position: [boxCenterX, boxBottomY + dims.bottomThickness / 2, bottomCenterZ],
     rotation: [-Math.PI / 2, 0, 0],
     materialId: params.bottomMaterialId || params.bodyMaterialId,
-    edgeBanding: { type: 'RECT', top: false, bottom: false, left: false, right: false },
+    edgeBanding: DEFAULT_DRAWER_BOX_EDGE_BANDING,
     cabinetMetadata: {
       cabinetId: params.cabinetId,
       role: 'DRAWER_BOTTOM',
@@ -344,7 +350,7 @@ function generateDrawerBox(params: DrawerBoxParams): GeneratedPart[] {
     position: [-dims.boxWidth / 2 + params.bodyThickness / 2, boxCenterY, boxCenterZ],
     rotation: [0, Math.PI / 2, 0],
     materialId: params.bodyMaterialId,
-    edgeBanding: { type: 'RECT', top: true, bottom: false, left: false, right: false },
+    edgeBanding: DEFAULT_DRAWER_BOX_EDGE_BANDING,
     cabinetMetadata: {
       cabinetId: params.cabinetId,
       role: 'DRAWER_SIDE_LEFT',
@@ -365,7 +371,7 @@ function generateDrawerBox(params: DrawerBoxParams): GeneratedPart[] {
     position: [dims.boxWidth / 2 - params.bodyThickness / 2, boxCenterY, boxCenterZ],
     rotation: [0, Math.PI / 2, 0],
     materialId: params.bodyMaterialId,
-    edgeBanding: { type: 'RECT', top: true, bottom: false, left: false, right: false },
+    edgeBanding: DEFAULT_DRAWER_BOX_EDGE_BANDING,
     cabinetMetadata: {
       cabinetId: params.cabinetId,
       role: 'DRAWER_SIDE_RIGHT',
@@ -386,7 +392,7 @@ function generateDrawerBox(params: DrawerBoxParams): GeneratedPart[] {
     position: [boxCenterX, boxCenterY, boxCenterZ - dims.boxDepth / 2 + params.bodyThickness / 2],
     rotation: [0, 0, 0],
     materialId: params.bodyMaterialId,
-    edgeBanding: { type: 'RECT', top: true, bottom: false, left: false, right: false },
+    edgeBanding: DEFAULT_DRAWER_BOX_EDGE_BANDING,
     cabinetMetadata: {
       cabinetId: params.cabinetId,
       role: 'DRAWER_BACK',
@@ -408,7 +414,7 @@ function generateDrawerBox(params: DrawerBoxParams): GeneratedPart[] {
       position: [boxCenterX, boxCenterY, boxCenterZ + dims.boxDepth / 2 - params.bodyThickness / 2],
       rotation: [0, 0, 0],
       materialId: params.bodyMaterialId,
-      edgeBanding: { type: 'RECT', top: true, bottom: false, left: false, right: false },
+      edgeBanding: DEFAULT_DRAWER_BOX_EDGE_BANDING,
       cabinetMetadata: {
         cabinetId: params.cabinetId,
         role: 'DRAWER_BOX_FRONT',

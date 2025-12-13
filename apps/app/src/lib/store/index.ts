@@ -6,10 +6,13 @@ import { createFurnitureSlice } from './slices/furnitureSlice';
 import { createPartsSlice } from './slices/partsSlice';
 import { createCabinetSlice } from './slices/cabinetSlice';
 import { createCollisionSlice } from './slices/collisionSlice';
+import { createRoomSlice } from './slices/roomSlice';
 import { createHistorySlice } from './slices/historySlice';
 import { createUISlice } from './slices/uiSlice';
 import { createSnapSlice } from './slices/snapSlice';
 import { createDimensionSlice } from './slices/dimensionSlice';
+import { createGraphicsSlice } from './slices/graphicsSlice';
+import { createMaterialPreferencesSlice } from './slices/materialPreferencesSlice';
 import { HISTORY_MAX_LENGTH, HISTORY_MAX_MILESTONES } from './history/constants';
 import { MATERIAL_IDS, INITIAL_MATERIALS } from './constants';
 import { DEFAULT_BACK_OVERLAP_RATIO, DEFAULT_DOOR_CONFIG } from '../config';
@@ -24,10 +27,13 @@ export const useStore = create<StoreState>()(
       ...createPartsSlice(...args),
       ...createCabinetSlice(...args),
       ...createCollisionSlice(...args),
+      ...createRoomSlice(...args),
       ...createHistorySlice(...args),
       ...createUISlice(...args),
       ...createSnapSlice(...args),
       ...createDimensionSlice(...args),
+      ...createGraphicsSlice(...args),
+      ...createMaterialPreferencesSlice(...args),
     }),
     {
       name: 'meblarz-storage',
@@ -182,6 +188,7 @@ export const useStore = create<StoreState>()(
           hideParts,
           showParts,
           showAllParts,
+          toggleFeatureFlag,
           // UI state (don't persist transient state)
           isShiftPressed,
           hiddenPartIds,
@@ -192,6 +199,13 @@ export const useStore = create<StoreState>()(
           // Dimension functions (dimensionSettings IS persisted)
           setDimensionEnabled,
           updateDimensionSettings,
+          // Graphics functions (graphicsSettings IS persisted)
+          updateGraphicsSettings,
+          // Material preferences functions (interiorMaterialPreferences IS persisted)
+          setLastUsedShelfMaterial,
+          setLastUsedDrawerBoxMaterial,
+          setLastUsedDrawerBottomMaterial,
+          resetMaterialPreferences,
           ...rest
         } = state as any;
         return rest;
@@ -262,4 +276,11 @@ export const useIsPartHidden = (partId: string) => {
  */
 export const useHiddenPartsCount = () => {
   return useStore((state) => state.hiddenPartIds.size);
+};
+
+/**
+ * Get interior material preferences for last used materials
+ */
+export const useInteriorMaterialPreferences = () => {
+  return useStore((state) => state.interiorMaterialPreferences);
 };

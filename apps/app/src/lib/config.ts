@@ -3,7 +3,7 @@
  * Centralized keyboard shortcuts and settings
  */
 
-import { CabinetParams, CabinetType, DoorConfig, DrawerSlideType, DrawerSlideConfig, DrawerConfiguration } from "@/types";
+import { CabinetParams, CabinetType, DoorConfig, DrawerSlideType, DrawerSlideConfig, DrawerConfiguration, EdgeBandingRect } from "@/types";
 
 // Utility types/helpers for keyboard shortcuts
 export type ShortcutKeys = string | string[];
@@ -41,7 +41,7 @@ export const KEYBOARD_SHORTCUTS = {
   CLEAR_SELECTION: 'Escape',
 
   // Visibility shortcuts
-  HIDE_SELECTED: 'h',           // H - Hide selected parts/groups
+  HIDE_SELECTED: 'h',           // Hide selected parts/groups
   TOGGLE_HIDE_FRONTS: 'h',      // Ctrl+H - Toggle cabinet front visibility
 } as const satisfies Record<string, ShortcutKeys>;
 
@@ -131,7 +131,25 @@ export const PART_CONFIG = {
   RESIZE_HANDLE_HOVER_EMISSIVE_INTENSITY: 0.5,
   RESIZE_HANDLE_ACTIVE_EMISSIVE_INTENSITY: 0.6,
 } as const;
+// ============================================================================
+// Graphics Configuration
+// ============================================================================
 
+export const DEFAULT_GRAPHICS_SETTINGS = {
+  quality: 'high',
+  shadows: true,
+  ambientOcclusion: false,
+  lightingMode: 'standard',
+} as const;
+
+// ============================================================================
+// UI Feature Toggles
+// ============================================================================
+
+export const UI_FEATURES = {
+  HIDE_GRAPHICS_SETTINGS: true,
+  HIDE_ROOMS_TAB: true,
+} as const;
 
 // ============================================================================
 // Cabinet Configuration
@@ -139,6 +157,105 @@ export const PART_CONFIG = {
 
 // Default back panel overlap ratio (2/3 of body material thickness)
 export const DEFAULT_BACK_OVERLAP_RATIO = 0.667;
+
+// Default body (side panels) thickness
+export const DEFAULT_BODY_THICKNESS = 18;
+
+// ============================================================================
+// Interior Configuration (Cabinet Interior Dialog)
+// ============================================================================
+
+export const INTERIOR_CONFIG = {
+  // Section limits
+  MAX_SECTIONS: 6,                    // Maximum number of horizontal sections
+  SECTION_HEIGHT_RATIO_MIN: 1,        // Minimum height ratio for a section
+  SECTION_HEIGHT_RATIO_MAX: 4,        // Maximum height ratio for a section
+
+  // Drawer zone limits
+  MAX_DRAWER_ZONES: 8,                // Maximum drawer zones per section
+  MAX_BOXES_PER_ZONE: 4,              // Maximum boxes (drawer-in-drawer) per zone
+
+  // Shelf limits
+  MAX_SHELVES_PER_SECTION: 10,        // Maximum shelves in a shelf section
+  MAX_SHELVES_ABOVE_DRAWER: 4,        // Maximum shelves above drawer box
+
+  // Default presets
+  DEFAULT_SHELF_DEPTH_PRESET: 'FULL' as const,      // Default depth for regular shelves
+  DEFAULT_ABOVE_BOX_SHELF_PRESET: 'FULL' as const,  // Default depth for shelves above drawer
+
+  // Custom depth limits (mm)
+  CUSTOM_SHELF_DEPTH_MIN: 50,
+  CUSTOM_SHELF_DEPTH_MAX: 500,
+  CUSTOM_SHELF_DEPTH_OFFSET: 10,      // Offset from cabinet depth for max calculation
+} as const;
+
+// ============================================================================
+// Interior Material Defaults
+// ============================================================================
+
+/**
+ * Default material type for interior components
+ * Used for tracking last used materials per component type
+ */
+export type InteriorMaterialType =
+  | 'shelf'           // Shelf material
+  | 'drawerBox'       // Drawer box sides, back, front
+  | 'drawerBottom';   // Drawer bottom panel
+
+/**
+ * Which body material to use by default for each interior component type
+ * By default, all interior components use the cabinet's bodyMaterialId
+ * User can customize per-section or store a preference
+ */
+export const INTERIOR_MATERIAL_DEFAULTS = {
+  /** Use cabinet body material for drawer box by default */
+  useBodyMaterialForDrawerBox: true,
+  /** Use cabinet body material for shelves by default */
+  useBodyMaterialForShelves: true,
+  /** Use HDF for drawer bottoms by default (thinner) */
+  useHdfForDrawerBottom: true,
+} as const;
+
+// ============================================================================
+// Edge Banding Defaults
+// ============================================================================
+
+/**
+ * Default edge banding for shelves
+ * Front (top), left, right edges banded; back (bottom) NOT banded
+ * Note: "top" = front edge when shelf is rotated horizontally [-Math.PI/2, 0, 0]
+ */
+export const DEFAULT_SHELF_EDGE_BANDING: EdgeBandingRect = {
+  type: 'RECT',
+  top: true,     // Front edge (visible)
+  bottom: false, // Back edge (against cabinet back - not banded)
+  left: true,    // Left side
+  right: true,   // Right side
+};
+
+/**
+ * Default edge banding for drawer box parts (sides, back, bottom, box front)
+ * All edges banded for durability and finished look
+ */
+export const DEFAULT_DRAWER_BOX_EDGE_BANDING: EdgeBandingRect = {
+  type: 'RECT',
+  top: true,
+  bottom: true,
+  left: true,
+  right: true,
+};
+
+/**
+ * Default edge banding for decorative drawer fronts
+ * All edges banded (fully visible panel)
+ */
+export const DEFAULT_DRAWER_FRONT_EDGE_BANDING: EdgeBandingRect = {
+  type: 'RECT',
+  top: true,
+  bottom: true,
+  left: true,
+  right: true,
+};
 
 // Default door configuration
 export const DEFAULT_DOOR_CONFIG: DoorConfig = {
@@ -172,6 +289,14 @@ export const DRAWER_CONFIG = {
   BOX_HEIGHT_REDUCTION: 30, // mm - how much smaller the box is than the front
   BOTTOM_THICKNESS: 3, // mm - default drawer bottom thickness
   BOX_FRONT_OFFSET: 20, // mm - gap between box front and front panel
+
+  // Box to front ratio slider configuration (for shelves above drawer)
+  BOX_TO_FRONT_RATIO: {
+    MIN: 10,    // Minimum ratio in percent (10%)
+    MAX: 100,   // Maximum ratio in percent (100%)
+    STEP: 5,    // Step size in percent (5% increments for fine control)
+    DEFAULT: 100, // Default ratio (100% = box fills entire front)
+  },
 } as const;
 
 // ============================================================================
@@ -183,41 +308,14 @@ export const DRAWER_CONFIG = {
  * Each preset defines a DrawerConfiguration with zones
  */
 export const DRAWER_ZONE_PRESETS: Record<string, { label: string; labelPl: string; config: DrawerConfiguration }> = {
-  STANDARD_4: {
-    label: '4 Standard',
-    labelPl: '4 Standardowe',
+  EXTERNAL_INTERNAL: {
+    label: '1 External + 1 Internal',
+    labelPl: '1 Zewnętrzna + 1 Wewnętrzna',
     config: {
       slideType: 'SIDE_MOUNT',
       zones: [
-        { id: 'z1', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
+        { id: 'z1', heightRatio: 1, front: null, boxes: [{ heightRatio: 1 }] },
         { id: 'z2', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
-        { id: 'z3', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
-        { id: 'z4', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
-      ],
-    },
-  },
-
-  STANDARD_3: {
-    label: '3 Standard',
-    labelPl: '3 Standardowe',
-    config: {
-      slideType: 'SIDE_MOUNT',
-      zones: [
-        { id: 'z1', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
-        { id: 'z2', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
-        { id: 'z3', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
-      ],
-    },
-  },
-
-  TALL_2: {
-    label: '2 Tall (drawer-in-drawer)',
-    labelPl: '2 Wysokie (szuflada w szufladzie)',
-    config: {
-      slideType: 'SIDE_MOUNT',
-      zones: [
-        { id: 'z1', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }, { heightRatio: 1 }] },
-        { id: 'z2', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }, { heightRatio: 1 }] },
       ],
     },
   },
@@ -249,14 +347,41 @@ export const DRAWER_ZONE_PRESETS: Record<string, { label: string; labelPl: strin
     },
   },
 
-  EXTERNAL_INTERNAL: {
-    label: '1 External + 1 Internal',
-    labelPl: '1 Zewnętrzna + 1 Wewnętrzna',
+  STANDARD_3: {
+    label: '3 Standard',
+    labelPl: '3 Standardowe',
     config: {
       slideType: 'SIDE_MOUNT',
       zones: [
-        { id: 'z1', heightRatio: 1, front: null, boxes: [{ heightRatio: 1 }] },
+        { id: 'z1', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
         { id: 'z2', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
+        { id: 'z3', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
+      ],
+    },
+  },
+
+  STANDARD_4: {
+    label: '4 Standard',
+    labelPl: '4 Standardowe',
+    config: {
+      slideType: 'SIDE_MOUNT',
+      zones: [
+        { id: 'z1', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
+        { id: 'z2', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
+        { id: 'z3', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
+        { id: 'z4', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
+      ],
+    },
+  },
+
+  TALL_2: {
+    label: '2 Tall (drawer-in-drawer)',
+    labelPl: '2 Wysokie (szuflada w szufladzie)',
+    config: {
+      slideType: 'SIDE_MOUNT',
+      zones: [
+        { id: 'z1', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }, { heightRatio: 1 }] },
+        { id: 'z2', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }, { heightRatio: 1 }] },
       ],
     },
   },
