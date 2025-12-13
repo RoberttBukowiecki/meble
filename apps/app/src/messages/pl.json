@@ -164,6 +164,12 @@
     "settings": "Ustawienia",
     "language": "Język"
   },
+  "MobileWarning": {
+    "title": "Zalecamy większy ekran",
+    "description": "Dla wyższego komfortu i łatwiejszej obsługi projektanta mebli zalecamy używanie szerszych ekranów lub komputera.",
+    "note": "Aplikacja działa na urządzeniach mobilnych, ale niektóre funkcje mogą być trudniejsze w obsłudze.",
+    "continue": "Rozumiem, kontynuuj"
+  },
   "ExportDialog": {
     "title": "Eksportuj do CSV",
     "description": "Wybierz kolumny do eksportu i sprawdź podgląd danych.",

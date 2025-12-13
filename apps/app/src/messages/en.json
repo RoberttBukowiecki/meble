@@ -154,6 +154,12 @@
     "settings": "Settings",
     "language": "Language"
   },
+  "MobileWarning": {
+    "title": "Larger screen recommended",
+    "description": "For better comfort and easier use of the furniture designer, we recommend using wider screens or a computer.",
+    "note": "The app works on mobile devices, but some features may be harder to use.",
+    "continue": "I understand, continue"
+  },
   "ExportDialog": {
     "title": "Export to CSV",
     "description": "Select columns to export and review data preview.",

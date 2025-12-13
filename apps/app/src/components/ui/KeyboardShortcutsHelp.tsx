@@ -125,7 +125,7 @@ export function KeyboardShortcutsHelp() {
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="w-full max-w-[calc(100vw-2rem)] md:max-w-3xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Skróty klawiszowe</DialogTitle>
             <DialogDescription>
