@@ -77,7 +77,7 @@ export function CollisionWarning() {
 
       {/* Collision details dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="w-full max-w-[calc(100vw-2rem)] md:max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-6 w-6 text-destructive" />

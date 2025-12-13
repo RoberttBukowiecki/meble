@@ -714,11 +714,11 @@ export function PropertiesPanel() {
                   <div className="space-y-4 pt-2">
                     <div className="space-y-2">
                       <Label className="text-xs text-muted-foreground font-normal">{t('position')}</Label>
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-3 gap-1.5 md:gap-2">
                         <div>
                           <span className="text-xs text-muted-foreground block mb-1 ml-0.5">X</span>
                           <NumberInput
-                            className="h-8 text-xs"
+                            className="h-9 md:h-8 text-xs"
                             value={cabinetCenter[0]}
                             onChange={(val) => handleCabinetPositionUpdate(0, val)}
                           />
@@ -726,7 +726,7 @@ export function PropertiesPanel() {
                         <div>
                           <span className="text-xs text-muted-foreground block mb-1 ml-0.5">Y</span>
                           <NumberInput
-                            className="h-8 text-xs"
+                            className="h-9 md:h-8 text-xs"
                             value={cabinetCenter[1]}
                             onChange={(val) => handleCabinetPositionUpdate(1, val)}
                           />
@@ -734,7 +734,7 @@ export function PropertiesPanel() {
                         <div>
                           <span className="text-xs text-muted-foreground block mb-1 ml-0.5">Z</span>
                           <NumberInput
-                            className="h-8 text-xs"
+                            className="h-9 md:h-8 text-xs"
                             value={cabinetCenter[2]}
                             onChange={(val) => handleCabinetPositionUpdate(2, val)}
                           />
@@ -743,11 +743,11 @@ export function PropertiesPanel() {
                     </div>
                     <div className="space-y-2">
                       <Label className="text-xs text-muted-foreground font-normal">{t('rotation')}</Label>
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-3 gap-1.5 md:gap-2">
                         <div>
                           <span className="text-xs text-muted-foreground block mb-1 ml-0.5">X</span>
                           <NumberInput
-                            className="h-8 text-xs"
+                            className="h-9 md:h-8 text-xs"
                             value={cabinetRotationDegrees[0]}
                             onChange={(val) => handleCabinetRotationUpdate(0, val)}
                             allowDecimals
@@ -756,7 +756,7 @@ export function PropertiesPanel() {
                         <div>
                           <span className="text-xs text-muted-foreground block mb-1 ml-0.5">Y</span>
                           <NumberInput
-                            className="h-8 text-xs"
+                            className="h-9 md:h-8 text-xs"
                             value={cabinetRotationDegrees[1]}
                             onChange={(val) => handleCabinetRotationUpdate(1, val)}
                             allowDecimals
@@ -765,7 +765,7 @@ export function PropertiesPanel() {
                         <div>
                           <span className="text-xs text-muted-foreground block mb-1 ml-0.5">Z</span>
                           <NumberInput
-                            className="h-8 text-xs"
+                            className="h-9 md:h-8 text-xs"
                             value={cabinetRotationDegrees[2]}
                             onChange={(val) => handleCabinetRotationUpdate(2, val)}
                             allowDecimals
@@ -1034,11 +1034,11 @@ export function PropertiesPanel() {
                 <div className="space-y-4 pt-2">
                     <div className="space-y-1.5">
                     <Label className="text-xs text-muted-foreground font-normal">{t('position')}</Label>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-3 gap-1.5 md:gap-2">
                         <div>
                         <span className="text-xs text-muted-foreground block mb-1 ml-0.5">X</span>
                         <NumberInput
-                            className="h-8 text-xs"
+                            className="h-9 md:h-8 text-xs"
                             value={selectedPart.position[0]}
                             onChange={(val) => handlePositionUpdate(0, val)}
                         />
@@ -1046,7 +1046,7 @@ export function PropertiesPanel() {
                         <div>
                         <span className="text-xs text-muted-foreground block mb-1 ml-0.5">Y</span>
                         <NumberInput
-                            className="h-8 text-xs"
+                            className="h-9 md:h-8 text-xs"
                             value={selectedPart.position[1]}
                             onChange={(val) => handlePositionUpdate(1, val)}
                         />
@@ -1054,7 +1054,7 @@ export function PropertiesPanel() {
                         <div>
                         <span className="text-xs text-muted-foreground block mb-1 ml-0.5">Z</span>
                         <NumberInput
-                            className="h-8 text-xs"
+                            className="h-9 md:h-8 text-xs"
                             value={selectedPart.position[2]}
                             onChange={(val) => handlePositionUpdate(2, val)}
                         />
@@ -1063,11 +1063,11 @@ export function PropertiesPanel() {
                     </div>
                     <div className="space-y-1.5">
                     <Label className="text-xs text-muted-foreground font-normal">{t('rotation')}</Label>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-3 gap-1.5 md:gap-2">
                         <div>
                         <span className="text-xs text-muted-foreground block mb-1 ml-0.5">X</span>
                         <NumberInput
-                            className="h-8 text-xs"
+                            className="h-9 md:h-8 text-xs"
                             value={rotationDegrees[0]}
                             onChange={(val) => handleRotationUpdate(0, val)}
                             allowDecimals
@@ -1076,7 +1076,7 @@ export function PropertiesPanel() {
                         <div>
                         <span className="text-xs text-muted-foreground block mb-1 ml-0.5">Y</span>
                         <NumberInput
-                            className="h-8 text-xs"
+                            className="h-9 md:h-8 text-xs"
                             value={rotationDegrees[1]}
                             onChange={(val) => handleRotationUpdate(1, val)}
                             allowDecimals
@@ -1085,7 +1085,7 @@ export function PropertiesPanel() {
                         <div>
                         <span className="text-xs text-muted-foreground block mb-1 ml-0.5">Z</span>
                         <NumberInput
-                            className="h-8 text-xs"
+                            className="h-9 md:h-8 text-xs"
                             value={rotationDegrees[2]}
                             onChange={(val) => handleRotationUpdate(2, val)}
                             allowDecimals

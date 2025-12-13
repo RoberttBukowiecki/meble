@@ -66,7 +66,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0">
+      <DialogContent className="w-full max-w-[calc(100vw-2rem)] md:max-w-4xl max-h-[85vh] md:max-h-[90vh] flex flex-col p-0">
         <DialogHeader className="flex-shrink-0 px-6 py-6 border-b">
           <DialogTitle className="text-xl">{t('title')}</DialogTitle>
           <DialogDescription>{t('description')}</DialogDescription>
@@ -75,7 +75,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
         <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
           <div className="space-y-3">
             <h3 className="text-sm font-semibold">{t('selectColumns')}</h3>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="grid grid-cols-1 xs:grid-cols-2 gap-2 md:gap-3 sm:grid-cols-3 md:grid-cols-4">
               {AVAILABLE_COLUMNS.map((col) => (
                 <div key={col.id} className="flex items-center space-x-2">
                   <input
@@ -98,8 +98,8 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
 
           <div className="space-y-3">
             <h3 className="text-sm font-semibold">{t('preview')}</h3>
-            <div className="rounded-md border">
-              <Table>
+            <div className="rounded-md border overflow-x-auto">
+              <Table className="min-w-[500px]">
                 <TableHeader>
                   <TableRow>
                     {selectedColumns.map((col) => (
@@ -150,13 +150,14 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
           </div>
         </div>
 
-        <DialogFooter className="flex-shrink-0 border-t bg-muted/20 px-6 py-4">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <DialogFooter className="flex-shrink-0 border-t bg-muted/20 px-4 md:px-6 py-3 md:py-4 flex-col-reverse sm:flex-row gap-2">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
             {t('cancel')}
           </Button>
           <Button
             onClick={handleExport}
             disabled={parts.length === 0 || selectedColumns.length === 0}
+            className="w-full sm:w-auto"
           >
             <Download className="mr-2 h-4 w-4" />
             {t('export')}

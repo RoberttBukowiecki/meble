@@ -464,7 +464,7 @@ export function DrawerConfigDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0">
+      <DialogContent className="w-full max-w-[calc(100vw-2rem)] md:max-w-4xl max-h-[85vh] md:max-h-[90vh] flex flex-col p-0">
         <DialogHeader className="flex-shrink-0 px-6 py-6 border-b">
           <DialogTitle>Konfiguracja szuflad</DialogTitle>
         </DialogHeader>
