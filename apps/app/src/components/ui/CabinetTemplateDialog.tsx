@@ -284,7 +284,7 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
         <div className="space-y-8">
             {/* Conflict Resolution Dialog */}
             <Dialog open={conflictType !== null} onOpenChange={(open) => !open && handleConflictResolve('cancel')}>
-                <DialogContent className="max-w-md">
+                <DialogContent className="w-full max-w-[calc(100vw-2rem)] md:max-w-md">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2 text-amber-600">
                             <AlertTriangle className="h-5 w-5" />
@@ -334,9 +334,9 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
                     <Box className="h-4 w-4" />
                     Wymiary
                 </h3>
-                <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                        <Label className="text-xs text-muted-foreground">Szerokość (mm)</Label>
+                <div className="grid grid-cols-3 gap-2 md:gap-4">
+                    <div className="space-y-1 md:space-y-2">
+                        <Label className="text-[10px] md:text-xs text-muted-foreground">Szer. (mm)</Label>
                         <NumberInput 
                             value={params.width} 
                             onChange={val => updateParams({width: val})} 
@@ -345,18 +345,18 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
                             className="h-9"
                         />
                     </div>
-                    <div className="space-y-2">
-                        <Label className="text-xs text-muted-foreground">Wysokość (mm)</Label>
-                        <NumberInput 
-                            value={params.height} 
-                            onChange={val => updateParams({height: val})} 
-                            min={1} 
+                    <div className="space-y-1 md:space-y-2">
+                        <Label className="text-[10px] md:text-xs text-muted-foreground">Wys. (mm)</Label>
+                        <NumberInput
+                            value={params.height}
+                            onChange={val => updateParams({height: val})}
+                            min={1}
                             allowNegative={false}
                             className="h-9"
                         />
                     </div>
-                    <div className="space-y-2">
-                        <Label className="text-xs text-muted-foreground">Głębokość (mm)</Label>
+                    <div className="space-y-1 md:space-y-2">
+                        <Label className="text-[10px] md:text-xs text-muted-foreground">Głęb. (mm)</Label>
                         <NumberInput 
                             value={params.depth} 
                             onChange={val => updateParams({depth: val})} 
@@ -730,7 +730,7 @@ export function CabinetTemplateDialog({ open, onOpenChange, furnitureId }: Cabin
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0">
+      <DialogContent className="w-full max-w-[calc(100vw-2rem)] md:max-w-3xl max-h-[85vh] md:max-h-[90vh] flex flex-col p-0 gap-0">
         <DialogHeader className="flex-shrink-0 px-6 py-6 border-b">
           <DialogTitle className="text-xl">
              {step === 'select' && 'Wybierz typ szafki'}
@@ -748,7 +748,7 @@ export function CabinetTemplateDialog({ open, onOpenChange, furnitureId }: Cabin
         <div className="flex-1 overflow-y-auto px-6 py-6">
           {/* Step 1: Template Selection */}
           {step === 'select' && (
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
               <TemplateCard
                 type="KITCHEN"
                 title="Szafka kuchenna"
@@ -867,15 +867,16 @@ export function CabinetTemplateDialog({ open, onOpenChange, furnitureId }: Cabin
 
         {/* Footer */}
         {step !== 'select' && (
-          <div className="flex-shrink-0 border-t bg-muted/20 px-6 py-4 flex justify-between">
+          <div className="flex-shrink-0 border-t bg-muted/20 px-4 md:px-6 py-3 md:py-4 flex flex-col-reverse sm:flex-row justify-between gap-2">
             <Button
               variant="outline"
               onClick={() => setStep(step === 'materials' ? 'configure' : 'select')}
+              className="w-full sm:w-auto"
             >
               Wstecz
             </Button>
             {step === 'configure' && (
-              <Button onClick={() => setStep('materials')}>
+              <Button onClick={() => setStep('materials')} className="w-full sm:w-auto">
                 Dalej: Materiały
               </Button>
             )}
@@ -887,6 +888,7 @@ export function CabinetTemplateDialog({ open, onOpenChange, furnitureId }: Cabin
                   !materials?.frontMaterialId ||
                   (params.hasBack && !materials?.backMaterialId)
                 }
+                className="w-full sm:w-auto"
               >
                 Utwórz szafkę
               </Button>

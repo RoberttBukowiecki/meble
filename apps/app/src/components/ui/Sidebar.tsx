@@ -77,29 +77,29 @@ export function Sidebar() {
         </div>
 
         <div className="space-y-2">
-          <Button onClick={handleAddPart} variant="outline" className="w-full" size="sm">
-            <Plus className="mr-2 h-4 w-4" />
+          <Button onClick={handleAddPart} variant="outline" className="w-full h-11 md:h-8" size="sm">
+            <Plus className="h-4 w-4 mr-2" />
             {t('addPart')}
           </Button>
 
           <Button
             onClick={() => setCabinetDialogOpen(true)}
             variant="outline"
-            className="w-full"
+            className="w-full h-11 md:h-8"
             size="sm"
           >
-            <Package className="mr-2 h-4 w-4" />
+            <Package className="h-4 w-4 mr-2" />
             {t('addCabinet')}
           </Button>
 
           <Button
             onClick={handleExportCSV}
             variant="outline"
-            className="w-full"
+            className="w-full h-11 md:h-8"
             size="sm"
             disabled={parts.length === 0}
           >
-            <Download className="mr-2 h-4 w-4" />
+            <Download className="h-4 w-4 mr-2" />
             {t('exportCSV')}
           </Button>
         </div>
@@ -109,37 +109,38 @@ export function Sidebar() {
       <div className="flex border-b border-border">
         <button
           onClick={() => setActiveTab('properties')}
-          className={`flex flex-1 items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
+          className={`flex flex-1 items-center justify-center gap-1 md:gap-2 px-2 md:px-4 py-3 md:py-3 text-xs md:text-sm font-medium transition-colors ${
             activeTab === 'properties'
               ? 'border-b-2 border-primary bg-muted text-foreground'
               : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
           }`}
         >
           <Settings className="h-4 w-4" />
-          {t('propertiesTab')}
+          <span className="hidden sm:inline">{t('propertiesTab')}</span>
         </button>
         <button
           onClick={() => setActiveTab('list')}
-          className={`flex flex-1 items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
+          className={`flex flex-1 items-center justify-center gap-1 md:gap-2 px-2 md:px-4 py-3 md:py-3 text-xs md:text-sm font-medium transition-colors ${
             activeTab === 'list'
               ? 'border-b-2 border-primary bg-muted text-foreground'
               : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
           }`}
         >
           <List className="h-4 w-4" />
-          {t('listTabWithCount', { count: parts.length })}
+          <span className="hidden sm:inline">{t('listTabWithCount', { count: parts.length })}</span>
+          <span className="sm:hidden">({parts.length})</span>
         </button>
         {!featureFlags.HIDE_ROOMS_TAB && (
           <button
             onClick={() => setActiveTab('room')}
-            className={`flex flex-1 items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
+            className={`flex flex-1 items-center justify-center gap-1 md:gap-2 px-2 md:px-4 py-3 md:py-3 text-xs md:text-sm font-medium transition-colors ${
               activeTab === 'room'
                 ? 'border-b-2 border-primary bg-muted text-foreground'
                 : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
             }`}
           >
             <House className="h-4 w-4" />
-            {tRoom('roomTab')}
+            <span className="hidden sm:inline">{tRoom('roomTab')}</span>
           </button>
         )}
       </div>

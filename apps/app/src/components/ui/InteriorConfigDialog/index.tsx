@@ -350,9 +350,9 @@ export function InteriorConfigDialog({
           <DialogTitle>Konfiguracja wnętrza szafki</DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
           {/* Left Column: Preview - with scroll indicator */}
-          <ScrollContainer className="w-full lg:w-5/12 flex-shrink-0 border-r">
+          <ScrollContainer className="w-full md:w-5/12 flex-shrink-0 md:border-r border-b md:border-b-0 max-h-[40vh] md:max-h-none">
             <div className="px-4 py-4 flex flex-col gap-4">
               <div>
                 <Label className="text-sm font-medium mb-3 block">Podgląd układu</Label>
@@ -475,18 +475,18 @@ export function InteriorConfigDialog({
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 border-t bg-muted/20 px-4 py-3 flex justify-between">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <div className="flex-shrink-0 border-t bg-muted/20 px-4 py-3 flex flex-col-reverse sm:flex-row justify-between gap-2">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
             Anuluj
           </Button>
-          <Button onClick={handleSave}>Zastosuj zmiany</Button>
+          <Button onClick={handleSave} className="w-full sm:w-auto">Zastosuj zmiany</Button>
         </div>
       </DialogContent>
     </Dialog>
 
     {/* Conflict Resolution Popup Dialog */}
     <Dialog open={conflictType !== null} onOpenChange={(open) => !open && handleConflictResolve('cancel')}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="w-full max-w-[calc(100vw-2rem)] md:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-amber-600">
             <AlertTriangle className="h-5 w-5" />

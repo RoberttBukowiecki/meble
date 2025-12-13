@@ -14,7 +14,7 @@ import { Room3D } from './Room3D';
 import { RoomLighting } from './RoomLighting';
 import { FloorCeiling3D } from './FloorCeiling3D';
 import { Button } from '@meble/ui';
-import { Camera, Move, RotateCw, Maximize2 } from 'lucide-react';
+import { Camera, Move, RotateCw, Maximize2, PanelRight } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { KeyboardShortcutsHelp } from '@/components/ui/KeyboardShortcutsHelp';
 import { CollisionWarning } from '@/components/ui/CollisionWarning';
@@ -34,7 +34,12 @@ import { SnapControlPanel } from '@/components/layout/SnapControlPanel';
 import { GraphicsSettingsPanel } from '@/components/layout/GraphicsSettingsPanel';
 import { DimensionControlPanel } from '@/components/layout/DimensionControlPanel';
 
-export function Scene() {
+interface SceneProps {
+  onOpenMobileSidebar?: () => void;
+  isMobile?: boolean;
+}
+
+export function Scene({ onOpenMobileSidebar, isMobile }: SceneProps) {
   const parts = useSelectedFurnitureParts();
   const selectedPart = useSelectedPart();
   const isMultiSelect = useIsMultiSelectActive();
@@ -140,35 +145,35 @@ export function Scene() {
   return (
     <div className="relative h-full w-full">
       {/* Top-right controls */}
-      <div className="absolute right-4 top-4 z-10 flex gap-2">
+      <div className="absolute right-2 top-2 md:right-4 md:top-4 z-10 flex flex-wrap gap-1 md:gap-2 max-w-[calc(100%-1rem)]">
         {/* Transform Mode Toggle */}
         <div className="flex gap-1 rounded-md bg-background/80 p-1 backdrop-blur-sm">
           <Button
             variant={transformMode === 'translate' ? 'default' : 'ghost'}
             size="sm"
             onClick={() => setTransformMode('translate')}
-            className="h-8 px-2"
+            className="h-11 w-11 md:h-8 md:w-auto md:px-2 p-0"
             title={`Przesuwanie (${formatShortcutLabel(KEYBOARD_SHORTCUTS.TRANSLATE_MODE)})`}
           >
-            <Move className="h-4 w-4" />
+            <Move className="h-5 w-5 md:h-4 md:w-4" />
           </Button>
           <Button
             variant={transformMode === 'rotate' ? 'default' : 'ghost'}
             size="sm"
             onClick={() => setTransformMode('rotate')}
-            className="h-8 px-2"
+            className="h-11 w-11 md:h-8 md:w-auto md:px-2 p-0"
             title={`Obrót (${formatShortcutLabel(KEYBOARD_SHORTCUTS.ROTATE_MODE)})`}
           >
-            <RotateCw className="h-4 w-4" />
+            <RotateCw className="h-5 w-5 md:h-4 md:w-4" />
           </Button>
           <Button
             variant={transformMode === 'resize' ? 'default' : 'ghost'}
             size="sm"
             onClick={() => setTransformMode('resize')}
-            className="h-8 px-2"
+            className="h-11 w-11 md:h-8 md:w-auto md:px-2 p-0"
             title={`Zmień rozmiar (${formatShortcutLabel(KEYBOARD_SHORTCUTS.RESIZE_MODE)})`}
           >
-            <Maximize2 className="h-4 w-4" />
+            <Maximize2 className="h-5 w-5 md:h-4 md:w-4" />
           </Button>
         </div>
 
@@ -177,22 +182,40 @@ export function Scene() {
 
         <DimensionControlPanel />
 
-        <GraphicsSettingsPanel />
+        {/* Graphics Settings - hidden on mobile */}
+        <div className="hidden md:block">
+          <GraphicsSettingsPanel />
+        </div>
 
         {/* Camera Reset Button */}
         <Button
           variant="outline"
           size="sm"
           onClick={handleResetCamera}
-          className="bg-background/80 backdrop-blur-sm"
+          className="h-11 md:h-8 bg-background/80 backdrop-blur-sm"
           title={`Reset widoku (${formatShortcutLabel(KEYBOARD_SHORTCUTS.RESET_CAMERA)})`}
         >
-          <Camera className="mr-2 h-4 w-4" />
-          Reset widoku
+          <Camera className="h-5 w-5 md:h-4 md:w-4 md:mr-2" />
+          <span className="hidden md:inline">Reset widoku</span>
         </Button>
 
-        {/* Keyboard Shortcuts Help */}
-        <KeyboardShortcutsHelp />
+        {/* Keyboard Shortcuts Help - hidden on mobile */}
+        <div className="hidden md:block">
+          <KeyboardShortcutsHelp />
+        </div>
+
+        {/* Mobile Sidebar Toggle */}
+        {isMobile && onOpenMobileSidebar && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onOpenMobileSidebar}
+            className="h-11 w-11 p-0 bg-background/80 backdrop-blur-sm"
+            title="Panel właściwości"
+          >
+            <PanelRight className="h-5 w-5" />
+          </Button>
+        )}
       </div>
 
       <DimensionProvider>
