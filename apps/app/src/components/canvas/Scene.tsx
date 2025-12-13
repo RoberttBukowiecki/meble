@@ -152,7 +152,7 @@ export function Scene({ onOpenMobileSidebar, isMobile }: SceneProps) {
             variant={transformMode === 'translate' ? 'default' : 'ghost'}
             size="sm"
             onClick={() => setTransformMode('translate')}
-            className="h-10 w-10 md:h-8 md:w-auto md:px-2 p-0"
+            className="h-11 w-11 md:h-8 md:w-auto md:px-2 p-0"
             title={`Przesuwanie (${formatShortcutLabel(KEYBOARD_SHORTCUTS.TRANSLATE_MODE)})`}
           >
             <Move className="h-5 w-5 md:h-4 md:w-4" />
@@ -161,7 +161,7 @@ export function Scene({ onOpenMobileSidebar, isMobile }: SceneProps) {
             variant={transformMode === 'rotate' ? 'default' : 'ghost'}
             size="sm"
             onClick={() => setTransformMode('rotate')}
-            className="h-10 w-10 md:h-8 md:w-auto md:px-2 p-0"
+            className="h-11 w-11 md:h-8 md:w-auto md:px-2 p-0"
             title={`Obrót (${formatShortcutLabel(KEYBOARD_SHORTCUTS.ROTATE_MODE)})`}
           >
             <RotateCw className="h-5 w-5 md:h-4 md:w-4" />
@@ -170,7 +170,7 @@ export function Scene({ onOpenMobileSidebar, isMobile }: SceneProps) {
             variant={transformMode === 'resize' ? 'default' : 'ghost'}
             size="sm"
             onClick={() => setTransformMode('resize')}
-            className="h-10 w-10 md:h-8 md:w-auto md:px-2 p-0"
+            className="h-11 w-11 md:h-8 md:w-auto md:px-2 p-0"
             title={`Zmień rozmiar (${formatShortcutLabel(KEYBOARD_SHORTCUTS.RESIZE_MODE)})`}
           >
             <Maximize2 className="h-5 w-5 md:h-4 md:w-4" />
@@ -192,7 +192,7 @@ export function Scene({ onOpenMobileSidebar, isMobile }: SceneProps) {
           variant="outline"
           size="sm"
           onClick={handleResetCamera}
-          className="h-10 md:h-8 bg-background/80 backdrop-blur-sm"
+          className="h-11 md:h-8 bg-background/80 backdrop-blur-sm"
           title={`Reset widoku (${formatShortcutLabel(KEYBOARD_SHORTCUTS.RESET_CAMERA)})`}
         >
           <Camera className="h-5 w-5 md:h-4 md:w-4 md:mr-2" />
@@ -210,7 +210,7 @@ export function Scene({ onOpenMobileSidebar, isMobile }: SceneProps) {
             variant="outline"
             size="sm"
             onClick={onOpenMobileSidebar}
-            className="h-10 w-10 p-0 bg-background/80 backdrop-blur-sm"
+            className="h-11 w-11 p-0 bg-background/80 backdrop-blur-sm"
             title="Panel właściwości"
           >
             <PanelRight className="h-5 w-5" />

@@ -139,7 +139,7 @@ import { MobileWarningDialog } from "@/components/ui/MobileWarningDialog";
 
 ### Docelowy stan na mobile
 - Panel schowany domyślnie
-- Wysuwa się z prawej strony (drawer/sheet)
+- Wysuwa się z prawej strony (Drawer)
 - Przycisk toggle w toolbarze sceny
 - Pełna szerokość lub ~85% szerokości ekranu
 
@@ -207,8 +207,7 @@ export function MobileSidebarTrigger({ onClick, isOpen }: MobileSidebarTriggerPr
 
 import { useState } from "react";
 import { useIsMobile } from "@/hooks/useIsMobile";
-import { Sheet, SheetContent } from "@meble/ui";
-import { MobileSidebarTrigger } from "@/components/ui/MobileSidebarTrigger";
+import { Drawer } from "@meble/ui";
 
 export default function Page() {
   const isMobile = useIsMobile();
@@ -219,14 +218,8 @@ export default function Page() {
       {/* Canvas - pełna szerokość na mobile, 75% na desktop */}
       <div className="w-full md:w-3/4 bg-muted relative">
         <Scene
-          mobileSidebarTrigger={
-            isMobile && (
-              <MobileSidebarTrigger
-                onClick={() => setSidebarOpen(true)}
-                isOpen={sidebarOpen}
-              />
-            )
-          }
+          onOpenMobileSidebar={() => setSidebarOpen(true)}
+          isMobile={isMobile}
         />
       </div>
 
@@ -237,13 +230,18 @@ export default function Page() {
         </div>
       )}
 
-      {/* Mobile Sidebar - Sheet z prawej strony */}
+      {/* Mobile Sidebar - Drawer z prawej strony */}
       {isMobile && (
-        <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-          <SheetContent side="right" className="w-[85vw] p-0">
-            <Sidebar onClose={() => setSidebarOpen(false)} />
-          </SheetContent>
-        </Sheet>
+        <Drawer
+          open={sidebarOpen}
+          onOpenChange={setSidebarOpen}
+          side="right"
+          className="w-[85vw] max-w-sm"
+        >
+          <div className="pt-12 h-full">
+            <Sidebar />
+          </div>
+        </Drawer>
       )}
     </div>
   );
@@ -647,12 +645,11 @@ Na mobile tooltips mogą nie działać (brak hover). Rozważ:
 
 Snap, Dimensions, Graphics settings używają Popoverów. Na mobile:
 ```tsx
-// Popover zamiast być pozycjonowany, może być sheet:
+// Popover zamiast być pozycjonowany, może być drawer:
 {isMobile ? (
-  <Sheet>
-    <SheetTrigger asChild>{trigger}</SheetTrigger>
-    <SheetContent side="bottom">{content}</SheetContent>
-  </Sheet>
+  <Drawer side="bottom">
+    {content}
+  </Drawer>
 ) : (
   <Popover>
     <PopoverTrigger asChild>{trigger}</PopoverTrigger>
@@ -668,7 +665,7 @@ Snap, Dimensions, Graphics settings używają Popoverów. Na mobile:
 ### Faza 1: Fundamenty (Priorytet: Wysoki)
 1. [ ] Hook `useIsMobile`
 2. [ ] `MobileWarningDialog` - dialog powitalny
-3. [ ] Modyfikacja layoutu w `page.tsx` - sidebar jako Sheet na mobile
+3. [x] Modyfikacja layoutu w `page.tsx` - sidebar jako Drawer na mobile
 4. [ ] `MobileSidebarTrigger` - przycisk toggle
 
 ### Faza 2: Toolbar i podstawowe kontrolki (Priorytet: Wysoki)
@@ -695,7 +692,7 @@ Snap, Dimensions, Graphics settings używają Popoverów. Na mobile:
 19. [ ] `RoomPanel` - dostosowanie jeśli potrzebne
 
 ### Faza 6: Dopracowanie (Priorytet: Niski)
-20. [ ] Popovery → Sheet na mobile
+20. [ ] Popovery → Drawer na mobile
 21. [ ] Tooltips → aria-labels
 22. [ ] Testy na różnych urządzeniach
 23. [ ] Optymalizacja touch targets (min 44×44px)
@@ -720,11 +717,8 @@ Można dodać do `globals.css`:
 - Testy touch events
 - Testy z różnymi orientacjami (portrait/landscape)
 
-### Komponent Sheet z @meble/ui
-Upewnić się, że pakiet `@meble/ui` eksportuje komponent `Sheet`. Jeśli nie:
-```bash
-npx shadcn-ui@latest add sheet
-```
+### Komponent Drawer z @meble/ui
+Pakiet `@meble/ui` zawiera komponent `Drawer` do wysuwanych paneli.
 
 ### Performance
 - Używać `useIsMobile` z debounce dla resize
@@ -738,9 +732,21 @@ npx shadcn-ui@latest add sheet
 Plan zakłada stopniowe wprowadzanie responsywności bez zmiany istniejącego UI desktop. Główne zmiany:
 
 1. **Dialog powitalny** - informacja o rekomendacji szerokiego ekranu
-2. **Sidebar jako Sheet** - wysuwany panel zamiast stałego na mobile
-3. **Większe touch targets** - min 44×44px dla przycisków
+2. **Sidebar jako Drawer** - wysuwany panel zamiast stałego na mobile
+3. **Większe touch targets** - min 44×44px (h-11) dla przycisków
 4. **Responsywne dialogi** - pełna szerokość, pionowe layouty
 5. **Uproszczone widoki** - ukrycie mniej ważnych elementów na mobile
 
 Wszystkie zmiany wykorzystują Tailwind CSS breakpointy z podejściem mobile-first dla nowego kodu, zachowując kompatybilność z istniejącym desktop UI poprzez klasy `md:`.
+
+---
+
+## Status implementacji (zaktualizowano)
+
+Wszystkie główne elementy zostały zaimplementowane:
+- [x] Hook `useIsMobile` z debounce
+- [x] `MobileWarningDialog` z poprawnym zapisywaniem stanu
+- [x] Layout z Drawer na mobile
+- [x] Touch targets 44px (h-11)
+- [x] Responsywne dialogi
+- [x] Responsywne konfiguratory

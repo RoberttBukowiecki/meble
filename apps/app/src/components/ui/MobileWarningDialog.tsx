@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import {
   Dialog,
@@ -30,13 +30,20 @@ export function MobileWarningDialog() {
     }
   }, []);
 
-  const handleDismiss = () => {
+  const handleDismiss = useCallback(() => {
     sessionStorage.setItem(STORAGE_KEY, 'true');
     setOpen(false);
-  };
+  }, []);
+
+  // Handle dialog close from any source (overlay click, X button, ESC key)
+  const handleOpenChange = useCallback((newOpen: boolean) => {
+    if (!newOpen) {
+      handleDismiss();
+    }
+  }, [handleDismiss]);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-sm mx-4">
         <DialogHeader>
           <div className="flex justify-center mb-4">

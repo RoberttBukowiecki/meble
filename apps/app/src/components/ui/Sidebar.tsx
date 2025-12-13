@@ -77,33 +77,30 @@ export function Sidebar() {
         </div>
 
         <div className="space-y-2">
-          <Button onClick={handleAddPart} variant="outline" className="w-full h-10 md:h-8" size="sm">
-            <Plus className="h-4 w-4 md:mr-2" />
-            <span className="hidden md:inline">{t('addPart')}</span>
-            <span className="md:hidden ml-2">{t('addPart')}</span>
+          <Button onClick={handleAddPart} variant="outline" className="w-full h-11 md:h-8" size="sm">
+            <Plus className="h-4 w-4 mr-2" />
+            {t('addPart')}
           </Button>
 
           <Button
             onClick={() => setCabinetDialogOpen(true)}
             variant="outline"
-            className="w-full h-10 md:h-8"
+            className="w-full h-11 md:h-8"
             size="sm"
           >
-            <Package className="h-4 w-4 md:mr-2" />
-            <span className="hidden md:inline">{t('addCabinet')}</span>
-            <span className="md:hidden ml-2">{t('addCabinet')}</span>
+            <Package className="h-4 w-4 mr-2" />
+            {t('addCabinet')}
           </Button>
 
           <Button
             onClick={handleExportCSV}
             variant="outline"
-            className="w-full h-10 md:h-8"
+            className="w-full h-11 md:h-8"
             size="sm"
             disabled={parts.length === 0}
           >
-            <Download className="h-4 w-4 md:mr-2" />
-            <span className="hidden md:inline">{t('exportCSV')}</span>
-            <span className="md:hidden ml-2">{t('exportCSV')}</span>
+            <Download className="h-4 w-4 mr-2" />
+            {t('exportCSV')}
           </Button>
         </div>
       </div>
