@@ -9,6 +9,7 @@ import {
   DecorativePanelType,
 } from '@/types';
 import { GeneratedPart } from './types';
+import { TRIM_STRIP_CONFIG } from '../config';
 
 // ============================================================================
 // Types
@@ -112,7 +113,7 @@ function generatePanel(
 
     case 'TRIM_STRIP':
       // Thin strip attached to front face
-      panelDepth = panel.thickness ?? 10;
+      panelDepth = panel.thickness ?? TRIM_STRIP_CONFIG.DEFAULT_THICKNESS;
       if (position === 'TOP') {
         positionY = cabinetHeight - panelHeight / 2;
       } else {

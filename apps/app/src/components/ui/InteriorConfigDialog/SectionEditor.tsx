@@ -28,7 +28,8 @@ import {
   generateShelfId,
   generateAboveBoxShelfId,
 } from '@/types';
-import { DRAWER_SLIDE_PRESETS, DRAWER_ZONE_PRESETS, DRAWER_CONFIG, INTERIOR_CONFIG, DEFAULT_BODY_THICKNESS, generateZoneId, getTotalBoxCount, getFrontCount } from '@/lib/config';
+import { DRAWER_SLIDE_PRESETS, DRAWER_ZONE_PRESETS, DRAWER_CONFIG, INTERIOR_CONFIG, SHELF_CONFIG, DEFAULT_BODY_THICKNESS, generateZoneId } from '@/lib/config';
+import { Section, Drawer, Shelf, distributeByRatio } from '@/lib/domain';
 import { Trash2, Package, Layers, Box, Plus, Minus, ChevronUp, ChevronDown, LayoutTemplate } from 'lucide-react';
 
 // ============================================================================
@@ -104,12 +105,11 @@ function DrawerZonesPreview({
   sectionHeightMm,
   drawerBoxWidth,
 }: DrawerZonesPreviewProps) {
-  const totalRatio = zones.reduce((sum, z) => sum + z.heightRatio, 0);
-
-  // Calculate zone heights in mm
-  const zoneHeights = zones.map(zone =>
-    Math.round((zone.heightRatio / totalRatio) * sectionHeightMm)
-  );
+  // Calculate zone heights using domain module
+  const zoneHeights = distributeByRatio(
+    sectionHeightMm,
+    zones.map(z => z.heightRatio)
+  ).map(Math.round);
 
   // Reverse zones for display (first zone at bottom of visual)
   const displayZones = [...zones].reverse();
@@ -138,11 +138,10 @@ function DrawerZonesPreview({
           const hasReducedBox = hasExternalFront && boxToFrontRatio < 1.0;
           const totalBoxHeightMm = Math.round(zoneHeightMm * boxToFrontRatio);
 
-          // Calculate individual box heights
-          const boxTotalRatio = zone.boxes.reduce((s, b) => s + b.heightRatio, 0);
-          const boxHeightsMm = zone.boxes.map(box =>
-            Math.round((box.heightRatio / boxTotalRatio) * totalBoxHeightMm)
-          );
+          // Calculate individual box heights using domain module
+          const boxRatios = zone.boxes.map(b => b.heightRatio);
+          const boxTotalRatio = boxRatios.reduce((s, r) => s + r, 0);
+          const boxHeightsMm = distributeByRatio(totalBoxHeightMm, boxRatios).map(Math.round);
 
           return (
             <div
@@ -690,11 +689,10 @@ export function SectionEditor({
     [section.heightRatio, totalRatio, interiorHeight]
   );
 
-  // Calculate drawer box width
+  // Calculate drawer box width using domain module
   const drawerBoxWidth = useMemo(() => {
     if (!section.drawerConfig) return 0;
-    const slideConfig = DRAWER_SLIDE_PRESETS[section.drawerConfig.slideType];
-    return cabinetWidth - 2 * slideConfig.sideOffset - 2 * DEFAULT_BODY_THICKNESS;
+    return Drawer.calculateDrawerWidth(cabinetWidth, DEFAULT_BODY_THICKNESS, section.drawerConfig.slideType);
   }, [section.drawerConfig, cabinetWidth]);
 
   // Selected zone and its calculated height
@@ -708,13 +706,13 @@ export function SectionEditor({
     return section.drawerConfig.zones.findIndex(z => z.id === selectedZoneId);
   }, [section.drawerConfig, selectedZoneId]);
 
-  // Calculate zone heights in mm
+  // Calculate zone heights in mm using domain module
   const zoneHeightsMm = useMemo(() => {
     if (!section.drawerConfig) return [];
-    const zoneTotalRatio = section.drawerConfig.zones.reduce((s, z) => s + z.heightRatio, 0);
-    return section.drawerConfig.zones.map(z =>
-      Math.round((z.heightRatio / zoneTotalRatio) * sectionHeightMm)
-    );
+    return distributeByRatio(
+      sectionHeightMm,
+      section.drawerConfig.zones.map(z => z.heightRatio)
+    ).map(Math.round);
   }, [section.drawerConfig, sectionHeightMm]);
 
   const selectedZoneHeightMm = selectedZoneIndex >= 0 ? zoneHeightsMm[selectedZoneIndex] : 0;
@@ -840,7 +838,7 @@ export function SectionEditor({
       ...section,
       shelvesConfig: {
         ...section.shelvesConfig,
-        customDepth: Math.max(50, Math.min(cabinetDepth - 10, value)),
+        customDepth: Math.max(INTERIOR_CONFIG.CUSTOM_SHELF_DEPTH_MIN, Math.min(cabinetDepth - SHELF_CONFIG.SETBACK, value)),
       },
     });
   };
@@ -869,7 +867,7 @@ export function SectionEditor({
     const existing = shelves[shelfIndex] ?? { id: generateShelfId(), depthPreset: 'CUSTOM' };
     shelves[shelfIndex] = {
       ...existing,
-      customDepth: Math.max(50, Math.min(cabinetDepth - 10, value)),
+      customDepth: Math.max(INTERIOR_CONFIG.CUSTOM_SHELF_DEPTH_MIN, Math.min(cabinetDepth - SHELF_CONFIG.SETBACK, value)),
     };
 
     onUpdate({
@@ -1142,16 +1140,15 @@ export function SectionEditor({
                 </div>
               )}
 
-              {/* Calculated depth display */}
+              {/* Calculated depth display using domain module */}
               <div className="text-xs text-muted-foreground bg-muted/30 p-2 rounded">
                 Rzeczywista głębokość:{' '}
                 <span className="font-mono font-medium text-foreground">
-                  {section.shelvesConfig.depthPreset === 'FULL'
-                    ? cabinetDepth - 10
-                    : section.shelvesConfig.depthPreset === 'HALF'
-                    ? Math.round((cabinetDepth - 10) / 2)
-                    : section.shelvesConfig.customDepth ?? cabinetDepth / 2}
-                  mm
+                  {Shelf.calculateDepth(
+                    section.shelvesConfig.depthPreset,
+                    section.shelvesConfig.customDepth,
+                    cabinetDepth
+                  )}mm
                 </span>
               </div>
             </>
@@ -1166,11 +1163,8 @@ export function SectionEditor({
                   const shelfConfig = section.shelvesConfig!.shelves[i];
                   const shelfDepthPreset = shelfConfig?.depthPreset ?? section.shelvesConfig!.depthPreset;
                   const shelfCustomDepth = shelfConfig?.customDepth ?? section.shelvesConfig!.customDepth;
-                  const actualDepth = shelfDepthPreset === 'FULL'
-                    ? cabinetDepth - 10
-                    : shelfDepthPreset === 'HALF'
-                    ? Math.round((cabinetDepth - 10) / 2)
-                    : shelfCustomDepth ?? cabinetDepth / 2;
+                  // Use domain module for depth calculation
+                  const actualDepth = Shelf.calculateDepth(shelfDepthPreset, shelfCustomDepth, cabinetDepth);
 
                   return (
                     <div key={i} className="flex items-center gap-2 p-2 border rounded bg-background">
@@ -1403,7 +1397,7 @@ export function SectionEditor({
           {/* Summary */}
           <div className="text-xs text-muted-foreground bg-muted/30 p-2 rounded flex justify-between">
             <span>
-              {getFrontCount(section.drawerConfig)} frontów • {getTotalBoxCount(section.drawerConfig)} szuflad
+              {Drawer.getFrontCount(section.drawerConfig)} frontów • {Drawer.getTotalBoxCount(section.drawerConfig)} szuflad
             </span>
             <span className="font-mono">
               {Math.round(drawerBoxWidth)} mm szer.

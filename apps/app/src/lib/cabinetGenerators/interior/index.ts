@@ -3,17 +3,12 @@
  * Generates shelves and drawers based on unified interior configuration
  */
 
-import {
-  CabinetInteriorConfig,
-  CabinetSection,
-  ShelvesConfiguration,
-  ShelfConfig,
-  DrawerConfiguration,
-  ShelfDepthPreset,
-} from '@/types';
+import { CabinetInteriorConfig } from '@/types';
 import { GeneratedPart } from '../types';
 import { generateDrawers } from '../drawers';
-import { DRAWER_SLIDE_PRESETS, DEFAULT_SHELF_EDGE_BANDING } from '@/lib/config';
+import { DEFAULT_SHELF_EDGE_BANDING } from '@/lib/config';
+import { Section, Interior, Shelf } from '@/lib/domain';
+import type { SectionBounds } from '@/lib/domain/section';
 
 // ============================================================================
 // Types
@@ -32,12 +27,6 @@ export interface InteriorGeneratorConfig {
   interiorConfig: CabinetInteriorConfig;
 }
 
-interface SectionBounds {
-  section: CabinetSection;
-  startY: number;  // From bottom of cabinet interior
-  height: number;  // Section height in mm
-}
-
 // ============================================================================
 // Main Generator
 // ============================================================================
@@ -53,8 +42,8 @@ export function generateInterior(config: InteriorGeneratorConfig): GeneratedPart
     return parts;
   }
 
-  // Calculate section boundaries
-  const sectionBounds = calculateSectionBounds(
+  // Calculate section boundaries using domain module
+  const sectionBounds = Section.calculateBounds(
     interiorConfig.sections,
     cabinetHeight,
     bodyThickness
@@ -83,42 +72,11 @@ export function generateInterior(config: InteriorGeneratorConfig): GeneratedPart
 }
 
 // ============================================================================
-// Section Boundary Calculation
-// ============================================================================
-
-/**
- * Calculate the Y position and height of each section
- */
-function calculateSectionBounds(
-  sections: CabinetSection[],
-  cabinetHeight: number,
-  bodyThickness: number
-): SectionBounds[] {
-  const interiorHeight = Math.max(cabinetHeight - bodyThickness * 2, 0);
-  const totalRatio = sections.reduce((sum, s) => sum + s.heightRatio, 0);
-
-  const bounds: SectionBounds[] = [];
-  let currentY = bodyThickness; // Start from bottom panel
-
-  for (const section of sections) {
-    const sectionHeight = (section.heightRatio / totalRatio) * interiorHeight;
-    bounds.push({
-      section,
-      startY: currentY,
-      height: sectionHeight,
-    });
-    currentY += sectionHeight;
-  }
-
-  return bounds;
-}
-
-// ============================================================================
 // Shelf Generation
 // ============================================================================
 
 /**
- * Generate shelves for a section
+ * Generate shelves for a section using domain module
  */
 function generateSectionShelves(
   config: InteriorGeneratorConfig,
@@ -139,31 +97,19 @@ function generateSectionShelves(
 
   const shelfWidth = cabinetWidth - bodyThickness * 2;
 
-  // Calculate shelf positions
-  // First shelf is always near the bottom of the section, others distributed above
-  const count = shelvesConfig.count;
-  const bottomOffset = 0.05; // 5% offset from very bottom
+  // Calculate shelf positions using domain module
+  const shelfPositions = Shelf.calculatePositions(shelvesConfig, bounds.startY, bounds.height);
 
-  for (let i = 0; i < count; i++) {
-    // Position shelves: first near bottom, rest distributed evenly above
-    // For single shelf: middle of section
-    // For multiple: first at ~5%, distributed up to 100%
-    const positionRatio = count === 1
-      ? 0.5 // Single shelf in the middle
-      : (i / count) * (1 - bottomOffset) + bottomOffset;
-    const shelfY = bounds.startY + positionRatio * bounds.height;
+  for (let i = 0; i < shelvesConfig.count; i++) {
+    const shelfY = shelfPositions[i];
     const shelfIndex = i;
 
-    // Get depth for this specific shelf
-    // In MANUAL mode, use individual shelf config; otherwise use global preset
+    // Get depth using domain module
     const individualShelf = shelvesConfig.mode === 'MANUAL' ? shelvesConfig.shelves[i] : undefined;
-    const shelfDepth = individualShelf
-      ? calculateIndividualShelfDepth(individualShelf, shelvesConfig, cabinetDepth)
-      : calculateShelfDepth(shelvesConfig, cabinetDepth);
+    const shelfDepth = Shelf.calculateEffectiveDepth(individualShelf, shelvesConfig, cabinetDepth);
 
-    // Z offset for recessed shelves (half depth, etc.)
-    const depthOffset = (cabinetDepth - shelfDepth) / 2;
-    const shelfZ = -depthOffset;
+    // Z offset for recessed shelves using domain module
+    const shelfZ = -Shelf.calculateZOffset(shelfDepth, cabinetDepth);
 
     // Use custom material: individual shelf > global shelves config > body material
     const shelfMaterialId = individualShelf?.materialId
@@ -192,50 +138,6 @@ function generateSectionShelves(
   }
 
   return parts;
-}
-
-/**
- * Calculate shelf depth based on preset
- */
-function calculateShelfDepth(
-  shelvesConfig: ShelvesConfiguration,
-  cabinetDepth: number
-): number {
-  const baseDepth = cabinetDepth - 10; // Standard 10mm setback from front
-
-  switch (shelvesConfig.depthPreset) {
-    case 'FULL':
-      return baseDepth;
-    case 'HALF':
-      return Math.round(baseDepth / 2);
-    case 'CUSTOM':
-      return shelvesConfig.customDepth ?? Math.round(baseDepth / 2);
-    default:
-      return baseDepth;
-  }
-}
-
-/**
- * Calculate individual shelf depth based on its config (for MANUAL mode)
- */
-function calculateIndividualShelfDepth(
-  shelfConfig: ShelfConfig,
-  shelvesConfig: ShelvesConfiguration,
-  cabinetDepth: number
-): number {
-  const baseDepth = cabinetDepth - 10; // Standard 10mm setback from front
-
-  switch (shelfConfig.depthPreset) {
-    case 'FULL':
-      return baseDepth;
-    case 'HALF':
-      return Math.round(baseDepth / 2);
-    case 'CUSTOM':
-      // Use individual customDepth, fallback to global, then default
-      return shelfConfig.customDepth ?? shelvesConfig.customDepth ?? Math.round(baseDepth / 2);
-    default:
-      return baseDepth;
-  }
 }
 
 // ============================================================================
@@ -293,47 +195,21 @@ function generateSectionDrawers(
 }
 
 // ============================================================================
-// Helpers
+// Helpers (delegating to domain module)
 // ============================================================================
 
 /**
  * Check if interior config has any content
  */
 export function hasInteriorContent(config: CabinetInteriorConfig | undefined): boolean {
-  if (!config || config.sections.length === 0) return false;
-  return config.sections.some((s) => s.contentType !== 'EMPTY');
+  if (!config) return false;
+  return Interior.hasContent(config);
 }
 
 /**
  * Get summary text for interior config
  */
 export function getInteriorSummary(config: CabinetInteriorConfig | undefined): string {
-  if (!config || config.sections.length === 0) return 'Brak konfiguracji';
-
-  const parts: string[] = [];
-
-  let totalShelves = 0;
-  let totalDrawerZones = 0;
-
-  for (const section of config.sections) {
-    if (section.contentType === 'SHELVES' && section.shelvesConfig) {
-      totalShelves += section.shelvesConfig.count;
-    } else if (section.contentType === 'DRAWERS' && section.drawerConfig) {
-      totalDrawerZones += section.drawerConfig.zones.length;
-    }
-  }
-
-  if (totalShelves > 0) {
-    parts.push(`${totalShelves} półek`);
-  }
-
-  if (totalDrawerZones > 0) {
-    parts.push(`${totalDrawerZones} stref szuflad`);
-  }
-
-  if (parts.length === 0) {
-    return `${config.sections.length} pustych sekcji`;
-  }
-
-  return parts.join(', ') + ` (${config.sections.length} sekcji)`;
+  if (!config) return 'Brak konfiguracji';
+  return Interior.getSummaryText(config);
 }

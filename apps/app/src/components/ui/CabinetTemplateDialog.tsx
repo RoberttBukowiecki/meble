@@ -43,11 +43,8 @@ import {
   CABINET_PRESETS,
   DEFAULT_BACK_OVERLAP_RATIO,
   DEFAULT_DOOR_CONFIG,
-  getTotalBoxCount,
-  getFrontCount,
-  hasDrawerFronts,
-  convertDrawersToInternal,
 } from '@/lib/config';
+import { Drawer } from '@/lib/domain';
 import { DrawerConfigDialog } from './DrawerConfigDialog';
 import { SideFrontsConfigDialog } from './SideFrontsConfigDialog';
 import { DecorativePanelsConfigDialog } from './DecorativePanelsConfigDialog';
@@ -192,7 +189,7 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
     };
 
     // Check if drawer config has external fronts
-    const drawerHasFronts = hasDrawerFronts(params.drawerConfig);
+    const drawerHasFronts = params.drawerConfig ? Drawer.hasExternalFronts(params.drawerConfig) : false;
 
     // Handle door toggle with conflict detection
     const handleDoorsToggle = (enableDoors: boolean) => {
@@ -205,7 +202,7 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
 
     // Handle drawer config change with conflict detection
     const handleDrawerConfigChange = (config: DrawerConfiguration) => {
-        const newConfigHasFronts = hasDrawerFronts(config);
+        const newConfigHasFronts = Drawer.hasExternalFronts(config);
         if (newConfigHasFronts && getHasDoors()) {
             setPendingDrawerConfig(config);
             setConflictType('drawer-fronts-enabling');
@@ -241,10 +238,10 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
 
     // Drawer config summary
     const drawerConfig = params.drawerConfig;
-    const totalBoxes = drawerConfig ? getTotalBoxCount(drawerConfig) : 0;
-    const totalFronts = drawerConfig ? getFrontCount(drawerConfig) : 0;
+    const totalBoxes = drawerConfig ? Drawer.getTotalBoxCount(drawerConfig) : 0;
+    const totalFronts = drawerConfig ? Drawer.getFrontCount(drawerConfig) : 0;
     const hasDrawerConfig = drawerConfig && drawerConfig.zones.length > 0;
-    const configHasFronts = hasDrawerFronts(drawerConfig);
+    const configHasFronts = drawerConfig ? Drawer.hasExternalFronts(drawerConfig) : false;
 
     // Conflict resolution handlers
     const handleConflictResolve = (action: 'remove-doors' | 'convert-drawers' | 'cancel') => {
@@ -261,7 +258,7 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
         } else if (action === 'convert-drawers') {
             if (conflictType === 'doors-enabling') {
                 const convertedConfig = params.drawerConfig
-                    ? convertDrawersToInternal(params.drawerConfig)
+                    ? Drawer.convertToInternal(params.drawerConfig)
                     : undefined;
                 onChange({
                     ...params,
@@ -269,7 +266,7 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
                     drawerConfig: convertedConfig,
                 } as any);
             } else if (conflictType === 'drawer-fronts-enabling' && pendingDrawerConfig) {
-                const convertedConfig = convertDrawersToInternal(pendingDrawerConfig);
+                const convertedConfig = Drawer.convertToInternal(pendingDrawerConfig);
                 onChange({
                     ...params,
                     drawerConfig: convertedConfig,

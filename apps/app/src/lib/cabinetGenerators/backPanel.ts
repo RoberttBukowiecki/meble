@@ -4,6 +4,7 @@
 
 import { GeneratedPart, BackPanelConfig } from './types';
 import { MIN_BACK_OVERLAP } from './constants';
+import { BACK_PANEL_CONFIG } from '../config';
 
 /**
  * Generate back panel for cabinet
@@ -58,8 +59,8 @@ export function generateBackPanel(config: BackPanelConfig): GeneratedPart {
   }
 
   // Ensure minimum dimensions
-  backWidth = Math.max(backWidth, 50);
-  backHeight = Math.max(backHeight, 50);
+  backWidth = Math.max(backWidth, BACK_PANEL_CONFIG.MIN_WIDTH);
+  backHeight = Math.max(backHeight, BACK_PANEL_CONFIG.MIN_HEIGHT);
 
   // Calculate Z position
   // Back panel is mounted OUTSIDE/BEHIND the cabinet body

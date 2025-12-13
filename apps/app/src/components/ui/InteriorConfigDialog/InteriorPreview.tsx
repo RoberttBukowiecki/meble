@@ -4,7 +4,8 @@ import { useMemo } from 'react';
 import { Button, cn } from '@meble/ui';
 import { CabinetSection, SectionContentType } from '@/types';
 import { ChevronUp, ChevronDown, Package, Layers, Box } from 'lucide-react';
-import { DRAWER_SLIDE_PRESETS, DEFAULT_BODY_THICKNESS, getTotalBoxCount, getFrontCount } from '@/lib/config';
+import { DRAWER_SLIDE_PRESETS, DEFAULT_BODY_THICKNESS } from '@/lib/config';
+import { Section, Drawer } from '@/lib/domain';
 
 interface InteriorPreviewProps {
   sections: CabinetSection[];
@@ -50,7 +51,7 @@ export function InteriorPreview({
   cabinetDepth,
 }: InteriorPreviewProps) {
   const totalRatio = sections.reduce((sum, s) => sum + s.heightRatio, 0);
-  const interiorHeight = Math.max(cabinetHeight - DEFAULT_BODY_THICKNESS * 2, 0);
+  const interiorHeight = Section.calculateInteriorHeight(cabinetHeight, DEFAULT_BODY_THICKNESS);
 
   // Calculate actual heights in mm for each section
   const sectionHeights = useMemo(() =>
@@ -181,7 +182,7 @@ export function InteriorPreview({
                     )}
                     {section.contentType === 'DRAWERS' && section.drawerConfig && (
                       <div className="text-[9px] text-muted-foreground">
-                        {getFrontCount(section.drawerConfig)}F/{getTotalBoxCount(section.drawerConfig)}B
+                        {Drawer.getFrontCount(section.drawerConfig)}F/{Drawer.getTotalBoxCount(section.drawerConfig)}B
                       </div>
                     )}
                   </div>

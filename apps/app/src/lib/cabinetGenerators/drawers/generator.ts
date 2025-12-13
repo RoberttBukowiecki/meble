@@ -15,6 +15,7 @@ import {
 } from '../../config';
 import { generateHandleMetadata } from '../../handlePresets';
 import { calculateDrawerBoxDimensions } from './utils';
+import { Section, Shelf, distributeByRatio } from '@/lib/domain';
 
 // ============================================================================
 // Types
@@ -79,11 +80,15 @@ export function generateDrawers(config: DrawerGeneratorConfig): GeneratedPart[] 
   const parts: GeneratedPart[] = [];
   const slideConfig = DRAWER_SLIDE_PRESETS[slideType];
 
-  // Calculate total height ratio
-  const totalRatio = zones.reduce((sum, z) => sum + z.heightRatio, 0);
-  const interiorHeight = Math.max(cabinetHeight - bodyThickness * 2, 0);
+  // Calculate heights using domain module
+  const interiorHeight = Section.calculateInteriorHeight(cabinetHeight, bodyThickness);
   const totalFrontHeight = cabinetHeight - FRONT_MARGIN * 2;
   const frontWidth = cabinetWidth - FRONT_MARGIN * 2;
+
+  // Calculate zone heights using domain module
+  const zoneRatios = zones.map(z => z.heightRatio);
+  const zoneInteriorHeights = distributeByRatio(interiorHeight, zoneRatios);
+  const zoneFrontHeights = distributeByRatio(totalFrontHeight, zoneRatios);
 
   // Track positions
   let currentBoxY = bodyThickness;
@@ -96,9 +101,9 @@ export function generateDrawers(config: DrawerGeneratorConfig): GeneratedPart[] 
     const hasExternalFront = zone.front !== null;
     const boxCount = zone.boxes.length;
 
-    // Calculate zone heights
-    const zoneInteriorHeight = (zone.heightRatio / totalRatio) * interiorHeight;
-    const zoneFrontHeight = (zone.heightRatio / totalRatio) * totalFrontHeight;
+    // Get pre-calculated zone heights from domain module distribution
+    const zoneInteriorHeight = zoneInteriorHeights[zoneIndex];
+    const zoneFrontHeight = zoneFrontHeights[zoneIndex];
 
     // Calculate gap for fronts between zones
     const frontGap = zoneIndex < zones.length - 1 ? DOOR_GAP : 0;
@@ -166,7 +171,6 @@ export function generateDrawers(config: DrawerGeneratorConfig): GeneratedPart[] 
       const shelfSpaceHeight = zoneInteriorHeight - effectiveBoxHeight;
       const shelfCount = shelves.length;
       const shelfWidth = cabinetWidth - bodyThickness * 2;
-      const baseDepth = cabinetDepth - 10;
 
       shelves.forEach((shelf, shelfIdx) => {
         // First shelf directly above box, others evenly distributed
@@ -176,25 +180,11 @@ export function generateDrawers(config: DrawerGeneratorConfig): GeneratedPart[] 
           : (shelfIdx / shelfCount) * shelfSpaceHeight;
         const shelfY = currentBoxY + shelfYOffset;
 
-        // Calculate shelf depth based on preset
-        let shelfDepth: number;
-        switch (shelf.depthPreset) {
-          case 'FULL':
-            shelfDepth = baseDepth;
-            break;
-          case 'HALF':
-            shelfDepth = Math.round(baseDepth / 2);
-            break;
-          case 'CUSTOM':
-            shelfDepth = shelf.customDepth ?? Math.round(baseDepth / 2);
-            break;
-          default:
-            shelfDepth = baseDepth;
-        }
+        // Calculate shelf depth using domain module
+        const shelfDepth = Shelf.calculateDepth(shelf.depthPreset, shelf.customDepth, cabinetDepth);
 
-        // Z offset for recessed shelves
-        const depthOffset = (cabinetDepth - shelfDepth) / 2;
-        const shelfZ = -depthOffset;
+        // Z offset for recessed shelves using domain module
+        const shelfZ = -Shelf.calculateZOffset(shelfDepth, cabinetDepth);
 
         parts.push({
           name: `Półka ${shelfIdx + 1} nad szufladą ${zoneIndex + 1}`,

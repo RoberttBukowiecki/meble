@@ -43,7 +43,7 @@ import type {
   SideFrontsConfig,
   CabinetInteriorConfig,
 } from '@/types';
-import { hasDrawerFronts, convertDrawersToInternal } from '@/lib/config';
+import { Drawer } from '@/lib/domain';
 import { HandleSelector } from './HandleSelector';
 import { SideFrontsConfigDialog } from './SideFrontsConfigDialog';
 import { InteriorConfigDialog } from './InteriorConfigDialog';
@@ -447,7 +447,7 @@ export function PropertiesPanel() {
     };
 
     const hasFrontsEnabled = (localParams as Partial<KitchenCabinetParams>).hasDoors ?? false;
-    const drawerHasFronts = hasDrawerFronts(localParams.drawerConfig);
+    const drawerHasFronts = localParams.drawerConfig ? Drawer.hasExternalFronts(localParams.drawerConfig) : false;
 
     const handleFrontsToggle = (checked: boolean) => {
       if (checked && drawerHasFronts && localParams.drawerConfig) {
@@ -458,7 +458,7 @@ export function PropertiesPanel() {
 
         updateLocalParams({
           hasDoors: true,
-          drawerConfig: convertDrawersToInternal(localParams.drawerConfig),
+          drawerConfig: Drawer.convertToInternal(localParams.drawerConfig),
         } as Partial<CabinetParams>);
         return;
       }

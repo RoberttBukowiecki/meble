@@ -18,6 +18,7 @@ import {
   cn,
 } from '@meble/ui';
 import { SideFrontsConfig, SideFrontConfig, Material, DEFAULT_SIDE_FRONT_CONFIG } from '@/types';
+import { SIDE_FRONT_CONFIG } from '@/lib/config';
 import { PanelLeft, PanelRight } from 'lucide-react';
 
 interface SideFrontsConfigDialogProps {
@@ -77,7 +78,7 @@ const SideFrontEditor = ({
     if (!config) return;
     onUpdate({
       ...config,
-      forwardProtrusion: Math.max(0, Math.min(100, value)),
+      forwardProtrusion: Math.max(0, Math.min(SIDE_FRONT_CONFIG.MAX_PROTRUSION, value)),
     });
   };
 
@@ -85,7 +86,7 @@ const SideFrontEditor = ({
     if (!config) return;
     // Allow negative values for extension below cabinet
     // Limit positive values to prevent panel from being too short
-    const maxOffset = cabinetHeight - (config.topOffset ?? 0) - 100;
+    const maxOffset = cabinetHeight - (config.topOffset ?? 0) - SIDE_FRONT_CONFIG.MIN_HEIGHT;
     onUpdate({
       ...config,
       bottomOffset: Math.min(maxOffset, value),
@@ -96,7 +97,7 @@ const SideFrontEditor = ({
     if (!config) return;
     // Allow negative values for extension above cabinet
     // Limit positive values to prevent panel from being too short
-    const maxOffset = cabinetHeight - (config.bottomOffset ?? 0) - 100;
+    const maxOffset = cabinetHeight - (config.bottomOffset ?? 0) - SIDE_FRONT_CONFIG.MIN_HEIGHT;
     onUpdate({
       ...config,
       topOffset: Math.min(maxOffset, value),

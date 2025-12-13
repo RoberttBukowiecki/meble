@@ -32,7 +32,7 @@ export function calculateDrawerBoxDimensions(
   const boxDepth = cabinetDepth - slideConfig.depthOffset;
 
   // Drawer box height (sides height) - smaller than the space available
-  const boxSideHeight = Math.max(boxSpaceHeight - DRAWER_CONFIG.BOX_HEIGHT_REDUCTION, 50);
+  const boxSideHeight = Math.max(boxSpaceHeight - DRAWER_CONFIG.BOX_HEIGHT_REDUCTION, DRAWER_CONFIG.BOX_HEIGHT_MIN);
 
   return { boxWidth, boxDepth, boxSideHeight, bottomThickness };
 }

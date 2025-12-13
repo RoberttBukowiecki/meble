@@ -16,12 +16,10 @@ import {
   CabinetInteriorConfig,
   CabinetSection,
   SectionContentType,
-  DrawerSlideType,
   Material,
-  generateSectionId,
-  DEFAULT_SHELVES_CONFIG,
 } from '@/types';
-import { DRAWER_ZONE_PRESETS, INTERIOR_CONFIG, DEFAULT_BODY_THICKNESS, generateZoneId } from '@/lib/config';
+import { INTERIOR_CONFIG, DEFAULT_BODY_THICKNESS } from '@/lib/config';
+import { Section, Interior, Drawer } from '@/lib/domain';
 import { Plus, AlertTriangle } from 'lucide-react';
 import { InteriorPreview } from './InteriorPreview';
 import { SectionEditor } from './SectionEditor';
@@ -138,38 +136,17 @@ interface InteriorConfigDialogProps {
 type ConflictType = 'drawer-fronts-with-doors' | null;
 
 /**
- * Create a default section with specified content type
+ * Create a default section with specified content type using domain module
  */
 function createDefaultSection(contentType: SectionContentType): CabinetSection {
-  const section: CabinetSection = {
-    id: generateSectionId(),
-    heightRatio: 1,
-    contentType,
-  };
-
-  if (contentType === 'SHELVES') {
-    section.shelvesConfig = { ...DEFAULT_SHELVES_CONFIG };
-  } else if (contentType === 'DRAWERS') {
-    // Create default drawer config with 2 zones
-    section.drawerConfig = {
-      slideType: 'SIDE_MOUNT',
-      zones: [
-        { id: generateZoneId(), heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
-        { id: generateZoneId(), heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
-      ],
-    };
-  }
-
-  return section;
+  return Section.create(contentType);
 }
 
 /**
- * Create default interior config with one section
+ * Create default interior config with one section using domain module
  */
 function createDefaultConfig(): CabinetInteriorConfig {
-  return {
-    sections: [createDefaultSection('SHELVES')],
-  };
+  return Interior.createWithShelves(2, 'FULL');
 }
 
 export function InteriorConfigDialog({
@@ -284,7 +261,7 @@ export function InteriorConfigDialog({
   // Conflict resolution handlers
   const handleConflictResolve = (action: 'convert-drawers' | 'remove-doors' | 'cancel') => {
     if (action === 'convert-drawers') {
-      // Convert all drawer zones to internal (remove fronts)
+      // Convert all drawer zones to internal (remove fronts) using domain module
       setLocalConfig((prev) => ({
         ...prev,
         sections: prev.sections.map((section) => {
@@ -293,13 +270,7 @@ export function InteriorConfigDialog({
           }
           return {
             ...section,
-            drawerConfig: {
-              ...section.drawerConfig,
-              zones: section.drawerConfig.zones.map((zone) => ({
-                ...zone,
-                front: null, // Remove external front
-              })),
-            },
+            drawerConfig: Drawer.convertToInternal(section.drawerConfig),
           };
         }),
       }));
@@ -332,10 +303,10 @@ export function InteriorConfigDialog({
     onOpenChange(false);
   };
 
-  // Calculate section heights for display
+  // Calculate section heights for display using domain module
   const totalRatio = localConfig.sections.reduce((sum, s) => sum + s.heightRatio, 0);
   const bodyThickness = DEFAULT_BODY_THICKNESS;
-  const interiorHeight = Math.max(cabinetHeight - bodyThickness * 2, 0);
+  const interiorHeight = Section.calculateInteriorHeight(cabinetHeight, bodyThickness);
 
   // Check for additional conflicts
   const hasShelves = localConfig.sections.some((s) => s.contentType === 'SHELVES');

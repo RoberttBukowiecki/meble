@@ -21,10 +21,10 @@ import { DrawerConfiguration, DrawerZone, DrawerSlideType } from '@/types';
 import {
   DRAWER_ZONE_PRESETS,
   DRAWER_SLIDE_PRESETS,
+  DEFAULT_BODY_THICKNESS,
   generateZoneId,
-  getTotalBoxCount,
-  getFrontCount,
 } from '@/lib/config';
+import { Section, Drawer } from '@/lib/domain';
 import { Plus, Trash2, ChevronUp, ChevronDown, LayoutTemplate } from 'lucide-react';
 
 // Drawer slide type labels
@@ -34,9 +34,6 @@ const DRAWER_SLIDE_LABELS: Record<DrawerSlideType, string> = {
   BOTTOM_MOUNT: 'Dolne (13mm)',
   CENTER_MOUNT: 'Centralne (0mm)',
 };
-
-// Default body material thickness for drawer box calculations
-const DEFAULT_BODY_THICKNESS = 18;
 
 interface DrawerConfigDialogProps {
   open: boolean;
@@ -71,12 +68,11 @@ const ZonePreview = ({
 }: ZonePreviewProps) => {
   const totalRatio = zones.reduce((sum, z) => sum + z.heightRatio, 0);
 
-  // Calculate interior height (cabinet height - 2x body thickness)
-  const interiorHeight = Math.max(cabinetHeight - DEFAULT_BODY_THICKNESS * 2, 0);
+  // Calculate interior height using domain module
+  const interiorHeight = Section.calculateInteriorHeight(cabinetHeight, DEFAULT_BODY_THICKNESS);
 
-  // Calculate drawer box width based on slide type
-  const slideConfig = DRAWER_SLIDE_PRESETS[slideType];
-  const drawerBoxWidth = cabinetWidth - 2 * slideConfig.sideOffset - 2 * DEFAULT_BODY_THICKNESS;
+  // Calculate drawer box width using domain module
+  const drawerBoxWidth = Drawer.calculateDrawerWidth(cabinetWidth, DEFAULT_BODY_THICKNESS, slideType);
 
   // Calculate actual heights in mm for each zone
   const zoneHeights = zones.map(zone =>
@@ -459,8 +455,8 @@ export function DrawerConfigDialog({
     onOpenChange(false);
   };
 
-  const totalBoxes = getTotalBoxCount(localConfig);
-  const totalFronts = getFrontCount(localConfig);
+  const totalBoxes = Drawer.getTotalBoxCount(localConfig);
+  const totalFronts = Drawer.getFrontCount(localConfig);
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>

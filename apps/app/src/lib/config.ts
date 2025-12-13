@@ -162,6 +162,50 @@ export const DEFAULT_BACK_OVERLAP_RATIO = 0.667;
 export const DEFAULT_BODY_THICKNESS = 18;
 
 // ============================================================================
+// Shelf Configuration
+// ============================================================================
+
+export const SHELF_CONFIG = {
+  /** Setback from cabinet front edge (mm) */
+  SETBACK: 10,
+  /** Position offset ratio from bottom when multiple shelves (fraction) */
+  POSITION_BOTTOM_OFFSET: 0.05,
+  /** Position ratio for single shelf (fraction - 0.5 = middle) */
+  SINGLE_SHELF_POSITION: 0.5,
+} as const;
+
+// ============================================================================
+// Back Panel Configuration
+// ============================================================================
+
+export const BACK_PANEL_CONFIG = {
+  /** Minimum back panel width (mm) */
+  MIN_WIDTH: 50,
+  /** Minimum back panel height (mm) */
+  MIN_HEIGHT: 50,
+} as const;
+
+// ============================================================================
+// Side Front Configuration
+// ============================================================================
+
+export const SIDE_FRONT_CONFIG = {
+  /** Minimum side front height (mm) */
+  MIN_HEIGHT: 100,
+  /** Maximum forward protrusion from cabinet front (mm) */
+  MAX_PROTRUSION: 100,
+} as const;
+
+// ============================================================================
+// Trim Strip Configuration
+// ============================================================================
+
+export const TRIM_STRIP_CONFIG = {
+  /** Default trim strip thickness (mm) when not specified */
+  DEFAULT_THICKNESS: 10,
+} as const;
+
+// ============================================================================
 // Interior Configuration (Cabinet Interior Dialog)
 // ============================================================================
 
@@ -287,6 +331,7 @@ export const DEFAULT_DRAWER_SLIDE_TYPE: DrawerSlideType = 'SIDE_MOUNT';
 export const DRAWER_CONFIG = {
   FRONT_GAP: 3, // mm gap between drawer fronts
   BOX_HEIGHT_REDUCTION: 30, // mm - how much smaller the box is than the front
+  BOX_HEIGHT_MIN: 50, // mm - minimum drawer box height fallback
   BOTTOM_THICKNESS: 3, // mm - default drawer bottom thickness
   BOX_FRONT_OFFSET: 20, // mm - gap between box front and front panel
 
@@ -396,42 +441,6 @@ export const DRAWER_ZONE_PRESETS: Record<string, { label: string; labelPl: strin
  */
 export function generateZoneId(): string {
   return `z${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
-}
-
-/**
- * Get total drawer box count from configuration
- */
-export function getTotalBoxCount(config: DrawerConfiguration): number {
-  return config.zones.reduce((sum, zone) => sum + zone.boxes.length, 0);
-}
-
-/**
- * Get front count (visible drawer fronts)
- */
-export function getFrontCount(config: DrawerConfiguration): number {
-  return config.zones.filter(zone => zone.front !== null).length;
-}
-
-/**
- * Check if drawer configuration has any external fronts (visible drawer fronts)
- */
-export function hasDrawerFronts(config: DrawerConfiguration | undefined): boolean {
-  if (!config || config.zones.length === 0) return false;
-  return config.zones.some(zone => zone.front !== null);
-}
-
-/**
- * Convert drawer configuration to internal (remove all external fronts)
- * This is used when doors are added to a cabinet with drawer fronts
- */
-export function convertDrawersToInternal(config: DrawerConfiguration): DrawerConfiguration {
-  return {
-    ...config,
-    zones: config.zones.map(zone => ({
-      ...zone,
-      front: null, // Remove external front
-    })),
-  };
 }
 
 /**
