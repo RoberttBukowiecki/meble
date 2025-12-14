@@ -7,6 +7,7 @@ import type { HandleConfig, HandleMetadata } from './handle';
 import type { DrawerSlideType, DrawerConfiguration } from './drawer';
 import type { CabinetInteriorConfig } from './cabinetInterior';
 import type { SideFrontsConfig, DecorativePanelsConfig } from './decorative';
+import type { LegsConfig } from './legs';
 
 /**
  * Defines how the top and bottom panels are placed relative to the side panels.
@@ -61,6 +62,8 @@ export interface CabinetBaseParams {
   decorativePanels?: DecorativePanelsConfig; // Optional decorative panels
   // Unified interior configuration (shelves + drawers in sections)
   interiorConfig?: CabinetInteriorConfig; // Optional unified interior
+  // Cabinet legs configuration
+  legs?: LegsConfig; // Optional leg configuration
 }
 
 /**
@@ -156,7 +159,9 @@ export type CabinetPartRole =
   | 'SIDE_FRONT_LEFT'   // Decorative side panel on left
   | 'SIDE_FRONT_RIGHT'  // Decorative side panel on right
   | 'DECORATIVE_TOP'    // Top decorative panel (blenda, trim, full panel)
-  | 'DECORATIVE_BOTTOM'; // Bottom decorative panel (plinth, trim, full panel)
+  | 'DECORATIVE_BOTTOM' // Bottom decorative panel (plinth, trim, full panel)
+  | 'PARTITION'         // Vertical divider between columns in interior
+  | 'LEG';              // Cabinet leg (not a cut part - accessory)
 
 /**
  * Extended metadata for parts that belong to cabinets
@@ -166,6 +171,7 @@ export interface CabinetPartMetadata {
   role: CabinetPartRole;
   index?: number; // For shelves, doors, drawers (0-based)
   drawerIndex?: number; // Which drawer this part belongs to (0-based)
+  legIndex?: number; // Which leg (0-based, for multi-leg setups)
   // Door-specific metadata
   doorMetadata?: DoorMetadata;
   handleMetadata?: HandleMetadata;

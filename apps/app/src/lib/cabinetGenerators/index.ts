@@ -47,6 +47,8 @@ export {
   hasInteriorContent,
   getInteriorSummary,
 } from './interior';
+export { generateLegs, parseLegNotes } from './legs';
+export type { LegPartNotes } from './legs';
 
 // Import generators for the factory function
 import { generateKitchenCabinet } from './kitchenCabinet';

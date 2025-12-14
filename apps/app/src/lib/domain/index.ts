@@ -6,39 +6,38 @@
  *
  * Usage:
  * ```typescript
- * import { Section, Drawer, Shelf, Interior, CabinetDomain, PartDomain } from '@/lib/domain';
+ * import { Zone, Drawer, Shelf, CabinetDomain, PartDomain } from '@/lib/domain';
  *
- * // Create a new section
- * const section = Section.create('SHELVES');
+ * // Create a new zone
+ * const zone = Zone.create('SHELVES', 0);
  *
- * // Update section
- * const updated = Section.updateShelvesConfig(section, { count: 3 });
+ * // Update zone
+ * const updated = Zone.updateShelvesConfig(zone, { count: 3 });
  *
- * // Calculate bounds
- * const bounds = Section.calculateBounds(sections, cabinetHeight, bodyThickness);
+ * // Calculate bounds (recursive tree)
+ * const treeInfo = Zone.calculateBounds(rootZone, parentBounds, bodyThickness, cabinetDepth);
  *
  * // Validate
- * const result = Section.validate(section);
+ * const result = Zone.validate(zone, dimensions);
  * ```
  */
 
 // Domain modules
-export { Section } from './section';
-export type { SectionBounds, SectionHeightInfo } from './section';
+export { Zone } from './zone';
+export type { ZoneBounds, PartitionBounds, ZoneTreeInfo, ParentBounds } from './zone';
 
 export { Drawer } from './drawer';
-export type { ZoneBounds, BoxBounds } from './drawer';
+export type { ZoneBounds as DrawerZoneBounds, BoxBounds } from './drawer';
 
 export { Shelf } from './shelf';
-
-export { Interior } from './interior';
-export type { InteriorBoundsInfo, InteriorSummary } from './interior';
 
 export { CabinetDomain } from './cabinet';
 export type { CabinetDimensions } from './cabinet';
 
 export { PartDomain } from './part';
 export type { GeneratedPartData } from './part';
+
+export { LegsDomain } from './legs';
 
 // Shared types
 export type {

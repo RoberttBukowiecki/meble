@@ -1,14 +1,16 @@
 /**
  * Cabinet Interior Generator
- * Generates shelves and drawers based on unified interior configuration
+ *
+ * Generates shelves, drawers, and partitions based on recursive zone configuration.
+ * Supports nested zones with HORIZONTAL and VERTICAL divisions.
  */
 
-import { CabinetInteriorConfig } from '@/types';
-import { GeneratedPart } from '../types';
+import type { CabinetInteriorConfig, InteriorZone } from '@/types';
+import type { GeneratedPart } from '../types';
 import { generateDrawers } from '../drawers';
 import { DEFAULT_SHELF_EDGE_BANDING } from '@/lib/config';
-import { Section, Interior, Shelf } from '@/lib/domain';
-import type { SectionBounds } from '@/lib/domain/section';
+import { Zone, Shelf } from '@/lib/domain';
+import type { ZoneBounds, PartitionBounds } from '@/lib/domain/zone';
 
 // ============================================================================
 // Types
@@ -24,7 +26,7 @@ export interface InteriorGeneratorConfig {
   frontMaterialId: string;
   bodyThickness: number;
   frontThickness: number;
-  interiorConfig: CabinetInteriorConfig;
+  interiorConfig: CabinetInteriorConfig | undefined;
 }
 
 // ============================================================================
@@ -32,72 +34,108 @@ export interface InteriorGeneratorConfig {
 // ============================================================================
 
 /**
- * Generate cabinet interior parts based on unified configuration
+ * Generate cabinet interior parts based on zone configuration
  */
 export function generateInterior(config: InteriorGeneratorConfig): GeneratedPart[] {
   const parts: GeneratedPart[] = [];
-  const { interiorConfig, cabinetHeight, bodyThickness } = config;
+  const { interiorConfig, cabinetWidth, cabinetHeight, cabinetDepth, bodyThickness } = config;
 
-  if (!interiorConfig || interiorConfig.sections.length === 0) {
+  if (!interiorConfig || !interiorConfig.rootZone) {
     return parts;
   }
 
-  // Calculate section boundaries using domain module
-  const sectionBounds = Section.calculateBounds(
-    interiorConfig.sections,
-    cabinetHeight,
-    bodyThickness
+  // Calculate interior bounds (inside the cabinet body)
+  const interiorWidth = cabinetWidth - bodyThickness * 2;
+  const interiorHeight = cabinetHeight - bodyThickness * 2;
+
+  const parentBounds = {
+    startX: -interiorWidth / 2,
+    startY: bodyThickness,
+    width: interiorWidth,
+    height: interiorHeight,
+  };
+
+  // Calculate all zone and partition bounds recursively
+  const treeInfo = Zone.calculateBounds(
+    interiorConfig.rootZone,
+    parentBounds,
+    bodyThickness,
+    cabinetDepth
   );
 
-  // Generate parts for each section
-  for (const bounds of sectionBounds) {
-    switch (bounds.section.contentType) {
-      case 'SHELVES':
-        if (bounds.section.shelvesConfig) {
-          parts.push(...generateSectionShelves(config, bounds));
-        }
-        break;
-      case 'DRAWERS':
-        if (bounds.section.drawerConfig) {
-          parts.push(...generateSectionDrawers(config, bounds));
-        }
-        break;
-      case 'EMPTY':
-        // No parts to generate
-        break;
-    }
+  // Generate parts for each leaf zone (zones with actual content)
+  for (const zoneBounds of treeInfo.leafZoneBounds) {
+    const zoneParts = generateZoneParts(config, zoneBounds);
+    parts.push(...zoneParts);
+  }
+
+  // Generate partition parts
+  for (const partitionBounds of treeInfo.partitionBounds) {
+    const partitionPart = generatePartition(config, partitionBounds);
+    parts.push(partitionPart);
   }
 
   return parts;
 }
 
 // ============================================================================
-// Shelf Generation
+// Zone Content Generation
 // ============================================================================
 
 /**
- * Generate shelves for a section using domain module
+ * Generate parts for a single zone based on its content type
  */
-function generateSectionShelves(
+function generateZoneParts(
   config: InteriorGeneratorConfig,
-  bounds: SectionBounds
+  bounds: ZoneBounds
+): GeneratedPart[] {
+  const { zone } = bounds;
+
+  switch (zone.contentType) {
+    case 'SHELVES':
+      if (zone.shelvesConfig) {
+        return generateZoneShelves(config, bounds);
+      }
+      break;
+    case 'DRAWERS':
+      if (zone.drawerConfig) {
+        return generateZoneDrawers(config, bounds);
+      }
+      break;
+    case 'EMPTY':
+    case 'NESTED':
+      // No direct content - NESTED zones have children which are processed separately
+      break;
+  }
+
+  return [];
+}
+
+/**
+ * Generate shelves within a zone
+ */
+function generateZoneShelves(
+  config: InteriorGeneratorConfig,
+  bounds: ZoneBounds
 ): GeneratedPart[] {
   const parts: GeneratedPart[] = [];
-  const { shelvesConfig } = bounds.section;
+  const { zone } = bounds;
+  const { shelvesConfig } = zone;
+
   if (!shelvesConfig || shelvesConfig.count === 0) return parts;
 
   const {
     cabinetId,
     furnitureId,
-    cabinetWidth,
     cabinetDepth,
     bodyMaterialId,
     bodyThickness,
   } = config;
 
-  const shelfWidth = cabinetWidth - bodyThickness * 2;
+  // Use zone width instead of full cabinet width
+  const shelfWidth = bounds.width;
 
-  // Calculate shelf positions using domain module
+  // Calculate shelf positions within zone bounds
   const shelfPositions = Shelf.calculatePositions(shelvesConfig, bounds.startY, bounds.height);
 
   for (let i = 0; i < shelvesConfig.count; i++) {
@@ -108,10 +146,13 @@ function generateSectionShelves(
     const individualShelf = shelvesConfig.mode === 'MANUAL' ? shelvesConfig.shelves[i] : undefined;
     const shelfDepth = Shelf.calculateEffectiveDepth(individualShelf, shelvesConfig, cabinetDepth);
 
-    // Z offset for recessed shelves using domain module
+    // Z offset for recessed shelves
     const shelfZ = -Shelf.calculateZOffset(shelfDepth, cabinetDepth);
 
-    // Use custom material: individual shelf > global shelves config > body material
+    // X position: center of zone
+    const shelfX = bounds.startX + bounds.width / 2;
+
+    // Material: individual shelf > global shelves config > body material
     const shelfMaterialId = individualShelf?.materialId
       ?? shelvesConfig.materialId
       ?? bodyMaterialId;
@@ -125,7 +166,7 @@ function generateSectionShelves(
       width: shelfWidth,
       height: shelfDepth,
       depth: bodyThickness,
-      position: [0, shelfY, shelfZ],
+      position: [shelfX, shelfY, shelfZ],
       rotation: [-Math.PI / 2, 0, 0],
       materialId: shelfMaterialId,
       edgeBanding: DEFAULT_SHELF_EDGE_BANDING,
@@ -140,24 +181,21 @@ function generateSectionShelves(
   return parts;
 }
 
-// ============================================================================
-// Drawer Generation
-// ============================================================================
-
 /**
- * Generate drawers for a section
+ * Generate drawers within a zone
  */
-function generateSectionDrawers(
+function generateZoneDrawers(
   config: InteriorGeneratorConfig,
-  bounds: SectionBounds
+  bounds: ZoneBounds
 ): GeneratedPart[] {
-  const { drawerConfig } = bounds.section;
+  const { zone } = bounds;
+  const { drawerConfig } = zone;
+
   if (!drawerConfig || drawerConfig.zones.length === 0) return [];
 
   const {
     cabinetId,
     furnitureId,
-    cabinetWidth,
     cabinetDepth,
     bodyMaterialId,
     frontMaterialId,
@@ -165,17 +203,17 @@ function generateSectionDrawers(
     frontThickness,
   } = config;
 
-  // Use custom materials from drawer config if specified, otherwise fallback to cabinet defaults
+  // Use custom materials from drawer config if specified
   const boxMaterialId = drawerConfig.boxMaterialId ?? bodyMaterialId;
   const bottomMaterialId = drawerConfig.bottomMaterialId;
 
-  // Adjust drawer generation to work within section bounds
-  // We'll use the existing drawer generator but calculate positions based on section
-  return generateDrawers({
+  // Generate drawers using existing drawer generator
+  // We simulate a cabinet with zone dimensions
+  const drawerParts = generateDrawers({
     cabinetId,
     furnitureId,
-    cabinetWidth,
-    cabinetHeight: bounds.height + bodyThickness * 2, // Simulate cabinet height for this section
+    cabinetWidth: bounds.width + bodyThickness * 2, // Add thickness back for drawer calculations
+    cabinetHeight: bounds.height + bodyThickness * 2,
     cabinetDepth,
     bodyMaterialId: boxMaterialId,
     frontMaterialId,
@@ -183,33 +221,139 @@ function generateSectionDrawers(
     bodyThickness,
     frontThickness,
     drawerConfig,
-  }).map((part) => ({
+  });
+
+  // Offset positions to zone location
+  const zoneXCenter = bounds.startX + bounds.width / 2;
+
+  return drawerParts.map((part) => ({
     ...part,
-    // Offset Y positions to account for section start
     position: [
-      part.position[0],
-      part.position[1] + bounds.startY - bodyThickness, // Adjust for section offset
+      part.position[0] + zoneXCenter, // Offset X to zone center
+      part.position[1] + bounds.startY - bodyThickness, // Offset Y to zone start
       part.position[2],
     ] as [number, number, number],
   }));
 }
 
 // ============================================================================
-// Helpers (delegating to domain module)
+// Partition Generation
+// ============================================================================
+
+/**
+ * Generate a vertical partition (divider) between columns
+ */
+function generatePartition(
+  config: InteriorGeneratorConfig,
+  bounds: PartitionBounds
+): GeneratedPart {
+  const { partition } = bounds;
+  const {
+    cabinetId,
+    furnitureId,
+    bodyMaterialId,
+    bodyThickness,
+  } = config;
+
+  // Use partition material or default to body material
+  const materialId = partition.materialId ?? bodyMaterialId;
+
+  // Partition is rotated 90° to stand vertically
+  // Width = depth of partition (in mm)
+  // Height = height of zone
+  // Depth = body thickness (material thickness)
+  return {
+    name: 'Przegroda',
+    furnitureId,
+    group: cabinetId,
+    shapeType: 'RECT',
+    shapeParams: { type: 'RECT', x: bounds.depthMm, y: bounds.height },
+    width: bounds.depthMm,
+    height: bounds.height,
+    depth: bodyThickness,
+    position: [bounds.x, bounds.startY + bounds.height / 2, 0],
+    rotation: [0, Math.PI / 2, 0],
+    materialId,
+    edgeBanding: DEFAULT_SHELF_EDGE_BANDING,
+    cabinetMetadata: {
+      cabinetId,
+      role: 'PARTITION',
+    },
+  };
+}
+
+// ============================================================================
+// Helper Functions
 // ============================================================================
 
 /**
  * Check if interior config has any content
  */
 export function hasInteriorContent(config: CabinetInteriorConfig | undefined): boolean {
-  if (!config) return false;
-  return Interior.hasContent(config);
+  if (!config || !config.rootZone) return false;
+
+  const checkZone = (zone: InteriorZone): boolean => {
+    if (zone.contentType === 'SHELVES' && zone.shelvesConfig && zone.shelvesConfig.count > 0) {
+      return true;
+    }
+    if (zone.contentType === 'DRAWERS' && zone.drawerConfig && zone.drawerConfig.zones.length > 0) {
+      return true;
+    }
+    if (zone.contentType === 'NESTED' && zone.children) {
+      return zone.children.some(checkZone);
+    }
+    return false;
+  };
+
+  return checkZone(config.rootZone);
 }
 
 /**
- * Get summary text for interior config
+ * Get summary text for interior config (Polish)
  */
 export function getInteriorSummary(config: CabinetInteriorConfig | undefined): string {
-  if (!config) return 'Brak konfiguracji';
-  return Interior.getSummaryText(config);
+  if (!config || !config.rootZone) return 'Brak konfiguracji';
+
+  const zones = Zone.getAllZones(config.rootZone);
+  const shelfCount = zones
+    .filter((z) => z.contentType === 'SHELVES')
+    .reduce((sum, z) => sum + (z.shelvesConfig?.count ?? 0), 0);
+  const drawerCount = zones
+    .filter((z) => z.contentType === 'DRAWERS')
+    .reduce((sum, z) => sum + (z.drawerConfig?.zones.length ?? 0), 0);
+  const partitionCount = Zone.getAllPartitions(config.rootZone).length;
+
+  const parts: string[] = [];
+  if (shelfCount > 0) parts.push(`${shelfCount} półek`);
+  if (drawerCount > 0) parts.push(`${drawerCount} szuflad`);
+  if (partitionCount > 0) parts.push(`${partitionCount} przegród`);
+
+  return parts.length > 0 ? parts.join(', ') : 'Puste wnętrze';
+}
+
+/**
+ * Create a default interior config with empty root zone
+ */
+export function createDefaultInteriorConfig(): CabinetInteriorConfig {
+  return {
+    rootZone: Zone.createEmpty(0),
+  };
+}
+
+/**
+ * Create an interior config with shelves
+ */
+export function createInteriorWithShelves(count: number): CabinetInteriorConfig {
+  return {
+    rootZone: Zone.createWithShelves(count, 0),
+  };
+}
+
+/**
+ * Create an interior config with drawers
+ */
+export function createInteriorWithDrawers(zoneCount: number): CabinetInteriorConfig {
+  return {
+    rootZone: Zone.createWithDrawers(zoneCount, 0),
+  };
 }

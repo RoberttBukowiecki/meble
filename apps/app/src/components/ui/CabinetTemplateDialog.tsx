@@ -430,8 +430,9 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
                 </h3>
 
                 <div className="space-y-3">
-                    {/* Shelves Control */}
-                    {(type === 'KITCHEN' || type === 'WARDROBE' || type === 'BOOKSHELF') && (
+                    {/* LEGACY: Shelves Control - replaced by "Wnętrze (zaawansowane)" module */}
+                    {/* TODO: Remove after confirming users have migrated to new interior config */}
+                    {false && (type === 'KITCHEN' || type === 'WARDROBE' || type === 'BOOKSHELF') && (
                         <div className="flex flex-col gap-2 p-3 rounded-lg border bg-card text-card-foreground shadow-sm">
                             <div className="flex items-center justify-between">
                                 <div className="space-y-1">
@@ -439,12 +440,12 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
                                     <p className="text-xs text-muted-foreground">Ilość półek wewnętrznych: {getShelfCount()}</p>
                                 </div>
                                 <div className="w-32">
-                                     <Slider 
-                                        value={[getShelfCount()]} 
-                                        onValueChange={([val]) => updateParams({shelfCount: val} as any)} 
-                                        min={0} 
-                                        max={10} 
-                                        step={1} 
+                                     <Slider
+                                        value={[getShelfCount()]}
+                                        onValueChange={([val]) => updateParams({shelfCount: val} as any)}
+                                        min={0}
+                                        max={10}
+                                        step={1}
                                     />
                                 </div>
                             </div>
@@ -503,19 +504,20 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
                                 icon={<Grip className="h-4 w-4" />}
                                 action={
                                     <Button variant="outline" size="sm" onClick={() => setHandlesDialogOpen(true)}>
-                                        Wybierz
+                                        Konfiguruj
                                     </Button>
                                 }
                             />
                         </>
                     )}
 
-                    {/* Drawers Configuration */}
-                    {(type === 'KITCHEN' || type === 'WARDROBE' || type === 'BOOKSHELF' || type === 'DRAWER') && (
+                    {/* LEGACY: Drawers Configuration - replaced by "Wnętrze (zaawansowane)" module */}
+                    {/* TODO: Remove after confirming users have migrated to new interior config */}
+                    {false && (type === 'KITCHEN' || type === 'WARDROBE' || type === 'BOOKSHELF' || type === 'DRAWER') && (
                          <ConfigRow
                             title="Szuflady"
                             description={
-                                hasDrawerConfig 
+                                hasDrawerConfig
                                     ? `${totalFronts > 0 ? `${totalFronts} frontów, ` : ''}${totalBoxes} boxów • ${drawerConfig.slideType}`
                                     : 'Brak szuflad'
                             }

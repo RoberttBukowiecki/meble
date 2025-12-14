@@ -30,6 +30,7 @@ import {
 import type { ValidationResult, Dimensions, InteriorSpace } from './types';
 import { validResult, invalidResult } from './types';
 import { clamp } from './utils';
+import { Zone } from './zone';
 
 // ============================================================================
 // Types
@@ -319,11 +320,12 @@ export const CabinetDomain = {
    * Get effective shelf count (from interior config or legacy shelfCount)
    */
   getEffectiveShelfCount: (params: CabinetParams): number => {
-    if (params.interiorConfig) {
-      // Count shelves from interior config
-      return params.interiorConfig.sections.reduce((total, section) => {
-        if (section.contentType === 'SHELVES' && section.shelvesConfig) {
-          return total + section.shelvesConfig.count;
+    if (params.interiorConfig?.rootZone) {
+      // Count shelves from zone tree
+      const zones = Zone.getAllZones(params.interiorConfig.rootZone);
+      return zones.reduce((total, zone) => {
+        if (zone.contentType === 'SHELVES' && zone.shelvesConfig) {
+          return total + zone.shelvesConfig.count;
         }
         return total;
       }, 0);
@@ -451,7 +453,7 @@ export const CabinetDomain = {
    * Check if cabinet uses interior config
    */
   hasInteriorConfig: (params: CabinetParams): boolean =>
-    params.interiorConfig !== undefined && params.interiorConfig.sections.length > 0,
+    params.interiorConfig !== undefined && params.interiorConfig.rootZone !== undefined,
 
   /**
    * Get cabinet type label in Polish

@@ -12,10 +12,11 @@ import { ThreeEvent } from '@react-three/fiber';
 import { Edges } from '@react-three/drei';
 import { useShallow } from 'zustand/react/shallow';
 import { useMaterial, useStore, useIsPartHidden } from '@/lib/store';
-import { PART_CONFIG, MATERIAL_CONFIG } from '@/lib/config';
+import { PART_CONFIG, MATERIAL_CONFIG, LEG_FINISH_OPTIONS } from '@/lib/config';
 import type { Part } from '@/types';
 import { isPartColliding, isGroupColliding, getGroupId } from '@/lib/collisionDetection';
 import { Handle3D } from './Handle3D';
+import { parseLegNotes, LegPartNotes } from '@/lib/cabinetGenerators/legs';
 
 interface Part3DProps {
   part: Part;
@@ -69,6 +70,10 @@ export function Part3D({ part }: Part3DProps) {
   // PERFORMANCE: Use optimized selector - only re-renders when THIS part's hidden status changes
   const isManuallyHidden = useIsPartHidden(part.id);
 
+  // Check if this is a leg part and parse its notes
+  const isLegPart = part.cabinetMetadata?.role === 'LEG';
+  const legNotes: LegPartNotes | null = isLegPart && part.notes ? parseLegNotes(part.notes) : null;
+
   // Hide this part when it or its cabinet is being transformed (preview mesh is shown instead)
   const isBeingTransformed =
     transformingPartId === part.id ||
@@ -94,7 +99,15 @@ export function Part3D({ part }: Part3DProps) {
   const isColliding = isPartColliding(part.id, collisions) ||
     (groupId ? isGroupColliding(groupId, collisions) : false);
 
-  const color = material?.color || MATERIAL_CONFIG.DEFAULT_MATERIAL_COLOR;
+  // Determine part color - legs use finish color, others use material color
+  const color = useMemo(() => {
+    if (isLegPart && legNotes) {
+      // Find the color for this leg's finish from config
+      const finishOption = LEG_FINISH_OPTIONS.find(opt => opt.value === legNotes.finish);
+      return finishOption?.color || '#1a1a1a'; // Default to black plastic color
+    }
+    return material?.color || MATERIAL_CONFIG.DEFAULT_MATERIAL_COLOR;
+  }, [isLegPart, legNotes, material?.color]);
 
   // Helper to get all part IDs for a cabinet
   const getCabinetPartIds = (cabinetId: string): string[] => {
@@ -164,6 +177,21 @@ export function Part3D({ part }: Part3DProps) {
   };
 
   const geometry = useMemo(() => {
+    // Special handling for leg parts
+    if (isLegPart && legNotes) {
+      const radius = legNotes.diameter / 2;
+      const height = legNotes.height;
+
+      if (legNotes.shape === 'ROUND') {
+        // Cylinder geometry for round legs (radialSegments: 16 for smooth appearance)
+        return <cylinderGeometry args={[radius, radius, height, 16]} />;
+      } else {
+        // Box geometry for square legs
+        return <boxGeometry args={[legNotes.diameter, height, legNotes.diameter]} />;
+      }
+    }
+
+    // Regular part geometry
     switch (part.shapeType) {
       case 'RECT': {
         return <boxGeometry args={[part.width, part.height, part.depth]} />;
@@ -171,7 +199,7 @@ export function Part3D({ part }: Part3DProps) {
       default:
          return <boxGeometry args={[part.width, part.height, part.depth]} />;
     }
-  }, [part.shapeType, part.width, part.height, part.depth, part.shapeParams]);
+  }, [part.shapeType, part.width, part.height, part.depth, part.shapeParams, isLegPart, legNotes]);
 
   // Hide this part when:
   // - Being transformed (preview mesh is shown instead)
@@ -224,6 +252,8 @@ export function Part3D({ part }: Part3DProps) {
           color={color}
           emissive={getEmissiveColor()}
           emissiveIntensity={getEmissiveIntensity()}
+          metalness={legNotes?.finish === 'CHROME' || legNotes?.finish === 'BRUSHED_STEEL' ? 0.8 : 0}
+          roughness={legNotes?.finish === 'CHROME' ? 0.2 : legNotes?.finish === 'BRUSHED_STEEL' ? 0.5 : 0.8}
         />
 
         {showEdges && (

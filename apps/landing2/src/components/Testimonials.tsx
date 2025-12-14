@@ -4,9 +4,9 @@ import Image, { StaticImageData } from "next/image";
 import { useTranslations } from "next-intl";
 import { Container } from "./Container";
 
-import userOneImg from "../../public/img/user1.jpg";
-import userTwoImg from "../../public/img/user2.jpg";
-import userThreeImg from "../../public/img/user3.jpg";
+import userOneImg from "../../public/img/user1.webp";
+import userTwoImg from "../../public/img/user2.webp";
+import userThreeImg from "../../public/img/user3.webp";
 
 export function Testimonials() {
   const t = useTranslations("testimonials");

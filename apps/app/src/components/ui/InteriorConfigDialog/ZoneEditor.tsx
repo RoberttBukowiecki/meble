@@ -1,5 +1,13 @@
 'use client';
 
+/**
+ * Zone Editor Component
+ *
+ * Full-featured editor for a single interior zone, adapted from the original
+ * SectionEditor. Supports EMPTY, SHELVES, DRAWERS content types with all
+ * configuration options (drawer zones, box-to-front ratio, shelves above box, etc.)
+ */
+
 import { useMemo, useState } from 'react';
 import {
   Button,
@@ -14,23 +22,35 @@ import {
   Switch,
   cn,
 } from '@meble/ui';
-import {
-  CabinetSection,
-  SectionContentType,
-  DrawerConfiguration,
+import type {
+  InteriorZone,
+  ZoneContentType,
+  ZoneDivisionDirection,
+  ZoneSizeMode,
+  ZoneWidthConfig,
+  PartitionConfig,
+  PartitionDepthPreset,
   DrawerZone,
   AboveBoxShelfConfig,
   DrawerSlideType,
   ShelfDepthPreset,
-  ShelfConfig,
   Material,
+} from '@/types';
+import {
   DEFAULT_SHELVES_CONFIG,
   generateShelfId,
   generateAboveBoxShelfId,
 } from '@/types';
-import { DRAWER_SLIDE_PRESETS, DRAWER_ZONE_PRESETS, DRAWER_CONFIG, INTERIOR_CONFIG, SHELF_CONFIG, DEFAULT_BODY_THICKNESS, generateZoneId } from '@/lib/config';
-import { Section, Drawer, Shelf, distributeByRatio } from '@/lib/domain';
-import { Trash2, Package, Layers, Box, Plus, Minus, ChevronUp, ChevronDown, LayoutTemplate } from 'lucide-react';
+import {
+  DRAWER_SLIDE_PRESETS,
+  DRAWER_ZONE_PRESETS,
+  DRAWER_CONFIG,
+  INTERIOR_CONFIG,
+  DEFAULT_BODY_THICKNESS,
+  generateZoneId,
+} from '@/lib/config';
+import { Drawer } from '@/lib/domain';
+import { Trash2, Package, Layers, Box, Plus, Minus, ChevronUp, ChevronDown, LayoutTemplate, Grid, Columns, Rows, GripHorizontal } from 'lucide-react';
 
 // ============================================================================
 // Toggle Button Group Component
@@ -58,7 +78,7 @@ function ToggleButtonGroup<T extends string>({
   showIcons = false,
 }: ToggleButtonGroupProps<T>) {
   return (
-    <div className={cn('grid gap-2', `grid-cols-${columns}`)}>
+    <div className={cn('grid gap-2', columns === 2 ? 'grid-cols-2' : columns === 4 ? 'grid-cols-4' : 'grid-cols-3')}>
       {options.map((option) => {
         const isSelected = value === option.value;
         const Icon = option.icon;
@@ -84,7 +104,7 @@ function ToggleButtonGroup<T extends string>({
 }
 
 // ============================================================================
-// Drawer Zone Preview (Mini preview within section)
+// Drawer Zone Preview (Mini preview within zone)
 // Shows zones from BOTTOM to TOP (first zone = bottom)
 // ============================================================================
 
@@ -93,7 +113,7 @@ interface DrawerZonesPreviewProps {
   selectedZoneId: string | null;
   onSelectZone: (id: string) => void;
   onMoveZone: (id: string, direction: 'up' | 'down') => void;
-  sectionHeightMm: number;
+  zoneHeightMm: number;
   drawerBoxWidth: number;
 }
 
@@ -102,14 +122,15 @@ function DrawerZonesPreview({
   selectedZoneId,
   onSelectZone,
   onMoveZone,
-  sectionHeightMm,
+  zoneHeightMm,
   drawerBoxWidth,
 }: DrawerZonesPreviewProps) {
-  // Calculate zone heights using domain module
-  const zoneHeights = distributeByRatio(
-    sectionHeightMm,
-    zones.map(z => z.heightRatio)
-  ).map(Math.round);
+  const totalRatio = zones.reduce((sum, z) => sum + z.heightRatio, 0);
+
+  // Calculate zone heights in mm
+  const zoneHeights = zones.map(zone =>
+    Math.round((zone.heightRatio / totalRatio) * zoneHeightMm)
+  );
 
   // Reverse zones for display (first zone at bottom of visual)
   const displayZones = [...zones].reverse();
@@ -132,16 +153,17 @@ function DrawerZonesPreview({
           const isSelected = zone.id === selectedZoneId;
           const hasExternalFront = zone.front !== null;
           const boxCount = zone.boxes.length;
-          const zoneHeightMm = displayHeights[displayIndex];
+          const drawerZoneHeightMm = displayHeights[displayIndex];
           // For internal zones, box takes full zone height
           const boxToFrontRatio = hasExternalFront ? (zone.boxToFrontRatio ?? 1.0) : 1.0;
           const hasReducedBox = hasExternalFront && boxToFrontRatio < 1.0;
-          const totalBoxHeightMm = Math.round(zoneHeightMm * boxToFrontRatio);
+          const totalBoxHeightMm = Math.round(drawerZoneHeightMm * boxToFrontRatio);
 
-          // Calculate individual box heights using domain module
-          const boxRatios = zone.boxes.map(b => b.heightRatio);
-          const boxTotalRatio = boxRatios.reduce((s, r) => s + r, 0);
-          const boxHeightsMm = distributeByRatio(totalBoxHeightMm, boxRatios).map(Math.round);
+          // Calculate individual box heights
+          const boxTotalRatio = zone.boxes.reduce((s, b) => s + b.heightRatio, 0);
+          const boxHeightsMm = zone.boxes.map(box =>
+            Math.round((box.heightRatio / boxTotalRatio) * totalBoxHeightMm)
+          );
 
           return (
             <div
@@ -245,9 +267,9 @@ function DrawerZonesPreview({
                   hasExternalFront ? "text-primary/70" : "text-muted-foreground/70"
                 )}
                 style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
-                title={hasExternalFront ? `Front: ${zoneHeightMm}mm` : `Strefa: ${zoneHeightMm}mm`}
+                title={hasExternalFront ? `Front: ${drawerZoneHeightMm}mm` : `Strefa: ${drawerZoneHeightMm}mm`}
               >
-                {zoneHeightMm}
+                {drawerZoneHeightMm}
               </div>
 
               {/* Reorder buttons - on left side */}
@@ -288,17 +310,17 @@ function DrawerZonesPreview({
         })}
       </div>
 
-      {/* Section height footer */}
+      {/* Zone height footer */}
       <div className="text-center mt-2 pt-2 border-t border-dashed">
         <div className="text-[10px] text-muted-foreground">Wysokość sekcji</div>
-        <div className="text-xs font-mono font-semibold">{sectionHeightMm} mm</div>
+        <div className="text-xs font-mono font-semibold">{zoneHeightMm} mm</div>
       </div>
     </div>
   );
 }
 
 // ============================================================================
-// Drawer Zone Editor
+// Drawer Zone Editor (for individual drawer zone within a DRAWERS zone)
 // ============================================================================
 
 interface DrawerZoneEditorProps {
@@ -606,38 +628,49 @@ function DrawerZoneEditor({ zone, onUpdate, onDelete, canDelete, zoneIndex, zone
 // Props and Constants
 // ============================================================================
 
-interface SectionEditorProps {
-  section: CabinetSection;
-  onUpdate: (section: CabinetSection) => void;
+interface ZoneEditorProps {
+  /** The zone to edit */
+  zone: InteriorZone;
+  /** Callback when zone is updated */
+  onUpdate: (zone: InteriorZone) => void;
+  /** Callback to delete this zone */
   onDelete: () => void;
+  /** Whether this zone can be deleted */
   canDelete: boolean;
+  /** Cabinet height in mm */
   cabinetHeight: number;
+  /** Cabinet width in mm */
   cabinetWidth: number;
+  /** Cabinet depth in mm */
   cabinetDepth: number;
+  /** Total height ratio of all sibling zones */
   totalRatio: number;
+  /** Available interior height in mm */
   interiorHeight: number;
   /** Available materials for selection */
   materials: Material[];
   /** Default body material ID from cabinet */
   bodyMaterialId: string;
-  /** Last used material for shelves (from preferences, defaults to body material) */
+  /** Last used material for shelves */
   lastUsedShelfMaterial: string;
-  /** Last used material for drawer box (from preferences, defaults to body material) */
+  /** Last used material for drawer box */
   lastUsedDrawerBoxMaterial: string;
-  /** Last used material for drawer bottom (from preferences, defaults to HDF) */
+  /** Last used material for drawer bottom */
   lastUsedDrawerBottomMaterial: string;
-  /** Callback when shelf material is changed (to save preference) */
+  /** Callback when shelf material is changed */
   onShelfMaterialChange?: (materialId: string) => void;
-  /** Callback when drawer box material is changed (to save preference) */
+  /** Callback when drawer box material is changed */
   onDrawerBoxMaterialChange?: (materialId: string) => void;
-  /** Callback when drawer bottom material is changed (to save preference) */
+  /** Callback when drawer bottom material is changed */
   onDrawerBottomMaterialChange?: (materialId: string) => void;
 }
 
-const CONTENT_TYPE_OPTIONS: { value: SectionContentType; label: string; icon: typeof Package }[] = [
+// Content types available for leaf zones (non-NESTED)
+const CONTENT_TYPE_OPTIONS: { value: ZoneContentType; label: string; icon: typeof Package }[] = [
   { value: 'EMPTY', label: 'Pusta', icon: Box },
   { value: 'SHELVES', label: 'Półki', icon: Layers },
   { value: 'DRAWERS', label: 'Szuflady', icon: Package },
+  { value: 'NESTED', label: 'Podział', icon: Grid },
 ];
 
 const SLIDE_TYPE_LABELS: Record<DrawerSlideType, string> = {
@@ -653,14 +686,31 @@ const DEPTH_PRESET_LABELS: Record<ShelfDepthPreset, string> = {
   CUSTOM: 'Własna',
 };
 
-// DEFAULT_BODY_THICKNESS imported from config
+// Division direction options
+const DIVISION_DIRECTION_OPTIONS: { value: ZoneDivisionDirection; label: string; icon: typeof Rows }[] = [
+  { value: 'HORIZONTAL', label: 'Wiersze', icon: Rows },
+  { value: 'VERTICAL', label: 'Kolumny', icon: Columns },
+];
+
+// Partition depth labels (same as shelf depth but for partitions)
+const PARTITION_DEPTH_LABELS: Record<PartitionDepthPreset, string> = {
+  FULL: 'Pełna głębokość',
+  HALF: 'Połowa głębokości',
+  CUSTOM: 'Własna głębokość',
+};
+
+// Width mode labels
+const WIDTH_MODE_LABELS: Record<ZoneSizeMode, string> = {
+  FIXED: 'Stała (mm)',
+  PROPORTIONAL: 'Proporcjonalna',
+};
 
 // ============================================================================
-// Main Section Editor Component
+// Main Zone Editor Component
 // ============================================================================
 
-export function SectionEditor({
-  section,
+export function ZoneEditor({
+  zone,
   onUpdate,
   onDelete,
   canDelete,
@@ -677,56 +727,66 @@ export function SectionEditor({
   onShelfMaterialChange,
   onDrawerBoxMaterialChange,
   onDrawerBottomMaterialChange,
-}: SectionEditorProps) {
-  // State for selected drawer zone within this section
-  const [selectedZoneId, setSelectedZoneId] = useState<string | null>(
-    section.drawerConfig?.zones[0]?.id ?? null
+}: ZoneEditorProps) {
+  // State for selected drawer zone within this zone
+  const [selectedDrawerZoneId, setSelectedDrawerZoneId] = useState<string | null>(
+    zone.drawerConfig?.zones[0]?.id ?? null
   );
 
-  // Calculate section height in mm
-  const sectionHeightMm = useMemo(
-    () => Math.round((section.heightRatio / totalRatio) * interiorHeight),
-    [section.heightRatio, totalRatio, interiorHeight]
-  );
+  // Get the zone's height ratio (from heightConfig)
+  const zoneHeightRatio = zone.heightConfig.mode === 'RATIO'
+    ? (zone.heightConfig.ratio ?? 1)
+    : 1;
 
-  // Calculate drawer box width using domain module
+  // Calculate zone height in mm
+  const zoneHeightMm = useMemo(() => {
+    if (zone.heightConfig.mode === 'EXACT' && zone.heightConfig.exactMm) {
+      return zone.heightConfig.exactMm;
+    }
+    return Math.round((zoneHeightRatio / totalRatio) * interiorHeight);
+  }, [zone.heightConfig, zoneHeightRatio, totalRatio, interiorHeight]);
+
+  // Calculate drawer box width
   const drawerBoxWidth = useMemo(() => {
-    if (!section.drawerConfig) return 0;
-    return Drawer.calculateDrawerWidth(cabinetWidth, DEFAULT_BODY_THICKNESS, section.drawerConfig.slideType);
-  }, [section.drawerConfig, cabinetWidth]);
+    if (!zone.drawerConfig) return 0;
+    const slideConfig = DRAWER_SLIDE_PRESETS[zone.drawerConfig.slideType];
+    return cabinetWidth - 2 * slideConfig.sideOffset - 2 * DEFAULT_BODY_THICKNESS;
+  }, [zone.drawerConfig, cabinetWidth]);
 
-  // Selected zone and its calculated height
-  const selectedZone = useMemo(() => {
-    if (!section.drawerConfig) return null;
-    return section.drawerConfig.zones.find(z => z.id === selectedZoneId) ?? null;
-  }, [section.drawerConfig, selectedZoneId]);
+  // Selected drawer zone and its calculated height
+  const selectedDrawerZone = useMemo(() => {
+    if (!zone.drawerConfig) return null;
+    return zone.drawerConfig.zones.find(z => z.id === selectedDrawerZoneId) ?? null;
+  }, [zone.drawerConfig, selectedDrawerZoneId]);
 
-  const selectedZoneIndex = useMemo(() => {
-    if (!section.drawerConfig || !selectedZoneId) return -1;
-    return section.drawerConfig.zones.findIndex(z => z.id === selectedZoneId);
-  }, [section.drawerConfig, selectedZoneId]);
+  const selectedDrawerZoneIndex = useMemo(() => {
+    if (!zone.drawerConfig || !selectedDrawerZoneId) return -1;
+    return zone.drawerConfig.zones.findIndex(z => z.id === selectedDrawerZoneId);
+  }, [zone.drawerConfig, selectedDrawerZoneId]);
 
-  // Calculate zone heights in mm using domain module
-  const zoneHeightsMm = useMemo(() => {
-    if (!section.drawerConfig) return [];
-    return distributeByRatio(
-      sectionHeightMm,
-      section.drawerConfig.zones.map(z => z.heightRatio)
-    ).map(Math.round);
-  }, [section.drawerConfig, sectionHeightMm]);
+  // Calculate drawer zone heights in mm
+  const drawerZoneHeightsMm = useMemo(() => {
+    if (!zone.drawerConfig) return [];
+    const zoneTotalRatio = zone.drawerConfig.zones.reduce((s, z) => s + z.heightRatio, 0);
+    return zone.drawerConfig.zones.map(z =>
+      Math.round((z.heightRatio / zoneTotalRatio) * zoneHeightMm)
+    );
+  }, [zone.drawerConfig, zoneHeightMm]);
 
-  const selectedZoneHeightMm = selectedZoneIndex >= 0 ? zoneHeightsMm[selectedZoneIndex] : 0;
+  const selectedDrawerZoneHeightMm = selectedDrawerZoneIndex >= 0 ? drawerZoneHeightsMm[selectedDrawerZoneIndex] : 0;
 
   // ============================================================================
   // Handlers
   // ============================================================================
 
-  const handleContentTypeChange = (contentType: SectionContentType) => {
-    const updatedSection: CabinetSection = {
-      ...section,
+  const handleContentTypeChange = (contentType: ZoneContentType) => {
+    const updatedZone: InteriorZone = {
+      ...zone,
       contentType,
       shelvesConfig: undefined,
       drawerConfig: undefined,
+      children: undefined,
+      divisionDirection: undefined,
     };
 
     if (contentType === 'SHELVES') {
@@ -734,7 +794,7 @@ export function SectionEditor({
       const shelfMaterial = lastUsedShelfMaterial && lastUsedShelfMaterial !== bodyMaterialId
         ? lastUsedShelfMaterial
         : undefined;
-      updatedSection.shelvesConfig = {
+      updatedZone.shelvesConfig = {
         ...DEFAULT_SHELVES_CONFIG,
         materialId: shelfMaterial,
       };
@@ -747,43 +807,66 @@ export function SectionEditor({
       const boxMaterial = lastUsedDrawerBoxMaterial && lastUsedDrawerBoxMaterial !== bodyMaterialId
         ? lastUsedDrawerBoxMaterial
         : undefined;
-      updatedSection.drawerConfig = {
+      updatedZone.drawerConfig = {
         slideType: 'SIDE_MOUNT',
         zones: defaultZones,
         boxMaterialId: boxMaterial,
         bottomMaterialId: lastUsedDrawerBottomMaterial ?? undefined,
       };
-      setSelectedZoneId(defaultZones[0].id);
+      setSelectedDrawerZoneId(defaultZones[0].id);
+    } else if (contentType === 'NESTED') {
+      // Create initial nested structure with 2 children
+      updatedZone.divisionDirection = 'HORIZONTAL';
+      updatedZone.children = [
+        {
+          id: crypto.randomUUID(),
+          contentType: 'EMPTY',
+          heightConfig: { mode: 'RATIO', ratio: 1 },
+          depth: zone.depth + 1,
+        },
+        {
+          id: crypto.randomUUID(),
+          contentType: 'EMPTY',
+          heightConfig: { mode: 'RATIO', ratio: 1 },
+          depth: zone.depth + 1,
+        },
+      ];
     }
 
-    onUpdate(updatedSection);
+    onUpdate(updatedZone);
   };
 
   const handleHeightRatioChange = (value: number[]) => {
-    onUpdate({ ...section, heightRatio: value[0] });
+    onUpdate({
+      ...zone,
+      heightConfig: {
+        mode: 'RATIO',
+        ratio: value[0],
+      },
+    });
   };
 
   // Shelves handlers
   const handleShelfModeChange = (mode: 'UNIFORM' | 'MANUAL') => {
-    if (!section.shelvesConfig) return;
+    if (!zone.shelvesConfig) return;
 
     // When switching to MANUAL, initialize individual shelf configs from current preset
-    let shelves = section.shelvesConfig.shelves;
-    if (mode === 'MANUAL' && shelves.length < section.shelvesConfig.count) {
-      shelves = Array.from({ length: section.shelvesConfig.count }, (_, i) => {
-        const existing = section.shelvesConfig!.shelves[i];
+    let shelves = zone.shelvesConfig.shelves;
+    if (mode === 'MANUAL' && shelves.length < zone.shelvesConfig.count) {
+      shelves = Array.from({ length: zone.shelvesConfig.count }, (_, i) => {
+        const existing = zone.shelvesConfig!.shelves[i];
         return existing ?? {
           id: generateShelfId(),
-          depthPreset: section.shelvesConfig!.depthPreset,
-          customDepth: section.shelvesConfig!.customDepth,
+          depthPreset: zone.shelvesConfig!.depthPreset,
+          customDepth: zone.shelvesConfig!.customDepth,
         };
       });
     }
 
     onUpdate({
-      ...section,
+      ...zone,
       shelvesConfig: {
-        ...section.shelvesConfig,
+        ...zone.shelvesConfig,
         mode,
         shelves,
       },
@@ -791,20 +874,20 @@ export function SectionEditor({
   };
 
   const handleShelfCountChange = (delta: number) => {
-    if (!section.shelvesConfig) return;
-    const newCount = Math.max(0, Math.min(INTERIOR_CONFIG.MAX_SHELVES_PER_SECTION, section.shelvesConfig.count + delta));
+    if (!zone.shelvesConfig) return;
+    const newCount = Math.max(0, Math.min(INTERIOR_CONFIG.MAX_SHELVES_PER_SECTION, zone.shelvesConfig.count + delta));
 
     // In MANUAL mode, adjust shelves array
-    let shelves = section.shelvesConfig.shelves;
-    if (section.shelvesConfig.mode === 'MANUAL') {
+    let shelves = zone.shelvesConfig.shelves;
+    if (zone.shelvesConfig.mode === 'MANUAL') {
       if (newCount > shelves.length) {
         // Add new shelves
         const newShelves = [...shelves];
         for (let i = shelves.length; i < newCount; i++) {
           newShelves.push({
             id: generateShelfId(),
-            depthPreset: section.shelvesConfig.depthPreset,
-            customDepth: section.shelvesConfig.customDepth,
+            depthPreset: zone.shelvesConfig.depthPreset,
+            customDepth: zone.shelvesConfig.customDepth,
           });
         }
         shelves = newShelves;
@@ -815,38 +898,38 @@ export function SectionEditor({
     }
 
     onUpdate({
-      ...section,
-      shelvesConfig: { ...section.shelvesConfig, count: newCount, shelves },
+      ...zone,
+      shelvesConfig: { ...zone.shelvesConfig, count: newCount, shelves },
     });
   };
 
   const handleShelfDepthPresetChange = (preset: ShelfDepthPreset) => {
-    if (!section.shelvesConfig) return;
+    if (!zone.shelvesConfig) return;
     onUpdate({
-      ...section,
+      ...zone,
       shelvesConfig: {
-        ...section.shelvesConfig,
+        ...zone.shelvesConfig,
         depthPreset: preset,
-        customDepth: preset === 'CUSTOM' ? section.shelvesConfig.customDepth ?? cabinetDepth / 2 : undefined,
+        customDepth: preset === 'CUSTOM' ? zone.shelvesConfig.customDepth ?? cabinetDepth / 2 : undefined,
       },
     });
   };
 
   const handleCustomDepthChange = (value: number) => {
-    if (!section.shelvesConfig) return;
+    if (!zone.shelvesConfig) return;
     onUpdate({
-      ...section,
+      ...zone,
       shelvesConfig: {
-        ...section.shelvesConfig,
-        customDepth: Math.max(INTERIOR_CONFIG.CUSTOM_SHELF_DEPTH_MIN, Math.min(cabinetDepth - SHELF_CONFIG.SETBACK, value)),
+        ...zone.shelvesConfig,
+        customDepth: Math.max(50, Math.min(cabinetDepth - 10, value)),
       },
     });
   };
 
   const handleIndividualShelfDepthChange = (shelfIndex: number, preset: ShelfDepthPreset) => {
-    if (!section.shelvesConfig) return;
+    if (!zone.shelvesConfig) return;
 
-    const shelves = [...section.shelvesConfig.shelves];
+    const shelves = [...zone.shelvesConfig.shelves];
     const existing = shelves[shelfIndex] ?? { id: generateShelfId(), depthPreset: 'FULL' };
     shelves[shelfIndex] = {
       ...existing,
@@ -855,39 +938,39 @@ export function SectionEditor({
     };
 
     onUpdate({
-      ...section,
-      shelvesConfig: { ...section.shelvesConfig, shelves },
+      ...zone,
+      shelvesConfig: { ...zone.shelvesConfig, shelves },
     });
   };
 
   const handleIndividualShelfCustomDepthChange = (shelfIndex: number, value: number) => {
-    if (!section.shelvesConfig) return;
+    if (!zone.shelvesConfig) return;
 
-    const shelves = [...section.shelvesConfig.shelves];
+    const shelves = [...zone.shelvesConfig.shelves];
     const existing = shelves[shelfIndex] ?? { id: generateShelfId(), depthPreset: 'CUSTOM' };
     shelves[shelfIndex] = {
       ...existing,
-      customDepth: Math.max(INTERIOR_CONFIG.CUSTOM_SHELF_DEPTH_MIN, Math.min(cabinetDepth - SHELF_CONFIG.SETBACK, value)),
+      customDepth: Math.max(50, Math.min(cabinetDepth - 10, value)),
     };
 
     onUpdate({
-      ...section,
-      shelvesConfig: { ...section.shelvesConfig, shelves },
+      ...zone,
+      shelvesConfig: { ...zone.shelvesConfig, shelves },
     });
   };
 
   // Drawer handlers
   const handleSlideTypeChange = (slideType: DrawerSlideType) => {
-    if (!section.drawerConfig) return;
+    if (!zone.drawerConfig) return;
     onUpdate({
-      ...section,
-      drawerConfig: { ...section.drawerConfig, slideType },
+      ...zone,
+      drawerConfig: { ...zone.drawerConfig, slideType },
     });
   };
 
   const handleAddDrawerZone = () => {
-    if (!section.drawerConfig) return;
-    if (section.drawerConfig.zones.length >= INTERIOR_CONFIG.MAX_DRAWER_ZONES) return;
+    if (!zone.drawerConfig) return;
+    if (zone.drawerConfig.zones.length >= INTERIOR_CONFIG.MAX_DRAWER_ZONES) return;
 
     const newZone: DrawerZone = {
       id: generateZoneId(),
@@ -897,48 +980,48 @@ export function SectionEditor({
     };
 
     onUpdate({
-      ...section,
+      ...zone,
       drawerConfig: {
-        ...section.drawerConfig,
-        zones: [...section.drawerConfig.zones, newZone],
+        ...zone.drawerConfig,
+        zones: [...zone.drawerConfig.zones, newZone],
       },
     });
-    setSelectedZoneId(newZone.id);
+    setSelectedDrawerZoneId(newZone.id);
   };
 
-  const handleDeleteDrawerZone = (zoneId: string) => {
-    if (!section.drawerConfig) return;
-    const newZones = section.drawerConfig.zones.filter(z => z.id !== zoneId);
+  const handleDeleteDrawerZone = (drawerZoneId: string) => {
+    if (!zone.drawerConfig) return;
+    const newZones = zone.drawerConfig.zones.filter(z => z.id !== drawerZoneId);
     if (newZones.length === 0) return;
 
-    if (selectedZoneId === zoneId) {
-      setSelectedZoneId(newZones[0].id);
+    if (selectedDrawerZoneId === drawerZoneId) {
+      setSelectedDrawerZoneId(newZones[0].id);
     }
 
     onUpdate({
-      ...section,
+      ...zone,
       drawerConfig: {
-        ...section.drawerConfig,
+        ...zone.drawerConfig,
         zones: newZones,
       },
     });
   };
 
-  const handleUpdateDrawerZone = (updatedZone: DrawerZone) => {
-    if (!section.drawerConfig) return;
+  const handleUpdateDrawerZone = (updatedDrawerZone: DrawerZone) => {
+    if (!zone.drawerConfig) return;
     onUpdate({
-      ...section,
+      ...zone,
       drawerConfig: {
-        ...section.drawerConfig,
-        zones: section.drawerConfig.zones.map(z => z.id === updatedZone.id ? updatedZone : z),
+        ...zone.drawerConfig,
+        zones: zone.drawerConfig.zones.map(z => z.id === updatedDrawerZone.id ? updatedDrawerZone : z),
       },
     });
   };
 
-  const handleMoveDrawerZone = (zoneId: string, direction: 'up' | 'down') => {
-    if (!section.drawerConfig) return;
-    const zones = [...section.drawerConfig.zones];
-    const index = zones.findIndex(z => z.id === zoneId);
+  const handleMoveDrawerZone = (drawerZoneId: string, direction: 'up' | 'down') => {
+    if (!zone.drawerConfig) return;
+    const zones = [...zone.drawerConfig.zones];
+    const index = zones.findIndex(z => z.id === drawerZoneId);
     if (index === -1) return;
 
     // 'up' means higher in cabinet = higher index, 'down' means lower = lower index
@@ -947,8 +1030,8 @@ export function SectionEditor({
 
     [zones[index], zones[newIndex]] = [zones[newIndex], zones[index]];
     onUpdate({
-      ...section,
-      drawerConfig: { ...section.drawerConfig, zones },
+      ...zone,
+      drawerConfig: { ...zone.drawerConfig, zones },
     });
   };
 
@@ -958,13 +1041,13 @@ export function SectionEditor({
 
     const newZones = preset.config.zones.map(z => ({ ...z, id: generateZoneId() }));
     onUpdate({
-      ...section,
+      ...zone,
       drawerConfig: {
         ...preset.config,
         zones: newZones,
       },
     });
-    setSelectedZoneId(newZones[0]?.id ?? null);
+    setSelectedDrawerZoneId(newZones[0]?.id ?? null);
   };
 
   // ============================================================================
@@ -988,17 +1071,17 @@ export function SectionEditor({
         )}
       </div>
 
-      {/* Height ratio - only show if there are multiple sections */}
-      {totalRatio > section.heightRatio && (
+      {/* Height ratio - show if there are multiple sibling zones and this zone doesn't have widthConfig (HORIZONTAL parent) */}
+      {totalRatio > zoneHeightRatio && !zone.widthConfig && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <Label className="text-sm font-medium">Wysokość (proporcja)</Label>
             <span className="text-xs font-mono bg-muted px-2 py-0.5 rounded">
-              {section.heightRatio}x = {sectionHeightMm}mm
+              {zoneHeightRatio}x = {zoneHeightMm}mm
             </span>
           </div>
           <Slider
-            value={[section.heightRatio]}
+            value={[zoneHeightRatio]}
             onValueChange={handleHeightRatioChange}
             min={INTERIOR_CONFIG.SECTION_HEIGHT_RATIO_MIN}
             max={INTERIOR_CONFIG.SECTION_HEIGHT_RATIO_MAX}
@@ -1007,19 +1090,87 @@ export function SectionEditor({
         </div>
       )}
 
+      {/* Width ratio - show if this zone has widthConfig (VERTICAL parent) */}
+      {zone.widthConfig && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <Label className="text-sm font-medium">Szerokość</Label>
+            <span className="text-xs font-mono bg-muted px-2 py-0.5 rounded">
+              {zone.widthConfig.mode === 'FIXED'
+                ? `${zone.widthConfig.fixedMm ?? 400}mm`
+                : `${zone.widthConfig.ratio ?? 1}x`}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Select
+              value={zone.widthConfig.mode}
+              onValueChange={(mode: ZoneSizeMode) => {
+                onUpdate({
+                  ...zone,
+                  widthConfig: {
+                    mode,
+                    ...(mode === 'FIXED' ? { fixedMm: 400 } : { ratio: 1 }),
+                  },
+                });
+              }}
+            >
+              <SelectTrigger className="h-8 w-32 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="PROPORTIONAL">Proporcjonalna</SelectItem>
+                <SelectItem value="FIXED">Stała (mm)</SelectItem>
+              </SelectContent>
+            </Select>
+            {zone.widthConfig.mode === 'FIXED' ? (
+              <NumberInput
+                value={zone.widthConfig.fixedMm ?? 400}
+                min={INTERIOR_CONFIG.MIN_ZONE_WIDTH_MM ?? 100}
+                max={cabinetWidth - DEFAULT_BODY_THICKNESS * 2}
+                onChange={(val) => {
+                  onUpdate({
+                    ...zone,
+                    widthConfig: { mode: 'FIXED', fixedMm: val },
+                  });
+                }}
+                className="h-8 flex-1"
+              />
+            ) : (
+              <div className="flex items-center gap-2 flex-1">
+                <Slider
+                  value={[zone.widthConfig.ratio ?? 1]}
+                  min={0.5}
+                  max={5}
+                  step={0.5}
+                  onValueChange={([val]) => {
+                    onUpdate({
+                      ...zone,
+                      widthConfig: { mode: 'PROPORTIONAL', ratio: val },
+                    });
+                  }}
+                  className="flex-1"
+                />
+                <span className="text-xs font-mono w-8 text-right">{zone.widthConfig.ratio ?? 1}x</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Content type selector */}
       <div className="space-y-3">
         <Label className="text-sm font-medium">Zawartość sekcji</Label>
         <ToggleButtonGroup
-          value={section.contentType}
+          value={zone.contentType}
           onChange={handleContentTypeChange}
-          options={CONTENT_TYPE_OPTIONS}
+          options={zone.depth < (INTERIOR_CONFIG.MAX_ZONE_DEPTH - 1) ? CONTENT_TYPE_OPTIONS : CONTENT_TYPE_OPTIONS.filter(o => o.value !== 'NESTED')}
+          columns={zone.depth < (INTERIOR_CONFIG.MAX_ZONE_DEPTH - 1) ? 4 : 3}
           showIcons
         />
       </div>
 
       {/* Shelves configuration */}
-      {section.contentType === 'SHELVES' && section.shelvesConfig && (
+      {zone.contentType === 'SHELVES' && zone.shelvesConfig && (
         <div className="space-y-4 pt-3 border-t">
           <h5 className="text-sm font-medium text-blue-600 dark:text-blue-400 flex items-center gap-2">
             <Layers className="h-4 w-4" />
@@ -1030,7 +1181,7 @@ export function SectionEditor({
           <div className="space-y-2">
             <Label className="text-sm">Tryb</Label>
             <ToggleButtonGroup
-              value={section.shelvesConfig.mode}
+              value={zone.shelvesConfig.mode}
               onChange={handleShelfModeChange}
               options={[
                 { value: 'UNIFORM', label: 'Jednolita głębokość' },
@@ -1049,19 +1200,19 @@ export function SectionEditor({
                 size="icon"
                 className="h-8 w-8 rounded-none border-r"
                 onClick={() => handleShelfCountChange(-1)}
-                disabled={section.shelvesConfig.count <= 0}
+                disabled={zone.shelvesConfig.count <= 0}
               >
                 <Minus className="h-3 w-3" />
               </Button>
               <span className="w-10 text-center text-sm font-medium">
-                {section.shelvesConfig.count}
+                {zone.shelvesConfig.count}
               </span>
               <Button
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 rounded-none border-l"
                 onClick={() => handleShelfCountChange(1)}
-                disabled={section.shelvesConfig.count >= 10}
+                disabled={zone.shelvesConfig.count >= 10}
               >
                 <Plus className="h-3 w-3" />
               </Button>
@@ -1069,16 +1220,16 @@ export function SectionEditor({
           </div>
 
           {/* Shelf material selector - only in UNIFORM mode */}
-          {section.shelvesConfig.mode === 'UNIFORM' && (
+          {zone.shelvesConfig.mode === 'UNIFORM' && (
             <div className="space-y-2">
               <Label className="text-sm">Materiał półek</Label>
               <Select
-                value={section.shelvesConfig.materialId ?? bodyMaterialId}
+                value={zone.shelvesConfig.materialId ?? bodyMaterialId}
                 onValueChange={(value) => {
                   onUpdate({
-                    ...section,
+                    ...zone,
                     shelvesConfig: {
-                      ...section.shelvesConfig!,
+                      ...zone.shelvesConfig!,
                       materialId: value === bodyMaterialId ? undefined : value,
                     },
                   });
@@ -1110,13 +1261,13 @@ export function SectionEditor({
           )}
 
           {/* UNIFORM MODE: Single depth preset for all shelves */}
-          {section.shelvesConfig.mode === 'UNIFORM' && (
+          {zone.shelvesConfig.mode === 'UNIFORM' && (
             <>
               {/* Depth preset */}
               <div className="space-y-2">
                 <Label className="text-sm">Głębokość półek</Label>
                 <ToggleButtonGroup
-                  value={section.shelvesConfig.depthPreset}
+                  value={zone.shelvesConfig.depthPreset}
                   onChange={handleShelfDepthPresetChange}
                   options={(Object.keys(DEPTH_PRESET_LABELS) as ShelfDepthPreset[]).map((preset) => ({
                     value: preset,
@@ -1126,11 +1277,11 @@ export function SectionEditor({
               </div>
 
               {/* Custom depth input */}
-              {section.shelvesConfig.depthPreset === 'CUSTOM' && (
+              {zone.shelvesConfig.depthPreset === 'CUSTOM' && (
                 <div className="space-y-2">
                   <Label className="text-sm">Własna głębokość (mm)</Label>
                   <NumberInput
-                    value={section.shelvesConfig.customDepth ?? cabinetDepth / 2}
+                    value={zone.shelvesConfig.customDepth ?? cabinetDepth / 2}
                     onChange={handleCustomDepthChange}
                     min={INTERIOR_CONFIG.CUSTOM_SHELF_DEPTH_MIN}
                     max={cabinetDepth - INTERIOR_CONFIG.CUSTOM_SHELF_DEPTH_OFFSET}
@@ -1140,31 +1291,35 @@ export function SectionEditor({
                 </div>
               )}
 
-              {/* Calculated depth display using domain module */}
+              {/* Calculated depth display */}
               <div className="text-xs text-muted-foreground bg-muted/30 p-2 rounded">
                 Rzeczywista głębokość:{' '}
                 <span className="font-mono font-medium text-foreground">
-                  {Shelf.calculateDepth(
-                    section.shelvesConfig.depthPreset,
-                    section.shelvesConfig.customDepth,
-                    cabinetDepth
-                  )}mm
+                  {zone.shelvesConfig.depthPreset === 'FULL'
+                    ? cabinetDepth - 10
+                    : zone.shelvesConfig.depthPreset === 'HALF'
+                    ? Math.round((cabinetDepth - 10) / 2)
+                    : zone.shelvesConfig.customDepth ?? cabinetDepth / 2}
+                  mm
                 </span>
               </div>
             </>
           )}
 
           {/* MANUAL MODE: Individual depth for each shelf */}
-          {section.shelvesConfig.mode === 'MANUAL' && section.shelvesConfig.count > 0 && (
+          {zone.shelvesConfig.mode === 'MANUAL' && zone.shelvesConfig.count > 0 && (
             <div className="space-y-2">
               <Label className="text-sm">Głębokość każdej półki</Label>
               <div className="space-y-1.5 max-h-[200px] overflow-y-auto pr-1">
-                {Array.from({ length: section.shelvesConfig.count }).map((_, i) => {
-                  const shelfConfig = section.shelvesConfig!.shelves[i];
-                  const shelfDepthPreset = shelfConfig?.depthPreset ?? section.shelvesConfig!.depthPreset;
-                  const shelfCustomDepth = shelfConfig?.customDepth ?? section.shelvesConfig!.customDepth;
-                  // Use domain module for depth calculation
-                  const actualDepth = Shelf.calculateDepth(shelfDepthPreset, shelfCustomDepth, cabinetDepth);
+                {Array.from({ length: zone.shelvesConfig.count }).map((_, i) => {
+                  const shelfConfig = zone.shelvesConfig!.shelves[i];
+                  const shelfDepthPreset = shelfConfig?.depthPreset ?? zone.shelvesConfig!.depthPreset;
+                  const shelfCustomDepth = shelfConfig?.customDepth ?? zone.shelvesConfig!.customDepth;
+                  const actualDepth = shelfDepthPreset === 'FULL'
+                    ? cabinetDepth - 10
+                    : shelfDepthPreset === 'HALF'
+                    ? Math.round((cabinetDepth - 10) / 2)
+                    : shelfCustomDepth ?? cabinetDepth / 2;
 
                   return (
                     <div key={i} className="flex items-center gap-2 p-2 border rounded bg-background">
@@ -1212,7 +1367,7 @@ export function SectionEditor({
       )}
 
       {/* Drawers configuration */}
-      {section.contentType === 'DRAWERS' && section.drawerConfig && (
+      {zone.contentType === 'DRAWERS' && zone.drawerConfig && (
         <div className="space-y-4 pt-3 border-t">
           <h5 className="text-sm font-medium text-amber-600 dark:text-amber-400 flex items-center gap-2">
             <Package className="h-4 w-4" />
@@ -1246,11 +1401,11 @@ export function SectionEditor({
                 Podgląd stref <span className="font-mono">(od dołu)</span>
               </Label>
               <DrawerZonesPreview
-                zones={section.drawerConfig.zones}
-                selectedZoneId={selectedZoneId}
-                onSelectZone={setSelectedZoneId}
+                zones={zone.drawerConfig.zones}
+                selectedZoneId={selectedDrawerZoneId}
+                onSelectZone={setSelectedDrawerZoneId}
                 onMoveZone={handleMoveDrawerZone}
-                sectionHeightMm={sectionHeightMm}
+                zoneHeightMm={zoneHeightMm}
                 drawerBoxWidth={drawerBoxWidth}
               />
 
@@ -1260,7 +1415,7 @@ export function SectionEditor({
                 size="sm"
                 className="w-full mt-2 border-dashed text-xs h-7"
                 onClick={handleAddDrawerZone}
-                disabled={section.drawerConfig.zones.length >= INTERIOR_CONFIG.MAX_DRAWER_ZONES}
+                disabled={zone.drawerConfig.zones.length >= INTERIOR_CONFIG.MAX_DRAWER_ZONES}
               >
                 <Plus className="h-3 w-3 mr-1" />
                 Dodaj strefę
@@ -1270,14 +1425,14 @@ export function SectionEditor({
             {/* Right: Selected zone editor */}
             <div>
               <Label className="text-xs text-muted-foreground mb-2 block">Edycja strefy</Label>
-              {selectedZone ? (
+              {selectedDrawerZone ? (
                 <DrawerZoneEditor
-                  zone={selectedZone}
+                  zone={selectedDrawerZone}
                   onUpdate={handleUpdateDrawerZone}
-                  onDelete={() => handleDeleteDrawerZone(selectedZone.id)}
-                  canDelete={section.drawerConfig.zones.length > 1}
-                  zoneIndex={selectedZoneIndex}
-                  zoneHeightMm={selectedZoneHeightMm}
+                  onDelete={() => handleDeleteDrawerZone(selectedDrawerZone.id)}
+                  canDelete={zone.drawerConfig.zones.length > 1}
+                  zoneIndex={selectedDrawerZoneIndex}
+                  zoneHeightMm={selectedDrawerZoneHeightMm}
                 />
               ) : (
                 <div className="border-2 border-dashed rounded-md p-4 text-center text-muted-foreground text-xs">
@@ -1291,7 +1446,7 @@ export function SectionEditor({
           <div className="space-y-2 bg-muted/10 p-3 rounded-lg border">
             <Label className="text-sm">System prowadnic</Label>
             <Select
-              value={section.drawerConfig.slideType}
+              value={zone.drawerConfig.slideType}
               onValueChange={(v) => handleSlideTypeChange(v as DrawerSlideType)}
             >
               <SelectTrigger className="w-full h-9">
@@ -1307,7 +1462,7 @@ export function SectionEditor({
             </Select>
             <p className="text-xs text-muted-foreground flex items-center gap-2">
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-              Luz boczny: {DRAWER_SLIDE_PRESETS[section.drawerConfig.slideType].sideOffset}mm/stronę
+              Luz boczny: {DRAWER_SLIDE_PRESETS[zone.drawerConfig.slideType].sideOffset}mm/stronę
             </p>
           </div>
 
@@ -1319,12 +1474,12 @@ export function SectionEditor({
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Box (boki, tył, przód)</Label>
               <Select
-                value={section.drawerConfig.boxMaterialId ?? bodyMaterialId}
+                value={zone.drawerConfig.boxMaterialId ?? bodyMaterialId}
                 onValueChange={(value) => {
                   onUpdate({
-                    ...section,
+                    ...zone,
                     drawerConfig: {
-                      ...section.drawerConfig!,
+                      ...zone.drawerConfig!,
                       boxMaterialId: value === bodyMaterialId ? undefined : value,
                     },
                   });
@@ -1358,12 +1513,12 @@ export function SectionEditor({
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Dno szuflady</Label>
               <Select
-                value={section.drawerConfig.bottomMaterialId ?? lastUsedDrawerBottomMaterial}
+                value={zone.drawerConfig.bottomMaterialId ?? lastUsedDrawerBottomMaterial}
                 onValueChange={(value) => {
                   onUpdate({
-                    ...section,
+                    ...zone,
                     drawerConfig: {
-                      ...section.drawerConfig!,
+                      ...zone.drawerConfig!,
                       bottomMaterialId: value,
                     },
                   });
@@ -1397,7 +1552,7 @@ export function SectionEditor({
           {/* Summary */}
           <div className="text-xs text-muted-foreground bg-muted/30 p-2 rounded flex justify-between">
             <span>
-              {Drawer.getFrontCount(section.drawerConfig)} frontów • {Drawer.getTotalBoxCount(section.drawerConfig)} szuflad
+              {Drawer.getFrontCount(zone.drawerConfig)} frontów • {Drawer.getTotalBoxCount(zone.drawerConfig)} szuflad
             </span>
             <span className="font-mono">
               {Math.round(drawerBoxWidth)} mm szer.
@@ -1411,16 +1566,303 @@ export function SectionEditor({
         </div>
       )}
 
-      {/* Empty section info */}
-      {section.contentType === 'EMPTY' && (
+      {/* NESTED zone configuration - full editor for divisions */}
+      {zone.contentType === 'NESTED' && (
+        <div className="pt-3 border-t space-y-4">
+          {/* Division direction */}
+          <div className="space-y-2">
+            <Label className="text-xs">Kierunek podziału</Label>
+            <ToggleButtonGroup
+              value={zone.divisionDirection ?? 'HORIZONTAL'}
+              onChange={(direction) => {
+                const newZone = { ...zone, divisionDirection: direction as ZoneDivisionDirection };
+                // When switching to VERTICAL, initialize width configs for children
+                if (direction === 'VERTICAL' && newZone.children) {
+                  newZone.children = newZone.children.map(child => ({
+                    ...child,
+                    widthConfig: child.widthConfig ?? { mode: 'PROPORTIONAL', ratio: 1 },
+                  }));
+                  // Initialize partitions (n-1 for n children)
+                  if (!newZone.partitions || newZone.partitions.length !== newZone.children.length - 1) {
+                    newZone.partitions = Array.from(
+                      { length: Math.max(0, newZone.children.length - 1) },
+                      () => ({
+                        id: crypto.randomUUID(),
+                        depthPreset: 'FULL' as PartitionDepthPreset,
+                      })
+                    );
+                  }
+                } else if (direction === 'HORIZONTAL') {
+                  // Clear width configs and partitions when switching to HORIZONTAL
+                  if (newZone.children) {
+                    newZone.children = newZone.children.map(child => {
+                      const { widthConfig, ...rest } = child;
+                      return rest;
+                    });
+                  }
+                  newZone.partitions = undefined;
+                }
+                onUpdate(newZone);
+              }}
+              options={DIVISION_DIRECTION_OPTIONS}
+              columns={2}
+              showIcons
+            />
+          </div>
+
+          {/* Child zones management */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs">
+                {zone.divisionDirection === 'VERTICAL' ? 'Kolumny' : 'Sekcje'} ({zone.children?.length ?? 0})
+              </Label>
+              <div className="flex gap-1">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => {
+                    const children = zone.children ?? [];
+                    if (children.length <= 1) return;
+                    const newChildren = children.slice(0, -1);
+                    const newPartitions = zone.divisionDirection === 'VERTICAL' && zone.partitions
+                      ? zone.partitions.slice(0, -1)
+                      : zone.partitions;
+                    onUpdate({
+                      ...zone,
+                      children: newChildren,
+                      partitions: newPartitions,
+                    });
+                  }}
+                  disabled={(zone.children?.length ?? 0) <= 1}
+                  title="Usuń ostatnią"
+                >
+                  <Minus className="h-3 w-3" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => {
+                    const children = zone.children ?? [];
+                    if (children.length >= (INTERIOR_CONFIG.MAX_CHILDREN_PER_ZONE ?? 6)) return;
+                    const newChild: InteriorZone = {
+                      id: crypto.randomUUID(),
+                      contentType: 'EMPTY',
+                      heightConfig: { mode: 'RATIO', ratio: 1 },
+                      depth: zone.depth + 1,
+                      ...(zone.divisionDirection === 'VERTICAL' && {
+                        widthConfig: { mode: 'PROPORTIONAL', ratio: 1 },
+                      }),
+                    };
+                    const newPartition: PartitionConfig | undefined = zone.divisionDirection === 'VERTICAL'
+                      ? { id: crypto.randomUUID(), depthPreset: 'FULL' }
+                      : undefined;
+                    onUpdate({
+                      ...zone,
+                      children: [...children, newChild],
+                      partitions: newPartition && zone.partitions
+                        ? [...zone.partitions, newPartition]
+                        : newPartition
+                          ? [newPartition]
+                          : zone.partitions,
+                    });
+                  }}
+                  disabled={(zone.children?.length ?? 0) >= (INTERIOR_CONFIG.MAX_CHILDREN_PER_ZONE ?? 6)}
+                  title="Dodaj"
+                >
+                  <Plus className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Width configuration for VERTICAL division with reordering */}
+          {zone.divisionDirection === 'VERTICAL' && zone.children && zone.children.length > 0 && (
+            <div className="space-y-3">
+              <Label className="text-xs">Szerokości kolumn</Label>
+              <div className="space-y-2">
+                {zone.children.map((child, idx) => {
+                  const widthConfig = child.widthConfig ?? { mode: 'PROPORTIONAL', ratio: 1 };
+                  const canMoveLeft = idx > 0;
+                  const canMoveRight = idx < zone.children!.length - 1;
+
+                  const handleMoveChild = (direction: 'left' | 'right') => {
+                    const newChildren = [...zone.children!];
+                    const newPartitions = zone.partitions ? [...zone.partitions] : [];
+                    const newIdx = direction === 'left' ? idx - 1 : idx + 1;
+                    // Swap children
+                    [newChildren[idx], newChildren[newIdx]] = [newChildren[newIdx], newChildren[idx]];
+                    onUpdate({ ...zone, children: newChildren, partitions: newPartitions });
+                  };
+
+                  return (
+                    <div key={child.id} className="flex items-center gap-2 p-2 rounded bg-muted/30">
+                      {/* Move buttons */}
+                      <div className="flex gap-0.5">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={() => handleMoveChild('left')}
+                          disabled={!canMoveLeft}
+                          title="Przesuń w lewo"
+                        >
+                          <ChevronUp className="h-3 w-3 -rotate-90" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={() => handleMoveChild('right')}
+                          disabled={!canMoveRight}
+                          title="Przesuń w prawo"
+                        >
+                          <ChevronDown className="h-3 w-3 -rotate-90" />
+                        </Button>
+                      </div>
+                      <span className="text-xs font-medium w-16">Kolumna {idx + 1}</span>
+                      <Select
+                        value={widthConfig.mode}
+                        onValueChange={(mode: ZoneSizeMode) => {
+                          const newChildren = [...zone.children!];
+                          newChildren[idx] = {
+                            ...newChildren[idx],
+                            widthConfig: {
+                              mode,
+                              ...(mode === 'FIXED' ? { fixedMm: 400 } : { ratio: 1 }),
+                            },
+                          };
+                          onUpdate({ ...zone, children: newChildren });
+                        }}
+                      >
+                        <SelectTrigger className="h-7 w-28 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(WIDTH_MODE_LABELS).map(([value, label]) => (
+                            <SelectItem key={value} value={value}>
+                              {label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {widthConfig.mode === 'FIXED' ? (
+                        <NumberInput
+                          value={widthConfig.fixedMm ?? 400}
+                          min={INTERIOR_CONFIG.MIN_ZONE_WIDTH_MM ?? 100}
+                          max={cabinetWidth - DEFAULT_BODY_THICKNESS * 2}
+                          onChange={(val) => {
+                            const newChildren = [...zone.children!];
+                            newChildren[idx] = {
+                              ...newChildren[idx],
+                              widthConfig: { mode: 'FIXED', fixedMm: val },
+                            };
+                            onUpdate({ ...zone, children: newChildren });
+                          }}
+                          className="h-7 w-20 text-xs"
+                        />
+                      ) : (
+                        <div className="flex items-center gap-1">
+                          <Slider
+                            value={[widthConfig.ratio ?? 1]}
+                            min={0.5}
+                            max={5}
+                            step={0.5}
+                            onValueChange={([val]) => {
+                              const newChildren = [...zone.children!];
+                              newChildren[idx] = {
+                                ...newChildren[idx],
+                                widthConfig: { mode: 'PROPORTIONAL', ratio: val },
+                              };
+                              onUpdate({ ...zone, children: newChildren });
+                            }}
+                            className="w-16"
+                          />
+                          <span className="text-xs font-mono w-6">{widthConfig.ratio ?? 1}x</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Partition configuration for VERTICAL division */}
+          {zone.divisionDirection === 'VERTICAL' && zone.partitions && zone.partitions.length > 0 && (
+            <div className="space-y-3">
+              <Label className="text-xs flex items-center gap-2">
+                <GripHorizontal className="h-3 w-3" />
+                Przegrody ({zone.partitions.length})
+              </Label>
+              <div className="space-y-2">
+                {zone.partitions.map((partition, idx) => (
+                  <div key={partition.id} className="flex items-center gap-2 p-2 rounded bg-muted/30">
+                    <span className="text-xs text-muted-foreground w-10">#{idx + 1}</span>
+                    <Select
+                      value={partition.depthPreset}
+                      onValueChange={(preset: PartitionDepthPreset) => {
+                        const newPartitions = [...zone.partitions!];
+                        newPartitions[idx] = {
+                          ...newPartitions[idx],
+                          depthPreset: preset,
+                          ...(preset === 'CUSTOM' ? { customDepth: Math.round(cabinetDepth * 0.75) } : {}),
+                        };
+                        onUpdate({ ...zone, partitions: newPartitions });
+                      }}
+                    >
+                      <SelectTrigger className="h-7 flex-1 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(PARTITION_DEPTH_LABELS).map(([value, label]) => (
+                          <SelectItem key={value} value={value}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {partition.depthPreset === 'CUSTOM' && (
+                      <NumberInput
+                        value={partition.customDepth ?? Math.round(cabinetDepth * 0.75)}
+                        min={50}
+                        max={cabinetDepth - DEFAULT_BODY_THICKNESS}
+                        onChange={(val) => {
+                          const newPartitions = [...zone.partitions!];
+                          newPartitions[idx] = { ...newPartitions[idx], customDepth: val };
+                          onUpdate({ ...zone, partitions: newPartitions });
+                        }}
+                        className="h-7 w-20 text-xs"
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Info text */}
+          <div className="text-xs text-muted-foreground bg-muted/30 p-2 rounded">
+            {zone.divisionDirection === 'VERTICAL'
+              ? 'Kolumny ułożone od lewej do prawej. Wybierz konkretną kolumnę w podglądzie aby ją edytować.'
+              : 'Sekcje ułożone od dołu do góry. Wybierz konkretną sekcję w podglądzie aby ją edytować.'}
+          </div>
+        </div>
+      )}
+
+      {/* Empty zone info */}
+      {zone.contentType === 'EMPTY' && (
         <div className="pt-3 border-t">
           <p className="text-xs text-muted-foreground text-center py-4">
             Pusta sekcja - brak zawartości do konfiguracji.
             <br />
-            Wybierz półki lub szuflady powyżej.
+            Wybierz półki, szuflady lub podział powyżej.
           </p>
         </div>
       )}
     </div>
   );
 }
+
+export default ZoneEditor;

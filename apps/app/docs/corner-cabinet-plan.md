@@ -4,6 +4,8 @@
 
 Implementation of corner kitchen cabinets - specialized cabinets designed for corner spaces where two walls meet. This plan covers internal corner cabinets (Phase 1) and external corner cabinets (Phase 2).
 
+**Updated to align with current domain-driven architecture (December 2025)**
+
 ## Scope
 
 ### Phase 1: Internal Corner Cabinets (Primary)
@@ -19,9 +21,11 @@ Cabinets for external corners (islands, peninsulas) - to be implemented later
 
 ---
 
-## Architecture
+## Architecture (Domain-Driven Approach)
 
-### New Types (`src/types/index.ts`)
+### 1. New Types (`src/types/corner.ts`)
+
+Create a new dedicated types file for corner cabinet types:
 
 ```typescript
 // ============================================================================
@@ -85,10 +89,9 @@ export type CornerMechanismType =
   | 'MAGIC_CORNER';  // Magic corner system (future)
 
 /**
- * Internal corner cabinet parameters
+ * Corner-specific configuration (embedded in CabinetParams)
  */
-export interface InternalCornerCabinetParams extends CabinetBaseParams {
-  type: 'CORNER_INTERNAL';
+export interface CornerConfig {
   cornerType: InternalCornerType;
   cornerOrientation: CornerOrientation;
 
@@ -108,34 +111,16 @@ export interface InternalCornerCabinetParams extends CabinetBaseParams {
 
   // Doors
   cornerDoorType: CornerDoorType;
-  doorConfig?: DoorConfig; // For bi-fold and standard doors
-  handleConfig?: HandleConfig;
 
-  // Internal
-  shelfCount: number;
+  // Internal mechanism
   mechanismType: CornerMechanismType;
 
   // L-Shaped specific
   diagonalWidth?: number; // Width of diagonal front (auto-calculated if not provided)
 }
-
-/**
- * External corner cabinet parameters (Phase 2)
- */
-export interface ExternalCornerCabinetParams extends CabinetBaseParams {
-  type: 'CORNER_EXTERNAL';
-  cornerType: ExternalCornerType;
-  cornerOrientation: CornerOrientation;
-  armA: number;
-  armB: number;
-  cornerAngle: number;
-  shelfCount: number;
-  doorConfig?: DoorConfig;
-  handleConfig?: HandleConfig;
-}
 ```
 
-### Update CabinetType
+### 2. Update CabinetType (`src/types/cabinet.ts`)
 
 ```typescript
 export type CabinetType =
@@ -145,21 +130,37 @@ export type CabinetType =
   | 'DRAWER'
   | 'CORNER_INTERNAL'   // Phase 1
   | 'CORNER_EXTERNAL';  // Phase 2
-```
 
-### Update CabinetParams Union
+// Add to CabinetParams discriminated union
+export interface CornerInternalCabinetParams extends BaseCabinetDimensions {
+  type: 'CORNER_INTERNAL';
+  cornerConfig: CornerConfig;
+  interiorConfig?: CabinetInteriorConfig; // Uses existing zone-based interior system
+  doorConfig?: DoorConfig;
+  handleConfig?: HandleConfig;
+}
 
-```typescript
+export interface CornerExternalCabinetParams extends BaseCabinetDimensions {
+  type: 'CORNER_EXTERNAL';
+  cornerConfig: CornerConfig;
+  interiorConfig?: CabinetInteriorConfig;
+  doorConfig?: DoorConfig;
+  handleConfig?: HandleConfig;
+}
+
+// Update the union
 export type CabinetParams =
   | KitchenCabinetParams
   | WardrobeCabinetParams
   | BookshelfCabinetParams
   | DrawerCabinetParams
-  | InternalCornerCabinetParams   // Phase 1
-  | ExternalCornerCabinetParams;  // Phase 2
+  | CornerInternalCabinetParams
+  | CornerExternalCabinetParams;
 ```
 
-### New Part Roles
+### 3. New Part Roles (`src/types/cabinet.ts`)
+
+Add corner-specific roles to `CabinetPartRole`:
 
 ```typescript
 export type CabinetPartRole =
@@ -180,92 +181,35 @@ export type CabinetPartRole =
 
 ---
 
-## New Files Structure
+## Domain Module (`src/lib/domain/corner.ts`)
 
-```
-apps/app/src/lib/cabinetGenerators/
-├── corner/
-│   ├── index.ts              # Re-exports
-│   ├── types.ts              # Corner-specific internal types
-│   ├── constants.ts          # Dead zone presets, default values
-│   ├── geometry.ts           # Geometry calculations (L-shape, trapezoid)
-│   ├── internalCorner.ts     # Main internal corner generator
-│   ├── lShapedCorner.ts      # L-shaped (diagonal) corner logic
-│   ├── blindCorner.ts        # Blind corner logic
-│   ├── lazySusan.ts          # Lazy Susan corner logic
-│   ├── cornerDoors.ts        # Corner-specific door generation
-│   ├── cornerShelves.ts      # Corner shelf generation
-│   └── externalCorner.ts     # External corner (Phase 2)
-```
-
----
-
-## Implementation Details
-
-### 1. Geometry Calculations (`geometry.ts`)
+Following the established domain-driven pattern (like `CabinetDomain`, `SectionDomain`):
 
 ```typescript
-/**
- * Calculate L-shaped polygon points for bottom/top/shelf
- */
-export function calculateLShapePoints(
-  armA: number,
-  armB: number,
-  depth: number,
-  cornerAngle: number,
-  deadZonePreset: DeadZonePreset
-): [number, number][];
+// ============================================================================
+// Corner Cabinet Domain
+// ============================================================================
 
-/**
- * Calculate diagonal front width based on arms and angle
- */
-export function calculateDiagonalWidth(
-  armA: number,
-  armB: number,
-  depth: number,
-  cornerAngle: number
-): number;
+import type {
+  CornerConfig,
+  CornerInternalCabinetParams,
+  InternalCornerType,
+  CornerOrientation,
+  DeadZonePreset,
+  CornerDimensionMode,
+  CornerMechanismType,
+  CornerDoorType,
+  WallSharingMode,
+} from '@/types';
 
-/**
- * Calculate trapezoid points for blind corner shelves
- */
-export function calculateTrapezoidPoints(
-  frontWidth: number,
-  backWidth: number,
-  depth: number,
-  skosSide: 'left' | 'right'
-): [number, number][];
+// ============================================================================
+// CONSTANTS
+// ============================================================================
 
-/**
- * Get dead zone dimensions based on preset
- */
-export function getDeadZoneDimensions(
-  preset: DeadZonePreset,
-  armA: number,
-  armB: number,
-  depth: number
-): { width: number; depth: number };
-```
-
-### 2. Dead Zone Presets (`constants.ts`)
-
-```typescript
 export const DEAD_ZONE_PRESETS = {
-  MINIMAL: {
-    widthRatio: 0.15,  // 15% of average arm length
-    depthRatio: 0.15,
-    description: 'Minimalna martwa strefa - maksymalna przestrzeń użytkowa'
-  },
-  STANDARD: {
-    widthRatio: 0.25,  // 25% of average arm length
-    depthRatio: 0.25,
-    description: 'Standardowa - zbalansowane podejście'
-  },
-  ACCESSIBLE: {
-    widthRatio: 0.35,  // 35% of average arm length
-    depthRatio: 0.35,
-    description: 'Dostępna - większy otwór dla łatwego dostępu'
-  }
+  MINIMAL: { widthRatio: 0.15, depthRatio: 0.15 },
+  STANDARD: { widthRatio: 0.25, depthRatio: 0.25 },
+  ACCESSIBLE: { widthRatio: 0.35, depthRatio: 0.35 },
 } as const;
 
 export const CORNER_DEFAULTS = {
@@ -275,387 +219,484 @@ export const CORNER_DEFAULTS = {
   mechanismType: 'FIXED_SHELVES' as CornerMechanismType,
   cornerDoorType: 'SINGLE_DIAGONAL' as CornerDoorType,
   wallSharingMode: 'FULL_ISOLATION' as WallSharingMode,
-  shelfCount: 1,
+  armA: 800,
+  armB: 800,
 } as const;
 
-// Bi-fold door constants
-export const BI_FOLD_GAP = 3; // mm gap between folding parts
-export const BI_FOLD_HINGE_OFFSET = 30; // mm from edge for hinge placement
-```
+export const CORNER_LIMITS = {
+  MIN_ARM: 300,
+  MAX_ARM: 1500,
+  MIN_ANGLE: 45,
+  MAX_ANGLE: 135,
+} as const;
 
-### 3. L-Shaped Corner Generator (`lShapedCorner.ts`)
+// ============================================================================
+// CREATORS
+// ============================================================================
 
-Core logic for diagonal/L-shaped corner cabinets:
-
-```typescript
-export function generateLShapedCorner(
-  params: GenerateLShapedCornerParams
-): GeneratedPart[] {
-  const parts: GeneratedPart[] = [];
-
-  // 1. Generate L-shaped bottom panel
-  // 2. Generate L-shaped top panel
-  // 3. Generate left side panel (along armA)
-  // 4. Generate right side panel (along armB)
-  // 5. Generate diagonal front panel (no door) or door frame
-  // 6. Generate back panels (left + right arm backs)
-  // 7. Generate L-shaped shelves
-  // 8. Generate doors based on cornerDoorType
-  // 9. Apply wall sharing mode (remove shared walls)
-
-  return parts;
+export function createCornerConfig(
+  cornerType: InternalCornerType = 'L_SHAPED',
+  orientation: CornerOrientation = 'LEFT'
+): CornerConfig {
+  return {
+    cornerType,
+    cornerOrientation: orientation,
+    dimensionMode: CORNER_DEFAULTS.dimensionMode,
+    armA: CORNER_DEFAULTS.armA,
+    armB: CORNER_DEFAULTS.armB,
+    cornerAngle: CORNER_DEFAULTS.cornerAngle,
+    deadZonePreset: CORNER_DEFAULTS.deadZonePreset,
+    wallSharingMode: CORNER_DEFAULTS.wallSharingMode,
+    cornerDoorType: CORNER_DEFAULTS.cornerDoorType,
+    mechanismType: CORNER_DEFAULTS.mechanismType,
+  };
 }
-```
 
-### 4. Blind Corner Generator (`blindCorner.ts`)
-
-Logic for blind corner cabinets with hidden storage:
-
-```typescript
-export function generateBlindCorner(
-  params: GenerateBlindCornerParams
-): GeneratedPart[] {
-  // Blind corner has one full-depth arm and one shallow arm
-  // The "blind" portion is accessible via pull-out mechanism
-
-  // 1. Generate bottom (trapezoid or rect depending on config)
-  // 2. Generate full side panels
-  // 3. Generate filler panel for blind area
-  // 4. Generate back panel
-  // 5. Generate shelves
-  // 6. Generate door (standard single door on accessible side)
-
-  return parts;
+export function createCornerInternalParams(
+  width: number,
+  height: number,
+  depth: number,
+  cornerConfig?: Partial<CornerConfig>
+): CornerInternalCabinetParams {
+  return {
+    type: 'CORNER_INTERNAL',
+    width,
+    height,
+    depth,
+    cornerConfig: { ...createCornerConfig(), ...cornerConfig },
+  };
 }
-```
 
-### 5. Corner Doors (`cornerDoors.ts`)
+// ============================================================================
+// UPDATERS (Immutable)
+// ============================================================================
 
-```typescript
-/**
- * Generate bi-fold doors for corner cabinets
- */
-export function generateBiFoldDoors(params: BiFoldDoorParams): GeneratedPart[];
+export function updateCornerType(
+  config: CornerConfig,
+  cornerType: InternalCornerType
+): CornerConfig {
+  return { ...config, cornerType };
+}
 
-/**
- * Generate single diagonal door
- */
-export function generateDiagonalDoor(params: DiagonalDoorParams): GeneratedPart[];
+export function updateOrientation(
+  config: CornerConfig,
+  orientation: CornerOrientation
+): CornerConfig {
+  return { ...config, cornerOrientation: orientation };
+}
 
-/**
- * Generate double-L door configuration
- */
-export function generateDoubleLDoors(params: DoubleLDoorParams): GeneratedPart[];
-```
+export function updateArmDimensions(
+  config: CornerConfig,
+  armA: number,
+  armB?: number
+): CornerConfig {
+  const effectiveArmB = config.dimensionMode === 'SYMMETRIC' ? armA : (armB ?? config.armB);
+  return { ...config, armA, armB: effectiveArmB };
+}
 
-### 6. Corner Shelves (`cornerShelves.ts`)
+export function updateDimensionMode(
+  config: CornerConfig,
+  mode: CornerDimensionMode
+): CornerConfig {
+  const armB = mode === 'SYMMETRIC' ? config.armA : config.armB;
+  return { ...config, dimensionMode: mode, armB };
+}
 
-```typescript
-/**
- * Generate L-shaped shelf
- */
-export function generateLShapedShelf(
-  params: LShapedShelfParams,
-  shelfIndex: number
-): GeneratedPart;
+export function updateDeadZonePreset(
+  config: CornerConfig,
+  preset: DeadZonePreset
+): CornerConfig {
+  return { ...config, deadZonePreset: preset };
+}
 
-/**
- * Generate trapezoid shelf (for blind corner)
- */
-export function generateTrapezoidShelf(
-  params: TrapezoidShelfParams,
-  shelfIndex: number
-): GeneratedPart;
+export function updateWallSharingMode(
+  config: CornerConfig,
+  mode: WallSharingMode
+): CornerConfig {
+  return { ...config, wallSharingMode: mode };
+}
 
-/**
- * Calculate shelf Y positions with even spacing
- */
+// ============================================================================
+// CALCULATORS
+// ============================================================================
+
+export function calculateLShapePoints(
+  armA: number,
+  armB: number,
+  depth: number,
+  cornerAngle: number,
+  deadZonePreset: DeadZonePreset,
+  customDeadZone?: { width: number; depth: number }
+): [number, number][] {
+  const deadZone = getDeadZoneDimensions(deadZonePreset, armA, armB, depth, customDeadZone);
+
+  return [
+    [0, 0],
+    [armA, 0],
+    [armA, depth],
+    [depth + deadZone.width, depth],
+    [depth + deadZone.width, depth + deadZone.depth],
+    [0, depth + deadZone.depth],
+    [0, armB],
+  ];
+}
+
+export function calculateDiagonalWidth(
+  armA: number,
+  armB: number,
+  depth: number,
+  cornerAngle: number = 90
+): number {
+  if (cornerAngle === 90) {
+    const avgArm = (armA + armB) / 2;
+    const deadZoneSize = avgArm * DEAD_ZONE_PRESETS.STANDARD.widthRatio;
+    return Math.sqrt(2 * Math.pow(deadZoneSize, 2));
+  }
+  const radians = (cornerAngle * Math.PI) / 180;
+  return Math.sqrt(
+    Math.pow(depth, 2) + Math.pow(depth, 2) - 2 * depth * depth * Math.cos(radians)
+  );
+}
+
+export function getDeadZoneDimensions(
+  preset: DeadZonePreset,
+  armA: number,
+  armB: number,
+  depth: number,
+  custom?: { width: number; depth: number }
+): { width: number; depth: number } {
+  if (preset === 'CUSTOM' && custom) return custom;
+  const presetConfig = DEAD_ZONE_PRESETS[preset] || DEAD_ZONE_PRESETS.STANDARD;
+  const avgArm = (armA + armB) / 2;
+  return {
+    width: avgArm * presetConfig.widthRatio,
+    depth: avgArm * presetConfig.depthRatio,
+  };
+}
+
 export function calculateShelfPositions(
   cabinetHeight: number,
   materialThickness: number,
   shelfCount: number
-): number[];
+): number[] {
+  if (shelfCount <= 0) return [];
+  const usableHeight = cabinetHeight - 2 * materialThickness;
+  const spacing = usableHeight / (shelfCount + 1);
+  return Array.from({ length: shelfCount }, (_, i) => materialThickness + spacing * (i + 1));
+}
+
+// ============================================================================
+// VALIDATORS
+// ============================================================================
+
+export interface CornerValidationResult {
+  valid: boolean;
+  errors: string[];
+}
+
+export function validateCornerConfig(config: CornerConfig): CornerValidationResult {
+  const errors: string[] = [];
+
+  if (config.armA < CORNER_LIMITS.MIN_ARM || config.armA > CORNER_LIMITS.MAX_ARM) {
+    errors.push(`Arm A must be between ${CORNER_LIMITS.MIN_ARM}-${CORNER_LIMITS.MAX_ARM}mm`);
+  }
+
+  if (config.dimensionMode === 'ASYMMETRIC') {
+    if (config.armB < CORNER_LIMITS.MIN_ARM || config.armB > CORNER_LIMITS.MAX_ARM) {
+      errors.push(`Arm B must be between ${CORNER_LIMITS.MIN_ARM}-${CORNER_LIMITS.MAX_ARM}mm`);
+    }
+  }
+
+  if (config.cornerAngle < CORNER_LIMITS.MIN_ANGLE || config.cornerAngle > CORNER_LIMITS.MAX_ANGLE) {
+    errors.push(`Corner angle must be between ${CORNER_LIMITS.MIN_ANGLE}-${CORNER_LIMITS.MAX_ANGLE}deg`);
+  }
+
+  return { valid: errors.length === 0, errors };
+}
+
+// ============================================================================
+// QUERIES
+// ============================================================================
+
+export function isSymmetric(config: CornerConfig): boolean {
+  return config.dimensionMode === 'SYMMETRIC';
+}
+
+export function hasDiagonalFront(config: CornerConfig): boolean {
+  return config.cornerType === 'L_SHAPED';
+}
+
+export function hasSharedWalls(config: CornerConfig): boolean {
+  return config.wallSharingMode !== 'FULL_ISOLATION';
+}
+
+export function getTypeLabel(type: InternalCornerType): string {
+  const labels: Record<InternalCornerType, string> = {
+    L_SHAPED: 'L-ksztaltna (diagonalna)',
+    BLIND_CORNER: 'Slepa narozna',
+    LAZY_SUSAN: 'Karuzela (Lazy Susan)',
+  };
+  return labels[type];
+}
+
+export function getSummary(config: CornerConfig): string {
+  const type = getTypeLabel(config.cornerType);
+  const dims = config.dimensionMode === 'SYMMETRIC'
+    ? `${config.armA}mm`
+    : `${config.armA}x${config.armB}mm`;
+  return `${type} ${dims}`;
+}
+
+// ============================================================================
+// EXPORT DOMAIN OBJECT
+// ============================================================================
+
+export const CornerDomain = {
+  DEAD_ZONE_PRESETS,
+  CORNER_DEFAULTS,
+  CORNER_LIMITS,
+  createCornerConfig,
+  createCornerInternalParams,
+  updateCornerType,
+  updateOrientation,
+  updateArmDimensions,
+  updateDimensionMode,
+  updateDeadZonePreset,
+  updateWallSharingMode,
+  calculateLShapePoints,
+  calculateDiagonalWidth,
+  getDeadZoneDimensions,
+  calculateShelfPositions,
+  validateCornerConfig,
+  isSymmetric,
+  hasDiagonalFront,
+  hasSharedWalls,
+  getTypeLabel,
+  getSummary,
+};
+
+export default CornerDomain;
+```
+
+---
+
+## Generator Files Structure
+
+Following the existing generator pattern in `src/lib/cabinetGenerators/`:
+
+```
+apps/app/src/lib/cabinetGenerators/
+├── corner/
+│   ├── index.ts              # Main generator + re-exports
+│   ├── lShapedGenerator.ts   # L-shaped corner generation
+│   ├── blindCornerGenerator.ts # Blind corner generation
+│   ├── lazySusanGenerator.ts # Lazy Susan generation (Phase 1C)
+│   ├── cornerParts.ts        # Shared part generation utilities
+│   ├── cornerDoors.ts        # Corner-specific door generation
+│   └── cornerShelves.ts      # Corner shelf generation
+```
+
+### Main Generator (`corner/index.ts`)
+
+```typescript
+import type { CornerInternalCabinetParams, CabinetMaterials, Material } from '@/types';
+import type { GeneratedPart } from '../types';
+import { generateLShapedCorner } from './lShapedGenerator';
+import { generateBlindCorner } from './blindCornerGenerator';
+import { generateLazySusan } from './lazySusanGenerator';
+
+export function generateCornerInternalCabinet(
+  cabinetId: string,
+  furnitureId: string,
+  params: CornerInternalCabinetParams,
+  materials: CabinetMaterials,
+  bodyMaterial: Material,
+  backMaterial?: Material
+): GeneratedPart[] {
+  const { cornerConfig } = params;
+
+  switch (cornerConfig.cornerType) {
+    case 'L_SHAPED':
+      return generateLShapedCorner(cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial);
+    case 'BLIND_CORNER':
+      return generateBlindCorner(cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial);
+    case 'LAZY_SUSAN':
+      return generateLazySusan(cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial);
+    default:
+      return generateLShapedCorner(cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial);
+  }
+}
+```
+
+---
+
+## Store Integration
+
+### Update Cabinet Slice (`src/lib/store/slices/cabinetSlice.ts`)
+
+Add corner cabinet support to `addCabinet` action:
+
+```typescript
+import { generateCornerInternalCabinet } from '@/lib/cabinetGenerators/corner';
+
+// In addCabinet action switch statement:
+case 'CORNER_INTERNAL':
+  generatedParts = generateCornerInternalCabinet(
+    cabinetId,
+    furnitureId,
+    params as CornerInternalCabinetParams,
+    materials,
+    bodyMaterial,
+    backMaterial
+  );
+  break;
+
+case 'CORNER_EXTERNAL':
+  // Phase 2 - not yet implemented
+  generatedParts = [];
+  break;
+```
+
+### Update Generator Factory (`src/lib/cabinetGenerators/index.ts`)
+
+```typescript
+import { generateCornerInternalCabinet } from './corner';
+
+export function getGeneratorForType(type: CabinetType) {
+  switch (type) {
+    case 'KITCHEN':
+      return generateKitchenCabinet;
+    case 'WARDROBE':
+      return generateWardrobe;
+    case 'BOOKSHELF':
+      return generateBookshelf;
+    case 'DRAWER':
+      return generateDrawerCabinet;
+    case 'CORNER_INTERNAL':
+      return generateCornerInternalCabinet;
+    case 'CORNER_EXTERNAL':
+      return () => []; // Phase 2
+    default:
+      return generateKitchenCabinet;
+  }
+}
+```
+
+### Add to Config (`src/lib/config.ts`)
+
+```typescript
+// Corner cabinet presets
+export const CORNER_CABINET_PRESETS: Record<InternalCornerType, Partial<CornerConfig>> = {
+  L_SHAPED: {
+    cornerType: 'L_SHAPED',
+    cornerDoorType: 'SINGLE_DIAGONAL',
+    mechanismType: 'FIXED_SHELVES',
+  },
+  BLIND_CORNER: {
+    cornerType: 'BLIND_CORNER',
+    cornerDoorType: 'NONE',
+    mechanismType: 'PULL_OUT',
+  },
+  LAZY_SUSAN: {
+    cornerType: 'LAZY_SUSAN',
+    cornerDoorType: 'BI_FOLD',
+    mechanismType: 'LAZY_SUSAN',
+  },
+};
 ```
 
 ---
 
 ## UI Components
 
-### New/Updated Components
+### New Components Structure
 
 ```
 apps/app/src/components/ui/
-├── CornerCabinetDialog.tsx    # Main corner cabinet creation dialog
-├── CornerTypeSelector.tsx     # Visual selector for corner types
-├── CornerDimensionInput.tsx   # Arms A/B input with symmetric toggle
-├── DeadZonePresetSelector.tsx # Dead zone preset buttons
-└── WallSharingSelector.tsx    # Wall sharing mode selector
+├── corner/
+│   ├── CornerCabinetDialog.tsx    # Main corner cabinet creation dialog
+│   ├── CornerTypeSelector.tsx     # Visual selector for corner types
+│   ├── CornerDimensionInput.tsx   # Arms A/B input with symmetric toggle
+│   ├── DeadZonePresetSelector.tsx # Dead zone preset buttons
+│   └── WallSharingSelector.tsx    # Wall sharing mode selector
 ```
 
-### CornerCabinetDialog Structure
+### Integration with CabinetTemplateDialog
 
 ```tsx
-<Dialog>
-  <DialogContent>
-    <Tabs defaultValue="type">
-      {/* Tab 1: Corner Type Selection */}
-      <TabsContent value="type">
-        <CornerTypeSelector
-          selectedType={cornerType}
-          orientation={cornerOrientation}
-          onTypeChange={setCornerType}
-          onOrientationChange={setCornerOrientation}
-        />
-      </TabsContent>
-
-      {/* Tab 2: Dimensions */}
-      <TabsContent value="dimensions">
-        <CornerDimensionInput
-          mode={dimensionMode}
-          armA={armA}
-          armB={armB}
-          height={height}
-          depth={depth}
-          cornerAngle={cornerAngle}
-          onChange={handleDimensionChange}
-        />
-        <DeadZonePresetSelector
-          preset={deadZonePreset}
-          onChange={setDeadZonePreset}
-        />
-      </TabsContent>
-
-      {/* Tab 3: Configuration */}
-      <TabsContent value="config">
-        <WallSharingSelector ... />
-        <ShelfCountInput ... />
-        <CornerDoorTypeSelector ... />
-      </TabsContent>
-
-      {/* Tab 4: Materials */}
-      <TabsContent value="materials">
-        <MaterialSelector ... />
-      </TabsContent>
-    </Tabs>
-  </DialogContent>
-</Dialog>
-```
-
----
-
-## Integration Points
-
-### 1. Update `CabinetTemplateDialog.tsx`
-
-Add "Narożna" tab/option alongside existing cabinet types:
-
-```tsx
+// In CabinetTemplateDialog.tsx - add corner option
 const CABINET_CATEGORIES = [
-  { id: 'kitchen', label: 'Kuchenna', icon: ... },
-  { id: 'corner', label: 'Narożna', icon: ..., isNew: true },
-  { id: 'drawer', label: 'Szufladowa', icon: ... },
-  // ...
+  { id: 'kitchen', label: 'Kuchenna', icon: ChefHat },
+  { id: 'corner', label: 'Narozna', icon: CornerUpRight, isNew: true },
+  { id: 'wardrobe', label: 'Szafa', icon: Shirt },
+  { id: 'bookshelf', label: 'Regal', icon: BookOpen },
+  { id: 'drawer', label: 'Szufladowa', icon: Archive },
 ];
-```
-
-### 2. Update `getGeneratorForType()` in `index.ts`
-
-```typescript
-export function getGeneratorForType(type: CabinetType): CabinetGenerator {
-  switch (type) {
-    // ... existing cases
-    case 'CORNER_INTERNAL':
-      return generateInternalCornerCabinet;
-    case 'CORNER_EXTERNAL':
-      return generateExternalCornerCabinet;
-  }
-}
-```
-
-### 3. Update `Part3D.tsx` for New ShapeTypes
-
-Ensure L_SHAPE and POLYGON shape types render correctly for corner shelves:
-
-```tsx
-// Already supported via existing ShapeParams union
-// Verify geometry generation for L_SHAPE handles corner cases
-```
-
-### 4. PropertiesPanel Updates
-
-Add corner-specific properties when corner cabinet is selected:
-- Corner type display
-- Dead zone preset selector
-- Wall sharing mode toggle
-- Arm dimensions (A/B)
-
----
-
-## Validation Rules
-
-```typescript
-// Minimum dimensions
-const CORNER_MIN_ARM = 300;     // mm - minimum arm length
-const CORNER_MAX_ARM = 1500;    // mm - maximum arm length
-const CORNER_MIN_HEIGHT = 400;  // mm
-const CORNER_MAX_HEIGHT = 2400; // mm
-const CORNER_MIN_DEPTH = 300;   // mm
-const CORNER_MAX_DEPTH = 800;   // mm
-
-// Angle constraints
-const CORNER_MIN_ANGLE = 45;    // degrees
-const CORNER_MAX_ANGLE = 135;   // degrees
-
-// Validation function
-export function validateCornerCabinetParams(
-  params: InternalCornerCabinetParams
-): ValidationResult {
-  const errors: string[] = [];
-
-  if (params.armA < CORNER_MIN_ARM || params.armA > CORNER_MAX_ARM) {
-    errors.push(`Ramię A musi być w zakresie ${CORNER_MIN_ARM}-${CORNER_MAX_ARM}mm`);
-  }
-
-  if (params.dimensionMode === 'ASYMMETRIC') {
-    if (params.armB < CORNER_MIN_ARM || params.armB > CORNER_MAX_ARM) {
-      errors.push(`Ramię B musi być w zakresie ${CORNER_MIN_ARM}-${CORNER_MAX_ARM}mm`);
-    }
-  }
-
-  if (params.cornerAngle < CORNER_MIN_ANGLE || params.cornerAngle > CORNER_MAX_ANGLE) {
-    errors.push(`Kąt narożnika musi być w zakresie ${CORNER_MIN_ANGLE}-${CORNER_MAX_ANGLE}°`);
-  }
-
-  // ... more validations
-
-  return { valid: errors.length === 0, errors };
-}
 ```
 
 ---
 
 ## Implementation Phases
 
-### Phase 1A: Core Types & L-Shaped Corner
-1. Add new types to `src/types/index.ts`
-2. Create `corner/` directory structure
-3. Implement `geometry.ts` calculations
-4. Implement `constants.ts` with presets
-5. Implement `lShapedCorner.ts` generator
-6. Basic UI dialog (dimensions + type selection)
-7. Integration with existing generator factory
+### Phase 1A: Core Types & Domain Module
+1. [ ] Create `src/types/corner.ts` with all corner types
+2. [ ] Update `src/types/cabinet.ts` with corner cabinet types and part roles
+3. [ ] Update `src/types/index.ts` to export corner types
+4. [ ] Create `src/lib/domain/corner.ts` domain module
+5. [ ] Update `src/lib/domain/index.ts` to export CornerDomain
 
-### Phase 1B: Doors & Shelves
-1. Implement `cornerDoors.ts` (bi-fold, diagonal, double-L)
-2. Implement `cornerShelves.ts` (L-shaped shelves)
-3. Full door configuration UI
-4. Handle configuration for corner doors
+### Phase 1B: L-Shaped Corner Generator
+1. [ ] Create `src/lib/cabinetGenerators/corner/` directory
+2. [ ] Implement `corner/index.ts` main generator
+3. [ ] Implement `corner/lShapedGenerator.ts`
+4. [ ] Implement `corner/cornerParts.ts` utilities
+5. [ ] Implement `corner/cornerShelves.ts`
+6. [ ] Update `cabinetGenerators/index.ts` with corner generator
 
-### Phase 1C: Blind Corner & Lazy Susan
-1. Implement `blindCorner.ts` generator
-2. Implement `lazySusan.ts` (visual representation)
-3. Corner type selector with visual previews
-4. Dead zone preset selector UI
+### Phase 1C: Store & Factory Integration
+1. [ ] Update `cabinetSlice.ts` with corner support
+2. [ ] Update generator factory in `cabinetGenerators/index.ts`
+3. [ ] Add corner presets to `config.ts`
 
-### Phase 1D: Advanced Features
-1. Wall sharing mode implementation
-2. Asymmetric dimensions support
-3. Custom angle support (non-90°)
-4. PropertiesPanel integration for editing
+### Phase 1D: UI Components
+1. [ ] Create `CornerTypeSelector.tsx`
+2. [ ] Create `CornerDimensionInput.tsx`
+3. [ ] Create `DeadZonePresetSelector.tsx`
+4. [ ] Create `CornerCabinetDialog.tsx`
+5. [ ] Integrate with `CabinetTemplateDialog.tsx`
 
-### Phase 2: External Corner Cabinets (Future)
-1. `externalCorner.ts` generator
-2. External corner specific UI
-3. Island/peninsula integration
+### Phase 1E: Doors & Advanced Features
+1. [ ] Implement `corner/cornerDoors.ts` (bi-fold, diagonal)
+2. [ ] Implement blind corner generator
+3. [ ] Implement wall sharing mode
+4. [ ] Implement non-90 degree angle support
+
+### Phase 2: External Corner (Future)
+1. [ ] External corner generator
+2. [ ] External corner UI
+3. [ ] Island/peninsula integration
 
 ---
 
 ## Testing Checklist
 
-### Unit Tests
-- [ ] Geometry calculations (L-shape points, diagonal width)
-- [ ] Dead zone dimension calculations
-- [ ] Shelf position calculations
-- [ ] Validation functions
-
-### Integration Tests
-- [ ] L-shaped corner generation produces correct parts
-- [ ] Blind corner generation works
-- [ ] Door configurations render correctly
+- [ ] L-shaped corner creates correct parts
+- [ ] Polygon geometry renders properly in 3D (Part3D handles POLYGON shapeType)
+- [ ] Dead zone presets produce valid dimensions
 - [ ] Wall sharing removes correct panels
-
-### Visual Tests (Manual)
-- [ ] L-shaped bottom/top renders correctly in 3D
-- [ ] Diagonal front aligns properly
-- [ ] Bi-fold doors open animation (future)
-- [ ] Shelves fit inside cabinet space
-- [ ] No z-fighting or overlapping parts
-
-### Edge Cases
-- [ ] Minimum dimensions (300mm arms)
-- [ ] Maximum dimensions (1500mm arms)
-- [ ] Non-90° angles (45°, 135°)
-- [ ] Asymmetric arms (A ≠ B)
-- [ ] Zero shelves configuration
-- [ ] All door types with all corner types
-
----
-
-## Migration & Backwards Compatibility
-
-No migration needed - this is a new cabinet type. Existing cabinets remain unchanged.
-
-Ensure:
-- `CabinetType` union is updated
-- `CabinetParams` union is updated
-- Default store state handles new types
-- CSV export handles corner parts correctly
-
----
-
-## Open Questions (To Resolve During Implementation)
-
-1. **Bi-fold door animation** - How to handle open/close animation in 3D view?
-2. **Lazy Susan visualization** - How detailed should the carousel be rendered?
-3. **Pull-out mechanism** - Visual representation vs. just metadata?
-4. **CSV export** - How to represent L-shaped parts in cut list?
-5. **Collision detection** - Special handling for L-shaped bounding boxes?
-
----
-
-## Related Files to Modify
-
-1. `src/types/index.ts` - Add new types
-2. `src/lib/cabinetGenerators/index.ts` - Register new generators
-3. `src/components/ui/CabinetTemplateDialog.tsx` - Add corner option
-4. `src/components/ui/PropertiesPanel.tsx` - Corner cabinet properties
-5. `src/lib/store.ts` - Handle new cabinet type in actions
-6. `src/lib/csv.ts` - Export corner parts correctly
-
----
-
-## Estimated Complexity
-
-| Component | Complexity | Notes |
-|-----------|------------|-------|
-| Types definition | Low | Straightforward type additions |
-| Geometry calculations | High | Complex L-shape math |
-| L-shaped generator | High | Many parts with precise positioning |
-| Blind corner generator | Medium | Simpler geometry |
-| Bi-fold doors | High | Two-part doors with hinge logic |
-| UI dialog | Medium | Multiple tabs, conditional fields |
-| Wall sharing | Medium | Conditional part removal |
-| Non-90° angles | High | Trigonometry for arbitrary angles |
+- [ ] Door configurations work
+- [ ] CSV export handles polygon parts
+- [ ] Validation catches invalid configurations
+- [ ] PropertiesPanel shows corner-specific options
+- [ ] Domain functions are pure and testable
 
 ---
 
 ## Success Criteria
 
-1. User can create L-shaped corner cabinet with diagonal front
-2. User can create blind corner cabinet
-3. All door configurations work correctly
-4. Dead zone presets provide sensible defaults
-5. Wall sharing mode removes correct panels
-6. Parts appear correctly in 3D view
-7. Parts export correctly to CSV cut list
-8. Architecture supports future mechanism types (Lazy Susan, pull-out)
+1. User can create L-shaped corner cabinet from template dialog
+2. All parts render correctly in 3D view
+3. Domain functions follow established patterns (creators, updaters, calculators, validators, queries)
+4. Integration with existing zone-based interior system works
+5. CSV export includes corner parts correctly
+6. Architecture supports future corner types (blind, lazy susan, external)

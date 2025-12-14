@@ -507,6 +507,8 @@ export const PartDomain = {
       SIDE_FRONT_RIGHT: 'Panel dekoracyjny prawy',
       DECORATIVE_TOP: 'Blenda górna',
       DECORATIVE_BOTTOM: 'Cokół',
+      PARTITION: 'Przegroda',
+      LEG: 'Nóżka',
     };
     return labels[role] ?? role;
   },

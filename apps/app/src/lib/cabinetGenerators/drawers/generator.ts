@@ -15,7 +15,7 @@ import {
 } from '../../config';
 import { generateHandleMetadata } from '../../handlePresets';
 import { calculateDrawerBoxDimensions } from './utils';
-import { Section, Shelf, distributeByRatio } from '@/lib/domain';
+import { Shelf, distributeByRatio } from '@/lib/domain';
 
 // ============================================================================
 // Types
@@ -80,8 +80,8 @@ export function generateDrawers(config: DrawerGeneratorConfig): GeneratedPart[] 
   const parts: GeneratedPart[] = [];
   const slideConfig = DRAWER_SLIDE_PRESETS[slideType];
 
-  // Calculate heights using domain module
-  const interiorHeight = Section.calculateInteriorHeight(cabinetHeight, bodyThickness);
+  // Calculate heights (interior height = cabinet height - top/bottom panel thickness)
+  const interiorHeight = Math.max(cabinetHeight - bodyThickness * 2, 0);
   const totalFrontHeight = cabinetHeight - FRONT_MARGIN * 2;
   const frontWidth = cabinetWidth - FRONT_MARGIN * 2;
 

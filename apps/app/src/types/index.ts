@@ -69,17 +69,27 @@ export { generateAboveBoxShelfId } from './drawer';
 
 // Cabinet interior types
 export type {
-  SectionContentType,
+  ZoneDivisionDirection,
+  ZoneContentType,
+  ZoneSizeMode,
+  PartitionDepthPreset,
+  PartitionConfig,
+  ZoneHeightConfig,
+  ZoneWidthConfig,
+  InteriorZone,
+  CabinetInteriorConfig,
   ShelfDepthPreset,
   ShelfConfig,
   ShelvesConfiguration,
-  CabinetSection,
-  CabinetInteriorConfig,
 } from './cabinetInterior';
 export {
+  DEFAULT_ZONE_HEIGHT_CONFIG,
+  DEFAULT_ZONE_WIDTH_CONFIG,
+  DEFAULT_PARTITION_CONFIG,
   DEFAULT_SHELF_CONFIG,
   DEFAULT_SHELVES_CONFIG,
-  generateSectionId,
+  generateZoneId,
+  generatePartitionId,
   generateShelfId,
 } from './cabinetInterior';
 
@@ -97,6 +107,16 @@ export {
   DECORATIVE_PANEL_DEFAULTS,
   DEFAULT_DECORATIVE_PANEL_CONFIG,
 } from './decorative';
+
+// Leg types
+export type {
+  LegPreset,
+  LegFinish,
+  LegShape,
+  LegCountMode,
+  LegTypeConfig,
+  LegsConfig,
+} from './legs';
 
 // Cabinet types
 export type {

@@ -24,7 +24,7 @@ import {
   DEFAULT_BODY_THICKNESS,
   generateZoneId,
 } from '@/lib/config';
-import { Section, Drawer } from '@/lib/domain';
+import { Drawer } from '@/lib/domain';
 import { Plus, Trash2, ChevronUp, ChevronDown, LayoutTemplate } from 'lucide-react';
 
 // Drawer slide type labels
@@ -68,8 +68,8 @@ const ZonePreview = ({
 }: ZonePreviewProps) => {
   const totalRatio = zones.reduce((sum, z) => sum + z.heightRatio, 0);
 
-  // Calculate interior height using domain module
-  const interiorHeight = Section.calculateInteriorHeight(cabinetHeight, DEFAULT_BODY_THICKNESS);
+  // Calculate interior height (cabinet height - top/bottom panel thickness)
+  const interiorHeight = Math.max(cabinetHeight - DEFAULT_BODY_THICKNESS * 2, 0);
 
   // Calculate drawer box width using domain module
   const drawerBoxWidth = Drawer.calculateDrawerWidth(cabinetWidth, DEFAULT_BODY_THICKNESS, slideType);

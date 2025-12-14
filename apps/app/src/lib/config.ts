@@ -3,7 +3,7 @@
  * Centralized keyboard shortcuts and settings
  */
 
-import { CabinetParams, CabinetType, DoorConfig, DrawerSlideType, DrawerSlideConfig, DrawerConfiguration, EdgeBandingRect } from "@/types";
+import { CabinetParams, CabinetType, DoorConfig, DrawerSlideType, DrawerSlideConfig, DrawerConfiguration, EdgeBandingRect, LegPreset, LegFinish, LegShape, LegCountMode } from "@/types";
 
 // Utility types/helpers for keyboard shortcuts
 export type ShortcutKeys = string | string[];
@@ -210,10 +210,23 @@ export const TRIM_STRIP_CONFIG = {
 // ============================================================================
 
 export const INTERIOR_CONFIG = {
-  // Section limits
+  // Section limits (legacy)
   MAX_SECTIONS: 6,                    // Maximum number of horizontal sections
   SECTION_HEIGHT_RATIO_MIN: 1,        // Minimum height ratio for a section
   SECTION_HEIGHT_RATIO_MAX: 4,        // Maximum height ratio for a section
+
+  // Zone tree limits (Version 2)
+  MAX_ZONE_DEPTH: 4,                  // Maximum nesting levels (0, 1, 2, 3)
+  MAX_CHILDREN_PER_ZONE: 6,           // Maximum children in a NESTED zone
+  MAX_TOTAL_ZONES: 20,                // Total zones across entire tree
+
+  // Zone size limits (mm)
+  MIN_ZONE_HEIGHT_MM: 50,             // Minimum zone height
+  MIN_ZONE_WIDTH_MM: 100,             // Minimum zone width
+
+  // Partition limits (mm)
+  PARTITION_DEPTH_MIN: 50,
+  PARTITION_DEPTH_MAX: 500,
 
   // Drawer zone limits
   MAX_DRAWER_ZONES: 8,                // Maximum drawer zones per section
@@ -231,6 +244,221 @@ export const INTERIOR_CONFIG = {
   CUSTOM_SHELF_DEPTH_MIN: 50,
   CUSTOM_SHELF_DEPTH_MAX: 500,
   CUSTOM_SHELF_DEPTH_OFFSET: 10,      // Offset from cabinet depth for max calculation
+} as const;
+
+// ============================================================================
+// Zone Presets (Interior Configuration Templates)
+// ============================================================================
+
+import type {
+  InteriorZone,
+  CabinetInteriorConfig,
+  ZoneContentType,
+  ZoneDivisionDirection,
+} from '@/types';
+
+/**
+ * Create a simple zone with given content type
+ */
+function createSimpleZone(
+  contentType: ZoneContentType,
+  depth: number,
+  heightRatio: number = 1
+): InteriorZone {
+  return {
+    id: `preset_${depth}_${Math.random().toString(36).slice(2, 5)}`,
+    contentType,
+    heightConfig: { mode: 'RATIO', ratio: heightRatio },
+    depth,
+  };
+}
+
+/**
+ * Create a nested zone with children
+ */
+function createNestedZone(
+  direction: ZoneDivisionDirection,
+  depth: number,
+  children: InteriorZone[],
+  heightRatio: number = 1
+): InteriorZone {
+  return {
+    id: `preset_${depth}_${Math.random().toString(36).slice(2, 5)}`,
+    contentType: 'NESTED',
+    divisionDirection: direction,
+    children,
+    heightConfig: { mode: 'RATIO', ratio: heightRatio },
+    depth,
+  };
+}
+
+/**
+ * Zone presets for quick interior setup
+ */
+export const ZONE_PRESETS: Record<string, { labelPl: string; config: CabinetInteriorConfig }> = {
+  SINGLE_SHELVES: {
+    labelPl: 'Tylko półki',
+    config: {
+      rootZone: {
+        id: 'root',
+        contentType: 'SHELVES',
+        shelvesConfig: { mode: 'UNIFORM', count: 2, depthPreset: 'FULL', shelves: [] },
+        heightConfig: { mode: 'RATIO', ratio: 1 },
+        depth: 0,
+      },
+    },
+  },
+
+  SINGLE_DRAWERS: {
+    labelPl: 'Tylko szuflady',
+    config: {
+      rootZone: {
+        id: 'root',
+        contentType: 'DRAWERS',
+        drawerConfig: {
+          slideType: 'SIDE_MOUNT',
+          zones: [
+            { id: 'z1', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
+            { id: 'z2', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
+            { id: 'z3', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
+          ],
+        },
+        heightConfig: { mode: 'RATIO', ratio: 1 },
+        depth: 0,
+      },
+    },
+  },
+
+  TWO_COLUMNS_EQUAL: {
+    labelPl: '2 kolumny (równe)',
+    config: {
+      rootZone: createNestedZone('VERTICAL', 0, [
+        createSimpleZone('EMPTY', 1),
+        createSimpleZone('EMPTY', 1),
+      ]),
+    },
+  },
+
+  THREE_COLUMNS_EQUAL: {
+    labelPl: '3 kolumny (równe)',
+    config: {
+      rootZone: createNestedZone('VERTICAL', 0, [
+        createSimpleZone('EMPTY', 1),
+        createSimpleZone('EMPTY', 1),
+        createSimpleZone('EMPTY', 1),
+      ]),
+    },
+  },
+
+  LEFT_NARROW_RIGHT_WIDE: {
+    labelPl: 'Wąska lewa + szeroka prawa',
+    config: {
+      rootZone: {
+        id: 'root',
+        contentType: 'NESTED',
+        divisionDirection: 'VERTICAL',
+        children: [
+          {
+            id: 'left',
+            contentType: 'EMPTY',
+            heightConfig: { mode: 'RATIO', ratio: 1 },
+            widthConfig: { mode: 'FIXED', fixedMm: 400 },
+            depth: 1,
+          },
+          {
+            id: 'right',
+            contentType: 'EMPTY',
+            heightConfig: { mode: 'RATIO', ratio: 1 },
+            widthConfig: { mode: 'PROPORTIONAL', ratio: 1 },
+            depth: 1,
+          },
+        ],
+        heightConfig: { mode: 'RATIO', ratio: 1 },
+        depth: 0,
+      },
+    },
+  },
+
+  TOP_SHELF_BOTTOM_COLUMNS: {
+    labelPl: 'Góra: półki, Dół: 2 kolumny',
+    config: {
+      rootZone: {
+        id: 'root',
+        contentType: 'NESTED',
+        divisionDirection: 'HORIZONTAL',
+        children: [
+          // Bottom section with 2 columns
+          createNestedZone('VERTICAL', 1, [
+            createSimpleZone('EMPTY', 2),
+            createSimpleZone('EMPTY', 2),
+          ], 2),
+          // Top section with shelves
+          {
+            id: 'top',
+            contentType: 'SHELVES',
+            shelvesConfig: { mode: 'UNIFORM', count: 2, depthPreset: 'FULL', shelves: [] },
+            heightConfig: { mode: 'RATIO', ratio: 1 },
+            depth: 1,
+          },
+        ],
+        heightConfig: { mode: 'RATIO', ratio: 1 },
+        depth: 0,
+      },
+    },
+  },
+
+  WARDROBE_CLASSIC: {
+    labelPl: 'Szafa klasyczna (2 kolumny + półki)',
+    config: {
+      rootZone: {
+        id: 'root',
+        contentType: 'NESTED',
+        divisionDirection: 'VERTICAL',
+        children: [
+          // Left column - shelves
+          {
+            id: 'left',
+            contentType: 'SHELVES',
+            shelvesConfig: { mode: 'UNIFORM', count: 4, depthPreset: 'FULL', shelves: [] },
+            heightConfig: { mode: 'RATIO', ratio: 1 },
+            widthConfig: { mode: 'PROPORTIONAL', ratio: 1 },
+            depth: 1,
+          },
+          // Right column - hanging space (empty)
+          {
+            id: 'right',
+            contentType: 'NESTED',
+            divisionDirection: 'HORIZONTAL',
+            children: [
+              // Bottom drawer
+              {
+                id: 'drawer',
+                contentType: 'DRAWERS',
+                drawerConfig: {
+                  slideType: 'SIDE_MOUNT',
+                  zones: [{ id: 'z1', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] }],
+                },
+                heightConfig: { mode: 'EXACT', exactMm: 200 },
+                depth: 2,
+              },
+              // Hanging space
+              {
+                id: 'hanging',
+                contentType: 'EMPTY',
+                heightConfig: { mode: 'RATIO', ratio: 1 },
+                depth: 2,
+              },
+            ],
+            heightConfig: { mode: 'RATIO', ratio: 1 },
+            widthConfig: { mode: 'PROPORTIONAL', ratio: 2 },
+            depth: 1,
+          },
+        ],
+        heightConfig: { mode: 'RATIO', ratio: 1 },
+        depth: 0,
+      },
+    },
+  },
 } as const;
 
 // ============================================================================
@@ -459,6 +687,83 @@ export function createDefaultDrawerConfig(zoneCount: number, hasExternalFronts: 
     zones,
   };
 }
+
+// ============================================================================
+// Leg Configuration
+// ============================================================================
+
+/**
+ * Leg preset options for UI dropdowns
+ * Heights and adjustment ranges based on common furniture leg standards
+ */
+export const LEG_PRESET_OPTIONS: Array<{
+  value: LegPreset;
+  labelPl: string;
+  description: string;
+  height: number;
+  adjustRange: number;
+}> = [
+  { value: 'SHORT', labelPl: 'Krótkie (50mm)', description: 'Minimalna wysokość dla podstaw', height: 50, adjustRange: 10 },
+  { value: 'STANDARD', labelPl: 'Standardowe (100mm)', description: 'Typowa wysokość nóżek', height: 100, adjustRange: 20 },
+  { value: 'TALL', labelPl: 'Wysokie (150mm)', description: 'Podwyższone nóżki', height: 150, adjustRange: 30 },
+  { value: 'CUSTOM', labelPl: 'Własne', description: 'Niestandardowa wysokość', height: 100, adjustRange: 20 },
+];
+
+/**
+ * Leg finish options for UI dropdowns
+ * Common finishes for furniture legs with corresponding colors for 3D rendering
+ */
+export const LEG_FINISH_OPTIONS: Array<{
+  value: LegFinish;
+  labelPl: string;
+  color: string;
+}> = [
+  { value: 'BLACK_PLASTIC', labelPl: 'Plastik czarny', color: '#1a1a1a' },
+  { value: 'CHROME', labelPl: 'Chrom', color: '#c0c0c0' },
+  { value: 'BRUSHED_STEEL', labelPl: 'Stal szczotkowana', color: '#8c8c8c' },
+  { value: 'WHITE_PLASTIC', labelPl: 'Plastik biały', color: '#f5f5f5' },
+];
+
+/**
+ * Leg shape options for UI dropdowns
+ */
+export const LEG_SHAPE_OPTIONS: Array<{
+  value: LegShape;
+  labelPl: string;
+}> = [
+  { value: 'ROUND', labelPl: 'Okrągłe' },
+  { value: 'SQUARE', labelPl: 'Kwadratowe' },
+];
+
+/**
+ * Leg count mode options for UI dropdowns
+ */
+export const LEG_COUNT_MODE_OPTIONS: Array<{
+  value: LegCountMode;
+  labelPl: string;
+  description: string;
+}> = [
+  { value: 'AUTO', labelPl: 'Automatyczna', description: 'Ilość dobrana do rozmiaru szafki' },
+  { value: 'MANUAL', labelPl: 'Ręczna', description: 'Własna ilość nóżek' },
+];
+
+/**
+ * Default leg configuration values
+ */
+export const LEG_DEFAULTS = {
+  PRESET: 'STANDARD' as LegPreset,
+  HEIGHT: 100,
+  ADJUST_RANGE: 20,
+  DIAMETER: 30,
+  SHAPE: 'ROUND' as LegShape,
+  FINISH: 'BLACK_PLASTIC' as LegFinish,
+  COUNT_MODE: 'AUTO' as LegCountMode,
+  CORNER_INSET: 30,
+  MIN_HEIGHT: 20,
+  MAX_HEIGHT: 300,
+  MIN_DIAMETER: 20,
+  MAX_DIAMETER: 60,
+} as const;
 
 export const CABINET_PRESETS: Record<CabinetType, Partial<CabinetParams>> = {
   KITCHEN: {

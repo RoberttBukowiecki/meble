@@ -1,13 +1,137 @@
 /**
  * Cabinet interior configuration type definitions
+ *
+ * Uses recursive zone-based configuration with max 3 levels of nesting.
+ * Zones can be divided horizontally or vertically, with configurable
+ * widths (fixed mm or proportional) and heights.
  */
 
 import type { DrawerConfiguration } from './drawer';
 
+// ============================================================================
+// Zone-Based Interior Configuration
+// ============================================================================
+
 /**
- * Type of content in a cabinet section
+ * Direction of zone division
+ * - HORIZONTAL: Children are stacked vertically (bottom to top)
+ * - VERTICAL: Children are placed side by side (left to right)
  */
-export type SectionContentType = 'EMPTY' | 'SHELVES' | 'DRAWERS';
+export type ZoneDivisionDirection = 'HORIZONTAL' | 'VERTICAL';
+
+/**
+ * Type of content in a zone
+ * - EMPTY: No content
+ * - SHELVES: Contains shelves
+ * - DRAWERS: Contains drawers
+ * - NESTED: Contains child zones (recursive)
+ */
+export type ZoneContentType = 'EMPTY' | 'SHELVES' | 'DRAWERS' | 'NESTED';
+
+/**
+ * Size mode for zone width calculation
+ * - FIXED: Exact width in mm
+ * - PROPORTIONAL: Ratio-based width distribution
+ */
+export type ZoneSizeMode = 'FIXED' | 'PROPORTIONAL';
+
+/**
+ * Partition (vertical divider) depth preset
+ */
+export type PartitionDepthPreset = 'FULL' | 'HALF' | 'CUSTOM';
+
+/**
+ * Configuration for a partition (vertical divider between columns)
+ */
+export interface PartitionConfig {
+  /** Unique partition ID */
+  id: string;
+
+  /** Depth preset */
+  depthPreset: PartitionDepthPreset;
+
+  /** Custom depth in mm (when depthPreset is CUSTOM) */
+  customDepth?: number;
+
+  /** Material ID (defaults to bodyMaterialId) */
+  materialId?: string;
+}
+
+/**
+ * Zone height configuration
+ */
+export interface ZoneHeightConfig {
+  /** Height mode */
+  mode: 'RATIO' | 'EXACT';
+
+  /** Height ratio for RATIO mode (relative to siblings) */
+  ratio?: number;
+
+  /** Exact height in mm for EXACT mode */
+  exactMm?: number;
+}
+
+/**
+ * Zone width configuration (for children of VERTICAL parent)
+ */
+export interface ZoneWidthConfig {
+  /** Width mode */
+  mode: ZoneSizeMode;
+
+  /** Fixed width in mm for FIXED mode */
+  fixedMm?: number;
+
+  /** Width ratio for PROPORTIONAL mode (default: 1) */
+  ratio?: number;
+}
+
+/**
+ * Recursive zone structure for cabinet interior
+ * Maximum nesting depth is 3 levels (depth 0, 1, 2)
+ */
+export interface InteriorZone {
+  /** Unique zone ID */
+  id: string;
+
+  /** Type of content in this zone */
+  contentType: ZoneContentType;
+
+  /** Shelf configuration (when contentType is SHELVES) */
+  shelvesConfig?: ShelvesConfiguration;
+
+  /** Drawer configuration (when contentType is DRAWERS) */
+  drawerConfig?: DrawerConfiguration;
+
+  /** Division direction (when contentType is NESTED) */
+  divisionDirection?: ZoneDivisionDirection;
+
+  /** Child zones (when contentType is NESTED) */
+  children?: InteriorZone[];
+
+  /** Partitions between children (for VERTICAL division) */
+  partitions?: PartitionConfig[];
+
+  /** Height configuration */
+  heightConfig: ZoneHeightConfig;
+
+  /** Width configuration (only for zones in VERTICAL parent) */
+  widthConfig?: ZoneWidthConfig;
+
+  /** Depth in tree (0 = root, max 2 for deepest children) */
+  depth: number;
+}
+
+/**
+ * Cabinet interior configuration (tree-based zones)
+ */
+export interface CabinetInteriorConfig {
+  /** Root zone containing all interior configuration */
+  rootZone: InteriorZone;
+}
+
+// ============================================================================
+// Shelf Types
+// ============================================================================
 
 /**
  * Shelf depth preset
@@ -35,7 +159,7 @@ export interface ShelfConfig {
 }
 
 /**
- * Shelf configuration for a section
+ * Shelf configuration for a zone
  */
 export interface ShelvesConfiguration {
   /** Distribution mode */
@@ -57,32 +181,32 @@ export interface ShelvesConfiguration {
   materialId?: string;
 }
 
-/**
- * A horizontal section of the cabinet interior
- */
-export interface CabinetSection {
-  id: string;
-
-  /** Height ratio relative to other sections */
-  heightRatio: number;
-
-  /** What this section contains */
-  contentType: SectionContentType;
-
-  /** Shelf configuration (when contentType is SHELVES) */
-  shelvesConfig?: ShelvesConfiguration;
-
-  /** Drawer configuration (when contentType is DRAWERS) */
-  drawerConfig?: DrawerConfiguration;
-}
+// ============================================================================
+// Default Configurations
+// ============================================================================
 
 /**
- * Complete cabinet interior configuration
+ * Default zone height configuration
  */
-export interface CabinetInteriorConfig {
-  /** Horizontal sections from bottom to top */
-  sections: CabinetSection[];
-}
+export const DEFAULT_ZONE_HEIGHT_CONFIG: ZoneHeightConfig = {
+  mode: 'RATIO',
+  ratio: 1,
+};
+
+/**
+ * Default zone width configuration
+ */
+export const DEFAULT_ZONE_WIDTH_CONFIG: ZoneWidthConfig = {
+  mode: 'PROPORTIONAL',
+  ratio: 1,
+};
+
+/**
+ * Default partition configuration
+ */
+export const DEFAULT_PARTITION_CONFIG: Omit<PartitionConfig, 'id'> = {
+  depthPreset: 'FULL',
+};
 
 /**
  * Default shelf configuration
@@ -101,11 +225,22 @@ export const DEFAULT_SHELVES_CONFIG: ShelvesConfiguration = {
   shelves: [],
 };
 
+// ============================================================================
+// ID Generators
+// ============================================================================
+
 /**
- * Generate unique section ID
+ * Generate unique zone ID
  */
-export function generateSectionId(): string {
-  return `sec_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
+export function generateZoneId(): string {
+  return `zone_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
+}
+
+/**
+ * Generate unique partition ID
+ */
+export function generatePartitionId(): string {
+  return `part_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
 }
 
 /**

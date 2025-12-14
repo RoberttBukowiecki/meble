@@ -15,7 +15,9 @@ import { generateDoors } from './doors';
 import { generateDrawers } from './drawers';
 import { generateSideFronts } from './sideFronts';
 import { generateDecorativePanels } from './decorativePanels';
-import { generateInterior } from './interior';
+import { generateInterior, hasInteriorContent } from './interior';
+import { generateLegs } from './legs';
+import { LegsDomain } from '@/lib/domain/legs';
 
 export function generateKitchenCabinet(
   cabinetId: string,
@@ -31,11 +33,14 @@ export function generateKitchenCabinet(
   const { width, height, depth, shelfCount, hasDoors, topBottomPlacement, hasBack, backOverlapRatio, backMountType } = params;
   const thickness = bodyMaterial.thickness;
 
+  // Calculate leg offset (adds to all Y positions)
+  const legOffset = LegsDomain.calculateLegHeightOffset(params.legs);
+
   const isInset = topBottomPlacement === 'inset';
   const sideHeight = isInset ? height : Math.max(height - thickness * 2, 0);
-  const sideCenterY = height / 2;
-  const topPanelY = height - thickness / 2;
-  const bottomPanelY = thickness / 2;
+  const sideCenterY = height / 2 + legOffset;
+  const topPanelY = height - thickness / 2 + legOffset;
+  const bottomPanelY = thickness / 2 + legOffset;
 
   // Conditionally calculate dimensions based on the placement type
   const topBottomPanelWidth = isInset ? width - thickness * 2 : width;
@@ -110,7 +115,7 @@ export function generateKitchenCabinet(
   });
 
   // 5. INTERIOR (unified config or legacy shelves/drawers)
-  if (params.interiorConfig && params.interiorConfig.sections.length > 0) {
+  if (hasInteriorContent(params.interiorConfig)) {
     // Use new unified interior system
     const interiorParts = generateInterior({
       cabinetId,
@@ -131,7 +136,7 @@ export function generateKitchenCabinet(
     const shelfSpacing = interiorHeight / (shelfCount + 1);
 
     for (let i = 0; i < shelfCount; i++) {
-      const shelfY = thickness + shelfSpacing * (i + 1);
+      const shelfY = thickness + shelfSpacing * (i + 1) + legOffset;
       parts.push({
         name: `Półka ${i + 1}`,
         furnitureId,
@@ -235,6 +240,19 @@ export function generateKitchenCabinet(
       decorativePanels: params.decorativePanels,
     });
     parts.push(...decorativeParts);
+  }
+
+  // 11. LEGS (if configured)
+  if (params.legs?.enabled) {
+    const legParts = generateLegs(
+      cabinetId,
+      furnitureId,
+      params.legs,
+      width,
+      depth,
+      materials
+    );
+    parts.push(...legParts);
   }
 
   return parts;

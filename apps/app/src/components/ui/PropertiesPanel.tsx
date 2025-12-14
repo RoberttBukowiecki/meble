@@ -71,7 +71,8 @@ import { BackWallConfig } from './BackWallConfig';
 import { ShelvesConfig } from './ShelvesConfig';
 import { FrontsConfig } from './FrontsConfig';
 import { HandlesConfig } from './HandlesConfig';
-import { Ruler, Settings, Rows, DoorClosed, Wrench, Scaling, Grip, Eye, EyeOff, LayoutGrid } from 'lucide-react';
+import { LegsConfig } from './LegsConfig';
+import { Ruler, Settings, Rows, DoorClosed, Wrench, Scaling, Grip, Eye, EyeOff, LayoutGrid, Footprints } from 'lucide-react';
 
 // ============================================================================
 // Side Fronts Section
@@ -555,22 +556,27 @@ export function PropertiesPanel() {
                     <AccordionContent className="pb-4 pt-1 space-y-4 border-t mt-1">
                         <AssemblyConfig params={localParams} onChange={updateLocalParams} />
                         <BackWallConfig params={localParams} onChange={updateLocalParams} />
+                        <LegsConfig params={localParams} onChange={updateLocalParams} />
                     </AccordionContent>
                 </AccordionItem>
 
                 {selectedCabinet.type === 'KITCHEN' && (
                     <>
-                        <AccordionItem value="shelves" className="border rounded-md px-2 bg-card">
-                            <AccordionTrigger className="py-3 text-xs font-medium hover:no-underline">
-                                <div className="flex items-center gap-2">
-                                    <Rows className="h-4 w-4 text-muted-foreground" />
-                                    Półki
-                                </div>
-                            </AccordionTrigger>
-                            <AccordionContent className="pb-4 pt-1 border-t mt-1">
-                                <ShelvesConfig params={localParams} onChange={updateLocalParams} maxShelves={5}/>
-                            </AccordionContent>
-                        </AccordionItem>
+                        {/* LEGACY: Shelves accordion - replaced by "Wnętrze szafki" (InteriorConfigSection) */}
+                        {/* TODO: Remove after confirming users have migrated to new interior config */}
+                        {false && (
+                            <AccordionItem value="shelves" className="border rounded-md px-2 bg-card">
+                                <AccordionTrigger className="py-3 text-xs font-medium hover:no-underline">
+                                    <div className="flex items-center gap-2">
+                                        <Rows className="h-4 w-4 text-muted-foreground" />
+                                        Półki
+                                    </div>
+                                </AccordionTrigger>
+                                <AccordionContent className="pb-4 pt-1 border-t mt-1">
+                                    <ShelvesConfig params={localParams} onChange={updateLocalParams} maxShelves={5}/>
+                                </AccordionContent>
+                            </AccordionItem>
+                        )}
                         <AccordionItem value="fronts" className="border rounded-md px-2 bg-card">
                             <AccordionTrigger className="py-3 text-xs font-medium hover:no-underline">
                                 <div className="flex items-center gap-2">

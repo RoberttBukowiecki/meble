@@ -13,7 +13,9 @@ import { generateBackPanel } from './backPanel';
 import { generateDrawers } from './drawers';
 import { generateSideFronts } from './sideFronts';
 import { generateDecorativePanels } from './decorativePanels';
-import { generateInterior } from './interior';
+import { generateInterior, hasInteriorContent } from './interior';
+import { generateLegs } from './legs';
+import { LegsDomain } from '@/lib/domain/legs';
 
 export function generateDrawerCabinet(
   cabinetId: string,
@@ -30,11 +32,14 @@ export function generateDrawerCabinet(
   const { width, height, depth, topBottomPlacement, hasBack, backOverlapRatio, backMountType } = drawerParams;
   const thickness = bodyMaterial.thickness;
 
+  // Calculate leg offset (adds to all Y positions)
+  const legOffset = LegsDomain.calculateLegHeightOffset(drawerParams.legs);
+
   const isInset = topBottomPlacement === 'inset';
   const sideHeight = isInset ? height : Math.max(height - thickness * 2, 0);
-  const sideCenterY = height / 2;
-  const topPanelY = height - thickness / 2;
-  const bottomPanelY = thickness / 2;
+  const sideCenterY = height / 2 + legOffset;
+  const topPanelY = height - thickness / 2 + legOffset;
+  const bottomPanelY = thickness / 2 + legOffset;
   const topBottomPanelWidth = isInset ? width - thickness * 2 : width;
 
   // 1. BOTTOM panel
@@ -106,7 +111,7 @@ export function generateDrawerCabinet(
   });
 
   // 5. INTERIOR (unified config or legacy drawers)
-  if (drawerParams.interiorConfig && drawerParams.interiorConfig.sections.length > 0) {
+  if (hasInteriorContent(drawerParams.interiorConfig)) {
     // Use new unified interior system
     const interiorParts = generateInterior({
       cabinetId,
@@ -187,6 +192,19 @@ export function generateDrawerCabinet(
       decorativePanels: drawerParams.decorativePanels,
     });
     parts.push(...decorativeParts);
+  }
+
+  // 9. LEGS (if configured)
+  if (drawerParams.legs?.enabled) {
+    const legParts = generateLegs(
+      cabinetId,
+      furnitureId,
+      drawerParams.legs,
+      width,
+      depth,
+      materials
+    );
+    parts.push(...legParts);
   }
 
   return parts;
