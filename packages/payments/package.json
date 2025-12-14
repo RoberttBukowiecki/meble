@@ -1,0 +1,24 @@
+{
+  "name": "@meble/payments",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./payu": "./src/providers/payu.ts",
+    "./przelewy24": "./src/providers/przelewy24.ts",
+    "./types": "./src/types/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@meble/config": "workspace:*"
+  },
+  "devDependencies": {
+    "@meble/tsconfig": "workspace:*",
+    "@types/node": "^20.10.0",
+    "typescript": "^5.5.3"
+  }
+}
