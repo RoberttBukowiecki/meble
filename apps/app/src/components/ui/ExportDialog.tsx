@@ -16,6 +16,7 @@ import {
   TableRow,
   Label,
   Checkbox, // Assuming Checkbox exists or using standard input with better styling
+  Badge,
 } from '@meble/ui';
 import { useStore } from '@/lib/store';
 import {
@@ -24,19 +25,49 @@ import {
   downloadCSV,
   DEFAULT_COLUMNS,
 } from '@/lib/csv';
-import { Download } from 'lucide-react';
+import { generatePartsHash } from '@/lib/projectHash';
+import { Download, CreditCard, Sparkles, Clock, Loader2, ShoppingCart } from 'lucide-react';
+import { useCredits } from '@/hooks/useCredits';
+import { useGuestCredits } from '@/hooks/useGuestCredits';
+import { CreditsPurchaseModal } from './CreditsPurchaseModal';
 
 interface ExportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  isAuthenticated?: boolean;
+  userEmail?: string;
 }
 
-export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
+export function ExportDialog({
+  open,
+  onOpenChange,
+  isAuthenticated = false,
+  userEmail,
+}: ExportDialogProps) {
   const t = useTranslations('ExportDialog');
   const { parts, materials, furnitures } = useStore();
   const [selectedColumnIds, setSelectedColumnIds] = useState<string[]>(
     DEFAULT_COLUMNS.map((c) => c.id)
   );
+  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+  const [exportStatus, setExportStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
+  const [exportMessage, setExportMessage] = useState<string | null>(null);
+
+  // Credits hooks - use based on auth status
+  const userCredits = useCredits(isAuthenticated);
+  const guestCredits = useGuestCredits();
+
+  // Determine which credits to use
+  const credits = isAuthenticated ? userCredits : guestCredits;
+  const availableCredits = credits.balance?.availableCredits ?? 0;
+  const hasUnlimited = isAuthenticated && userCredits.balance?.hasUnlimited;
+  const hasCredits = hasUnlimited || availableCredits > 0;
+
+  // Generate project hash for Smart Export
+  const projectHash = useMemo(() => {
+    if (parts.length === 0) return null;
+    return generatePartsHash(parts);
+  }, [parts]);
 
   const toggleColumn = (id: string) => {
     setSelectedColumnIds((prev) =>
@@ -57,19 +88,86 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
     return generateCSV(parts, materials, furnitures, selectedColumns);
   }, [parts, materials, furnitures, selectedColumns]);
 
-  const handleExport = () => {
-    const csv = generateCSV(parts, materials, furnitures, selectedColumns);
-    const timestamp = new Date().toISOString().split('T')[0];
-    downloadCSV(csv, `meblarz_export_${timestamp}.csv`);
-    onOpenChange(false);
+  const handleExport = async () => {
+    if (!projectHash) return;
+
+    // If no credits, show purchase modal
+    if (!hasCredits) {
+      setShowPurchaseModal(true);
+      return;
+    }
+
+    setExportStatus('processing');
+    setExportMessage(null);
+
+    try {
+      // Use credit (handles Smart Export automatically)
+      const result = await credits.useCredit(projectHash);
+
+      if (!result) {
+        // Credit use failed - likely no credits
+        setExportStatus('error');
+        setExportMessage(credits.error || 'Nie udało się użyć kredytu');
+        return;
+      }
+
+      // Generate and download CSV
+      const csv = generateCSV(parts, materials, furnitures, selectedColumns);
+      const timestamp = new Date().toISOString().split('T')[0];
+      downloadCSV(csv, `meblarz_export_${timestamp}.csv`);
+
+      setExportStatus('success');
+      setExportMessage(
+        result.isFreeReexport
+          ? 'Darmowy re-export (Smart Export aktywny)'
+          : `Eksport ukończony. Pozostało kredytów: ${result.creditsRemaining}`
+      );
+
+      // Close dialog after short delay on success
+      setTimeout(() => {
+        onOpenChange(false);
+        setExportStatus('idle');
+        setExportMessage(null);
+      }, 1500);
+    } catch (error) {
+      setExportStatus('error');
+      setExportMessage('Wystąpił błąd podczas eksportu');
+    }
+  };
+
+  const handleBuyCredits = () => {
+    setShowPurchaseModal(true);
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-full max-w-[calc(100vw-2rem)] md:max-w-4xl max-h-[85vh] md:max-h-[90vh] flex flex-col p-0">
         <DialogHeader className="flex-shrink-0 px-6 py-6 border-b">
-          <DialogTitle className="text-xl">{t('title')}</DialogTitle>
-          <DialogDescription>{t('description')}</DialogDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <DialogTitle className="text-xl">{t('title')}</DialogTitle>
+              <DialogDescription>{t('description')}</DialogDescription>
+            </div>
+            {/* Credits Badge */}
+            <div className="flex items-center gap-2">
+              {hasUnlimited ? (
+                <Badge variant="secondary" className="gap-1">
+                  <Sparkles className="h-3 w-3 text-amber-500" />
+                  Pro
+                </Badge>
+              ) : (
+                <Badge
+                  variant={hasCredits ? 'secondary' : 'destructive'}
+                  className="gap-1 cursor-pointer"
+                  onClick={handleBuyCredits}
+                >
+                  <CreditCard className="h-3 w-3" />
+                  {availableCredits} kredyt{availableCredits === 1 ? '' : availableCredits < 5 ? 'y' : 'ów'}
+                </Badge>
+              )}
+            </div>
+          </div>
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
@@ -150,20 +248,93 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
           </div>
         </div>
 
+        {/* Export Status Message */}
+        {exportMessage && (
+          <div className={`mx-6 mb-4 p-3 rounded-lg text-sm ${
+            exportStatus === 'success'
+              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+              : exportStatus === 'error'
+              ? 'bg-destructive/10 text-destructive'
+              : 'bg-muted'
+          }`}>
+            {exportMessage}
+          </div>
+        )}
+
+        {/* Smart Export Info */}
+        {hasCredits && (
+          <div className="mx-6 mb-4 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-sm flex items-start gap-2">
+            <Clock className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
+            <div>
+              <span className="font-medium text-blue-700 dark:text-blue-300">Smart Export:</span>
+              <span className="text-blue-600 dark:text-blue-400 ml-1">
+                Po eksporcie masz 24h na darmowe re-eksporty tego samego projektu.
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* No Credits Warning */}
+        {!hasCredits && !credits.isLoading && (
+          <div className="mx-6 mb-4 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-sm flex items-start gap-2">
+            <CreditCard className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
+            <div>
+              <span className="font-medium text-amber-700 dark:text-amber-300">Brak kredytów.</span>
+              <span className="text-amber-600 dark:text-amber-400 ml-1">
+                Aby eksportować projekt, musisz kupić kredyty.
+              </span>
+            </div>
+          </div>
+        )}
+
         <DialogFooter className="flex-shrink-0 border-t bg-muted/20 px-4 md:px-6 py-3 md:py-4 flex-col-reverse sm:flex-row gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
             {t('cancel')}
           </Button>
-          <Button
-            onClick={handleExport}
-            disabled={parts.length === 0 || selectedColumns.length === 0}
-            className="w-full sm:w-auto"
-          >
-            <Download className="mr-2 h-4 w-4" />
-            {t('export')}
-          </Button>
+
+          {hasCredits ? (
+            <Button
+              onClick={handleExport}
+              disabled={parts.length === 0 || selectedColumns.length === 0 || exportStatus === 'processing'}
+              className="w-full sm:w-auto"
+            >
+              {exportStatus === 'processing' ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Eksportowanie...
+                </>
+              ) : (
+                <>
+                  <Download className="mr-2 h-4 w-4" />
+                  {t('export')}
+                </>
+              )}
+            </Button>
+          ) : (
+            <Button
+              onClick={handleBuyCredits}
+              className="w-full sm:w-auto"
+            >
+              <ShoppingCart className="mr-2 h-4 w-4" />
+              Kup kredyty
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    {/* Purchase Modal */}
+    <CreditsPurchaseModal
+      open={showPurchaseModal}
+      onOpenChange={setShowPurchaseModal}
+      isAuthenticated={isAuthenticated}
+      userEmail={userEmail}
+      guestSessionId={guestCredits.sessionId}
+      onSuccess={() => {
+        credits.refetch();
+        setShowPurchaseModal(false);
+      }}
+    />
+    </>
   );
 }
