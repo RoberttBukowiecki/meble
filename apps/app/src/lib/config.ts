@@ -210,12 +210,7 @@ export const TRIM_STRIP_CONFIG = {
 // ============================================================================
 
 export const INTERIOR_CONFIG = {
-  // Section limits (legacy)
-  MAX_SECTIONS: 6,                    // Maximum number of horizontal sections
-  SECTION_HEIGHT_RATIO_MIN: 1,        // Minimum height ratio for a section
-  SECTION_HEIGHT_RATIO_MAX: 4,        // Maximum height ratio for a section
-
-  // Zone tree limits (Version 2)
+  // Zone tree limits
   MAX_ZONE_DEPTH: 4,                  // Maximum nesting levels (0, 1, 2, 3)
   MAX_CHILDREN_PER_ZONE: 6,           // Maximum children in a NESTED zone
   MAX_TOTAL_ZONES: 20,                // Total zones across entire tree
@@ -224,16 +219,20 @@ export const INTERIOR_CONFIG = {
   MIN_ZONE_HEIGHT_MM: 50,             // Minimum zone height
   MIN_ZONE_WIDTH_MM: 100,             // Minimum zone width
 
+  // Zone height ratio limits
+  ZONE_HEIGHT_RATIO_MIN: 1,           // Minimum height ratio
+  ZONE_HEIGHT_RATIO_MAX: 4,           // Maximum height ratio
+
   // Partition limits (mm)
   PARTITION_DEPTH_MIN: 50,
   PARTITION_DEPTH_MAX: 500,
 
   // Drawer zone limits
-  MAX_DRAWER_ZONES: 8,                // Maximum drawer zones per section
-  MAX_BOXES_PER_ZONE: 4,              // Maximum boxes (drawer-in-drawer) per zone
+  MAX_DRAWER_ZONES_PER_ZONE: 8,       // Maximum drawer zones per zone
+  MAX_BOXES_PER_DRAWER_ZONE: 4,       // Maximum boxes (drawer-in-drawer) per zone
 
   // Shelf limits
-  MAX_SHELVES_PER_SECTION: 10,        // Maximum shelves in a shelf section
+  MAX_SHELVES_PER_ZONE: 10,           // Maximum shelves in a shelf zone
   MAX_SHELVES_ABOVE_DRAWER: 4,        // Maximum shelves above drawer box
 
   // Default presets
@@ -664,12 +663,7 @@ export const DRAWER_ZONE_PRESETS: Record<string, { label: string; labelPl: strin
 // Drawer Configuration Helpers
 // ============================================================================
 
-/**
- * Generate a unique zone ID
- */
-export function generateZoneId(): string {
-  return `z${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
-}
+// Note: generateZoneId is exported from @/types (cabinetInterior.ts)
 
 /**
  * Create a default drawer configuration with specified zone count

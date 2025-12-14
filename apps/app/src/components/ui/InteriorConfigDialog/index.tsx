@@ -23,7 +23,8 @@ import {
 import type { CabinetInteriorConfig, InteriorZone, Material } from '@/types';
 import { DEFAULT_SHELVES_CONFIG } from '@/types';
 import { Zone } from '@/lib/domain';
-import { INTERIOR_CONFIG, DEFAULT_BODY_THICKNESS, generateZoneId } from '@/lib/config';
+import { INTERIOR_CONFIG, DEFAULT_BODY_THICKNESS } from '@/lib/config';
+import { generateZoneId } from '@/types';
 import { Plus, AlertTriangle, ChevronRight, ChevronLeft, ArrowLeft, ChevronUp, ChevronDown, Home } from 'lucide-react';
 import { InteriorPreview } from './InteriorPreview';
 import { ZoneEditor } from './ZoneEditor';
@@ -648,7 +649,7 @@ export function InteriorConfigDialog({
                   variant="outline"
                   className="w-full border-dashed"
                   onClick={handleAddZone}
-                  disabled={zones.length >= INTERIOR_CONFIG.MAX_SECTIONS}
+                  disabled={zones.length >= INTERIOR_CONFIG.MAX_CHILDREN_PER_ZONE}
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Dodaj sekcję

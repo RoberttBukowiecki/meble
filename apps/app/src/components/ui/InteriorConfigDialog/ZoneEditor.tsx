@@ -40,6 +40,7 @@ import {
   DEFAULT_SHELVES_CONFIG,
   generateShelfId,
   generateAboveBoxShelfId,
+  generateZoneId,
 } from '@/types';
 import {
   DRAWER_SLIDE_PRESETS,
@@ -47,10 +48,10 @@ import {
   DRAWER_CONFIG,
   INTERIOR_CONFIG,
   DEFAULT_BODY_THICKNESS,
-  generateZoneId,
 } from '@/lib/config';
 import { Drawer } from '@/lib/domain';
-import { Trash2, Package, Layers, Box, Plus, Minus, ChevronUp, ChevronDown, LayoutTemplate, Grid, Columns, Rows, GripHorizontal } from 'lucide-react';
+import { Trash2, Package, Layers, Box, Plus, Minus, ChevronUp, ChevronDown, LayoutTemplate, Grid, Columns, Rows, Separator } from 'lucide-react';
+import { DepthPresetSelector, type DepthPreset } from './DepthPresetSelector';
 
 // ============================================================================
 // Toggle Button Group Component
@@ -431,8 +432,8 @@ function DrawerZoneEditor({ zone, onUpdate, onDelete, canDelete, zoneIndex, zone
         <Slider
           value={[zone.heightRatio]}
           onValueChange={handleHeightRatioChange}
-          min={INTERIOR_CONFIG.SECTION_HEIGHT_RATIO_MIN}
-          max={INTERIOR_CONFIG.SECTION_HEIGHT_RATIO_MAX}
+          min={INTERIOR_CONFIG.ZONE_HEIGHT_RATIO_MIN}
+          max={INTERIOR_CONFIG.ZONE_HEIGHT_RATIO_MAX}
           step={1}
         />
       </div>
@@ -692,11 +693,10 @@ const DIVISION_DIRECTION_OPTIONS: { value: ZoneDivisionDirection; label: string;
   { value: 'VERTICAL', label: 'Kolumny', icon: Columns },
 ];
 
-// Partition depth labels (same as shelf depth but for partitions)
-const PARTITION_DEPTH_LABELS: Record<PartitionDepthPreset, string> = {
-  FULL: 'Pełna głębokość',
-  HALF: 'Połowa głębokości',
-  CUSTOM: 'Własna głębokość',
+// Partition direction labels
+const PARTITION_DIRECTION_LABELS: Record<ZoneDivisionDirection, string> = {
+  HORIZONTAL: 'Przegrody poziome',
+  VERTICAL: 'Przegrody pionowe',
 };
 
 // Width mode labels
@@ -875,7 +875,7 @@ export function ZoneEditor({
 
   const handleShelfCountChange = (delta: number) => {
     if (!zone.shelvesConfig) return;
-    const newCount = Math.max(0, Math.min(INTERIOR_CONFIG.MAX_SHELVES_PER_SECTION, zone.shelvesConfig.count + delta));
+    const newCount = Math.max(0, Math.min(INTERIOR_CONFIG.MAX_SHELVES_PER_ZONE, zone.shelvesConfig.count + delta));
 
     // In MANUAL mode, adjust shelves array
     let shelves = zone.shelvesConfig.shelves;
@@ -970,7 +970,7 @@ export function ZoneEditor({
 
   const handleAddDrawerZone = () => {
     if (!zone.drawerConfig) return;
-    if (zone.drawerConfig.zones.length >= INTERIOR_CONFIG.MAX_DRAWER_ZONES) return;
+    if (zone.drawerConfig.zones.length >= INTERIOR_CONFIG.MAX_DRAWER_ZONES_PER_ZONE) return;
 
     const newZone: DrawerZone = {
       id: generateZoneId(),
@@ -1083,8 +1083,8 @@ export function ZoneEditor({
           <Slider
             value={[zoneHeightRatio]}
             onValueChange={handleHeightRatioChange}
-            min={INTERIOR_CONFIG.SECTION_HEIGHT_RATIO_MIN}
-            max={INTERIOR_CONFIG.SECTION_HEIGHT_RATIO_MAX}
+            min={INTERIOR_CONFIG.ZONE_HEIGHT_RATIO_MIN}
+            max={INTERIOR_CONFIG.ZONE_HEIGHT_RATIO_MAX}
             step={1}
           />
         </div>
@@ -1415,7 +1415,7 @@ export function ZoneEditor({
                 size="sm"
                 className="w-full mt-2 border-dashed text-xs h-7"
                 onClick={handleAddDrawerZone}
-                disabled={zone.drawerConfig.zones.length >= INTERIOR_CONFIG.MAX_DRAWER_ZONES}
+                disabled={zone.drawerConfig.zones.length >= INTERIOR_CONFIG.MAX_DRAWER_ZONES_PER_ZONE}
               >
                 <Plus className="h-3 w-3 mr-1" />
                 Dodaj strefę
@@ -1576,32 +1576,38 @@ export function ZoneEditor({
               value={zone.divisionDirection ?? 'HORIZONTAL'}
               onChange={(direction) => {
                 const newZone = { ...zone, divisionDirection: direction as ZoneDivisionDirection };
+                const childCount = newZone.children?.length ?? 0;
+                const partitionCount = Math.max(0, childCount - 1);
+
                 // When switching to VERTICAL, initialize width configs for children
                 if (direction === 'VERTICAL' && newZone.children) {
                   newZone.children = newZone.children.map(child => ({
                     ...child,
                     widthConfig: child.widthConfig ?? { mode: 'PROPORTIONAL', ratio: 1 },
                   }));
-                  // Initialize partitions (n-1 for n children)
-                  if (!newZone.partitions || newZone.partitions.length !== newZone.children.length - 1) {
-                    newZone.partitions = Array.from(
-                      { length: Math.max(0, newZone.children.length - 1) },
-                      () => ({
-                        id: crypto.randomUUID(),
-                        depthPreset: 'FULL' as PartitionDepthPreset,
-                      })
-                    );
-                  }
-                } else if (direction === 'HORIZONTAL') {
-                  // Clear width configs and partitions when switching to HORIZONTAL
-                  if (newZone.children) {
-                    newZone.children = newZone.children.map(child => {
-                      const { widthConfig, ...rest } = child;
-                      return rest;
-                    });
-                  }
+                } else if (direction === 'HORIZONTAL' && newZone.children) {
+                  // Clear width configs when switching to HORIZONTAL
+                  newZone.children = newZone.children.map(child => {
+                    const { widthConfig, ...rest } = child;
+                    return rest;
+                  });
+                }
+
+                // Initialize/update partitions for both directions (n-1 for n children)
+                if (partitionCount > 0) {
+                  const existingPartitions = newZone.partitions ?? [];
+                  newZone.partitions = Array.from(
+                    { length: partitionCount },
+                    (_, i) => existingPartitions[i] ?? {
+                      id: crypto.randomUUID(),
+                      enabled: false, // Default to disabled
+                      depthPreset: 'FULL' as PartitionDepthPreset,
+                    }
+                  );
+                } else {
                   newZone.partitions = undefined;
                 }
+
                 onUpdate(newZone);
               }}
               options={DIVISION_DIRECTION_OPTIONS}
@@ -1625,13 +1631,14 @@ export function ZoneEditor({
                     const children = zone.children ?? [];
                     if (children.length <= 1) return;
                     const newChildren = children.slice(0, -1);
-                    const newPartitions = zone.divisionDirection === 'VERTICAL' && zone.partitions
-                      ? zone.partitions.slice(0, -1)
-                      : zone.partitions;
+                    // Keep n-1 partitions for n children
+                    const newPartitions = zone.partitions
+                      ? zone.partitions.slice(0, Math.max(0, newChildren.length - 1))
+                      : undefined;
                     onUpdate({
                       ...zone,
                       children: newChildren,
-                      partitions: newPartitions,
+                      partitions: newPartitions?.length ? newPartitions : undefined,
                     });
                   }}
                   disabled={(zone.children?.length ?? 0) <= 1}
@@ -1655,17 +1662,17 @@ export function ZoneEditor({
                         widthConfig: { mode: 'PROPORTIONAL', ratio: 1 },
                       }),
                     };
-                    const newPartition: PartitionConfig | undefined = zone.divisionDirection === 'VERTICAL'
-                      ? { id: crypto.randomUUID(), depthPreset: 'FULL' }
-                      : undefined;
+                    // Add a new partition (disabled by default)
+                    const newPartition: PartitionConfig = {
+                      id: crypto.randomUUID(),
+                      enabled: false,
+                      depthPreset: 'FULL',
+                    };
+                    const existingPartitions = zone.partitions ?? [];
                     onUpdate({
                       ...zone,
                       children: [...children, newChild],
-                      partitions: newPartition && zone.partitions
-                        ? [...zone.partitions, newPartition]
-                        : newPartition
-                          ? [newPartition]
-                          : zone.partitions,
+                      partitions: [...existingPartitions, newPartition],
                     });
                   }}
                   disabled={(zone.children?.length ?? 0) >= (INTERIOR_CONFIG.MAX_CHILDREN_PER_ZONE ?? 6)}
@@ -1789,56 +1796,94 @@ export function ZoneEditor({
             </div>
           )}
 
-          {/* Partition configuration for VERTICAL division */}
-          {zone.divisionDirection === 'VERTICAL' && zone.partitions && zone.partitions.length > 0 && (
-            <div className="space-y-3">
-              <Label className="text-xs flex items-center gap-2">
-                <GripHorizontal className="h-3 w-3" />
-                Przegrody ({zone.partitions.length})
-              </Label>
-              <div className="space-y-2">
-                {zone.partitions.map((partition, idx) => (
-                  <div key={partition.id} className="flex items-center gap-2 p-2 rounded bg-muted/30">
-                    <span className="text-xs text-muted-foreground w-10">#{idx + 1}</span>
-                    <Select
-                      value={partition.depthPreset}
-                      onValueChange={(preset: PartitionDepthPreset) => {
-                        const newPartitions = [...zone.partitions!];
-                        newPartitions[idx] = {
-                          ...newPartitions[idx],
-                          depthPreset: preset,
-                          ...(preset === 'CUSTOM' ? { customDepth: Math.round(cabinetDepth * 0.75) } : {}),
-                        };
-                        onUpdate({ ...zone, partitions: newPartitions });
-                      }}
-                    >
-                      <SelectTrigger className="h-7 flex-1 text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(PARTITION_DEPTH_LABELS).map(([value, label]) => (
-                          <SelectItem key={value} value={value}>
-                            {label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {partition.depthPreset === 'CUSTOM' && (
-                      <NumberInput
-                        value={partition.customDepth ?? Math.round(cabinetDepth * 0.75)}
-                        min={50}
-                        max={cabinetDepth - DEFAULT_BODY_THICKNESS}
-                        onChange={(val) => {
-                          const newPartitions = [...zone.partitions!];
-                          newPartitions[idx] = { ...newPartitions[idx], customDepth: val };
-                          onUpdate({ ...zone, partitions: newPartitions });
-                        }}
-                        className="h-7 w-20 text-xs"
-                      />
-                    )}
-                  </div>
-                ))}
+          {/* Partition configuration for both HORIZONTAL and VERTICAL divisions */}
+          {zone.partitions && zone.partitions.length > 0 && (
+            <div className="space-y-3 p-3 rounded-lg bg-muted/20 border border-dashed">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs flex items-center gap-2">
+                  <Separator className="h-3 w-3" />
+                  {zone.divisionDirection === 'VERTICAL' ? 'Przegrody pionowe' : 'Przegrody poziome'}
+                </Label>
+                <span className="text-[10px] text-muted-foreground">
+                  {zone.partitions.filter(p => p.enabled).length} / {zone.partitions.length} aktywnych
+                </span>
               </div>
+              <div className="space-y-2">
+                {zone.partitions.map((partition, idx) => {
+                  const beforeChild = zone.children?.[idx];
+                  const afterChild = zone.children?.[idx + 1];
+                  const isVertical = zone.divisionDirection === 'VERTICAL';
+                  const beforeLabel = isVertical ? `Kol. ${idx + 1}` : `Sek. ${idx + 1}`;
+                  const afterLabel = isVertical ? `Kol. ${idx + 2}` : `Sek. ${idx + 2}`;
+
+                  return (
+                    <div
+                      key={partition.id}
+                      className={cn(
+                        'p-2 rounded border transition-colors',
+                        partition.enabled
+                          ? 'bg-primary/5 border-primary/30'
+                          : 'bg-muted/30 border-transparent'
+                      )}
+                    >
+                      {/* Header with toggle */}
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            id={`partition-${partition.id}`}
+                            checked={partition.enabled}
+                            onCheckedChange={(enabled) => {
+                              const newPartitions = [...zone.partitions!];
+                              newPartitions[idx] = { ...newPartitions[idx], enabled };
+                              onUpdate({ ...zone, partitions: newPartitions });
+                            }}
+                          />
+                          <Label
+                            htmlFor={`partition-${partition.id}`}
+                            className="text-xs cursor-pointer"
+                          >
+                            {beforeLabel} ↔ {afterLabel}
+                          </Label>
+                        </div>
+                        {partition.enabled && (
+                          <span className="text-[10px] text-muted-foreground font-mono">
+                            {partition.depthPreset === 'FULL'
+                              ? `${cabinetDepth - 10}mm`
+                              : partition.depthPreset === 'HALF'
+                                ? `${Math.round((cabinetDepth - 10) / 2)}mm`
+                                : `${partition.customDepth ?? Math.round(cabinetDepth * 0.75)}mm`}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Depth configuration - only when enabled */}
+                      {partition.enabled && (
+                        <DepthPresetSelector
+                          value={partition.depthPreset as DepthPreset}
+                          onChange={(preset, customDepth) => {
+                            const newPartitions = [...zone.partitions!];
+                            newPartitions[idx] = {
+                              ...newPartitions[idx],
+                              depthPreset: preset as PartitionDepthPreset,
+                              customDepth,
+                            };
+                            onUpdate({ ...zone, partitions: newPartitions });
+                          }}
+                          customDepth={partition.customDepth}
+                          cabinetDepth={cabinetDepth}
+                          variant="compact"
+                          showCalculatedDepth={false}
+                        />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                {zone.divisionDirection === 'VERTICAL'
+                  ? 'Przegrody pionowe rozdzielają kolumny.'
+                  : 'Przegrody poziome rozdzielają sekcje.'}
+              </p>
             </div>
           )}
 

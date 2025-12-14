@@ -57,7 +57,7 @@ export const Shelf = {
     mode: 'UNIFORM' | 'MANUAL' = 'UNIFORM',
     depthPreset: ShelfDepthPreset = 'FULL'
   ): ShelvesConfiguration => {
-    const clampedCount = clamp(count, 0, INTERIOR_CONFIG.MAX_SHELVES_PER_SECTION);
+    const clampedCount = clamp(count, 0, INTERIOR_CONFIG.MAX_SHELVES_PER_ZONE);
 
     const config: ShelvesConfiguration = {
       mode,
@@ -95,7 +95,7 @@ export const Shelf = {
    * Set shelf count
    */
   setCount: (config: ShelvesConfiguration, count: number): ShelvesConfiguration => {
-    const newCount = clamp(count, 0, INTERIOR_CONFIG.MAX_SHELVES_PER_SECTION);
+    const newCount = clamp(count, 0, INTERIOR_CONFIG.MAX_SHELVES_PER_ZONE);
     const currentCount = config.count;
 
     // In MANUAL mode, adjust the shelves array
@@ -188,7 +188,7 @@ export const Shelf = {
     config: ShelvesConfiguration,
     shelf?: ShelfConfig
   ): ShelvesConfiguration => {
-    if (config.count >= INTERIOR_CONFIG.MAX_SHELVES_PER_SECTION) {
+    if (config.count >= INTERIOR_CONFIG.MAX_SHELVES_PER_ZONE) {
       return config;
     }
 
@@ -386,8 +386,8 @@ export const Shelf = {
       errors.push('Shelf count cannot be negative');
     }
 
-    if (config.count > INTERIOR_CONFIG.MAX_SHELVES_PER_SECTION) {
-      errors.push(`Shelf count cannot exceed ${INTERIOR_CONFIG.MAX_SHELVES_PER_SECTION}`);
+    if (config.count > INTERIOR_CONFIG.MAX_SHELVES_PER_ZONE) {
+      errors.push(`Shelf count cannot exceed ${INTERIOR_CONFIG.MAX_SHELVES_PER_ZONE}`);
     }
 
     if (config.mode === 'MANUAL' && config.shelves.length !== config.count) {

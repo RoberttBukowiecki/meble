@@ -518,7 +518,7 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
                             title="Szuflady"
                             description={
                                 hasDrawerConfig
-                                    ? `${totalFronts > 0 ? `${totalFronts} frontów, ` : ''}${totalBoxes} boxów • ${drawerConfig.slideType}`
+                                    ? `${totalFronts > 0 ? `${totalFronts} frontów, ` : ''}${totalBoxes} boxów • ${drawerConfig?.slideType}`
                                     : 'Brak szuflad'
                             }
                             icon={<Layers className="h-4 w-4" />}

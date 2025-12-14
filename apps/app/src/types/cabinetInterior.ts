@@ -41,11 +41,14 @@ export type ZoneSizeMode = 'FIXED' | 'PROPORTIONAL';
 export type PartitionDepthPreset = 'FULL' | 'HALF' | 'CUSTOM';
 
 /**
- * Configuration for a partition (vertical divider between columns)
+ * Configuration for a partition (divider between zones)
  */
 export interface PartitionConfig {
   /** Unique partition ID */
   id: string;
+
+  /** Whether the partition is enabled (generates a physical part) */
+  enabled: boolean;
 
   /** Depth preset */
   depthPreset: PartitionDepthPreset;
@@ -205,6 +208,7 @@ export const DEFAULT_ZONE_WIDTH_CONFIG: ZoneWidthConfig = {
  * Default partition configuration
  */
 export const DEFAULT_PARTITION_CONFIG: Omit<PartitionConfig, 'id'> = {
+  enabled: true,
   depthPreset: 'FULL',
 };
 

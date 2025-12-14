@@ -22,8 +22,8 @@ import {
   DRAWER_ZONE_PRESETS,
   DRAWER_SLIDE_PRESETS,
   DEFAULT_BODY_THICKNESS,
-  generateZoneId,
 } from '@/lib/config';
+import { generateZoneId } from '@/types';
 import { Drawer } from '@/lib/domain';
 import { Plus, Trash2, ChevronUp, ChevronDown, LayoutTemplate } from 'lucide-react';
 

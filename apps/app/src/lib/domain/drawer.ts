@@ -18,9 +18,8 @@ import type {
   AboveBoxShelfConfig,
   ShelfDepthPreset,
 } from '@/types';
-import { generateAboveBoxShelfId } from '@/types';
+import { generateAboveBoxShelfId, generateZoneId } from '@/types';
 import {
-  generateZoneId,
   DRAWER_SLIDE_PRESETS,
   DRAWER_CONFIG,
   INTERIOR_CONFIG,
@@ -69,7 +68,7 @@ export const Drawer = {
     slideType: DrawerSlideType = 'SIDE_MOUNT',
     hasExternalFronts: boolean = true
   ): DrawerConfiguration => {
-    const count = clamp(zoneCount, 1, INTERIOR_CONFIG.MAX_DRAWER_ZONES);
+    const count = clamp(zoneCount, 1, INTERIOR_CONFIG.MAX_DRAWER_ZONES_PER_ZONE);
     const zones: DrawerZone[] = Array.from({ length: count }, (_, i) => ({
       id: generateZoneId(),
       heightRatio: 1,
@@ -136,7 +135,7 @@ export const Drawer = {
     config: DrawerConfiguration,
     zone?: DrawerZone
   ): DrawerConfiguration => {
-    if (config.zones.length >= INTERIOR_CONFIG.MAX_DRAWER_ZONES) {
+    if (config.zones.length >= INTERIOR_CONFIG.MAX_DRAWER_ZONES_PER_ZONE) {
       return config;
     }
 
@@ -260,7 +259,7 @@ export const Drawer = {
     zoneId: string
   ): DrawerConfiguration => {
     const zone = config.zones.find((z) => z.id === zoneId);
-    if (!zone || zone.boxes.length >= INTERIOR_CONFIG.MAX_BOXES_PER_ZONE) {
+    if (!zone || zone.boxes.length >= INTERIOR_CONFIG.MAX_BOXES_PER_DRAWER_ZONE) {
       return config;
     }
 
@@ -510,8 +509,8 @@ export const Drawer = {
       errors.push('Drawer configuration must have at least one zone');
     }
 
-    if (config.zones.length > INTERIOR_CONFIG.MAX_DRAWER_ZONES) {
-      errors.push(`Cannot have more than ${INTERIOR_CONFIG.MAX_DRAWER_ZONES} zones`);
+    if (config.zones.length > INTERIOR_CONFIG.MAX_DRAWER_ZONES_PER_ZONE) {
+      errors.push(`Cannot have more than ${INTERIOR_CONFIG.MAX_DRAWER_ZONES_PER_ZONE} zones`);
     }
 
     for (let i = 0; i < config.zones.length; i++) {
@@ -538,8 +537,8 @@ export const Drawer = {
       errors.push('Zone must have at least one box');
     }
 
-    if (zone.boxes.length > INTERIOR_CONFIG.MAX_BOXES_PER_ZONE) {
-      errors.push(`Cannot have more than ${INTERIOR_CONFIG.MAX_BOXES_PER_ZONE} boxes per zone`);
+    if (zone.boxes.length > INTERIOR_CONFIG.MAX_BOXES_PER_DRAWER_ZONE) {
+      errors.push(`Cannot have more than ${INTERIOR_CONFIG.MAX_BOXES_PER_DRAWER_ZONE} boxes per zone`);
     }
 
     for (const box of zone.boxes) {

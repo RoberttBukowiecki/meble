@@ -129,7 +129,7 @@ export const Zone = {
   createWithShelves: (count: number, depth: number): InteriorZone => {
     const zone = Zone.create('SHELVES', depth);
     if (zone.shelvesConfig) {
-      zone.shelvesConfig.count = clamp(count, 0, INTERIOR_CONFIG.MAX_SHELVES_PER_SECTION);
+      zone.shelvesConfig.count = clamp(count, 0, INTERIOR_CONFIG.MAX_SHELVES_PER_ZONE);
     }
     return zone;
   },
@@ -140,7 +140,7 @@ export const Zone = {
   createWithDrawers: (zoneCount: number, depth: number): InteriorZone => {
     const zone = Zone.create('DRAWERS', depth);
     zone.drawerConfig = createDefaultDrawerConfig(
-      clamp(zoneCount, 1, INTERIOR_CONFIG.MAX_DRAWER_ZONES),
+      clamp(zoneCount, 1, INTERIOR_CONFIG.MAX_DRAWER_ZONES_PER_ZONE),
       true
     );
     return zone;
