@@ -29,10 +29,9 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get credit balance using database function
-    const { data, error } = await supabase.rpc('get_user_credit_balance', {
-      p_user_id: user.id,
-    });
+    // Get credit balance using secure database function
+    // Uses auth.uid() internally - no user ID parameter needed
+    const { data, error } = await supabase.rpc('get_my_credit_balance');
 
     if (error) {
       console.error('Failed to get credit balance:', error);

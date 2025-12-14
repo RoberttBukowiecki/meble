@@ -48,9 +48,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Use credit via database function
-    const { data, error } = await supabase.rpc('use_export_credit', {
-      p_user_id: user.id,
+    // Use credit via secure database function
+    // Uses auth.uid() internally - no user ID parameter needed
+    const { data, error } = await supabase.rpc('use_my_export_credit', {
       p_project_hash: body.projectHash,
     });
 
