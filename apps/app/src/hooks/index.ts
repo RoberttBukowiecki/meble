@@ -13,3 +13,6 @@ export * from './useCredits';
 export * from './useGuestCredits';
 export * from './useGuestSession';
 export * from './usePayment';
+
+// Shop hooks
+export * from './useCart';
