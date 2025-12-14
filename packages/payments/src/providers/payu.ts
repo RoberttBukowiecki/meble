@@ -222,6 +222,10 @@ export class PayUClient implements PaymentProvider {
    *
    * PayU sends signature in header: OpenPayU-Signature
    * Format: signature=xxx;algorithm=MD5
+   *
+   * NOTE: MD5 is used here because it's required by PayU's API specification.
+   * This is PayU's webhook verification protocol, not our choice.
+   * See: https://developers.payu.com/en/restapi.html#notifications
    */
   verifyWebhook(body: string, signatureHeader: string): boolean {
     if (!signatureHeader) {
