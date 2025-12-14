@@ -114,6 +114,16 @@ export async function POST(request: NextRequest) {
 async function handlePaymentCompleted(payment: any) {
   const { payment_type, metadata, user_id, guest_session_id } = payment;
 
+  if (payment_type === 'subscription') {
+    await handleSubscriptionPayment(payment);
+    return;
+  }
+
+  if (payment_type === 'order') {
+    await handleOrderPayment(payment);
+    return;
+  }
+
   if (payment_type === 'credit_purchase') {
     const packageId = metadata?.packageId;
     const credits = metadata?.credits ?? 0;
@@ -192,5 +202,162 @@ async function handlePaymentCompleted(payment: any) {
 
       console.log(`Guest credits granted: ${credits} for session ${guest_session_id}`);
     }
+  }
+}
+
+async function handleSubscriptionPayment(payment: any) {
+  const { metadata, user_id } = payment;
+  const tenantId = metadata?.tenant_id;
+  const plan = metadata?.plan;
+  const billingCycle = metadata?.billing_cycle;
+  const subscriptionId = metadata?.subscription_id;
+
+  if (!tenantId || !plan) {
+    console.error('P24 webhook: Missing subscription metadata', payment.id);
+    return;
+  }
+
+  try {
+    // Calculate period dates
+    const periodStart = new Date();
+    const periodEnd = new Date();
+    const nextPaymentDue = new Date();
+
+    if (billingCycle === 'yearly') {
+      periodEnd.setFullYear(periodEnd.getFullYear() + 1);
+      nextPaymentDue.setFullYear(nextPaymentDue.getFullYear() + 1);
+    } else {
+      periodEnd.setMonth(periodEnd.getMonth() + 1);
+      nextPaymentDue.setMonth(nextPaymentDue.getMonth() + 1);
+    }
+
+    // Update subscription
+    if (subscriptionId) {
+      await supabase
+        .from('tenant_subscriptions')
+        .update({
+          status: 'active',
+          current_period_start: periodStart.toISOString(),
+          current_period_end: periodEnd.toISOString(),
+          next_payment_due: nextPaymentDue.toISOString(),
+          last_payment_id: payment.id,
+          last_payment_at: new Date().toISOString(),
+          failed_payments: 0,
+        })
+        .eq('id', subscriptionId);
+    }
+
+    // Update tenant plan and status
+    const planLimits: Record<string, { materials: number; users: number; exports: number }> = {
+      starter: { materials: 50, users: 5, exports: 100 },
+      professional: { materials: 200, users: 20, exports: 500 },
+      enterprise: { materials: -1, users: -1, exports: -1 },
+    };
+
+    const limits = planLimits[plan] || planLimits.starter;
+
+    await supabase
+      .from('tenants')
+      .update({
+        plan,
+        status: 'active',
+        activated_at: new Date().toISOString(),
+        max_materials: limits.materials === -1 ? 999999 : limits.materials,
+        max_users: limits.users === -1 ? 999999 : limits.users,
+        max_exports_per_month: limits.exports === -1 ? 999999 : limits.exports,
+      })
+      .eq('id', tenantId);
+
+    // Generate invoice
+    const { data: invoiceNumber } = await supabase.rpc('generate_invoice_number');
+    const taxRate = 23;
+    const subtotal = payment.amount;
+    const taxAmount = Math.round(subtotal * (taxRate / (100 + taxRate)));
+    const netAmount = subtotal - taxAmount;
+
+    // Get tenant and seller data
+    const { data: tenant } = await supabase
+      .from('tenants')
+      .select('company_name, company_nip, contact_email, billing_email')
+      .eq('id', tenantId)
+      .single();
+
+    await supabase.from('tenant_invoices').insert({
+      tenant_id: tenantId,
+      subscription_id: subscriptionId,
+      invoice_number: invoiceNumber || `FV/${Date.now()}`,
+      subtotal: netAmount,
+      tax_rate: taxRate,
+      tax_amount: taxAmount,
+      total: subtotal,
+      status: 'paid',
+      payment_id: payment.id,
+      paid_at: new Date().toISOString(),
+      period_start: periodStart.toISOString().split('T')[0],
+      period_end: periodEnd.toISOString().split('T')[0],
+      due_date: periodStart.toISOString().split('T')[0],
+      seller_data: {
+        name: 'Meblarz Sp. z o.o.',
+        nip: '0000000000',
+        address: 'ul. Przykładowa 1, 00-000 Warszawa',
+      },
+      buyer_data: {
+        name: tenant?.company_name || 'N/A',
+        nip: tenant?.company_nip,
+        email: tenant?.billing_email || tenant?.contact_email,
+      },
+      line_items: [
+        {
+          description: `Subskrypcja ${plan} (${billingCycle === 'yearly' ? 'roczna' : 'miesięczna'})`,
+          quantity: 1,
+          unit_price: netAmount,
+          tax_rate: taxRate,
+          total: subtotal,
+        },
+      ],
+    });
+
+    console.log(`Subscription activated: ${plan} for tenant ${tenantId}`);
+  } catch (error) {
+    console.error('P24 webhook: Subscription activation failed', error);
+  }
+}
+
+async function handleOrderPayment(payment: any) {
+  const { metadata } = payment;
+  const orderId = metadata?.order_id;
+
+  if (!orderId) {
+    console.error('P24 webhook: Missing order_id in metadata', payment.id);
+    return;
+  }
+
+  try {
+    // Update order status
+    await supabase
+      .from('producer_orders')
+      .update({
+        status: 'confirmed',
+        paid_at: new Date().toISOString(),
+        status_history: supabase.sql`
+          COALESCE(status_history, '[]'::jsonb) ||
+          jsonb_build_array(jsonb_build_object(
+            'status', 'confirmed',
+            'timestamp', ${new Date().toISOString()},
+            'note', 'Płatność otrzymana'
+          ))
+        `,
+      })
+      .eq('id', orderId);
+
+    // Update commission status
+    await supabase
+      .from('commissions')
+      .update({ status: 'pending_payout' })
+      .eq('order_id', orderId);
+
+    console.log(`Order confirmed: ${orderId}`);
+  } catch (error) {
+    console.error('P24 webhook: Order confirmation failed', error);
   }
 }
