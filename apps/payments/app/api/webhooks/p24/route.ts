@@ -6,7 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { Przelewy24Client, type P24Notification } from '@meble/payments';
+import { Przelewy24Client, type P24Notification } from '@meble/payment-providers';
 
 // Use secret key for webhook handling
 const supabase = createClient(

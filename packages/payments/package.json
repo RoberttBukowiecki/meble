@@ -1,5 +1,5 @@
 {
-  "name": "@meble/payments",
+  "name": "@meble/payment-providers",
   "version": "0.1.0",
   "private": true,
   "main": "./src/index.ts",

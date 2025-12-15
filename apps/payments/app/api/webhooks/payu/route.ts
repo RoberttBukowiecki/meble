@@ -6,7 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { PayUClient, type PayUNotification } from '@meble/payments';
+import { PayUClient, type PayUNotification } from '@meble/payment-providers';
 
 // Use secret key for webhook handling
 const supabase = createClient(

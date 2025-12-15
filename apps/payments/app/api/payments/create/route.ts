@@ -11,7 +11,7 @@ import {
   getCreditPackage,
   isValidPackageId,
   type PaymentProviderType,
-} from '@meble/payments';
+} from '@meble/payment-providers';
 
 interface CreatePaymentBody {
   type: 'credit_purchase' | 'order' | 'shop';
