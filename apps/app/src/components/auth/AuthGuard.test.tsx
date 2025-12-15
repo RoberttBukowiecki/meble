@@ -19,25 +19,20 @@ jest.mock('@/providers/AuthProvider', () => ({
   useAuth: () => mockAuthState,
 }));
 
-// Mock window.location
-const originalLocation = window.location;
+const originalHref = window.location.href;
 
 beforeAll(() => {
-  delete (window as { location?: Location }).location;
-  window.location = {
-    ...originalLocation,
-    pathname: '/protected-page',
-  } as Location;
+  window.history.pushState({}, '', '/protected-page');
 });
 
 afterAll(() => {
-  window.location = originalLocation;
+  window.history.pushState({}, '', originalHref);
 });
 
-describe('AuthGuard', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    window.location.pathname = '/protected-page';
+  describe('AuthGuard', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+      window.history.pushState({}, '', '/protected-page');
   });
 
   describe('Loading state', () => {
@@ -167,7 +162,7 @@ describe('AuthGuard', () => {
         isAuthenticated: false,
         isLoading: false,
       };
-      window.location.pathname = '/page/with spaces';
+      window.history.pushState({}, '', '/page/with spaces');
 
       render(
         <AuthGuard>

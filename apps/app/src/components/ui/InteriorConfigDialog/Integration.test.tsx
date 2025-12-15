@@ -284,12 +284,12 @@ describe('INT-001: Create 3-level nested structure', () => {
       ...zone,
       drawerConfig: {
         ...zone.drawerConfig!,
-        slideType: 'UNDER_MOUNT',
+        slideType: 'UNDERMOUNT',
       },
     }));
 
     const innerZone = Zone.findZoneById(updated, 'inner-row');
-    expect(innerZone?.drawerConfig?.slideType).toBe('UNDER_MOUNT');
+    expect(innerZone?.drawerConfig?.slideType).toBe('UNDERMOUNT');
   });
 
   it('renders dialog with 3-level config and shows correct initial selection', async () => {
@@ -908,12 +908,7 @@ describe('Integration: Edge Cases', () => {
     const config = create3LevelNestedConfig();
 
     // Validate should pass for valid structure
-    const validation = Zone.validate(config.rootZone, {
-      parentWidth: 564,
-      parentHeight: 684,
-      minZoneWidth: 50,
-      minZoneHeight: 50,
-    });
+    const validation = Zone.validateTree(config.rootZone);
 
     expect(validation.valid).toBe(true);
   });

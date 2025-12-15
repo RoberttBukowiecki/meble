@@ -625,14 +625,33 @@ describe('Drawer Domain Module', () => {
       const config: DrawerConfiguration = {
         slideType: 'SIDE_MOUNT',
         zones: [
-          { id: 'z1', heightRatio: 1, front: { handleConfig: { type: 'NONE' } }, boxes: [{ heightRatio: 1 }] },
+          {
+            id: 'z1',
+            heightRatio: 1,
+            front: {
+              handleConfig: {
+                type: 'BAR',
+                category: 'TRADITIONAL',
+                position: { preset: 'TOP_LEFT' },
+                orientation: 'HORIZONTAL',
+              },
+            },
+            boxes: [{ heightRatio: 1 }],
+          },
           { id: 'z2', heightRatio: 1, front: null, boxes: [{ heightRatio: 1 }] },
         ],
       };
 
       const updated = Drawer.convertToExternal(config);
 
-      expect(updated.zones[0].front).toEqual({ handleConfig: { type: 'NONE' } });
+      expect(updated.zones[0].front).toEqual({
+        handleConfig: {
+          type: 'BAR',
+          category: 'TRADITIONAL',
+          position: { preset: 'TOP_LEFT' },
+          orientation: 'HORIZONTAL',
+        },
+      });
       expect(updated.zones[1].front).toEqual({});
     });
   });

@@ -39,16 +39,16 @@ function normalizeProjectData(data: ProjectData): string {
     .sort((a, b) => a.id.localeCompare(b.id))
     .map((p) => ({
       id: p.id,
+      name: p.name,
+      materialId: p.materialId,
       width: p.width,
       height: p.height,
       depth: p.depth,
-      name: p.name,
-      materialId: p.materialId,
-      edgebandingLeft: p.edgebandingLeft,
-      edgebandingRight: p.edgebandingRight,
-      edgebandingTop: p.edgebandingTop,
-      edgebandingBottom: p.edgebandingBottom,
-      quantity: p.quantity ?? 1,
+      position: p.position,
+      rotation: p.rotation,
+      shapeType: p.shapeType,
+      shapeParams: stableValue(p.shapeParams),
+      edgeBanding: normalizeEdgeBanding(p.edgeBanding),
     }));
 
   // Sort and normalize cabinets
@@ -57,22 +57,48 @@ function normalizeProjectData(data: ProjectData): string {
     .map((c) => ({
       id: c.id,
       name: c.name,
-      width: c.width,
-      height: c.height,
-      depth: c.depth,
+      type: c.type,
+      params: stableValue(c.params),
+      materials: stableValue(c.materials),
+      topBottomPlacement: c.topBottomPlacement,
+      partIds: [...c.partIds].sort(),
     }));
 
-  // Normalize room (only dimensions matter for export)
-  const room = {
-    width: data.room.width,
-    height: data.room.height,
-    depth: data.room.depth,
-  };
+  // Normalize room (only structural properties matter for export)
+  const room = stableValue({
+    id: data.room.id,
+    name: data.room.name,
+    heightMm: data.room.heightMm,
+    wallThicknessMm: data.room.wallThicknessMm,
+    floorThicknessMm: data.room.floorThicknessMm,
+    defaultCeiling: data.room.defaultCeiling,
+    wallMaterialId: data.room.wallMaterialId,
+    floorMaterialId: data.room.floorMaterialId,
+    ceilingMaterialId: data.room.ceilingMaterialId,
+    origin: data.room.origin,
+  });
+
+  const materials = [...data.materials]
+    .sort((a, b) => a.id.localeCompare(b.id))
+    .map((m) => ({
+      id: m.id,
+      name: m.name,
+      color: m.color,
+      thickness: m.thickness,
+      isDefault: m.isDefault ?? false,
+      category: m.category,
+    }));
+
+  const furnitures = [...data.furnitures]
+    .sort((a, b) => a.id.localeCompare(b.id))
+    .map((f) => ({
+      id: f.id,
+      name: f.name,
+      projectId: f.projectId ?? null,
+    }));
 
   // Create JSON string
-  const json = JSON.stringify({ parts, cabinets, room });
-
-  return json;
+  return JSON.stringify({ parts, cabinets, room, materials, furnitures });
 }
 
 /**
@@ -104,9 +130,48 @@ function cyrb53(str: string, seed = 0): number {
 export function generatePartsHash(parts: Part[]): string {
   const normalized = [...parts]
     .sort((a, b) => a.id.localeCompare(b.id))
-    .map((p) => `${p.id}:${p.width}x${p.height}x${p.depth}:${p.materialId}:${p.quantity ?? 1}`)
+    .map((p) => {
+      const edgeBanding = normalizeEdgeBanding(p.edgeBanding);
+      const shapeHash = JSON.stringify(stableValue(p.shapeParams));
+      return `${p.id}:${p.width}x${p.height}x${p.depth}:${p.materialId}:${edgeBanding}:${p.shapeType}:${shapeHash}`;
+    })
     .join('|');
 
   const hash = cyrb53(normalized);
   return `parts_${hash.toString(36)}`;
+}
+
+/**
+ * Normalize edge banding config to a stable string
+ */
+function normalizeEdgeBanding(edgeBanding: Part['edgeBanding']): string {
+  if (edgeBanding.type === 'RECT') {
+    const { top, bottom, left, right } = edgeBanding;
+    return `RECT:${Number(top)}${Number(bottom)}${Number(left)}${Number(right)}`;
+  }
+
+  return `GENERIC:${[...edgeBanding.edges].sort((a, b) => a - b).join(',')}`;
+}
+
+/**
+ * Deep-sort object keys to make JSON stringify stable
+ */
+function stableValue<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.map((v) => stableValue(v)) as unknown as T;
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString() as unknown as T;
+  }
+
+  if (value && typeof value === 'object') {
+    const entries = Object.entries(value as Record<string, unknown>)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([k, v]) => [k, stableValue(v)]);
+
+    return Object.fromEntries(entries) as T;
+  }
+
+  return value;
 }
