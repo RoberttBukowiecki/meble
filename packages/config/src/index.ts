@@ -1,7 +1,7 @@
 /**
  * @meble/config
  *
- * Centralized configuration for the Meblarz monetization system.
+ * Centralized configuration for the e-meble monetization system.
  *
  * Usage:
  * ```ts

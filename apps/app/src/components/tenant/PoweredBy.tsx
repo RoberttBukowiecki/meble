@@ -1,7 +1,7 @@
 /**
  * Powered By Component
  *
- * Shows "Powered by Meblarz" attribution.
+ * Shows "Powered by e-meble" attribution.
  * Visible for starter/professional plans unless disabled.
  */
 
@@ -30,7 +30,7 @@ export function PoweredBy({ className = '', variant = 'inline' }: PoweredByProps
     return null;
   }
 
-  const mainDomain = process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'meblarz.pl';
+  const mainDomain = process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'e-meble.com';
 
   if (variant === 'footer') {
     return (
@@ -41,7 +41,7 @@ export function PoweredBy({ className = '', variant = 'inline' }: PoweredByProps
           rel="noopener noreferrer"
           className="hover:text-primary transition-colors"
         >
-          Powered by <span className="font-semibold">Meblarz</span>
+          Powered by <span className="font-semibold">e-meble</span>
         </a>
       </div>
     );
@@ -55,7 +55,7 @@ export function PoweredBy({ className = '', variant = 'inline' }: PoweredByProps
       className={`inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors ${className}`}
     >
       <span>Powered by</span>
-      <span className="font-semibold">Meblarz</span>
+      <span className="font-semibold">e-meble</span>
     </a>
   );
 }

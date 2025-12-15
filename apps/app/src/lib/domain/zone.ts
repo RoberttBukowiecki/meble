@@ -177,8 +177,9 @@ export const Zone = {
   /**
    * Create a partition configuration
    */
-  createPartition: (depthPreset: PartitionDepthPreset = 'FULL'): PartitionConfig => ({
+  createPartition: (depthPreset: PartitionDepthPreset = 'FULL', enabled = false): PartitionConfig => ({
     id: generatePartitionId(),
+    enabled,
     depthPreset,
   }),
 

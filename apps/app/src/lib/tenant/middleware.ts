@@ -39,7 +39,7 @@ export interface TenantSettings {
   watermarkExports?: boolean;
 }
 
-const MAIN_DOMAIN = process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'meblarz.pl';
+const MAIN_DOMAIN = process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'e-meble.com';
 const API_BASE = process.env.NEXT_PUBLIC_PAYMENTS_API_URL || '/api';
 
 // Cache for tenant resolution (in-memory, per-instance)
@@ -53,7 +53,7 @@ export function extractTenantSlug(hostname: string): string | null {
   // Remove port if present
   const host = hostname.split(':')[0];
 
-  // Check for subdomain pattern: {slug}.meblarz.pl
+  // Check for subdomain pattern: {slug}.e-meble.com
   if (host.endsWith(`.${MAIN_DOMAIN}`)) {
     const slug = host.replace(`.${MAIN_DOMAIN}`, '');
     // Ignore www and other reserved subdomains

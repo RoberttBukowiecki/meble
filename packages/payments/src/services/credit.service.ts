@@ -79,7 +79,7 @@ export interface UseCreditResult {
 // GUEST SESSION
 // ============================================================================
 
-export const GUEST_SESSION_KEY = 'meblarz_guest_session';
+export const GUEST_SESSION_KEY = 'e_meble_guest_session';
 
 export interface GuestSession {
   id: string;

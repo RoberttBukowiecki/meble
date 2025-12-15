@@ -305,28 +305,60 @@ function ZoneBlock({
         </div>
       )}
 
-      {/* Nested children - recursive rendering */}
+      {/* Nested children - recursive rendering with partitions */}
       {zone.contentType === 'NESTED' && zone.children && zone.children.length > 0 && (
         <div className={cn(
-          'absolute inset-1 flex gap-0.5',
+          'absolute inset-1 flex',
           zone.divisionDirection === 'VERTICAL' ? 'flex-row' : 'flex-col-reverse'
         )}>
           {zone.children.map((child, idx) => {
             const childSize = childSizes[idx] ?? 0;
             const isVertical = zone.divisionDirection === 'VERTICAL';
+            const partition = zone.partitions?.[idx];
+            const hasPartitionAfter = partition?.enabled && idx < zone.children!.length - 1;
+
             return (
-              <ZoneBlock
+              <div
                 key={child.id}
-                zone={child}
-                isSelected={child.id === selectedZoneId}
-                selectedZoneId={selectedZoneId}
-                onSelectZone={onSelectZone}
-                availableWidth={isVertical ? childSize : availableWidth}
-                availableHeight={isVertical ? availableHeight : childSize}
-                sizeMm={childSize}
-                parentDirection={zone.divisionDirection ?? 'HORIZONTAL'}
-                depth={depth + 1}
-              />
+                className={cn(
+                  'flex',
+                  isVertical ? 'flex-row' : 'flex-col-reverse'
+                )}
+                style={{
+                  flex: isVertical
+                    ? (child.widthConfig?.ratio ?? 1)
+                    : (child.heightConfig.ratio ?? 1)
+                }}
+              >
+                <ZoneBlock
+                  zone={child}
+                  isSelected={child.id === selectedZoneId}
+                  selectedZoneId={selectedZoneId}
+                  onSelectZone={onSelectZone}
+                  availableWidth={isVertical ? childSize : availableWidth}
+                  availableHeight={isVertical ? availableHeight : childSize}
+                  sizeMm={childSize}
+                  parentDirection={zone.divisionDirection ?? 'HORIZONTAL'}
+                  depth={depth + 1}
+                />
+                {/* Partition indicator */}
+                {hasPartitionAfter && (
+                  <div
+                    className={cn(
+                      'flex-shrink-0 bg-muted-foreground/60 rounded-full',
+                      isVertical ? 'w-0.5 mx-px' : 'h-0.5 my-px'
+                    )}
+                    title={`Przegroda ${idx + 1}`}
+                  />
+                )}
+                {/* Gap when no partition */}
+                {!hasPartitionAfter && idx < zone.children!.length - 1 && (
+                  <div className={cn(
+                    'flex-shrink-0',
+                    isVertical ? 'w-0.5' : 'h-0.5'
+                  )} />
+                )}
+              </div>
             );
           })}
         </div>

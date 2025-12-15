@@ -114,7 +114,7 @@ export class PaymentService {
       const result = await provider.createPayment({
         amount: packageInfo.price,
         currency: 'PLN',
-        description: `Meblarz - ${packageInfo.name}`,
+        description: `e-meble - ${packageInfo.name}`,
         externalOrderId,
         customerEmail: params.email,
         customerIp: params.customerIp,

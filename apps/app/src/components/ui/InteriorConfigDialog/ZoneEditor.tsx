@@ -50,7 +50,7 @@ import {
   DEFAULT_BODY_THICKNESS,
 } from '@/lib/config';
 import { Drawer } from '@/lib/domain';
-import { Trash2, Package, Layers, Box, Plus, Minus, ChevronUp, ChevronDown, LayoutTemplate, Grid, Columns, Rows, Separator } from 'lucide-react';
+import { Trash2, Package, Layers, Box, Plus, Minus, ChevronUp, ChevronDown, LayoutTemplate, Grid, Columns, Rows, SplitSquareHorizontal } from 'lucide-react';
 import { DepthPresetSelector, type DepthPreset } from './DepthPresetSelector';
 
 // ============================================================================
@@ -1801,7 +1801,7 @@ export function ZoneEditor({
             <div className="space-y-3 p-3 rounded-lg bg-muted/20 border border-dashed">
               <div className="flex items-center justify-between">
                 <Label className="text-xs flex items-center gap-2">
-                  <Separator className="h-3 w-3" />
+                  <SplitSquareHorizontal className="h-3 w-3" />
                   {zone.divisionDirection === 'VERTICAL' ? 'Przegrody pionowe' : 'Przegrody poziome'}
                 </Label>
                 <span className="text-[10px] text-muted-foreground">

@@ -139,7 +139,7 @@ export function generateCSV(
 /**
  * Download CSV file
  */
-export function downloadCSV(content: string, filename: string = 'meblarz_export.csv') {
+export function downloadCSV(content: string, filename: string = 'e-meble_export.csv') {
   const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);

@@ -9,6 +9,7 @@
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Button } from '@meble/ui';
+import { COMPANY_INFO } from '@meble/constants';
 import { XCircle, ArrowLeft, RefreshCw, Mail, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -67,8 +68,8 @@ function PaymentFailedContent() {
               <Mail className="h-4 w-4 mt-0.5 flex-shrink-0" />
               <span>
                 Jeśli problem się powtarza, skontaktuj się z nami:{' '}
-                <a href="mailto:support@meblarz.pl" className="text-primary hover:underline">
-                  support@meblarz.pl
+                <a href={`mailto:${COMPANY_INFO.email}`} className="text-primary hover:underline">
+                  {COMPANY_INFO.email}
                 </a>
               </span>
             </li>

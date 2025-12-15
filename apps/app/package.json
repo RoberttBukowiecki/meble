@@ -15,6 +15,7 @@
     "@meble/constants": "*",
     "@meble/i18n": "*",
     "@meble/ui": "*",
+    "@meble/config": "*",
     "@radix-ui/react-slider": "^1.3.6",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.4.2",

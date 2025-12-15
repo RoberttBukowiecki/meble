@@ -5,6 +5,7 @@
  */
 
 import { z } from 'zod';
+import { APP_NAME } from '@meble/constants';
 
 // ============================================================================
 // TENANT CONFIGURATION SCHEMA
@@ -63,7 +64,7 @@ export const TenantShopConfigSchema = z.object({
   enabled: z.boolean().default(true),
 
   /** Product source */
-  source: z.enum(['meblarz', 'tenant', 'both']).default('both'),
+  source: z.enum(['e-meble', 'tenant', 'both']).default('both'),
 
   /** URL to fetch tenant's products (if external) */
   productsUrl: z.string().url().optional(),
@@ -76,7 +77,7 @@ export const TenantFeaturesConfigSchema = z.object({
   /** Enable analytics for tenant */
   analyticsEnabled: z.boolean().default(true),
 
-  /** Show "Powered by Meblarz" badge */
+  /** Show "Powered by e-meble" badge */
   showPoweredBy: z.boolean().default(true),
 
   /** Custom CSS URL */
@@ -143,7 +144,7 @@ export type TenantBillingModel = TenantBillingConfig['model'];
 // ============================================================================
 
 export const DEFAULT_TENANT_BRANDING: TenantBranding = {
-  companyName: 'Meblarz',
+  companyName: APP_NAME,
   primaryColor: '#3b82f6',
   secondaryColor: '#1e40af',
 };
@@ -178,9 +179,9 @@ export const DEFAULT_TENANT_CONFIG: Partial<TenantConfig> = {
 // ============================================================================
 
 /**
- * Main Meblarz domain
+ * Main e-meble domain
  */
-export const MAIN_DOMAIN = 'meblarz.pl';
+export const MAIN_DOMAIN = 'e-meble.com';
 
 /**
  * Reserved subdomains that cannot be used by tenants

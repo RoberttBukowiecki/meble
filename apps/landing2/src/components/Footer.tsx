@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { Logo } from "@meble/ui";
+import { COMPANY_INFO } from "@meble/constants";
 import { Container } from "./Container";
 
 export function Footer() {
@@ -22,10 +23,10 @@ export function Footer() {
   ];
 
   const socialLinks = [
-    { name: "Twitter", href: "https://twitter.com/meble_app", icon: Twitter, label: "Twitter - Meble 3D" },
-    { name: "Facebook", href: "https://facebook.com/meble.app", icon: Facebook, label: "Facebook - Meble 3D" },
-    { name: "Instagram", href: "https://instagram.com/meble.app", icon: Instagram, label: "Instagram - Meble 3D" },
-    { name: "LinkedIn", href: "https://linkedin.com/company/meble-app", icon: Linkedin, label: "LinkedIn - Meble 3D" },
+    { name: "Twitter", href: "https://twitter.com/e_meble", icon: Twitter, label: "Twitter - e-meble" },
+    { name: "Facebook", href: "https://facebook.com/e-meble", icon: Facebook, label: "Facebook - e-meble" },
+    { name: "Instagram", href: "https://instagram.com/e-meble", icon: Instagram, label: "Instagram - e-meble" },
+    { name: "LinkedIn", href: "https://linkedin.com/company/e-meble", icon: Linkedin, label: "LinkedIn - e-meble" },
   ];
 
   return (
@@ -51,11 +52,11 @@ export function Footer() {
             {/* Contact email for SEO */}
             <address className="mt-4 not-italic text-sm text-gray-500 dark:text-gray-400">
               <a
-                href="mailto:kontakt@meble.app"
+                href={`mailto:${COMPANY_INFO.email}`}
                 className="hover:text-indigo-500"
                 itemProp="email"
               >
-                kontakt@meble.app
+                {COMPANY_INFO.email}
               </a>
             </address>
           </div>

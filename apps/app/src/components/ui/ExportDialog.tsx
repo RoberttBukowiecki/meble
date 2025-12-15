@@ -114,7 +114,7 @@ export function ExportDialog({
       // Generate and download CSV
       const csv = generateCSV(parts, materials, furnitures, selectedColumns);
       const timestamp = new Date().toISOString().split('T')[0];
-      downloadCSV(csv, `meblarz_export_${timestamp}.csv`);
+      downloadCSV(csv, `e-meble_export_${timestamp}.csv`);
 
       setExportStatus('success');
       setExportMessage(

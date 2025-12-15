@@ -20,8 +20,8 @@ import {
   Label,
 } from '@meble/ui';
 import { Check, CreditCard, Loader2, Sparkles, Zap } from 'lucide-react';
-import { EXPORT_PACKAGES, type ExportPackageId } from '@meble/config';
 import { usePayment } from '@/hooks/usePayment';
+import {EXPORT_PACKAGES, ExportPackageId} from "@meble/config";
 
 interface CreditsPurchaseModalProps {
   open: boolean;

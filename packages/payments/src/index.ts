@@ -1,7 +1,7 @@
 /**
  * @meble/payments
  *
- * Payment and credit management package for Meblarz.
+ * Payment and credit management package for e-meble.
  *
  * Provides:
  * - PayU integration

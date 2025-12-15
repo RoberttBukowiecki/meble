@@ -36,7 +36,7 @@ export const useStore = create<StoreState>()(
       ...createMaterialPreferencesSlice(...args),
     }),
     {
-      name: 'meblarz-storage',
+      name: 'e-meble-storage',
       version: 5,
       migrate: (persistedState: any, version: number) => {
         // Migrate from version 1 to 2

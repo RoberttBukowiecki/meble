@@ -59,7 +59,7 @@ export function TenantLogo({
   if (showFallback) {
     return (
       <span className={`font-bold text-xl text-primary ${className}`}>
-        Meblarz
+        e-meble
       </span>
     );
   }

@@ -20,6 +20,9 @@ importers:
 
   apps/app:
     dependencies:
+      '@meble/config':
+        specifier: '*'
+        version: link:../../packages/config
       '@meble/constants':
         specifier: '*'
         version: link:../../packages/constants
@@ -379,6 +382,19 @@ importers:
         specifier: ^5.4.5
         version: 5.9.3
 
+  packages/config:
+    dependencies:
+      zod:
+        specifier: ^3.22.0
+        version: 3.25.76
+    devDependencies:
+      '@meble/tsconfig':
+        specifier: workspace:*
+        version: link:../tsconfig
+      typescript:
+        specifier: ^5.5.3
+        version: 5.9.3
+
   packages/constants:
     devDependencies:
       '@meble/tsconfig':
@@ -393,6 +409,22 @@ importers:
       '@meble/tsconfig':
         specifier: '*'
         version: link:../tsconfig
+      typescript:
+        specifier: ^5.5.3
+        version: 5.9.3
+
+  packages/payments:
+    dependencies:
+      '@meble/config':
+        specifier: workspace:*
+        version: link:../config
+    devDependencies:
+      '@meble/tsconfig':
+        specifier: workspace:*
+        version: link:../tsconfig
+      '@types/node':
+        specifier: ^20.10.0
+        version: 20.19.26
       typescript:
         specifier: ^5.5.3
         version: 5.9.3
@@ -4730,8 +4762,8 @@ packages:
       '@babel/parser': 7.28.5
       eslint: 9.39.1
       hermes-parser: 0.25.1
-      zod: 4.1.13
-      zod-validation-error: 4.0.2(zod@4.1.13)
+      zod: 3.25.76
+      zod-validation-error: 4.0.2(zod@3.25.76)
     transitivePeerDependencies:
       - supports-color
     dev: true
@@ -8437,18 +8469,17 @@ packages:
     engines: {node: '>=10'}
     dev: true
 
-  /zod-validation-error@4.0.2(zod@4.1.13):
+  /zod-validation-error@4.0.2(zod@3.25.76):
     resolution: {integrity: sha512-Q6/nZLe6jxuU80qb/4uJ4t5v2VEZ44lzQjPDhYJNztRQ4wyWc6VF3D3Kb/fAuPetZQnhS3hnajCf9CsWesghLQ==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       zod: ^3.25.0 || ^4.0.0
     dependencies:
-      zod: 4.1.13
+      zod: 3.25.76
     dev: true
 
-  /zod@4.1.13:
-    resolution: {integrity: sha512-AvvthqfqrAhNH9dnfmrfKzX5upOdjUVJYFqNSlkmGf64gRaTzlPwz99IHYnVs28qYAybvAlBV+H7pn0saFY4Ig==}
-    dev: true
+  /zod@3.25.76:
+    resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
 
   /zustand@4.5.7(@types/react@19.2.7)(react@19.2.1):
     resolution: {integrity: sha512-CHOUy7mu3lbD6o6LJLfllpjkzhHXSBlX8B9+qPddUsIfeF5S/UZ5q0kmCsnRqT1UHFQZchNFDDzMbQsuesHWlw==}

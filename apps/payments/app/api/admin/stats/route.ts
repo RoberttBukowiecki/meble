@@ -42,8 +42,8 @@ export async function GET(request: NextRequest) {
       tenantsResult,
       pendingPayouts,
     ] = await Promise.all([
-      // Total users
-      supabase.from('auth.users').select('id', { count: 'exact', head: true }),
+      // Total users (via profiles table, not auth.users which is protected)
+      supabase.from('profiles').select('id', { count: 'exact', head: true }),
 
       // Revenue this month
       supabase
@@ -60,8 +60,8 @@ export async function GET(request: NextRequest) {
         .gte('created_at', startOfLastMonth.toISOString())
         .lte('created_at', endOfLastMonth.toISOString()),
 
-      // Credits stats
-      supabase.from('export_credits').select('balance'),
+      // Credits stats - select actual columns
+      supabase.from('export_credits').select('credits_total, credits_used'),
 
       // Orders stats
       supabase
@@ -108,7 +108,7 @@ export async function GET(request: NextRequest) {
       data: {
         overview: {
           totalUsers: usersResult.count || 0,
-          activeCredits: creditsResult.data?.reduce((sum, c) => sum + c.balance, 0) || 0,
+          activeCredits: creditsResult.data?.reduce((sum, c) => sum + (c.credits_total - c.credits_used), 0) || 0,
           activeTenants: activeTenants.length,
           totalTenants: tenants.length,
         },

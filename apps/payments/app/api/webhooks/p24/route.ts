@@ -297,7 +297,7 @@ async function handleSubscriptionPayment(payment: any) {
       period_end: periodEnd.toISOString().split('T')[0],
       due_date: periodStart.toISOString().split('T')[0],
       seller_data: {
-        name: 'Meblarz Sp. z o.o.',
+        name: 'e-meble Sp. z o.o.',
         nip: '0000000000',
         address: 'ul. Przykładowa 1, 00-000 Warszawa',
       },

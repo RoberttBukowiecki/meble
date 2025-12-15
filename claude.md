@@ -102,7 +102,25 @@ apps/app/src/
 - Zrealizowany plan oznaczaj jako DONE-nazwa-planu.md i przenoś do foldernu app/apps/docs/DONE
 - Jesli chcesz dodac input typu number to dodaj NumberInput
 - !Aplikacja nie jest jeszcze produkcjna, nie musisz robic migracji starych wersji, api, backward compability itp.
-- !Podczsa implementacji jesli uznasz ze jakas zmienna powinna byc w globalnym configu to dodaj ja tam. 
+- !Podczsa implementacji jesli uznasz ze jakas zmienna powinna byc w globalnym configu to dodaj ja tam.
+
+### Business Logic Documentation
+Detailed business logic documentation for key subsystems:
+
+| System | Documentation |
+|--------|---------------|
+| Interior Configuration | `apps/app/docs/interior-config-business-logic.md` |
+| Interior Tests | `apps/app/docs/interior-config-test-plan.md` |
+
+**Interior Configuration System** (`apps/app/docs/interior-config-business-logic.md`):
+- Recursive zone-based architecture (max 4 levels: depths 0-3)
+- Zone types: EMPTY, SHELVES, DRAWERS, NESTED
+- Division directions: HORIZONTAL (rows), VERTICAL (columns)
+- Partition configuration with depth presets
+- Shelf modes: UNIFORM, MANUAL with depth presets
+- Drawer zones with boxes, fronts, slides, above-box shelves
+- All limits and constraints documented
+- Domain modules: `lib/domain/zone.ts`, `shelf.ts`, `drawer.ts` 
 
 ### TypeScript
 - Używaj **strict mode** w tsconfig.json

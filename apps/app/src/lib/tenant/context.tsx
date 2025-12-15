@@ -185,7 +185,7 @@ export function useTenant(): TenantContextValue {
 
 // Helper: Check if main domain
 function isMainDomain(hostname: string): boolean {
-  const mainDomain = process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'meblarz.pl';
+  const mainDomain = process.env.NEXT_PUBLIC_MAIN_DOMAIN || 'e-meble.com';
   const host = hostname.split(':')[0];
   return (
     host === mainDomain ||

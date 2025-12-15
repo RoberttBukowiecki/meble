@@ -42,7 +42,7 @@ export function TenantHead() {
 
     // Cleanup on unmount
     return () => {
-      document.title = 'Meblarz - Konfigurator mebli';
+      document.title = 'e-meble - Konfigurator mebli';
     };
   }, [tenant, branding, isTenantContext]);
 

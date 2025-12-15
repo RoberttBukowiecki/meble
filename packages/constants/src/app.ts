@@ -24,7 +24,7 @@ export const APP_URLS = {
 export const COMPANY_INFO = {
   name: 'e-meble',
   legalName: 'e-meble Sp. z o.o.',
-  email: 'kontakt@e-meble.com',
+  email: 'contact@e-meble.com',
   phone: '+48 123 456 789',
   nip: '5252525252',
   address: {

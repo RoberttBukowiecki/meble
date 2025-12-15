@@ -1,5 +1,6 @@
 import * as React from "react";
 import { cn } from "../../lib/utils";
+import { APP_NAME } from "@meble/constants";
 
 const LOGO_COLOR = "#1a1a2e";
 
@@ -8,7 +9,7 @@ interface LogoProps extends React.ImgHTMLAttributes<HTMLImageElement> {
 }
 
 const Logo = React.forwardRef<HTMLImageElement, LogoProps>(
-  ({ className, size = 32, alt = "Meble 3D", ...props }, ref) => {
+  ({ className, size = 32, alt = APP_NAME, ...props }, ref) => {
     return (
       <img
         ref={ref}

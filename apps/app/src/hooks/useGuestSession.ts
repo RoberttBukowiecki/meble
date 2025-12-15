@@ -7,8 +7,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
-const STORAGE_KEY = 'meblarz_guest_session';
-const EMAIL_KEY = 'meblarz_guest_email';
+const STORAGE_KEY = 'e_meble_guest_session';
+const EMAIL_KEY = 'e_meble_guest_email';
 
 interface GuestSession {
   sessionId: string;
