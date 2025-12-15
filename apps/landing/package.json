@@ -13,6 +13,7 @@
     "@headlessui/react": "^2.1.8",
     "@meble/analytics": "*",
     "@meble/constants": "*",
+    "@meble/payments": "*",
     "@meble/i18n": "*",
     "@meble/ui": "*",
     "lucide-react": "0.556.0",
