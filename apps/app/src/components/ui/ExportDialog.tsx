@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import {
   Dialog,
@@ -18,6 +18,7 @@ import {
   Checkbox, // Assuming Checkbox exists or using standard input with better styling
   Badge,
 } from '@meble/ui';
+import { track, AnalyticsEvent } from '@meble/analytics';
 import { useStore } from '@/lib/store';
 import {
   AVAILABLE_COLUMNS,
@@ -69,6 +70,16 @@ export function ExportDialog({
     return generatePartsHash(parts);
   }, [parts]);
 
+  // Track when export dialog opens
+  useEffect(() => {
+    if (open && parts.length > 0) {
+      track(AnalyticsEvent.EXPORT_INITIATED, {
+        parts_count: parts.length,
+        cabinet_count: furnitures.length,
+      });
+    }
+  }, [open, parts.length, furnitures.length]);
+
   const toggleColumn = (id: string) => {
     setSelectedColumnIds((prev) =>
       prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]
@@ -91,8 +102,9 @@ export function ExportDialog({
   const handleExport = async () => {
     if (!projectHash) return;
 
-    // If no credits, show purchase modal
+    // If no credits, show purchase modal and track
     if (!hasCredits) {
+      track(AnalyticsEvent.PURCHASE_MODAL_OPENED, { trigger: 'export' });
       setShowPurchaseModal(true);
       return;
     }
@@ -108,6 +120,10 @@ export function ExportDialog({
         // Credit use failed - likely no credits
         setExportStatus('error');
         setExportMessage(credits.error || 'Nie udało się użyć kredytu');
+        track(AnalyticsEvent.EXPORT_VALIDATION_FAILED, {
+          error_count: 1,
+          error_types: ['no_credits'],
+        });
         return;
       }
 
@@ -115,6 +131,18 @@ export function ExportDialog({
       const csv = generateCSV(parts, materials, furnitures, selectedColumns);
       const timestamp = new Date().toISOString().split('T')[0];
       downloadCSV(csv, `e-meble_export_${timestamp}.csv`);
+
+      // Track successful export
+      track(AnalyticsEvent.EXPORT_COMPLETED, {
+        parts_count: parts.length,
+        used_credit: !result.isFreeReexport,
+        export_format: 'csv',
+      });
+
+      // Track Smart Export usage
+      if (result.isFreeReexport) {
+        track(AnalyticsEvent.SMART_EXPORT_USED, { parts_count: parts.length });
+      }
 
       setExportStatus('success');
       setExportMessage(
@@ -132,6 +160,10 @@ export function ExportDialog({
     } catch (error) {
       setExportStatus('error');
       setExportMessage('Wystąpił błąd podczas eksportu');
+      track(AnalyticsEvent.EXPORT_VALIDATION_FAILED, {
+        error_count: 1,
+        error_types: ['unknown_error'],
+      });
     }
   };
 

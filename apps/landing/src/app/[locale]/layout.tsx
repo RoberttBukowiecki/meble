@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
+import { AnalyticsProvider } from '@meble/analytics';
 
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -59,16 +60,18 @@ export default async function LocaleLayout({ children, params }: Props) {
   const messages = await getMessages({ locale: safeLocale });
 
   return (
-    <NextIntlClientProvider locale={safeLocale} messages={messages}>
-      {content.siteDetails.googleAnalyticsId && <GoogleAnalytics gaId={content.siteDetails.googleAnalyticsId} />}
-      <Header
-        siteName={content.siteDetails.siteName}
-        menuItems={content.header.menuItems}
-        primaryCtaLabel={content.header.primaryCtaLabel}
-        locale={safeLocale}
-      />
-      <main>{children}</main>
-      <Footer siteDetails={content.siteDetails} footerDetails={content.footer} locale={safeLocale} />
-    </NextIntlClientProvider>
+    <AnalyticsProvider>
+      <NextIntlClientProvider locale={safeLocale} messages={messages}>
+        {content.siteDetails.googleAnalyticsId && <GoogleAnalytics gaId={content.siteDetails.googleAnalyticsId} />}
+        <Header
+          siteName={content.siteDetails.siteName}
+          menuItems={content.header.menuItems}
+          primaryCtaLabel={content.header.primaryCtaLabel}
+          locale={safeLocale}
+        />
+        <main>{children}</main>
+        <Footer siteDetails={content.siteDetails} footerDetails={content.footer} locale={safeLocale} />
+      </NextIntlClientProvider>
+    </AnalyticsProvider>
   );
 }

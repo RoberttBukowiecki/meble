@@ -8,10 +8,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { PayUClient, type PayUNotification } from '@meble/payments';
 
-// Use service role for webhook handling
+// Use secret key for webhook handling
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.SUPABASE_SECRET_KEY!
 );
 
 // Create PayU client

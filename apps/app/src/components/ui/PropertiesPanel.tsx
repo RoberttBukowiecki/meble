@@ -73,6 +73,7 @@ import { FrontsConfig } from './FrontsConfig';
 import { HandlesConfig } from './HandlesConfig';
 import { LegsConfig } from './LegsConfig';
 import { Ruler, Settings, Rows, DoorClosed, Wrench, Scaling, Grip, Eye, EyeOff, LayoutGrid, Footprints } from 'lucide-react';
+import type { Cabinet, Part, Material } from '@/types';
 
 // ============================================================================
 // Side Fronts Section
@@ -242,6 +243,444 @@ const InteriorConfigSection = ({
 };
 
 // ============================================================================
+// Cabinet Properties Panel (extracted to avoid hooks in conditional)
+// ============================================================================
+
+interface CabinetPropertiesPanelProps {
+  cabinet: Cabinet;
+  parts: Part[];
+  materials: Material[];
+  updateCabinet: (id: string, patch: any) => void;
+  updateCabinetParams: (id: string, params: CabinetParams) => void;
+  updateCabinetTransform: (id: string, transform: any) => void;
+  removeCabinet: (id: string) => void;
+  duplicateCabinet: (id: string) => void;
+}
+
+function CabinetPropertiesPanel({
+  cabinet: selectedCabinet,
+  parts,
+  materials,
+  updateCabinet,
+  updateCabinetParams,
+  updateCabinetTransform,
+  removeCabinet,
+  duplicateCabinet,
+}: CabinetPropertiesPanelProps) {
+  const t = useTranslations('PropertiesPanel');
+
+  // Now hooks are always called at the top of this component
+  const [localParams, setLocalParams] = React.useState(selectedCabinet.params);
+  const [hasChanges, setHasChanges] = React.useState(false);
+
+  React.useEffect(() => {
+    setLocalParams(selectedCabinet.params);
+    setHasChanges(false);
+  }, [selectedCabinet.params]);
+
+  const updateLocalParams = (newParams: Partial<CabinetParams>) => {
+    setLocalParams(prev => ({ ...prev, ...newParams }) as CabinetParams);
+    setHasChanges(true);
+  };
+
+  const handleApplyChanges = () => {
+    if (window.confirm(t('parametersConfirm'))) {
+      updateCabinetParams(selectedCabinet.id, localParams);
+      setHasChanges(false);
+    }
+  };
+
+  const handleDeleteCabinet = () => {
+    if (window.confirm(t('deleteCabinetConfirm', { name: selectedCabinet.name }))) {
+      removeCabinet(selectedCabinet.id);
+    }
+  };
+
+  // Calculate cabinet center and rotation from its parts
+  const cabinetParts = parts.filter((p) => selectedCabinet.partIds.includes(p.id));
+  const cabinetCenter: [number, number, number] = cabinetParts.length > 0
+    ? (() => {
+        const sum = cabinetParts.reduce(
+          (acc, p) => [acc[0] + p.position[0], acc[1] + p.position[1], acc[2] + p.position[2]] as [number, number, number],
+          [0, 0, 0] as [number, number, number]
+        );
+        return [
+          Math.round(sum[0] / cabinetParts.length),
+          Math.round(sum[1] / cabinetParts.length),
+          Math.round(sum[2] / cabinetParts.length)
+        ] as [number, number, number];
+      })()
+    : [0, 0, 0];
+
+  // Get rotation from reference part (bottom or first)
+  const referencePart = cabinetParts.find((p) => p.cabinetMetadata?.role === 'BOTTOM') ?? cabinetParts[0];
+  const cabinetRotation: [number, number, number] = referencePart?.rotation ?? [0, 0, 0];
+  const cabinetRotationDegrees = cabinetRotation.map(
+    (r) => Math.round((r * 180) / Math.PI * 100) / 100
+  ) as [number, number, number];
+
+  const handleCabinetPositionUpdate = (axis: 0 | 1 | 2, value: number) => {
+    const newPosition = [...cabinetCenter] as [number, number, number];
+    newPosition[axis] = value;
+    updateCabinetTransform(selectedCabinet.id, { position: newPosition });
+  };
+
+  const handleCabinetRotationUpdate = (axis: 0 | 1 | 2, valueDegrees: number) => {
+    const newRotation = [...cabinetRotation] as [number, number, number];
+    newRotation[axis] = (valueDegrees * Math.PI) / 180;
+    updateCabinetTransform(selectedCabinet.id, { rotation: newRotation });
+  };
+
+  const hasFrontsEnabled = (localParams as Partial<KitchenCabinetParams>).hasDoors ?? false;
+  const drawerHasFronts = localParams.drawerConfig ? Drawer.hasExternalFronts(localParams.drawerConfig) : false;
+
+  const handleFrontsToggle = (checked: boolean) => {
+    if (checked && drawerHasFronts && localParams.drawerConfig) {
+      const confirmConversion = window.confirm(
+        'Szuflady mają fronty. Czy chcesz je ukryć, aby dodać fronty?'
+      );
+      if (!confirmConversion) return;
+
+      updateLocalParams({
+        hasDoors: true,
+        drawerConfig: Drawer.convertToInternal(localParams.drawerConfig),
+      } as Partial<CabinetParams>);
+      return;
+    }
+
+    updateLocalParams({ hasDoors: checked } as Partial<CabinetParams>);
+  };
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Cabinet header */}
+      <div className="p-4 pb-2 border-b bg-card z-10">
+        <div className="flex items-center justify-between mb-3">
+          <Badge variant="outline" className="text-xs font-medium">
+            {getCabinetTypeLabel(selectedCabinet.type)}
+          </Badge>
+          <div className="flex gap-1">
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8"
+              onClick={() => duplicateCabinet(selectedCabinet.id)}
+              title="Duplikuj"
+            >
+              <Copy className="h-4 w-4" />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+              onClick={handleDeleteCabinet}
+              title="Usuń"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Name */}
+        <div className="mb-3 space-y-1.5">
+          <Label className="text-xs font-medium text-muted-foreground">{t('cabinetName')}</Label>
+          <Input
+            className="h-8 text-xs"
+            value={selectedCabinet.name}
+            onChange={(e) =>
+              updateCabinet(selectedCabinet.id, { name: e.target.value })
+            }
+          />
+        </div>
+
+        {/* Hide fronts toggle */}
+        <div className="flex items-center justify-between py-1">
+          <Label className="text-xs text-muted-foreground font-normal">Ukryj fronty</Label>
+          <button
+            type="button"
+            onClick={() =>
+              updateCabinet(selectedCabinet.id, { hideFronts: !(selectedCabinet.hideFronts ?? false) })
+            }
+            className={cn(
+              'p-0.5 rounded hover:bg-muted/50 transition-colors',
+              (selectedCabinet.hideFronts ?? false) ? 'text-muted-foreground/70' : 'text-muted-foreground'
+            )}
+            title={(selectedCabinet.hideFronts ?? false) ? 'Pokaż fronty' : 'Ukryj fronty'}
+          >
+            {(selectedCabinet.hideFronts ?? false) ? (
+              <EyeOff className="h-4 w-4" />
+            ) : (
+              <Eye className="h-4 w-4" />
+            )}
+          </button>
+        </div>
+      </div>
+
+      <div className='flex-grow overflow-y-auto px-2 py-2'>
+        <Accordion type="multiple" defaultValue={['dimensions']} className="w-full space-y-1">
+          <AccordionItem value="dimensions" className="border rounded-md px-2 bg-card">
+            <AccordionTrigger className="py-3 text-xs font-medium hover:no-underline">
+              <div className="flex items-center gap-2">
+                <Ruler className="h-4 w-4 text-muted-foreground" />
+                Wymiary
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pb-4 pt-1 border-t mt-1">
+              <DimensionsConfig params={localParams} onChange={updateLocalParams} />
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="assembly" className="border rounded-md px-2 bg-card">
+            <AccordionTrigger className="py-3 text-xs font-medium hover:no-underline">
+              <div className="flex items-center gap-2">
+                <Settings className="h-4 w-4 text-muted-foreground" />
+                Montaż
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pb-4 pt-1 space-y-4 border-t mt-1">
+              <AssemblyConfig params={localParams} onChange={updateLocalParams} />
+              <BackWallConfig params={localParams} onChange={updateLocalParams} />
+              <LegsConfig params={localParams} onChange={updateLocalParams} />
+            </AccordionContent>
+          </AccordionItem>
+
+          {selectedCabinet.type === 'KITCHEN' && (
+            <>
+              {/* LEGACY: Shelves accordion - replaced by "Wnętrze szafki" (InteriorConfigSection) */}
+              {/* TODO: Remove after confirming users have migrated to new interior config */}
+              {false && (
+                <AccordionItem value="shelves" className="border rounded-md px-2 bg-card">
+                  <AccordionTrigger className="py-3 text-xs font-medium hover:no-underline">
+                    <div className="flex items-center gap-2">
+                      <Rows className="h-4 w-4 text-muted-foreground" />
+                      Półki
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="pb-4 pt-1 border-t mt-1">
+                    <ShelvesConfig params={localParams} onChange={updateLocalParams} maxShelves={5}/>
+                  </AccordionContent>
+                </AccordionItem>
+              )}
+              <AccordionItem value="fronts" className="border rounded-md px-2 bg-card">
+                <AccordionTrigger className="py-3 text-xs font-medium hover:no-underline">
+                  <div className="flex items-center gap-2">
+                    <DoorClosed className="h-4 w-4 text-muted-foreground" />
+                    Fronty
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pb-4 pt-1 border-t mt-1">
+                  <div className="flex items-center justify-between pb-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground font-normal">Fronty</Label>
+                      {!hasFrontsEnabled && (
+                        <p className="text-[11px] text-muted-foreground">
+                          Fronty są wyłączone.
+                        </p>
+                      )}
+                      {drawerHasFronts && !hasFrontsEnabled && (
+                        <p className="text-[11px] text-amber-600">
+                          Szuflady mają fronty - zostaną ukryte po włączeniu frontów.
+                        </p>
+                      )}
+                    </div>
+                    <Switch
+                      className="scale-90"
+                      checked={hasFrontsEnabled}
+                      onCheckedChange={handleFrontsToggle}
+                    />
+                  </div>
+                  {hasFrontsEnabled ? (
+                    <FrontsConfig params={localParams} onChange={updateLocalParams} />
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Włącz fronty, aby je skonfigurować.
+                    </p>
+                  )}
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="handles" className="border rounded-md px-2 bg-card">
+                <AccordionTrigger className="py-3 text-xs font-medium hover:no-underline">
+                  <div className="flex items-center gap-2">
+                    <Grip className="h-4 w-4 text-muted-foreground" />
+                    Uchwyty
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pb-4 pt-1 border-t mt-1">
+                  <HandlesConfig params={localParams} onChange={updateLocalParams} />
+                </AccordionContent>
+              </AccordionItem>
+            </>
+          )}
+
+          {/* Side Fronts */}
+          <div className="border rounded-md px-2 bg-card">
+            <SideFrontsSection
+              cabinetId={selectedCabinet.id}
+              params={localParams}
+              materials={materials}
+              defaultFrontMaterialId={selectedCabinet.materials.frontMaterialId}
+              onUpdateParams={updateLocalParams}
+            />
+          </div>
+
+          {/* Interior Config */}
+          <div className="border rounded-md px-2 bg-card">
+            <InteriorConfigSection
+              cabinetId={selectedCabinet.id}
+              params={localParams}
+              onUpdateParams={updateLocalParams}
+              materials={materials}
+              bodyMaterialId={selectedCabinet.materials.bodyMaterialId}
+            />
+          </div>
+
+          {/* Materials */}
+          <AccordionItem value="materials" className="border rounded-md px-2 bg-card">
+            <AccordionTrigger className="py-3 text-xs font-medium hover:no-underline">
+              <div className="flex items-center gap-2">
+                <Wrench className="h-4 w-4 text-muted-foreground" />
+                Materiały
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pb-4 pt-1 border-t mt-1">
+              <div className="space-y-4 pt-2">
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground font-normal">{t('bodyMaterial')}</Label>
+                  <Select
+                    value={selectedCabinet.materials.bodyMaterialId}
+                    onValueChange={(id) =>
+                      updateCabinet(selectedCabinet.id, {
+                        materials: { ...selectedCabinet.materials, bodyMaterialId: id },
+                      })
+                    }
+                  >
+                    <SelectTrigger className="h-8 text-xs w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {materials.map((m) => (
+                        <SelectItem key={m.id} value={m.id}>
+                          {m.name} ({m.thickness}mm)
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground font-normal">{t('frontMaterial')}</Label>
+                  <Select
+                    value={selectedCabinet.materials.frontMaterialId}
+                    onValueChange={(id) =>
+                      updateCabinet(selectedCabinet.id, {
+                        materials: { ...selectedCabinet.materials, frontMaterialId: id },
+                      })
+                    }
+                  >
+                    <SelectTrigger className="h-8 text-xs w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {materials.map((m) => (
+                        <SelectItem key={m.id} value={m.id}>
+                          {m.name} ({m.thickness}mm)
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Transform (Position & Rotation) */}
+          <AccordionItem value="transform" className="border rounded-md px-2 bg-card">
+            <AccordionTrigger className="py-3 text-xs font-medium hover:no-underline">
+              <div className="flex items-center gap-2">
+                <Scaling className="h-4 w-4 text-muted-foreground" />
+                {t('transform')}
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pb-4 pt-1 border-t mt-1">
+              <div className="space-y-4 pt-2">
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground font-normal">{t('position')}</Label>
+                  <div className="grid grid-cols-3 gap-1.5 md:gap-2">
+                    <div>
+                      <span className="text-xs text-muted-foreground block mb-1 ml-0.5">X</span>
+                      <NumberInput
+                        className="h-9 md:h-8 text-xs"
+                        value={cabinetCenter[0]}
+                        onChange={(val) => handleCabinetPositionUpdate(0, val)}
+                      />
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground block mb-1 ml-0.5">Y</span>
+                      <NumberInput
+                        className="h-9 md:h-8 text-xs"
+                        value={cabinetCenter[1]}
+                        onChange={(val) => handleCabinetPositionUpdate(1, val)}
+                      />
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground block mb-1 ml-0.5">Z</span>
+                      <NumberInput
+                        className="h-9 md:h-8 text-xs"
+                        value={cabinetCenter[2]}
+                        onChange={(val) => handleCabinetPositionUpdate(2, val)}
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground font-normal">{t('rotation')}</Label>
+                  <div className="grid grid-cols-3 gap-1.5 md:gap-2">
+                    <div>
+                      <span className="text-xs text-muted-foreground block mb-1 ml-0.5">X</span>
+                      <NumberInput
+                        className="h-9 md:h-8 text-xs"
+                        value={cabinetRotationDegrees[0]}
+                        onChange={(val) => handleCabinetRotationUpdate(0, val)}
+                        allowDecimals
+                      />
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground block mb-1 ml-0.5">Y</span>
+                      <NumberInput
+                        className="h-9 md:h-8 text-xs"
+                        value={cabinetRotationDegrees[1]}
+                        onChange={(val) => handleCabinetRotationUpdate(1, val)}
+                        allowDecimals
+                      />
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground block mb-1 ml-0.5">Z</span>
+                      <NumberInput
+                        className="h-9 md:h-8 text-xs"
+                        value={cabinetRotationDegrees[2]}
+                        onChange={(val) => handleCabinetRotationUpdate(2, val)}
+                        allowDecimals
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+        </Accordion>
+      </div>
+      {hasChanges && (
+        <div className="p-4 border-t bg-background">
+          <Button onClick={handleApplyChanges} size="sm" className="w-full h-9">
+            Zastosuj zmiany
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================================
 // Main Panel Component
 // ============================================================================
 
@@ -386,413 +825,18 @@ export function PropertiesPanel() {
 
   if (selectedCabinet) {
     // ================= Render Cabinet Mode =================
-    const [localParams, setLocalParams] = React.useState(selectedCabinet.params);
-    const [hasChanges, setHasChanges] = React.useState(false);
-
-    React.useEffect(() => {
-        setLocalParams(selectedCabinet.params);
-        setHasChanges(false);
-    }, [selectedCabinet.params]);
-
-    const updateLocalParams = (newParams: Partial<CabinetParams>) => {
-        setLocalParams(prev => ({ ...prev, ...newParams }) as CabinetParams);
-        setHasChanges(true);
-    }
-
-    const handleApplyChanges = () => {
-        if (window.confirm(t('parametersConfirm'))) {
-            updateCabinetParams(selectedCabinet.id, localParams);
-            setHasChanges(false);
-        }
-    };
-    
-    const handleDeleteCabinet = () => {
-      if (window.confirm(t('deleteCabinetConfirm', { name: selectedCabinet.name }))) {
-        removeCabinet(selectedCabinet.id);
-      }
-    };
-
-    // Calculate cabinet center and rotation from its parts
-    const cabinetParts = parts.filter((p) => selectedCabinet.partIds.includes(p.id));
-    const cabinetCenter: [number, number, number] = cabinetParts.length > 0
-      ? (() => {
-          const sum = cabinetParts.reduce(
-            (acc, p) => [acc[0] + p.position[0], acc[1] + p.position[1], acc[2] + p.position[2]] as [number, number, number],
-            [0, 0, 0] as [number, number, number]
-          );
-          return [
-            Math.round(sum[0] / cabinetParts.length),
-            Math.round(sum[1] / cabinetParts.length),
-            Math.round(sum[2] / cabinetParts.length)
-          ] as [number, number, number];
-        })()
-      : [0, 0, 0];
-
-    // Get rotation from reference part (bottom or first)
-    const referencePart = cabinetParts.find((p) => p.cabinetMetadata?.role === 'BOTTOM') ?? cabinetParts[0];
-    const cabinetRotation: [number, number, number] = referencePart?.rotation ?? [0, 0, 0];
-    const cabinetRotationDegrees = cabinetRotation.map(
-      (r) => Math.round((r * 180) / Math.PI * 100) / 100
-    ) as [number, number, number];
-
-    const handleCabinetPositionUpdate = (axis: 0 | 1 | 2, value: number) => {
-      const newPosition = [...cabinetCenter] as [number, number, number];
-      newPosition[axis] = value;
-      updateCabinetTransform(selectedCabinet.id, { position: newPosition });
-    };
-
-    const handleCabinetRotationUpdate = (axis: 0 | 1 | 2, valueDegrees: number) => {
-      const newRotation = [...cabinetRotation] as [number, number, number];
-      newRotation[axis] = (valueDegrees * Math.PI) / 180;
-      updateCabinetTransform(selectedCabinet.id, { rotation: newRotation });
-    };
-
-    const hasFrontsEnabled = (localParams as Partial<KitchenCabinetParams>).hasDoors ?? false;
-    const drawerHasFronts = localParams.drawerConfig ? Drawer.hasExternalFronts(localParams.drawerConfig) : false;
-
-    const handleFrontsToggle = (checked: boolean) => {
-      if (checked && drawerHasFronts && localParams.drawerConfig) {
-        const confirmConversion = window.confirm(
-          'Szuflady mają fronty. Czy chcesz je ukryć, aby dodać fronty?'
-        );
-        if (!confirmConversion) return;
-
-        updateLocalParams({
-          hasDoors: true,
-          drawerConfig: Drawer.convertToInternal(localParams.drawerConfig),
-        } as Partial<CabinetParams>);
-        return;
-      }
-
-      updateLocalParams({ hasDoors: checked } as Partial<CabinetParams>);
-    };
-
+    // Use extracted component to properly handle hooks
     return (
-      <div className="flex flex-col h-full">
-        {/* Cabinet header */}
-        <div className="p-4 pb-2 border-b bg-card z-10">
-            <div className="flex items-center justify-between mb-3">
-            <Badge variant="outline" className="text-xs font-medium">
-                {getCabinetTypeLabel(selectedCabinet.type)}
-            </Badge>
-            <div className="flex gap-1">
-                <Button
-                size="icon"
-                variant="ghost"
-                className="h-8 w-8"
-                onClick={() => duplicateCabinet(selectedCabinet.id)}
-                title="Duplikuj"
-                >
-                <Copy className="h-4 w-4" />
-                </Button>
-                <Button
-                size="icon"
-                variant="ghost"
-                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                onClick={handleDeleteCabinet}
-                title="Usuń"
-                >
-                <Trash2 className="h-4 w-4" />
-                </Button>
-            </div>
-            </div>
-
-            {/* Name */}
-            <div className="mb-3 space-y-1.5">
-                <Label className="text-xs font-medium text-muted-foreground">{t('cabinetName')}</Label>
-                <Input
-                    className="h-8 text-xs"
-                    value={selectedCabinet.name}
-                    onChange={(e) =>
-                    updateCabinet(selectedCabinet.id, { name: e.target.value })
-                    }
-                />
-            </div>
-
-            {/* Hide fronts toggle */}
-            <div className="flex items-center justify-between py-1">
-                <Label className="text-xs text-muted-foreground font-normal">Ukryj fronty</Label>
-                <button
-                    type="button"
-                    onClick={() =>
-                        updateCabinet(selectedCabinet.id, { hideFronts: !(selectedCabinet.hideFronts ?? false) })
-                    }
-                    className={cn(
-                        'p-0.5 rounded hover:bg-muted/50 transition-colors',
-                        (selectedCabinet.hideFronts ?? false) ? 'text-muted-foreground/70' : 'text-muted-foreground'
-                    )}
-                    title={(selectedCabinet.hideFronts ?? false) ? 'Pokaż fronty' : 'Ukryj fronty'}
-                >
-                    {(selectedCabinet.hideFronts ?? false) ? (
-                        <EyeOff className="h-4 w-4" />
-                    ) : (
-                        <Eye className="h-4 w-4" />
-                    )}
-                </button>
-            </div>
-        </div>
-        
-        <div className='flex-grow overflow-y-auto px-2 py-2'>
-            <Accordion type="multiple" defaultValue={['dimensions']} className="w-full space-y-1">
-                <AccordionItem value="dimensions" className="border rounded-md px-2 bg-card">
-                    <AccordionTrigger className="py-3 text-xs font-medium hover:no-underline">
-                        <div className="flex items-center gap-2">
-                            <Ruler className="h-4 w-4 text-muted-foreground" />
-                            Wymiary
-                        </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="pb-4 pt-1 border-t mt-1">
-                        <DimensionsConfig params={localParams} onChange={updateLocalParams} />
-                    </AccordionContent>
-                </AccordionItem>
-                
-                <AccordionItem value="assembly" className="border rounded-md px-2 bg-card">
-                    <AccordionTrigger className="py-3 text-xs font-medium hover:no-underline">
-                        <div className="flex items-center gap-2">
-                            <Settings className="h-4 w-4 text-muted-foreground" />
-                            Montaż
-                        </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="pb-4 pt-1 space-y-4 border-t mt-1">
-                        <AssemblyConfig params={localParams} onChange={updateLocalParams} />
-                        <BackWallConfig params={localParams} onChange={updateLocalParams} />
-                        <LegsConfig params={localParams} onChange={updateLocalParams} />
-                    </AccordionContent>
-                </AccordionItem>
-
-                {selectedCabinet.type === 'KITCHEN' && (
-                    <>
-                        {/* LEGACY: Shelves accordion - replaced by "Wnętrze szafki" (InteriorConfigSection) */}
-                        {/* TODO: Remove after confirming users have migrated to new interior config */}
-                        {false && (
-                            <AccordionItem value="shelves" className="border rounded-md px-2 bg-card">
-                                <AccordionTrigger className="py-3 text-xs font-medium hover:no-underline">
-                                    <div className="flex items-center gap-2">
-                                        <Rows className="h-4 w-4 text-muted-foreground" />
-                                        Półki
-                                    </div>
-                                </AccordionTrigger>
-                                <AccordionContent className="pb-4 pt-1 border-t mt-1">
-                                    <ShelvesConfig params={localParams} onChange={updateLocalParams} maxShelves={5}/>
-                                </AccordionContent>
-                            </AccordionItem>
-                        )}
-                        <AccordionItem value="fronts" className="border rounded-md px-2 bg-card">
-                            <AccordionTrigger className="py-3 text-xs font-medium hover:no-underline">
-                                <div className="flex items-center gap-2">
-                                    <DoorClosed className="h-4 w-4 text-muted-foreground" />
-                                    Fronty
-                                </div>
-                            </AccordionTrigger>
-                            <AccordionContent className="pb-4 pt-1 border-t mt-1">
-                                <div className="flex items-center justify-between pb-3">
-                                    <div className="space-y-1">
-                                        <Label className="text-xs text-muted-foreground font-normal">Fronty</Label>
-                                        {!hasFrontsEnabled && (
-                                            <p className="text-[11px] text-muted-foreground">
-                                                Fronty są wyłączone.
-                                            </p>
-                                        )}
-                                        {drawerHasFronts && !hasFrontsEnabled && (
-                                            <p className="text-[11px] text-amber-600">
-                                                Szuflady mają fronty - zostaną ukryte po włączeniu frontów.
-                                            </p>
-                                        )}
-                                    </div>
-                                    <Switch
-                                        className="scale-90"
-                                        checked={hasFrontsEnabled}
-                                        onCheckedChange={handleFrontsToggle}
-                                    />
-                                </div>
-                                {hasFrontsEnabled ? (
-                                    <FrontsConfig params={localParams} onChange={updateLocalParams} />
-                                ) : (
-                                    <p className="text-xs text-muted-foreground">
-                                        Włącz fronty, aby je skonfigurować.
-                                    </p>
-                                )}
-                            </AccordionContent>
-                        </AccordionItem>
-                        <AccordionItem value="handles" className="border rounded-md px-2 bg-card">
-                            <AccordionTrigger className="py-3 text-xs font-medium hover:no-underline">
-                                <div className="flex items-center gap-2">
-                                    <Grip className="h-4 w-4 text-muted-foreground" />
-                                    Uchwyty
-                                </div>
-                            </AccordionTrigger>
-                            <AccordionContent className="pb-4 pt-1 border-t mt-1">
-                                <HandlesConfig params={localParams} onChange={updateLocalParams} />
-                            </AccordionContent>
-                        </AccordionItem>
-                    </>
-                )}
-
-              {/* Side Fronts */}
-              <div className="border rounded-md px-2 bg-card">
-                 <SideFrontsSection
-                    cabinetId={selectedCabinet.id}
-                    params={localParams}
-                    materials={materials}
-                    defaultFrontMaterialId={selectedCabinet.materials.frontMaterialId}
-                    onUpdateParams={updateLocalParams}
-                />
-              </div>
-
-              {/* Interior Config */}
-              <div className="border rounded-md px-2 bg-card">
-                 <InteriorConfigSection
-                    cabinetId={selectedCabinet.id}
-                    params={localParams}
-                    onUpdateParams={updateLocalParams}
-                    materials={materials}
-                    bodyMaterialId={selectedCabinet.materials.bodyMaterialId}
-                />
-              </div>
-
-              {/* Materials */}
-              <AccordionItem value="materials" className="border rounded-md px-2 bg-card">
-                <AccordionTrigger className="py-3 text-xs font-medium hover:no-underline">
-                  <div className="flex items-center gap-2">
-                      <Wrench className="h-4 w-4 text-muted-foreground" />
-                      Materiały
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="pb-4 pt-1 border-t mt-1">
-                  <div className="space-y-4 pt-2">
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-muted-foreground font-normal">{t('bodyMaterial')}</Label>
-                      <Select
-                        value={selectedCabinet.materials.bodyMaterialId}
-                        onValueChange={(id) =>
-                          updateCabinet(selectedCabinet.id, {
-                            materials: { ...selectedCabinet.materials, bodyMaterialId: id },
-                          })
-                        }
-                      >
-                        <SelectTrigger className="h-8 text-xs w-full">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {materials.map((m) => (
-                            <SelectItem key={m.id} value={m.id}>
-                              {m.name} ({m.thickness}mm)
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-muted-foreground font-normal">{t('frontMaterial')}</Label>
-                      <Select
-                        value={selectedCabinet.materials.frontMaterialId}
-                        onValueChange={(id) =>
-                          updateCabinet(selectedCabinet.id, {
-                            materials: { ...selectedCabinet.materials, frontMaterialId: id },
-                          })
-                        }
-                      >
-                        <SelectTrigger className="h-8 text-xs w-full">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {materials.map((m) => (
-                            <SelectItem key={m.id} value={m.id}>
-                              {m.name} ({m.thickness}mm)
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-              
-              {/* Transform (Position & Rotation) */}
-              <AccordionItem value="transform" className="border rounded-md px-2 bg-card">
-                <AccordionTrigger className="py-3 text-xs font-medium hover:no-underline">
-                  <div className="flex items-center gap-2">
-                        <Scaling className="h-4 w-4 text-muted-foreground" />
-                        {t('transform')}
-                    </div>
-                </AccordionTrigger>
-                <AccordionContent className="pb-4 pt-1 border-t mt-1">
-                  <div className="space-y-4 pt-2">
-                    <div className="space-y-2">
-                      <Label className="text-xs text-muted-foreground font-normal">{t('position')}</Label>
-                      <div className="grid grid-cols-3 gap-1.5 md:gap-2">
-                        <div>
-                          <span className="text-xs text-muted-foreground block mb-1 ml-0.5">X</span>
-                          <NumberInput
-                            className="h-9 md:h-8 text-xs"
-                            value={cabinetCenter[0]}
-                            onChange={(val) => handleCabinetPositionUpdate(0, val)}
-                          />
-                        </div>
-                        <div>
-                          <span className="text-xs text-muted-foreground block mb-1 ml-0.5">Y</span>
-                          <NumberInput
-                            className="h-9 md:h-8 text-xs"
-                            value={cabinetCenter[1]}
-                            onChange={(val) => handleCabinetPositionUpdate(1, val)}
-                          />
-                        </div>
-                        <div>
-                          <span className="text-xs text-muted-foreground block mb-1 ml-0.5">Z</span>
-                          <NumberInput
-                            className="h-9 md:h-8 text-xs"
-                            value={cabinetCenter[2]}
-                            onChange={(val) => handleCabinetPositionUpdate(2, val)}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs text-muted-foreground font-normal">{t('rotation')}</Label>
-                      <div className="grid grid-cols-3 gap-1.5 md:gap-2">
-                        <div>
-                          <span className="text-xs text-muted-foreground block mb-1 ml-0.5">X</span>
-                          <NumberInput
-                            className="h-9 md:h-8 text-xs"
-                            value={cabinetRotationDegrees[0]}
-                            onChange={(val) => handleCabinetRotationUpdate(0, val)}
-                            allowDecimals
-                          />
-                        </div>
-                        <div>
-                          <span className="text-xs text-muted-foreground block mb-1 ml-0.5">Y</span>
-                          <NumberInput
-                            className="h-9 md:h-8 text-xs"
-                            value={cabinetRotationDegrees[1]}
-                            onChange={(val) => handleCabinetRotationUpdate(1, val)}
-                            allowDecimals
-                          />
-                        </div>
-                        <div>
-                          <span className="text-xs text-muted-foreground block mb-1 ml-0.5">Z</span>
-                          <NumberInput
-                            className="h-9 md:h-8 text-xs"
-                            value={cabinetRotationDegrees[2]}
-                            onChange={(val) => handleCabinetRotationUpdate(2, val)}
-                            allowDecimals
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-
-            </Accordion>
-        </div>
-        {hasChanges && (
-            <div className="p-4 border-t bg-background">
-                <Button onClick={handleApplyChanges} size="sm" className="w-full h-9">
-                    Zastosuj zmiany
-                </Button>
-            </div>
-        )}
-      </div>
+      <CabinetPropertiesPanel
+        cabinet={selectedCabinet}
+        parts={parts}
+        materials={materials}
+        updateCabinet={updateCabinet}
+        updateCabinetParams={updateCabinetParams}
+        updateCabinetTransform={updateCabinetTransform}
+        removeCabinet={removeCabinet}
+        duplicateCabinet={duplicateCabinet}
+      />
     );
   }
 

@@ -10,6 +10,7 @@
  * - backPanel.ts: Back panel generation
  * - doors.ts: Door generation
  * - drawers/: Drawer generation (zone-based)
+ * - corner/: Corner cabinet generation
  * - kitchenCabinet.ts: Kitchen cabinet generator
  * - wardrobe.ts: Wardrobe generator
  * - bookshelf.ts: Bookshelf generator
@@ -27,6 +28,7 @@ export { generateKitchenCabinet } from './kitchenCabinet';
 export { generateWardrobe } from './wardrobe';
 export { generateBookshelf } from './bookshelf';
 export { generateDrawerCabinet } from './drawerCabinet';
+export { generateCornerInternalCabinet } from './corner';
 
 // Re-export utility functions
 export { generateBackPanel } from './backPanel';
@@ -55,6 +57,7 @@ import { generateKitchenCabinet } from './kitchenCabinet';
 import { generateWardrobe } from './wardrobe';
 import { generateBookshelf } from './bookshelf';
 import { generateDrawerCabinet } from './drawerCabinet';
+import { generateCornerInternalCabinet } from './corner';
 
 /**
  * Get the appropriate generator function for a cabinet type
@@ -70,5 +73,10 @@ export function getGeneratorForType(type: CabinetType): CabinetGenerator {
       return generateBookshelf;
     case 'DRAWER':
       return generateDrawerCabinet;
+    case 'CORNER_INTERNAL':
+      return generateCornerInternalCabinet as CabinetGenerator;
+    case 'CORNER_EXTERNAL':
+      // Phase 2 - not yet implemented, return empty generator
+      return () => [];
   }
 }

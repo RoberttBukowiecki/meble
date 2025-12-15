@@ -129,11 +129,27 @@ export type {
   WardrobeCabinetParams,
   BookshelfCabinetParams,
   DrawerCabinetParams,
+  CornerInternalCabinetParams,
+  CornerExternalCabinetParams,
   CabinetParams,
   Cabinet,
   CabinetPartRole,
   CabinetPartMetadata,
 } from './cabinet';
+
+// Corner cabinet types
+export type {
+  InternalCornerType,
+  ExternalCornerType,
+  CornerOrientation,
+  CornerDoorType,
+  DeadZonePreset,
+  WallSharingMode,
+  CornerDimensionMode,
+  CornerMechanismType,
+  CornerConfig,
+  CornerPartRole,
+} from './corner';
 
 // History types
 export type {
@@ -153,6 +169,7 @@ export type {
   TransformMode,
   ResizeHandle,
   SnapType,
+  SnapVersion,
   SnapPoint,
   SnapCandidate,
   BoundingEdge,

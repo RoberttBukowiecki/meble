@@ -509,6 +509,18 @@ export const PartDomain = {
       DECORATIVE_BOTTOM: 'Cokół',
       PARTITION: 'Przegroda',
       LEG: 'Nóżka',
+      // Corner cabinet roles
+      CORNER_LEFT_SIDE: 'Bok lewy (narożnik)',
+      CORNER_RIGHT_SIDE: 'Bok prawy (narożnik)',
+      CORNER_BACK_LEFT: 'Tył lewy (narożnik)',
+      CORNER_BACK_RIGHT: 'Tył prawy (narożnik)',
+      CORNER_DIAGONAL_FRONT: 'Front diagonalny',
+      CORNER_BOTTOM: 'Dno narożne',
+      CORNER_TOP: 'Góra narożna',
+      CORNER_SHELF: 'Półka narożna',
+      CORNER_DOOR_LEFT: 'Drzwi narożne lewe',
+      CORNER_DOOR_RIGHT: 'Drzwi narożne prawe',
+      CORNER_FILLER: 'Wypełnienie narożnika',
     };
     return labels[role] ?? role;
   },

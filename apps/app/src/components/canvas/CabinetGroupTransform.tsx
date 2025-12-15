@@ -18,6 +18,7 @@ import { SCENE_CONFIG, PART_CONFIG, MATERIAL_CONFIG } from '@/lib/config';
 import { useSnapContext } from '@/lib/snap-context';
 import { useDimensionContext } from '@/lib/dimension-context';
 import { calculateCabinetBounds, calculateSnapSimple } from '@/lib/snapping';
+import { calculateCabinetSnapV2 } from '@/lib/snapping-v2';
 import { calculateDimensions } from '@/lib/dimension-calculator';
 import { getCabinetBoundingBoxWithOffset, getOtherBoundingBoxes } from '@/lib/bounding-box-utils';
 import type { TransformControls as TransformControlsImpl } from 'three-stdlib';
@@ -162,41 +163,72 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
 
       if (axis) {
         if (snapEnabled) {
-          const cabinetBounds = calculateCabinetBounds(parts);
-          if (cabinetBounds) {
-            // Update bounds position based on group translation
-            cabinetBounds.position = [
-              cabinetBounds.position[0] + groupTranslation.x,
-              cabinetBounds.position[1] + groupTranslation.y,
-              cabinetBounds.position[2] + groupTranslation.z,
-            ];
+          let snapResult;
+          const positionOffset: [number, number, number] = [
+            groupTranslation.x,
+            groupTranslation.y,
+            groupTranslation.z,
+          ];
 
-            const otherParts = allParts.filter(
-              (p) => p.cabinetMetadata?.cabinetId !== cabinetId
-            );
-
-            const snapResult = calculateSnapSimple(
-              cabinetBounds,
-              cabinetBounds.position,
-              otherParts,
-              snapSettings,
-              axis
-            );
-
-            if (snapResult.snapped && snapResult.snapPoints.length > 0) {
-              // Apply snap offset ONLY on the drag axis
-              const axisIndex = axis === 'X' ? 0 : axis === 'Y' ? 1 : 2;
-              const snapOffset = snapResult.position[axisIndex] - cabinetBounds.position[axisIndex];
-
-              if (axisIndex === 0) pivotPoint.x += snapOffset;
-              else if (axisIndex === 1) pivotPoint.y += snapOffset;
-              else pivotPoint.z += snapOffset;
-
-              group.position.copy(pivotPoint);
-              setSnapPoints(snapResult.snapPoints);
-            } else {
-              clearSnapPoints();
+          // Use V2 snapping for bounding box based snapping, V1 for face-to-face
+          if (snapSettings.version === 'v2') {
+            // V2: Group bounding box based snapping
+            const cabinet = allCabinets.find((c) => c.id === cabinetId);
+            if (cabinet) {
+              snapResult = calculateCabinetSnapV2(
+                cabinet,
+                positionOffset,
+                allParts,
+                allCabinets,
+                snapSettings,
+                axis
+              );
             }
+          } else {
+            // V1: Individual part face snapping using cabinet bounds
+            const cabinetBounds = calculateCabinetBounds(parts);
+            if (cabinetBounds) {
+              // Update bounds position based on group translation
+              cabinetBounds.position = [
+                cabinetBounds.position[0] + groupTranslation.x,
+                cabinetBounds.position[1] + groupTranslation.y,
+                cabinetBounds.position[2] + groupTranslation.z,
+              ];
+
+              const otherParts = allParts.filter(
+                (p) => p.cabinetMetadata?.cabinetId !== cabinetId
+              );
+
+              snapResult = calculateSnapSimple(
+                cabinetBounds,
+                cabinetBounds.position,
+                otherParts,
+                snapSettings,
+                axis
+              );
+            }
+          }
+
+          if (snapResult?.snapped && snapResult.snapPoints.length > 0) {
+            // Apply snap offset ONLY on the drag axis
+            const axisIndex = axis === 'X' ? 0 : axis === 'Y' ? 1 : 2;
+
+            // For V2, the snapResult.position is the final position, calculate offset
+            const currentPos = [
+              initialCabinetCenter.current.x + groupTranslation.x,
+              initialCabinetCenter.current.y + groupTranslation.y,
+              initialCabinetCenter.current.z + groupTranslation.z,
+            ];
+            const snapOffset = snapResult.position[axisIndex] - currentPos[axisIndex];
+
+            if (axisIndex === 0) pivotPoint.x += snapOffset;
+            else if (axisIndex === 1) pivotPoint.y += snapOffset;
+            else pivotPoint.z += snapOffset;
+
+            group.position.copy(pivotPoint);
+            setSnapPoints(snapResult.snapPoints);
+          } else {
+            clearSnapPoints();
           }
         }
 

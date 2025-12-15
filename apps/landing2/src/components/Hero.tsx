@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useTranslations } from "next-intl";
+import { track, AnalyticsEvent } from "@meble/analytics";
 import { APP_URLS } from "@meble/constants";
 import { Container } from "./Container";
 import heroImg from "../../public/img/hero.png";
@@ -25,6 +26,7 @@ export function Hero() {
               <a
                 href={APP_URLS.app}
                 className="px-8 py-4 text-lg font-medium text-center text-white bg-indigo-600 rounded-md"
+                onClick={() => track(AnalyticsEvent.LANDING_CTA_CLICKED, { location: 'hero' })}
               >
                 {t("cta")}
               </a>
@@ -128,6 +130,7 @@ export function Hero() {
             <a
               href={APP_URLS.app}
               className="inline-flex items-center gap-2 rounded-full bg-white px-8 py-4 text-lg font-semibold text-indigo-700 shadow-lg transition-all hover:bg-indigo-50 hover:shadow-xl"
+              onClick={() => track(AnalyticsEvent.LANDING_CTA_CLICKED, { location: 'cta_section' })}
             >
               {t("savings.cta")}
               <ArrowRightIcon className="h-5 w-5" />

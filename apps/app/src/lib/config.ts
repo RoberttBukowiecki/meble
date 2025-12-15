@@ -3,7 +3,7 @@
  * Centralized keyboard shortcuts and settings
  */
 
-import { CabinetParams, CabinetType, DoorConfig, DrawerSlideType, DrawerSlideConfig, DrawerConfiguration, EdgeBandingRect, LegPreset, LegFinish, LegShape, LegCountMode } from "@/types";
+import { CabinetParams, CabinetType, DoorConfig, DrawerSlideType, DrawerSlideConfig, DrawerConfiguration, EdgeBandingRect, LegPreset, LegFinish, LegShape, LegCountMode, InternalCornerType, CornerConfig } from "@/types";
 
 // Utility types/helpers for keyboard shortcuts
 export type ShortcutKeys = string | string[];
@@ -759,6 +759,47 @@ export const LEG_DEFAULTS = {
   MAX_DIAMETER: 60,
 } as const;
 
+// ============================================================================
+// Corner Cabinet Configuration
+// ============================================================================
+
+/**
+ * Default corner configuration
+ */
+export const DEFAULT_CORNER_CONFIG: CornerConfig = {
+  cornerType: 'L_SHAPED',
+  cornerOrientation: 'LEFT',
+  dimensionMode: 'SYMMETRIC',
+  armA: 800,
+  armB: 800,
+  cornerAngle: 90,
+  deadZonePreset: 'STANDARD',
+  wallSharingMode: 'FULL_ISOLATION',
+  cornerDoorType: 'SINGLE_DIAGONAL',
+  mechanismType: 'FIXED_SHELVES',
+};
+
+/**
+ * Corner cabinet presets by internal corner type
+ */
+export const CORNER_CABINET_PRESETS: Record<InternalCornerType, Partial<CornerConfig>> = {
+  L_SHAPED: {
+    cornerType: 'L_SHAPED',
+    cornerDoorType: 'SINGLE_DIAGONAL',
+    mechanismType: 'FIXED_SHELVES',
+  },
+  BLIND_CORNER: {
+    cornerType: 'BLIND_CORNER',
+    cornerDoorType: 'NONE',
+    mechanismType: 'PULL_OUT',
+  },
+  LAZY_SUSAN: {
+    cornerType: 'LAZY_SUSAN',
+    cornerDoorType: 'BI_FOLD',
+    mechanismType: 'LAZY_SUSAN',
+  },
+};
+
 export const CABINET_PRESETS: Record<CabinetType, Partial<CabinetParams>> = {
   KITCHEN: {
     type: 'KITCHEN',
@@ -808,5 +849,27 @@ export const CABINET_PRESETS: Record<CabinetType, Partial<CabinetParams>> = {
     hasBack: true,
     backOverlapRatio: DEFAULT_BACK_OVERLAP_RATIO,
     backMountType: 'overlap',
-  }
+  },
+  CORNER_INTERNAL: {
+    type: 'CORNER_INTERNAL',
+    width: 800,  // Used as armA
+    height: 720,
+    depth: 580,
+    topBottomPlacement: 'inset',
+    hasBack: true,
+    backOverlapRatio: DEFAULT_BACK_OVERLAP_RATIO,
+    backMountType: 'overlap',
+    cornerConfig: DEFAULT_CORNER_CONFIG,
+  },
+  CORNER_EXTERNAL: {
+    type: 'CORNER_EXTERNAL',
+    width: 800,
+    height: 720,
+    depth: 580,
+    topBottomPlacement: 'inset',
+    hasBack: true,
+    backOverlapRatio: DEFAULT_BACK_OVERLAP_RATIO,
+    backMountType: 'overlap',
+    cornerConfig: DEFAULT_CORNER_CONFIG,
+  },
 };

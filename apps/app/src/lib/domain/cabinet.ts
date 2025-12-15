@@ -468,6 +468,10 @@ export const CabinetDomain = {
         return 'Regał';
       case 'DRAWER':
         return 'Komoda';
+      case 'CORNER_INTERNAL':
+        return 'Szafka narożna';
+      case 'CORNER_EXTERNAL':
+        return 'Narożnik zewnętrzny';
       default:
         return 'Nieznany typ';
     }

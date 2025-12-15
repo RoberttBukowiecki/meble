@@ -21,6 +21,7 @@ describe('snapSlice', () => {
       edgeSnap: true,
       faceSnap: true,
       collisionOffset: 1,
+      version: 'v2', // V2 is default for new users
     });
   });
 
@@ -57,6 +58,29 @@ describe('snapSlice', () => {
       edgeSnap: true,
       faceSnap: true,
       collisionOffset: 1,
+      version: 'v2',
     });
+  });
+
+  it('sets snap version to v1', () => {
+    const store = createSnapStore();
+
+    store.getState().setSnapVersion('v1');
+    expect(store.getState().snapSettings.version).toBe('v1');
+  });
+
+  it('sets snap version to v2', () => {
+    const store = createSnapStore();
+
+    store.getState().setSnapVersion('v1');
+    store.getState().setSnapVersion('v2');
+    expect(store.getState().snapSettings.version).toBe('v2');
+  });
+
+  it('updates snap version via updateSnapSettings', () => {
+    const store = createSnapStore();
+
+    store.getState().updateSnapSettings({ version: 'v1' });
+    expect(store.getState().snapSettings.version).toBe('v1');
   });
 });

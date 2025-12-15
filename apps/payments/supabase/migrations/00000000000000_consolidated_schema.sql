@@ -1227,7 +1227,8 @@ CREATE TABLE producer_quotes (
   currency TEXT DEFAULT 'PLN',
 
   valid_until TIMESTAMPTZ NOT NULL,
-  is_expired BOOLEAN GENERATED ALWAYS AS (valid_until < NOW()) STORED,
+  -- NOTE: is_expired is calculated at query time: valid_until < NOW()
+  -- Cannot use GENERATED column because NOW() is not immutable
 
   status TEXT DEFAULT 'pending',
 

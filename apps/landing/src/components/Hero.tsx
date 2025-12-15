@@ -4,6 +4,7 @@ import React from 'react';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { motion } from 'framer-motion';
+import { track, AnalyticsEvent } from '@meble/analytics';
 import { HeroDetails } from '@/types';
 import { Button } from '@meble/ui';
 import Link from 'next/link';
@@ -41,7 +42,12 @@ const Hero: React.FC<Props> = ({ hero }) => {
             transition={{ duration: 0.5, delay: 0.4 }}
             className="mt-10 flex items-center justify-center gap-x-6"
           >
-            <Button asChild size="lg" className="h-12 px-8 text-lg flex items-center justify-center">
+            <Button
+              asChild
+              size="lg"
+              className="h-12 px-8 text-lg flex items-center justify-center"
+              onClick={() => track(AnalyticsEvent.LANDING_CTA_CLICKED, { location: 'hero' })}
+            >
               <Link href="/app">{t('primaryCtaLabel')}</Link>
             </Button>
           </motion.div>

@@ -8,6 +8,7 @@ import type { DrawerSlideType, DrawerConfiguration } from './drawer';
 import type { CabinetInteriorConfig } from './cabinetInterior';
 import type { SideFrontsConfig, DecorativePanelsConfig } from './decorative';
 import type { LegsConfig } from './legs';
+import type { CornerConfig, CornerPartRole } from './corner';
 
 /**
  * Defines how the top and bottom panels are placed relative to the side panels.
@@ -26,7 +27,13 @@ export type BackMountType = 'overlap' | 'dado';
 /**
  * Available cabinet template types
  */
-export type CabinetType = 'KITCHEN' | 'WARDROBE' | 'BOOKSHELF' | 'DRAWER';
+export type CabinetType =
+  | 'KITCHEN'
+  | 'WARDROBE'
+  | 'BOOKSHELF'
+  | 'DRAWER'
+  | 'CORNER_INTERNAL'   // Internal corner cabinet (Phase 1)
+  | 'CORNER_EXTERNAL';  // External corner cabinet (Phase 2)
 
 /**
  * Cabinet material configuration
@@ -110,13 +117,47 @@ export interface DrawerCabinetParams extends CabinetBaseParams {
 }
 
 /**
+ * Internal corner cabinet parameters (Phase 1)
+ * For cabinets that fit into internal corners where two walls meet
+ */
+export interface CornerInternalCabinetParams extends CabinetBaseParams {
+  type: 'CORNER_INTERNAL';
+  /** Corner-specific configuration */
+  cornerConfig: CornerConfig;
+  /** Optional interior configuration (zone-based) */
+  interiorConfig?: CabinetInteriorConfig;
+  /** Optional door configuration */
+  doorConfig?: DoorConfig;
+  /** Optional handle configuration */
+  handleConfig?: HandleConfig;
+}
+
+/**
+ * External corner cabinet parameters (Phase 2 - future)
+ * For cabinets on external corners like islands or peninsulas
+ */
+export interface CornerExternalCabinetParams extends CabinetBaseParams {
+  type: 'CORNER_EXTERNAL';
+  /** Corner-specific configuration */
+  cornerConfig: CornerConfig;
+  /** Optional interior configuration */
+  interiorConfig?: CabinetInteriorConfig;
+  /** Optional door configuration */
+  doorConfig?: DoorConfig;
+  /** Optional handle configuration */
+  handleConfig?: HandleConfig;
+}
+
+/**
  * Discriminated union of all cabinet parameter types
  */
 export type CabinetParams =
   | KitchenCabinetParams
   | WardrobeCabinetParams
   | BookshelfCabinetParams
-  | DrawerCabinetParams;
+  | DrawerCabinetParams
+  | CornerInternalCabinetParams
+  | CornerExternalCabinetParams;
 
 /**
  * Cabinet metadata - stored separately from parts
@@ -161,7 +202,9 @@ export type CabinetPartRole =
   | 'DECORATIVE_TOP'    // Top decorative panel (blenda, trim, full panel)
   | 'DECORATIVE_BOTTOM' // Bottom decorative panel (plinth, trim, full panel)
   | 'PARTITION'         // Vertical divider between columns in interior
-  | 'LEG';              // Cabinet leg (not a cut part - accessory)
+  | 'LEG'               // Cabinet leg (not a cut part - accessory)
+  // Corner cabinet specific roles
+  | CornerPartRole;
 
 /**
  * Extended metadata for parts that belong to cabinets

@@ -19,9 +19,10 @@ import {
   Input,
   Label,
 } from '@meble/ui';
+import { track, AnalyticsEvent } from '@meble/analytics';
 import { Check, CreditCard, Loader2, Sparkles, Zap } from 'lucide-react';
 import { usePayment } from '@/hooks/usePayment';
-import {EXPORT_PACKAGES, ExportPackageId} from "@meble/config";
+import { EXPORT_PACKAGES, ExportPackageId } from "@meble/config";
 
 interface CreditsPurchaseModalProps {
   open: boolean;
@@ -78,8 +79,39 @@ export function CreditsPurchaseModal({
     return true;
   };
 
+  const handlePackageSelect = (packageId: ExportPackageId) => {
+    setSelectedPackage(packageId);
+    const pkg = EXPORT_PACKAGES[packageId];
+    if (pkg) {
+      track(AnalyticsEvent.PACKAGE_SELECTED, {
+        package_id: packageId,
+        package_name: pkg.namePl,
+        price: pkg.price / 100, // Convert from grosze to zł
+        credits: pkg.credits,
+      });
+    }
+  };
+
+  const handleProviderSelect = (provider: PaymentProvider) => {
+    setSelectedProvider(provider);
+    track(AnalyticsEvent.PAYMENT_PROVIDER_SELECTED, {
+      provider,
+      package_id: selectedPackage,
+    });
+  };
+
   const handlePurchase = async () => {
     if (!validateEmail(email)) return;
+
+    const pkg = EXPORT_PACKAGES[selectedPackage];
+
+    // Track purchase started
+    track(AnalyticsEvent.PURCHASE_STARTED, {
+      package_id: selectedPackage,
+      amount: (pkg?.price ?? 0) / 100,
+      provider: selectedProvider,
+      currency: 'PLN',
+    });
 
     const result = await createPayment({
       packageType: selectedPackage as 'single' | 'starter' | 'standard' | 'pro',
@@ -91,6 +123,14 @@ export function CreditsPurchaseModal({
     if (result.success && result.redirectUrl) {
       // Redirect to payment provider
       window.location.href = result.redirectUrl;
+    } else {
+      // Track payment failure (client-side redirect issue)
+      track(AnalyticsEvent.PAYMENT_FAILED, {
+        package_id: selectedPackage,
+        amount: (pkg?.price ?? 0) / 100,
+        provider: selectedProvider,
+        error_message: 'redirect_failed',
+      });
     }
   };
 
@@ -127,7 +167,7 @@ export function CreditsPurchaseModal({
                   <button
                     key={packageId}
                     type="button"
-                    onClick={() => setSelectedPackage(packageId)}
+                    onClick={() => handlePackageSelect(packageId)}
                     className={`relative flex flex-col items-start p-4 rounded-lg border-2 transition-all text-left ${
                       isSelected
                         ? 'border-primary bg-primary/5'
@@ -217,7 +257,7 @@ export function CreditsPurchaseModal({
             <div className="flex gap-3">
               <button
                 type="button"
-                onClick={() => setSelectedProvider('przelewy24')}
+                onClick={() => handleProviderSelect('przelewy24')}
                 className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all ${
                   selectedProvider === 'przelewy24'
                     ? 'border-primary bg-primary/5'
@@ -230,7 +270,7 @@ export function CreditsPurchaseModal({
 
               <button
                 type="button"
-                onClick={() => setSelectedProvider('payu')}
+                onClick={() => handleProviderSelect('payu')}
                 className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all ${
                   selectedProvider === 'payu'
                     ? 'border-primary bg-primary/5'

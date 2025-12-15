@@ -31,7 +31,7 @@
     "product": "Product",
     "features": "Features",
     "pricing": "Pricing",
-    "about": "About",
+    "blog": "Blog",
     "getStarted": "Get Started"
   },
   "benefits": {
@@ -143,5 +143,22 @@
       "privacy": "Privacy Policy",
       "cookies": "Cookie Policy"
     }
+  },
+  "blog": {
+    "pretitle": "Blog",
+    "title": "Guides & Inspiration",
+    "description": "Practical tips, inspiration and guides for custom furniture design. Learn how to save money and create your dream furniture.",
+    "seo": {
+      "title": "Blog - Furniture Design Guides | Meble",
+      "description": "Practical tips and guides for custom furniture design. How to design a wardrobe, costs, how to measure an alcove and more."
+    },
+    "featured": "Featured Articles",
+    "allArticles": "All Articles",
+    "categories": "Categories",
+    "backToBlog": "Back to Blog",
+    "minRead": "min read",
+    "tags": "Tags",
+    "relatedArticles": "Related Articles",
+    "readMore": "Read more"
   }
 }

@@ -190,6 +190,7 @@ function ZoneBlock({
           ? (zone.widthConfig?.ratio ?? 1)
           : (zone.heightConfig.ratio ?? 1)
       }}
+      data-testid={`zone-${zone.id}`}
       onClick={(e) => {
         e.stopPropagation();
         onSelectZone(zone.id);
@@ -443,7 +444,7 @@ export function InteriorPreview({
   const vizWidthStyle = aspectRatio >= 1 ? `calc(${maxVizHeight} * ${aspectRatio})` : maxVizHeight;
 
   return (
-    <div className="border rounded-lg bg-muted/10 p-3 flex flex-col h-full">
+    <div className="border rounded-lg bg-muted/10 p-3 flex flex-col h-full" data-testid="interior-preview">
       {/* Header with cabinet dimensions */}
       <div className="flex items-center justify-center gap-2 mb-2 pb-2 border-b border-dashed">
         <span className="text-[10px] text-muted-foreground">Szer:</span>
@@ -536,7 +537,7 @@ export function InteriorPreview({
                             e.stopPropagation();
                             onMoveZone(zone.id, 'up');
                           }}
-                          title="↑"
+                          title="Przesuń wyżej"
                         >
                           <ChevronUp className="h-2.5 w-2.5" />
                         </Button>
@@ -550,7 +551,7 @@ export function InteriorPreview({
                             e.stopPropagation();
                             onMoveZone(zone.id, 'down');
                           }}
-                          title="↓"
+                          title="Przesuń niżej"
                         >
                           <ChevronDown className="h-2.5 w-2.5" />
                         </Button>

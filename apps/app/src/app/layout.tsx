@@ -3,6 +3,8 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
 import { APP_NAME, APP_URLS, SOCIAL_HANDLES } from '@meble/constants';
 import { TooltipProvider } from '@meble/ui';
+import { AnalyticsProvider } from '@meble/analytics';
+import { AuthProvider } from '@/providers/AuthProvider';
 import { GlobalKeyboardListener } from '@/components/GlobalKeyboardListener';
 import "../styles/globals.css";
 
@@ -54,12 +56,16 @@ export default async function RootLayout({
   return (
     <html lang={locale}>
       <body>
-        <NextIntlClientProvider messages={messages}>
-          <TooltipProvider>
-            <GlobalKeyboardListener />
-            {children}
-          </TooltipProvider>
-        </NextIntlClientProvider>
+        <AnalyticsProvider>
+          <NextIntlClientProvider messages={messages}>
+            <AuthProvider>
+              <TooltipProvider>
+                <GlobalKeyboardListener />
+                {children}
+              </TooltipProvider>
+            </AuthProvider>
+          </NextIntlClientProvider>
+        </AnalyticsProvider>
       </body>
     </html>
   );

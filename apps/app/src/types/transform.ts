@@ -79,6 +79,11 @@ export interface BoundingFace {
 export type SnapAxisConstraint = 'X' | 'Y' | 'Z' | 'XY' | 'XZ' | 'YZ' | 'XYZ' | null;
 
 /**
+ * Snap version - V1 uses individual part faces, V2 uses group bounding boxes
+ */
+export type SnapVersion = 'v1' | 'v2';
+
+/**
  * Snap settings configuration
  */
 export interface SnapSettings {
@@ -89,6 +94,7 @@ export interface SnapSettings {
   edgeSnap: boolean;            // Enable edge-to-edge snapping
   faceSnap: boolean;            // Enable face-to-face snapping
   collisionOffset: number;      // Offset to prevent collision detection (default: 0.5mm)
+  version: SnapVersion;         // Snap version: 'v1' (faces) or 'v2' (bounding boxes)
 }
 
 /**

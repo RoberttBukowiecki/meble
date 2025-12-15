@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ["@meble/ui"],
+  transpilePackages: ["@meble/ui", "@meble/constants"],
 };
 
 module.exports = nextConfig;

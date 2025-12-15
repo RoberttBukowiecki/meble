@@ -12,7 +12,8 @@
     "./monetization": "./src/monetization.config.ts"
   },
   "dependencies": {
-    "zod": "^3.22.0"
+    "zod": "^3.22.0",
+    "@meble/constants": "workspace:*"
   },
   "devDependencies": {
     "@meble/tsconfig": "workspace:*",

@@ -6,6 +6,7 @@
  * UI controls for snap settings in the toolbar.
  * Features:
  * - Main toggle button (snap on/off)
+ * - Snap version toggle (V1 faces / V2 bounding boxes)
  * - Expandable settings dropdown
  */
 
@@ -19,10 +20,13 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuCheckboxItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   Slider,
 } from '@meble/ui';
 import { useStore } from '@/lib/store';
 import { useShallow } from 'zustand/react/shallow';
+import type { SnapVersion } from '@/types';
 
 export function SnapControlPanel() {
   const { snapEnabled, snapSettings, toggleSnap, updateSnapSettings } = useStore(
@@ -37,6 +41,13 @@ export function SnapControlPanel() {
   const handleDistanceChange = useCallback(
     (value: number[]) => {
       updateSnapSettings({ distance: value[0] });
+    },
+    [updateSnapSettings]
+  );
+
+  const handleVersionChange = useCallback(
+    (version: string) => {
+      updateSnapSettings({ version: version as SnapVersion });
     },
     [updateSnapSettings]
   );
@@ -68,6 +79,24 @@ export function SnapControlPanel() {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-64">
           <DropdownMenuLabel>Ustawienia przyciągania</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+
+          {/* Snap Version Selection */}
+          <div className="px-2 py-1.5">
+            <div className="mb-1.5 text-sm font-medium">Tryb przyciągania</div>
+            <DropdownMenuRadioGroup
+              value={snapSettings.version || 'v2'}
+              onValueChange={handleVersionChange}
+            >
+              <DropdownMenuRadioItem value="v2" className="text-sm">
+                V2 - Obwiednia szafy
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="v1" className="text-sm">
+                V1 - Powierzchnie elementów
+              </DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+          </div>
+
           <DropdownMenuSeparator />
 
           {/* Show Guides */}

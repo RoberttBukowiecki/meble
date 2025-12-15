@@ -14,7 +14,7 @@ export function Navbar() {
     { key: "product", href: "#" },
     { key: "features", href: "#" },
     { key: "pricing", href: "#" },
-    { key: "about", href: "#" },
+    { key: "blog", href: "/blog" },
   ];
 
   return (

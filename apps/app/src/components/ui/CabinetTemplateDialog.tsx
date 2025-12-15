@@ -27,6 +27,7 @@ import {
   Separator,
   Badge,
 } from '@meble/ui';
+import { track, AnalyticsEvent } from '@meble/analytics';
 import { useShallow } from 'zustand/react/shallow';
 import { useStore } from '@/lib/store';
 import {
@@ -35,6 +36,11 @@ import {
   CabinetMaterials,
   TopBottomPlacement,
   KitchenCabinetParams,
+  CornerInternalCabinetParams,
+  CornerConfig,
+  CornerOrientation,
+  DeadZonePreset,
+  CornerDimensionMode,
   DrawerConfiguration,
   SideFrontsConfig,
   Material,
@@ -44,14 +50,14 @@ import {
   DEFAULT_BACK_OVERLAP_RATIO,
   DEFAULT_DOOR_CONFIG,
 } from '@/lib/config';
-import { Drawer } from '@/lib/domain';
+import { Drawer, CornerDomain } from '@/lib/domain';
 import { DrawerConfigDialog } from './DrawerConfigDialog';
 import { SideFrontsConfigDialog } from './SideFrontsConfigDialog';
 import { DecorativePanelsConfigDialog } from './DecorativePanelsConfigDialog';
 import { InteriorConfigDialog } from './InteriorConfigDialog';
 import { getDefaultMaterials, getDefaultBackMaterial } from '@/lib/store/utils';
 import { getSideFrontsSummary, hasSideFronts, hasDecorativePanels, getDecorativePanelsSummary, hasInteriorContent, getInteriorSummary } from '@/lib/cabinetGenerators';
-import { Settings2, PanelLeftDashed, AlertTriangle, RectangleHorizontal, Grip, Box, Warehouse, Library, Layers, PanelTop, LayoutGrid } from 'lucide-react';
+import { Settings2, PanelLeftDashed, AlertTriangle, RectangleHorizontal, Grip, Box, Warehouse, Library, Layers, PanelTop, LayoutGrid, CornerUpRight } from 'lucide-react';
 import { FrontsConfigDialog } from './FrontsConfigDialog';
 import { HandlesConfigDialog } from './HandlesConfigDialog';
 import { cn } from '@/lib/utils';
@@ -186,6 +192,24 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
     const getBackOverlapRatio = (): number => {
         if ('backOverlapRatio' in params && params.backOverlapRatio !== undefined) return params.backOverlapRatio;
         return DEFAULT_BACK_OVERLAP_RATIO;
+    };
+
+    // Corner cabinet specific accessors
+    const getCornerConfig = (): CornerConfig | undefined => {
+        if ('cornerConfig' in params) {
+            return (params as CornerInternalCabinetParams).cornerConfig;
+        }
+        return undefined;
+    };
+
+    const updateCornerConfig = (updates: Partial<CornerConfig>) => {
+        const currentConfig = getCornerConfig();
+        if (!currentConfig) return;
+
+        onChange({
+            ...params,
+            cornerConfig: { ...currentConfig, ...updates },
+        } as any);
     };
 
     // Check if drawer config has external fronts
@@ -421,6 +445,108 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
             </div>
 
             <Separator />
+
+            {/* Section: Corner Configuration (only for corner cabinets) */}
+            {type === 'CORNER_INTERNAL' && (
+                <>
+                    <div className="space-y-4">
+                        <h3 className="text-sm font-semibold text-foreground/80 flex items-center gap-2">
+                            <CornerUpRight className="h-4 w-4" />
+                            Konfiguracja narożnika
+                        </h3>
+
+                        <div className="grid gap-4">
+                            {/* Corner Orientation */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label className="text-xs text-muted-foreground">Orientacja narożnika</Label>
+                                    <Select
+                                        value={getCornerConfig()?.cornerOrientation || 'LEFT'}
+                                        onValueChange={(val: CornerOrientation) => updateCornerConfig({ cornerOrientation: val })}
+                                    >
+                                        <SelectTrigger className="h-9">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="LEFT">Lewa</SelectItem>
+                                            <SelectItem value="RIGHT">Prawa</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-xs text-muted-foreground">Tryb wymiarów</Label>
+                                    <Select
+                                        value={getCornerConfig()?.dimensionMode || 'SYMMETRIC'}
+                                        onValueChange={(val: CornerDimensionMode) => updateCornerConfig({ dimensionMode: val })}
+                                    >
+                                        <SelectTrigger className="h-9">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="SYMMETRIC">Symetryczne</SelectItem>
+                                            <SelectItem value="ASYMMETRIC">Asymetryczne</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+
+                            {/* Arm Dimensions */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label className="text-xs text-muted-foreground">Ramię A (mm)</Label>
+                                    <NumberInput
+                                        value={getCornerConfig()?.armA || 800}
+                                        onChange={(val) => {
+                                            const config = getCornerConfig();
+                                            const updates: Partial<CornerConfig> = { armA: val };
+                                            if (config?.dimensionMode === 'SYMMETRIC') {
+                                                updates.armB = val;
+                                            }
+                                            updateCornerConfig(updates);
+                                        }}
+                                        min={300}
+                                        max={1500}
+                                        allowNegative={false}
+                                        className="h-9"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-xs text-muted-foreground">Ramię B (mm)</Label>
+                                    <NumberInput
+                                        value={getCornerConfig()?.armB || 800}
+                                        onChange={(val) => updateCornerConfig({ armB: val })}
+                                        min={300}
+                                        max={1500}
+                                        allowNegative={false}
+                                        disabled={getCornerConfig()?.dimensionMode === 'SYMMETRIC'}
+                                        className="h-9"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Dead Zone Preset */}
+                            <div className="space-y-2">
+                                <Label className="text-xs text-muted-foreground">Martwa strefa</Label>
+                                <Select
+                                    value={getCornerConfig()?.deadZonePreset || 'STANDARD'}
+                                    onValueChange={(val: DeadZonePreset) => updateCornerConfig({ deadZonePreset: val })}
+                                >
+                                    <SelectTrigger className="h-9">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="MINIMAL">Minimalna (więcej miejsca)</SelectItem>
+                                        <SelectItem value="STANDARD">Standardowa</SelectItem>
+                                        <SelectItem value="ACCESSIBLE">Łatwy dostęp</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <Separator />
+                </>
+            )}
 
             {/* Section: Configuration */}
             <div className="space-y-4">
@@ -707,11 +833,18 @@ export function CabinetTemplateDialog({ open, onOpenChange, furnitureId }: Cabin
 
   const handleCreate = () => {
     if (!selectedType || !params.width || !params.height || !params.depth || !materials.bodyMaterialId || !materials.frontMaterialId) return;
-    
+
     // All params should be set from the preset, so we can cast more safely
     const finalParams = params as CabinetParams;
 
     addCabinet(furnitureId, selectedType, finalParams, materials as CabinetMaterials);
+
+    // Track cabinet creation
+    track(AnalyticsEvent.CABINET_CREATED, {
+      template_type: selectedType,
+      template_id: selectedType.toLowerCase(),
+    });
+
     onOpenChange(false);
     // Reset state
     setStep('select');
@@ -719,12 +852,19 @@ export function CabinetTemplateDialog({ open, onOpenChange, furnitureId }: Cabin
     setParams({});
     setMaterials({});
   };
-  
+
   const handleSelectType = (type: CabinetType) => {
     setSelectedType(type);
     // Load default parameters from the presets config
     setParams(CABINET_PRESETS[type]);
     setStep('configure');
+
+    // Track template selection
+    track(AnalyticsEvent.TEMPLATE_SELECTED, {
+      template_id: type.toLowerCase(),
+      template_name: type,
+      category: 'cabinet',
+    });
   }
 
   return (
@@ -754,6 +894,13 @@ export function CabinetTemplateDialog({ open, onOpenChange, furnitureId }: Cabin
                 description="Uniwersalna szafka z możliwością konfiguracji drzwi, szuflad i półek."
                 icon={<Box className="w-6 h-6" />}
                 onClick={() => handleSelectType('KITCHEN')}
+              />
+              <TemplateCard
+                type="CORNER_INTERNAL"
+                title="Szafka narożna"
+                description="Szafka L-kształtna do wewnętrznych narożników kuchni."
+                icon={<CornerUpRight className="w-6 h-6" />}
+                onClick={() => handleSelectType('CORNER_INTERNAL')}
               />
               <TemplateCard
                 type="WARDROBE"

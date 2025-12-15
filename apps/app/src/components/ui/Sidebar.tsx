@@ -13,6 +13,7 @@ import { CabinetTemplateDialog } from './CabinetTemplateDialog';
 import { HistoryButtons } from './HistoryButtons';
 import { SettingsDropdown } from './SettingsDropdown';
 import { ExportDialog } from './ExportDialog';
+import { UserMenu } from '@/components/auth';
 import {
   Dialog,
   DialogContent,
@@ -73,6 +74,7 @@ export function Sidebar() {
           <div className="flex items-center gap-1">
             <HistoryButtons />
             <SettingsDropdown />
+            <UserMenu />
           </div>
         </div>
 

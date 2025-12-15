@@ -1,8 +1,9 @@
-import type { SnapSettings } from '@/types';
+import type { SnapSettings, SnapVersion } from '@/types';
 import type { StoreSlice } from '../types';
 
 /**
  * Default snap settings
+ * V2 is default for new users - uses external bounding boxes for group-to-group snapping
  */
 const DEFAULT_SNAP_SETTINGS: SnapSettings = {
   distance: 20, // 20mm snap threshold
@@ -12,6 +13,7 @@ const DEFAULT_SNAP_SETTINGS: SnapSettings = {
   edgeSnap: true,
   faceSnap: true,
   collisionOffset: 1.0, // 1mm offset to prevent collision detection (must be > 0.5mm threshold)
+  version: 'v2', // V2 is default - bounding box snapping for better UX
 };
 
 /**
@@ -31,6 +33,7 @@ export interface SnapSlice {
   toggleSnap: () => void;
   setSnapEnabled: (enabled: boolean) => void;
   updateSnapSettings: (settings: Partial<SnapSettings>) => void;
+  setSnapVersion: (version: SnapVersion) => void;
 }
 
 /**
@@ -56,6 +59,13 @@ export const createSnapSlice: StoreSlice<SnapSlice> = (set) => ({
   updateSnapSettings: (settings: Partial<SnapSettings>) => {
     set((state) => ({
       snapSettings: { ...state.snapSettings, ...settings },
+    }));
+  },
+
+  // Set snap version (v1 or v2)
+  setSnapVersion: (version: SnapVersion) => {
+    set((state) => ({
+      snapSettings: { ...state.snapSettings, version },
     }));
   },
 });

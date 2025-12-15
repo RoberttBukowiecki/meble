@@ -11,6 +11,7 @@ import { SCENE_CONFIG, PART_CONFIG, MATERIAL_CONFIG } from '@/lib/config';
 import { useSnapContext } from '@/lib/snap-context';
 import { useDimensionContext } from '@/lib/dimension-context';
 import { calculateSnapSimple } from '@/lib/snapping';
+import { calculatePartSnapV2 } from '@/lib/snapping-v2';
 import { calculateDimensions } from '@/lib/dimension-calculator';
 import { getPartBoundingBoxAtPosition, getOtherBoundingBoxes } from '@/lib/bounding-box-utils';
 import type { TransformControls as TransformControlsImpl } from 'three-stdlib';
@@ -120,20 +121,36 @@ export function PartTransformControls({
       if (effectiveAxis) {
         // Apply snap when enabled
         if (snapEnabled) {
-          const otherParts = parts.filter(
-            (p) =>
-              p.id !== part.id &&
-              (!part.cabinetMetadata?.cabinetId ||
-                p.cabinetMetadata?.cabinetId !== part.cabinetMetadata.cabinetId)
-          );
+          let snapResult;
 
-          const snapResult = calculateSnapSimple(
-            part,
-            position,
-            otherParts,
-            snapSettings,
-            effectiveAxis
-          );
+          // Use V2 snapping for bounding box based snapping, V1 for face-to-face
+          if (snapSettings.version === 'v2') {
+            // V2: Group bounding box based snapping
+            snapResult = calculatePartSnapV2(
+              part,
+              position,
+              parts,
+              cabinets,
+              snapSettings,
+              effectiveAxis
+            );
+          } else {
+            // V1: Individual part face snapping
+            const otherParts = parts.filter(
+              (p) =>
+                p.id !== part.id &&
+                (!part.cabinetMetadata?.cabinetId ||
+                  p.cabinetMetadata?.cabinetId !== part.cabinetMetadata.cabinetId)
+            );
+
+            snapResult = calculateSnapSimple(
+              part,
+              position,
+              otherParts,
+              snapSettings,
+              effectiveAxis
+            );
+          }
 
           if (snapResult.snapped && snapResult.snapPoints.length > 0) {
             // Apply snap offset ONLY on the drag axis

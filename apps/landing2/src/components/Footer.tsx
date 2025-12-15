@@ -13,7 +13,7 @@ export function Footer() {
     { key: "nav.product", href: "#" },
     { key: "nav.features", href: "#" },
     { key: "nav.pricing", href: "#" },
-    { key: "nav.about", href: "#" },
+    { key: "nav.blog", href: "/blog" },
   ];
 
   const legal = [

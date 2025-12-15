@@ -11,6 +11,7 @@
   "dependencies": {
     "@headlessui/react": "^2.2.0",
     "@heroicons/react": "^2.2.0",
+    "@meble/analytics": "*",
     "@meble/constants": "*",
     "@meble/i18n": "*",
     "@meble/ui": "*",

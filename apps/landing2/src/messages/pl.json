@@ -31,7 +31,7 @@
     "product": "Produkt",
     "features": "Funkcje",
     "pricing": "Cennik",
-    "about": "O nas",
+    "blog": "Blog",
     "getStarted": "Rozpocznij"
   },
   "benefits": {
@@ -143,5 +143,22 @@
       "privacy": "Polityka prywatności",
       "cookies": "Polityka cookies"
     }
+  },
+  "blog": {
+    "pretitle": "Blog",
+    "title": "Poradniki i inspiracje",
+    "description": "Praktyczne porady, inspiracje i poradniki dotyczące projektowania mebli na wymiar. Dowiedz się jak oszczędzić i stworzyć wymarzone meble.",
+    "seo": {
+      "title": "Blog - Poradniki projektowania mebli | Meble",
+      "description": "Praktyczne porady i poradniki dotyczące projektowania mebli na wymiar. Jak zaprojektować szafę, ile kosztuje, jak zmierzyć wnękę i więcej."
+    },
+    "featured": "Polecane artykuły",
+    "allArticles": "Wszystkie artykuły",
+    "categories": "Kategorie",
+    "backToBlog": "Powrót do bloga",
+    "minRead": "min czytania",
+    "tags": "Tagi",
+    "relatedArticles": "Podobne artykuły",
+    "readMore": "Czytaj więcej"
   }
 }

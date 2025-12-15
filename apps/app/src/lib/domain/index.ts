@@ -39,6 +39,9 @@ export type { GeneratedPartData } from './part';
 
 export { LegsDomain } from './legs';
 
+export { CornerDomain } from './corner';
+export type { DeadZoneDimensions, LShapePoint } from './corner';
+
 // Shared types
 export type {
   ValidationResult,
