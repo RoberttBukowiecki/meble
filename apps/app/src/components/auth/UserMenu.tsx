@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useAuth } from '@/providers/AuthProvider';
 import { useRouter } from 'next/navigation';
 import {
@@ -12,25 +13,35 @@ import {
   Avatar,
   AvatarFallback,
   AvatarImage,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
 } from '@meble/ui';
 import {
   User,
-  Settings,
-  CreditCard,
-  History,
   LogOut,
   ChevronDown,
   LogIn,
   UserPlus,
+  CreditCard,
+  Sparkles,
+  Plus,
 } from 'lucide-react';
+import { useCredits } from '@/hooks/useCredits';
+import { CreditsPurchaseModal } from '@/components/ui/CreditsPurchaseModal';
 
 export function UserMenu() {
   const router = useRouter();
   const { user, profile, isAuthenticated, isLoading, signOut } = useAuth();
+  const { balance, isLoading: creditsLoading } = useCredits(isAuthenticated);
+  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+
+  const availableCredits = balance?.availableCredits ?? 0;
+  const hasUnlimited = balance?.hasUnlimited ?? false;
 
   if (isLoading) {
     return (
-      <div className="h-10 w-10 rounded-full bg-muted animate-pulse" />
+      <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />
     );
   }
 
@@ -73,64 +84,84 @@ export function UserMenu() {
   };
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="flex items-center gap-2 px-2">
-          <Avatar className="h-8 w-8">
-            <AvatarImage src={profile?.avatarUrl || undefined} />
-            <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
-          <span className="hidden md:block max-w-32 truncate">
-            {displayName || user?.email}
-          </span>
-          <ChevronDown className="h-4 w-4 text-muted-foreground" />
-        </Button>
-      </DropdownMenuTrigger>
+    <>
+      <div className="flex items-center gap-1">
+        {/* Credits display */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-1.5 h-8 px-2"
+              onClick={() => setShowPurchaseModal(true)}
+            >
+              {hasUnlimited ? (
+                <Sparkles className="h-4 w-4 text-amber-500" />
+              ) : (
+                <CreditCard className="h-4 w-4" />
+              )}
+              <span className="font-medium text-sm">
+                {creditsLoading ? '...' : hasUnlimited ? 'Pro' : availableCredits}
+              </span>
+              <Plus className="h-3 w-3 text-muted-foreground" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            {hasUnlimited ? (
+              'Nielimitowane eksporty - kliknij aby zobaczyc pakiety'
+            ) : (
+              <>
+                {availableCredits} kredyt{availableCredits === 1 ? '' : availableCredits < 5 ? 'y' : 'ow'} dostepnych
+                <span className="block text-xs text-muted-foreground">
+                  Kliknij, aby kupic wiecej
+                </span>
+              </>
+            )}
+          </TooltipContent>
+        </Tooltip>
 
-      <DropdownMenuContent align="end" className="w-56">
-        <div className="px-2 py-1.5">
-          <p className="text-sm font-medium truncate">
-            {displayName || 'Uzytkownik'}
-          </p>
-          <p className="text-xs text-muted-foreground truncate">
-            {user?.email}
-          </p>
-        </div>
+        {/* User menu */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Avatar className="h-7 w-7">
+                <AvatarImage src={profile?.avatarUrl || undefined} />
+                <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+            </Button>
+          </DropdownMenuTrigger>
 
-        <DropdownMenuSeparator />
+          <DropdownMenuContent align="end" className="w-48">
+            <div className="px-2 py-1.5">
+              <p className="text-sm font-medium truncate">
+                {displayName || 'Uzytkownik'}
+              </p>
+              <p className="text-xs text-muted-foreground truncate">
+                {user?.email}
+              </p>
+            </div>
 
-        <DropdownMenuItem onClick={() => router.push('/settings/profile')}>
-          <User className="mr-2 h-4 w-4" />
-          Profil
-        </DropdownMenuItem>
+            <DropdownMenuSeparator />
 
-        <DropdownMenuItem onClick={() => router.push('/settings/credits')}>
-          <CreditCard className="mr-2 h-4 w-4" />
-          Kredyty
-        </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={handleSignOut}
+              className="text-destructive focus:text-destructive"
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              Wyloguj
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
-        <DropdownMenuItem onClick={() => router.push('/settings/history')}>
-          <History className="mr-2 h-4 w-4" />
-          Historia eksportow
-        </DropdownMenuItem>
-
-        <DropdownMenuItem onClick={() => router.push('/settings')}>
-          <Settings className="mr-2 h-4 w-4" />
-          Ustawienia
-        </DropdownMenuItem>
-
-        <DropdownMenuSeparator />
-
-        <DropdownMenuItem
-          onClick={handleSignOut}
-          className="text-destructive focus:text-destructive"
-        >
-          <LogOut className="mr-2 h-4 w-4" />
-          Wyloguj
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+      <CreditsPurchaseModal
+        open={showPurchaseModal}
+        onOpenChange={setShowPurchaseModal}
+        isAuthenticated={isAuthenticated}
+        userEmail={user?.email}
+      />
+    </>
   );
 }

@@ -68,7 +68,7 @@ export function Sidebar() {
       {/* Header */}
       <div className="border-b border-border p-4">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold text-foreground">
+          <h2 className="text-lg font-semibold text-foreground whitespace-nowrap">
             {APP_NAME}
           </h2>
           <div className="flex items-center gap-1">

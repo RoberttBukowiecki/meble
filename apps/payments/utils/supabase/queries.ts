@@ -83,3 +83,30 @@ export const getFeaturedProducts = cache(async (supabase: TypedSupabaseClient) =
  * @deprecated Use getUserProfile instead
  */
 export const getUserDetails = getUserProfile;
+
+/**
+ * Get Stripe products with prices (for subscription pricing page)
+ */
+export const getProducts = cache(async (supabase: TypedSupabaseClient) => {
+  const { data: products } = await supabase
+    .from('products')
+    .select('*, prices(*)')
+    .eq('active', true)
+    .order('metadata->index')
+    .order('unit_amount', { referencedTable: 'prices' });
+
+  return products;
+});
+
+/**
+ * Get user's active subscription
+ */
+export const getSubscription = cache(async (supabase: TypedSupabaseClient) => {
+  const { data: subscription } = await supabase
+    .from('subscriptions')
+    .select('*, prices(*, products(*))')
+    .in('status', ['trialing', 'active'])
+    .maybeSingle();
+
+  return subscription;
+});

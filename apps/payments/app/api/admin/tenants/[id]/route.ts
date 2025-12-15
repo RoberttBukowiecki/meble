@@ -24,7 +24,7 @@ export async function GET(
       );
     }
 
-    const { data: isAdmin } = await supabase.rpc('is_admin', { p_user_id: user.id });
+    const { data: isAdmin } = await supabase.rpc('is_admin' as never, { p_user_id: user.id } as never);
     if (!isAdmin) {
       return NextResponse.json(
         { success: false, error: { code: 'FORBIDDEN', message: 'Admin access required' } },
@@ -92,7 +92,7 @@ export async function PATCH(
       );
     }
 
-    const { data: adminRole } = await supabase.rpc('get_admin_role', { p_user_id: user.id });
+    const { data: adminRole } = await supabase.rpc('get_admin_role' as never, { p_user_id: user.id } as never);
     if (!adminRole || !['super_admin', 'admin'].includes(adminRole)) {
       return NextResponse.json(
         { success: false, error: { code: 'FORBIDDEN', message: 'Admin access required' } },
@@ -157,13 +157,13 @@ export async function PATCH(
     }
 
     // Log audit event
-    await supabase.rpc('log_audit_event', {
+    await supabase.rpc('log_audit_event' as never, {
       p_action: 'update',
       p_resource_type: 'tenant',
       p_resource_id: id,
       p_old_values: oldTenant,
       p_new_values: updates,
-    });
+    } as never);
 
     return NextResponse.json({
       success: true,
@@ -195,7 +195,7 @@ export async function DELETE(
       );
     }
 
-    const { data: adminRole } = await supabase.rpc('get_admin_role', { p_user_id: user.id });
+    const { data: adminRole } = await supabase.rpc('get_admin_role' as never, { p_user_id: user.id } as never);
     if (adminRole !== 'super_admin') {
       return NextResponse.json(
         { success: false, error: { code: 'FORBIDDEN', message: 'Super admin access required' } },
@@ -228,12 +228,12 @@ export async function DELETE(
     }
 
     // Log audit event
-    await supabase.rpc('log_audit_event', {
+    await supabase.rpc('log_audit_event' as never, {
       p_action: 'delete',
       p_resource_type: 'tenant',
       p_resource_id: id,
       p_old_values: tenant,
-    });
+    } as never);
 
     return NextResponse.json({
       success: true,

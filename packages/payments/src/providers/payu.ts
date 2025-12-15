@@ -87,7 +87,7 @@ export class PayUClient implements PaymentProvider {
     this.accessToken = data.access_token;
     this.tokenExpiresAt = Date.now() + data.expires_in * 1000;
 
-    return this.accessToken;
+    return this.accessToken!;
   }
 
   // ══════════════════════════════════════════════════════════════════════════

@@ -2,13 +2,14 @@
  * Payment Hook
  *
  * Handles creating payments for credit purchases.
+ * Connects to the payments app API.
  */
 
 import { useState, useCallback } from 'react';
 
 interface CreatePaymentParams {
   packageType: 'single' | 'starter' | 'standard' | 'pro';
-  provider: 'payu' | 'przelewy24';
+  provider: 'payu';
   email: string;
   sessionId?: string; // For guest purchases
 }
@@ -26,7 +27,8 @@ interface UsePaymentReturn {
   error: string | null;
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_PAYMENTS_API_URL || '/api';
+// Payments API URL - should point to payments app
+const API_BASE = process.env.NEXT_PUBLIC_PAYMENTS_API_URL || 'http://localhost:3002/api';
 
 /**
  * Hook for creating payments
@@ -40,24 +42,38 @@ export function usePayment(): UsePaymentReturn {
     setError(null);
 
     try {
+      // Build headers
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+
+      // Add session ID header for guest purchases
+      if (params.sessionId) {
+        headers['x-session-id'] = params.sessionId;
+      }
+
+      // Build return URL based on current location
+      const returnUrl = typeof window !== 'undefined'
+        ? `${window.location.origin}/payment/success`
+        : 'http://localhost:3000/payment/success';
+
       const response = await fetch(`${API_BASE}/payments/create`, {
         method: 'POST',
         credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
-          packageType: params.packageType,
+          type: 'credit_purchase',
           provider: params.provider,
+          packageId: params.packageType,
           email: params.email,
-          guestSessionId: params.sessionId,
+          returnUrl,
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok || !data.success) {
-        const errorMessage = data.error?.message || 'Payment creation failed';
+        const errorMessage = data.error?.message || 'Blad tworzenia platnosci';
         setError(errorMessage);
         return { success: false, error: errorMessage };
       }
@@ -68,7 +84,7 @@ export function usePayment(): UsePaymentReturn {
         paymentId: data.data.paymentId,
       };
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
+      const message = err instanceof Error ? err.message : 'Nieznany blad';
       setError(message);
       return { success: false, error: message };
     } finally {

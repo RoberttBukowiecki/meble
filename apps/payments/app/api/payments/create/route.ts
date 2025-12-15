@@ -22,6 +22,19 @@ interface CreatePaymentBody {
   returnUrl: string;
 }
 
+// CORS headers for cross-origin requests from main app
+const corsHeaders = {
+  'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, x-session-id',
+  'Access-Control-Allow-Credentials': 'true',
+};
+
+// Handle preflight requests
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders });
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body: CreatePaymentBody = await request.json();
@@ -36,7 +49,7 @@ export async function POST(request: NextRequest) {
             message: 'Missing required fields: type, provider, returnUrl',
           },
         },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -68,7 +81,7 @@ export async function POST(request: NextRequest) {
               message: 'packageId is required for credit_purchase',
             },
           },
-          { status: 400 }
+          { status: 400, headers: corsHeaders }
         );
       }
 
@@ -81,7 +94,7 @@ export async function POST(request: NextRequest) {
               message: 'Invalid package ID',
             },
           },
-          { status: 400 }
+          { status: 400, headers: corsHeaders }
         );
       }
 
@@ -97,7 +110,7 @@ export async function POST(request: NextRequest) {
               message: 'Email is required for guest purchases',
             },
           },
-          { status: 400 }
+          { status: 400, headers: corsHeaders }
         );
       }
 
@@ -111,7 +124,7 @@ export async function POST(request: NextRequest) {
               message: 'Session ID is required for guest purchases',
             },
           },
-          { status: 400 }
+          { status: 400, headers: corsHeaders }
         );
       }
 
@@ -145,7 +158,7 @@ export async function POST(request: NextRequest) {
               message: result.error,
             },
           },
-          { status: 400 }
+          { status: 400, headers: corsHeaders }
         );
       }
 
@@ -186,7 +199,7 @@ export async function POST(request: NextRequest) {
           amount: pkg.price,
           currency: 'PLN',
         },
-      });
+      }, { headers: corsHeaders });
     }
 
     // Other payment types not yet implemented
@@ -198,7 +211,7 @@ export async function POST(request: NextRequest) {
           message: `Payment type '${body.type}' is not yet implemented`,
         },
       },
-      { status: 501 }
+      { status: 501, headers: corsHeaders }
     );
   } catch (error) {
     console.error('Payment creation error:', error);
@@ -210,7 +223,7 @@ export async function POST(request: NextRequest) {
           message: 'Internal server error',
         },
       },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }

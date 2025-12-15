@@ -297,9 +297,9 @@ async function handleSubscriptionPayment(payment: any) {
       period_end: periodEnd.toISOString().split('T')[0],
       due_date: periodStart.toISOString().split('T')[0],
       seller_data: {
-        name: 'e-meble Sp. z o.o.',
-        nip: '0000000000',
-        address: 'ul. Przykładowa 1, 00-000 Warszawa',
+        name: 'Robert Bukowiecki',
+        nip: '8943228809',
+        address: 'ul. Chachaja 9/30, 52-402 Wrocław',
       },
       buyer_data: {
         name: tenant?.company_name || 'N/A',

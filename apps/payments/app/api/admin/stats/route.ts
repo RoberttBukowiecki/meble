@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const { data: isAdmin } = await supabase.rpc('is_admin', { p_user_id: user.id });
+    const { data: isAdmin } = await supabase.rpc('is_admin' as never, { p_user_id: user.id } as never);
     if (!isAdmin) {
       return NextResponse.json(
         { success: false, error: { code: 'FORBIDDEN', message: 'Admin access required' } },

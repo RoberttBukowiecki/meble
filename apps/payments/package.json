@@ -1,5 +1,5 @@
 {
-  "name": "@meble/payments",
+  "name": "@meble/payments-app",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -27,6 +27,7 @@
   "dependencies": {
     "@meble/constants": "*",
     "@meble/i18n": "*",
+    "@meble/payments": "workspace:*",
     "@meble/ui": "*",
     "@radix-ui/react-toast": "^1.1.5",
     "@stripe/stripe-js": "2.4.0",

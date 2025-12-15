@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const { data: isAdmin } = await supabase.rpc('is_admin', { p_user_id: user.id });
+    const { data: isAdmin } = await supabase.rpc('is_admin' as never, { p_user_id: user.id } as never);
     if (!isAdmin) {
       return NextResponse.json(
         { success: false, error: { code: 'FORBIDDEN', message: 'Admin access required' } },
@@ -64,7 +64,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Format response based on requested metric
-    const formattedData = (analytics || []).map(day => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const formattedData = ((analytics || []) as any[]).map(day => ({
       date: day.date,
       revenue: {
         total: day.total_revenue,
@@ -138,7 +139,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { data: isAdmin } = await supabase.rpc('is_admin', { p_user_id: user.id });
+    const { data: isAdmin } = await supabase.rpc('is_admin' as never, { p_user_id: user.id } as never);
     if (!isAdmin) {
       return NextResponse.json(
         { success: false, error: { code: 'FORBIDDEN', message: 'Admin access required' } },
@@ -147,7 +148,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update today's analytics
-    await supabase.rpc('update_daily_analytics');
+    await supabase.rpc('update_daily_analytics' as never);
 
     return NextResponse.json({
       success: true,

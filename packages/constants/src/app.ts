@@ -22,18 +22,20 @@ export const APP_URLS = {
  * Company Information
  */
 export const COMPANY_INFO = {
-  name: 'e-meble',
-  legalName: 'e-meble Sp. z o.o.',
+  name: 'E-meble',
+  legalName: 'Robert Bukowiecki',
   email: 'contact@e-meble.com',
-  phone: '+48 123 456 789',
-  nip: '5252525252',
+  phone: '-',
+  nip: '8943228809',
+  krs: '-',
+  regon: '527662517',
   address: {
-    street: 'ul. Przykładowa 12/4',
-    city: 'Warszawa',
-    zipCode: '00-001',
+    street: 'ul. Chachaja 9/30',
+    city: 'Wrocław',
+    zipCode: '52-402',
     country: 'Polska'
   },
-  fullAddress: 'ul. Przykładowa 12/4, 00-001 Warszawa'
+  fullAddress: 'ul. Chachaja 9/30, 52-402 Wrocław'
 } as const;
 
 /**

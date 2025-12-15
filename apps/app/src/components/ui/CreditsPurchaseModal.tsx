@@ -33,7 +33,7 @@ interface CreditsPurchaseModalProps {
   onSuccess?: () => void;
 }
 
-type PaymentProvider = 'payu' | 'przelewy24';
+type PaymentProvider = 'payu';
 
 const PACKAGES_ORDER: ExportPackageId[] = ['single', 'starter', 'standard', 'pro'];
 
@@ -57,7 +57,7 @@ export function CreditsPurchaseModal({
   onSuccess,
 }: CreditsPurchaseModalProps) {
   const [selectedPackage, setSelectedPackage] = useState<ExportPackageId>('standard');
-  const [selectedProvider, setSelectedProvider] = useState<PaymentProvider>('przelewy24');
+  const [selectedProvider] = useState<PaymentProvider>('payu');
   const [email, setEmail] = useState(userEmail || '');
   const [emailError, setEmailError] = useState<string | null>(null);
 
@@ -90,14 +90,6 @@ export function CreditsPurchaseModal({
         credits: pkg.credits,
       });
     }
-  };
-
-  const handleProviderSelect = (provider: PaymentProvider) => {
-    setSelectedProvider(provider);
-    track(AnalyticsEvent.PAYMENT_PROVIDER_SELECTED, {
-      provider,
-      package_id: selectedPackage,
-    });
   };
 
   const handlePurchase = async () => {
@@ -251,36 +243,9 @@ export function CreditsPurchaseModal({
             </div>
           )}
 
-          {/* Payment Provider Selection */}
-          <div className="space-y-3">
-            <Label className="text-base font-medium">Metoda płatności</Label>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => handleProviderSelect('przelewy24')}
-                className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all ${
-                  selectedProvider === 'przelewy24'
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border hover:border-primary/50'
-                }`}
-              >
-                <span className="font-medium">Przelewy24</span>
-                {selectedProvider === 'przelewy24' && <Check className="h-4 w-4 text-primary" />}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleProviderSelect('payu')}
-                className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all ${
-                  selectedProvider === 'payu'
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border hover:border-primary/50'
-                }`}
-              >
-                <span className="font-medium">PayU</span>
-                {selectedProvider === 'payu' && <Check className="h-4 w-4 text-primary" />}
-              </button>
-            </div>
+          {/* Payment Provider Info */}
+          <div className="p-3 rounded-lg bg-muted/50 text-sm text-muted-foreground">
+            Platnosc realizowana przez PayU
           </div>
 
           {/* Error Display */}

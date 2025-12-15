@@ -31,20 +31,19 @@ import { Download, CreditCard, Sparkles, Clock, Loader2, ShoppingCart } from 'lu
 import { useCredits } from '@/hooks/useCredits';
 import { useGuestCredits } from '@/hooks/useGuestCredits';
 import { CreditsPurchaseModal } from './CreditsPurchaseModal';
+import { useAuth } from '@/providers/AuthProvider';
 
 interface ExportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  isAuthenticated?: boolean;
-  userEmail?: string;
 }
 
 export function ExportDialog({
   open,
   onOpenChange,
-  isAuthenticated = false,
-  userEmail,
 }: ExportDialogProps) {
+  const { user, isAuthenticated } = useAuth();
+  const userEmail = user?.email;
   const t = useTranslations('ExportDialog');
   const { parts, materials, furnitures } = useStore();
   const [selectedColumnIds, setSelectedColumnIds] = useState<string[]>(

@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const { data: isAdmin } = await supabase.rpc('is_admin', { p_user_id: user.id });
+    const { data: isAdmin } = await supabase.rpc('is_admin' as never, { p_user_id: user.id } as never);
     if (!isAdmin) {
       return NextResponse.json(
         { success: false, error: { code: 'FORBIDDEN', message: 'Admin access required' } },
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { data: adminRole } = await supabase.rpc('get_admin_role', { p_user_id: user.id });
+    const { data: adminRole } = await supabase.rpc('get_admin_role' as never, { p_user_id: user.id } as never);
     if (!adminRole || !['super_admin', 'admin'].includes(adminRole)) {
       return NextResponse.json(
         { success: false, error: { code: 'FORBIDDEN', message: 'Admin access required' } },
@@ -179,12 +179,12 @@ export async function POST(request: NextRequest) {
     });
 
     // Log audit event
-    await supabase.rpc('log_audit_event', {
+    await supabase.rpc('log_audit_event' as never, {
       p_action: 'create',
       p_resource_type: 'tenant',
       p_resource_id: tenant.id,
       p_new_values: { slug, name, plan },
-    });
+    } as never);
 
     return NextResponse.json({
       success: true,

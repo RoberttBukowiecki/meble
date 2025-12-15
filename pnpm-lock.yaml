@@ -305,6 +305,9 @@ importers:
       '@meble/i18n':
         specifier: '*'
         version: link:../../packages/i18n
+      '@meble/payments':
+        specifier: workspace:*
+        version: link:../../packages/payments
       '@meble/ui':
         specifier: '*'
         version: link:../../packages/ui

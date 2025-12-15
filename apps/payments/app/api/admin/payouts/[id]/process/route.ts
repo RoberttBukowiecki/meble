@@ -22,7 +22,7 @@ export async function POST(
       );
     }
 
-    const { data: adminRole } = await supabase.rpc('get_admin_role', { p_user_id: user.id });
+    const { data: adminRole } = await supabase.rpc('get_admin_role' as never, { p_user_id: user.id } as never);
     if (!adminRole || !['super_admin', 'admin', 'finance'].includes(adminRole)) {
       return NextResponse.json(
         { success: false, error: { code: 'FORBIDDEN', message: 'Finance access required' } },
@@ -42,10 +42,10 @@ export async function POST(
 
     // Get payout
     const { data: payout, error: fetchError } = await supabase
-      .from('payout_requests')
+      .from('payout_requests' as never)
       .select('*')
       .eq('id', id)
-      .single();
+      .single() as { data: { id: string; status: string } | null; error: Error | null };
 
     if (fetchError || !payout) {
       return NextResponse.json(
@@ -56,13 +56,13 @@ export async function POST(
 
     // Get admin user ID
     const { data: adminUser } = await supabase
-      .from('admin_users')
+      .from('admin_users' as never)
       .select('id')
       .eq('user_id', user.id)
       .single();
 
     let updates: Record<string, any> = {
-      processed_by: adminUser?.id,
+      processed_by: (adminUser as { id: string } | null)?.id,
       processed_at: new Date().toISOString(),
     };
 
@@ -111,25 +111,25 @@ export async function POST(
     }
 
     const { data: updated, error: updateError } = await supabase
-      .from('payout_requests')
-      .update(updates)
+      .from('payout_requests' as never)
+      .update(updates as never)
       .eq('id', id)
       .select()
-      .single();
+      .single() as { data: Record<string, unknown> | null; error: Error | null };
 
-    if (updateError) {
-      throw updateError;
+    if (updateError || !updated) {
+      throw updateError || new Error('Failed to update payout');
     }
 
     // Log audit event
-    await supabase.rpc('log_audit_event', {
+    await supabase.rpc('log_audit_event' as never, {
       p_action: 'update',
       p_resource_type: 'payout',
       p_resource_id: id,
       p_old_values: { status: payout.status },
       p_new_values: updates,
       p_metadata: { action },
-    });
+    } as never);
 
     return NextResponse.json({
       success: true,
