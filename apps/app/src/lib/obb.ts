@@ -392,6 +392,9 @@ export function getOBBEdges(obb: OrientedBoundingBox): OBBEdge[] {
 /** Threshold for considering faces opposite (dot product) */
 const OPPOSITE_THRESHOLD = -0.95;
 
+/** Threshold for considering faces aligned (dot product) */
+const ALIGNMENT_THRESHOLD = 0.95;
+
 /**
  * Calculate distance between two OBB faces
  * Returns null if faces are not opposite-facing
@@ -403,6 +406,25 @@ export function calculateFaceToFaceDistance(
   // Check if faces are opposite (normals point toward each other)
   const dotProduct = vec3Dot(faceA.normal, faceB.normal);
   if (dotProduct > OPPOSITE_THRESHOLD) return null; // Not opposite-facing
+
+  // Project face centers onto shared normal
+  const centerDiff = vec3Sub(faceB.center, faceA.center);
+  const distance = Math.abs(vec3Dot(centerDiff, faceA.normal));
+
+  return distance;
+}
+
+/**
+ * Calculate distance between two OBB faces for alignment
+ * Returns null if faces are not aligned (same direction)
+ */
+export function calculateFaceAlignmentDistance(
+  faceA: OBBFace,
+  faceB: OBBFace
+): number | null {
+  // Check if faces are aligned (normals point in same direction)
+  const dotProduct = vec3Dot(faceA.normal, faceB.normal);
+  if (dotProduct < ALIGNMENT_THRESHOLD) return null; // Not aligned
 
   // Project face centers onto shared normal
   const centerDiff = vec3Sub(faceB.center, faceA.center);
@@ -443,6 +465,24 @@ export function calculateFaceSnapOffset(
     : signedDistance + collisionOffset;
 
   return vec3Scale(sourceFace.normal, adjustedDistance);
+}
+
+/**
+ * Calculate snap offset to align two faces (flush alignment)
+ * Returns the vector to add to source's position to align with target
+ */
+export function calculateFaceAlignmentOffset(
+  sourceFace: OBBFace,
+  targetFace: OBBFace
+): Vec3 {
+  // For alignment, we want the faces to be coplanar
+  // Calculate distance source needs to move along its normal to match target plane
+  const centerDiff = vec3Sub(targetFace.center, sourceFace.center);
+  
+  // Projected distance along normal
+  const distance = vec3Dot(centerDiff, sourceFace.normal);
+
+  return vec3Scale(sourceFace.normal, distance);
 }
 
 // ============================================================================

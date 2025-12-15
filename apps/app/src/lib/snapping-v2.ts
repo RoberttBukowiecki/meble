@@ -21,6 +21,8 @@ import {
   vec3Distance,
   calculateFaceToFaceDistance,
   calculateFaceSnapOffset,
+  calculateFaceAlignmentDistance,
+  calculateFaceAlignmentOffset,
   areOBBsWithinSnapRange,
 } from './obb';
 import {
@@ -40,6 +42,7 @@ import {
  */
 export interface SnapV2Candidate {
   type: 'face' | 'edge';
+  variant?: 'connection' | 'alignment'; // connection = opposite faces, alignment = same direction
   sourceGroupId: string;
   targetGroupId: string;
   sourceFace: OBBFace;
@@ -56,6 +59,9 @@ export interface SnapV2Candidate {
 
 /** Threshold for considering faces opposite (dot product) */
 const OPPOSITE_THRESHOLD = -0.95;
+
+/** Threshold for considering faces aligned (dot product) */
+const ALIGNMENT_THRESHOLD = 0.95;
 
 /** Maximum candidates to consider for performance */
 const MAX_CANDIDATES = 20;
@@ -95,28 +101,53 @@ function findFaceSnapCandidates(
   for (const { source: sourceFaces, target: targetFaces, usedExtended } of facePairs) {
     for (const sourceFace of sourceFaces) {
       for (const targetFace of targetFaces) {
-        // Check if faces are opposite (facing each other)
         const dotProduct = vec3Dot(sourceFace.normal, targetFace.normal);
-        if (dotProduct > OPPOSITE_THRESHOLD) continue;
+        
+        // 1. CONNECTION SNAP (Opposite normals)
+        if (dotProduct <= OPPOSITE_THRESHOLD) {
+          // Calculate distance
+          const distance = calculateFaceToFaceDistance(sourceFace, targetFace);
+          if (distance === null || distance > settings.distance) continue;
 
-        // Calculate distance
-        const distance = calculateFaceToFaceDistance(sourceFace, targetFace);
-        if (distance === null || distance > settings.distance) continue;
+          // Calculate snap offset
+          const snapOffset = calculateFaceSnapOffset(sourceFace, targetFace, collisionOffset);
 
-        // Calculate snap offset
-        const snapOffset = calculateFaceSnapOffset(sourceFace, targetFace, collisionOffset);
-
-        candidates.push({
-          type: 'face',
-          sourceGroupId: movingGroup.groupId,
-          targetGroupId: targetGroup.groupId,
-          sourceFace,
-          targetFace,
-          snapOffset,
-          distance,
-          alignment: Math.abs(dotProduct),
-          usedExtendedBox: usedExtended,
-        });
+          candidates.push({
+            type: 'face',
+            variant: 'connection',
+            sourceGroupId: movingGroup.groupId,
+            targetGroupId: targetGroup.groupId,
+            sourceFace,
+            targetFace,
+            snapOffset,
+            distance,
+            alignment: Math.abs(dotProduct),
+            usedExtendedBox: usedExtended,
+          });
+        }
+        
+        // 2. ALIGNMENT SNAP (Same normals)
+        else if (dotProduct >= ALIGNMENT_THRESHOLD) {
+          // Calculate distance
+          const distance = calculateFaceAlignmentDistance(sourceFace, targetFace);
+          if (distance === null || distance > settings.distance) continue;
+          
+          // Calculate snap offset (flush, no collision offset)
+          const snapOffset = calculateFaceAlignmentOffset(sourceFace, targetFace);
+          
+          candidates.push({
+            type: 'face',
+            variant: 'alignment',
+            sourceGroupId: movingGroup.groupId,
+            targetGroupId: targetGroup.groupId,
+            sourceFace,
+            targetFace,
+            snapOffset,
+            distance,
+            alignment: Math.abs(dotProduct),
+            usedExtendedBox: usedExtended,
+          });
+        }
       }
     }
   }
@@ -145,8 +176,13 @@ function scoreSnapCandidate(
 
   // Prefer core BB over extended BB
   const extendedPenalty = candidate.usedExtendedBox ? EXTENDED_BOX_PENALTY : 1.0;
+  
+  // Slight preference for connection over alignment if distances are equal, 
+  // but let distance be the main factor.
+  // Maybe 0.95 for alignment to break ties?
+  const variantFactor = candidate.variant === 'alignment' ? 0.95 : 1.0;
 
-  return distanceScore * alignmentScore * extendedPenalty;
+  return distanceScore * alignmentScore * extendedPenalty * variantFactor;
 }
 
 /**
@@ -161,7 +197,7 @@ function candidateToSnapPoint(candidate: SnapV2Candidate, score: number): SnapPo
   ];
 
   return {
-    id: `v2-${candidate.type}-${candidate.targetGroupId}-${candidate.targetFace.axisIndex}`,
+    id: `v2-${candidate.type}-${candidate.variant || 'connection'}-${candidate.targetGroupId}-${candidate.targetFace.axisIndex}`,
     type: candidate.type,
     position: snapPosition,
     normal: candidate.targetFace.normal,
@@ -210,7 +246,15 @@ export function calculateSnapV2Simple(
       );
 
       // Only consider snaps that are primarily on the drag axis
-      if (totalLength > 0 && axisComponent / totalLength < 0.9) continue;
+      if (totalLength > 0) {
+        if (axisComponent / totalLength < 0.9) continue;
+      } else {
+        // If totalLength is 0 (already aligned), ensure the face normal is along the drag axis
+        // otherwise we might snap to a perpendicular face that happens to be aligned
+        // (e.g. snapping Y-faces when dragging Z)
+        const normalComponent = Math.abs(candidate.targetFace.normal[axisIndex]);
+        if (normalComponent < 0.9) continue;
+      }
 
       const score = scoreSnapCandidate(candidate, settings);
       if (score > bestScore) {
