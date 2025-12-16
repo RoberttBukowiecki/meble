@@ -16,3 +16,6 @@ export * from './usePayment';
 
 // Shop hooks
 export * from './useCart';
+
+// Admin hooks
+export * from './useIsAdmin';

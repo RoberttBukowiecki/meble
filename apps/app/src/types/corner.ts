@@ -1,63 +1,54 @@
 /**
- * Corner Cabinet Type Definitions
+ * Corner Cabinet Type Definitions (Simplified Model)
  *
- * Types for corner cabinets - specialized cabinets designed for corner spaces
- * where two walls meet. Supports internal corners (Phase 1) and external corners (Phase 2).
+ * Full rectangular cabinet (W × H × D) positioned in a corner.
+ * Two vertical sides: internal (at wall) and external (where other cabinet joins).
+ * Front opening divided into: closed panel + door.
  *
  * Coordinate system:
- * - Origin (0,0,0) at external front corner
- * - X axis: Points RIGHT (along arm A width)
- * - Y axis: Points UP (height)
- * - Z axis: Points BACK (into the corner)
+ * - Origin (0,0,0) at front-left corner at floor level
+ * - X axis: Points RIGHT (0 to W)
+ * - Y axis: Points UP (0 to H)
+ * - Z axis: Points BACK (0 to D, into the corner)
+ *
+ * Structure (top view, door on RIGHT):
+ *
+ *              W (full width)
+ *     ┌────────────────────────────┐
+ *     │                            │
+ *     │       Cabinet interior     │ D (depth)
+ *     │                            │
+ *     └────────────────────────────┘
+ *     ↑  [Front Panel]   [Door]    ↑
+ *   Left                        Right
+ *   side                        side
+ *  (wall)                 (other cabinet)
  */
 
 // ============================================================================
-// Corner Cabinet Sub-Types
+// Corner Cabinet Types
 // ============================================================================
 
 /**
- * Corner cabinet sub-types for internal corners (walls meeting at angle)
+ * Which side of the cabinet is at the wall (internal side)
+ * - LEFT: Left side at wall, right side exposed (where other cabinet joins)
+ * - RIGHT: Right side at wall, left side exposed
  */
-export type InternalCornerType = 'L_SHAPED' | 'BLIND_CORNER' | 'LAZY_SUSAN';
+export type CornerWallSide = 'LEFT' | 'RIGHT';
 
 /**
- * Corner cabinet sub-types for external corners (Phase 2)
+ * Which side of the front opening has the door
+ * - LEFT: Door on left, closed panel on right
+ * - RIGHT: Door on right, closed panel on left
  */
-export type ExternalCornerType = 'EXTERNAL_L_SHAPED' | 'EXTERNAL_DIAGONAL';
+export type CornerDoorPosition = 'LEFT' | 'RIGHT';
 
 /**
- * Corner orientation - which direction the corner opens
- */
-export type CornerOrientation = 'LEFT' | 'RIGHT';
-
-// ============================================================================
-// Corner Configuration Options
-// ============================================================================
-
-/**
- * Front/door type for corner cabinets
+ * Front type for corner cabinets
  */
 export type CornerFrontType =
   | 'NONE'     // No front (open shelving)
-  | 'SINGLE'   // Single door parallel to X axis
-  | 'BIFOLD'   // Bi-fold (2 panels with hinge between) - future
-  | 'DOUBLE'   // Two separate doors (one per arm) - future
-  | 'ANGLED';  // Single diagonal door at angle
-
-/**
- * Wall sharing mode for adjacent cabinets
- * Controls which side panels are generated
- */
-export type WallSharingMode =
-  | 'FULL_ISOLATION' // All walls present
-  | 'SHARED_LEFT'    // Left wall shared with adjacent cabinet
-  | 'SHARED_RIGHT'   // Right wall shared with adjacent cabinet
-  | 'SHARED_BOTH';   // Both sides shared (rare)
-
-/**
- * Panel geometry type for top/bottom panels
- */
-export type CornerPanelGeometry = 'TWO_RECT' | 'L_SHAPE';
+  | 'SINGLE';  // Single door with front closing panel
 
 /**
  * Mount type for panels (inset between sides or overlay on sides)
@@ -65,66 +56,45 @@ export type CornerPanelGeometry = 'TWO_RECT' | 'L_SHAPE';
 export type CornerMountType = 'overlay' | 'inset';
 
 // ============================================================================
-// Corner Configuration Interface
+// Corner Configuration Interface (Simplified)
 // ============================================================================
 
 /**
- * Corner-specific configuration
+ * Corner cabinet configuration
  *
  * Dimension terminology:
- * - W: External width of cabinet (left arm span)
- * - D: External depth of cabinet (right arm span)
- * - bodyDepth: Depth of cabinet body panels (how deep shelves/sides extend)
+ * - W: Full cabinet width (mm)
+ * - D: Cabinet depth (mm)
+ * - doorWidth: Width of the door opening (mm)
+ * - frontPanelWidth: W - doorWidth - gaps (calculated)
  *
- * Example: W=900, D=900, bodyDepth=560
- * This creates a corner cabinet where both arms are 900mm,
- * but the actual shelf/side depth is 560mm.
+ * Example: W=1000, D=600, doorWidth=450
+ * Creates 1000x600 cabinet with 450mm door and ~550mm front closing panel
  */
 export interface CornerConfig {
-  /** Type of corner cabinet */
-  cornerType: InternalCornerType;
-  /** Left or right corner orientation */
-  cornerOrientation: CornerOrientation;
+  /** Which side of the cabinet is at the wall */
+  wallSide: CornerWallSide;
 
-  // External dimensions
-  /** External width (mm) - full span of arm A */
+  /** Full cabinet width (mm) */
   W: number;
-  /** External depth (mm) - full span of arm B */
+  /** Cabinet depth (mm) */
   D: number;
-  /** Body panel depth (mm) - how deep panels/shelves extend */
-  bodyDepth: number;
 
-  // Mounting options
-  /** Bottom panel mounting (overlay sits under sides, inset between sides) */
+  /** Bottom panel mounting (inset = fits between sides, overlay = sides sit on top) */
   bottomMount: CornerMountType;
-  /** Top panel mounting */
+  /** Top panel mounting (inset = fits between sides, overlay = sides hang below) */
   topMount: CornerMountType;
 
-  // Panel geometry
-  /** Panel geometry: two rectangles or single L-shape */
-  panelGeometry: CornerPanelGeometry;
-
-  // Front rail / wieniec przedni
-  /** Enable front rail at top */
-  frontRail: boolean;
-  /** Front rail mounting type */
-  frontRailMount?: CornerMountType;
-  /** Front rail width (mm), default 100 */
-  frontRailWidth?: number;
-
-  // Door/front configuration
-  /** Type of front (doors) */
+  /** Type of front (NONE = open, SINGLE = door + front closing panel) */
   frontType: CornerFrontType;
-  /** Hinge side for SINGLE/BIFOLD doors */
+  /** Which side of the front has the door (opposite side has closing panel) */
+  doorPosition?: CornerDoorPosition;
+  /** Width of the door (mm). Front closing panel width = W - doorWidth - gaps */
+  doorWidth?: number;
+  /** Hinge side for the door ('left' = hinges on left edge, 'right' = hinges on right edge) */
   hingeSide?: 'left' | 'right';
-  /** Front angle for ANGLED type (degrees, default 45) */
-  frontAngle?: number;
-  /** Gap between door and frame (mm, default 2) */
+  /** Gap between door/panels and frame (mm, default 2) */
   doorGap?: number;
-
-  // Wall sharing
-  /** How side walls are shared with adjacent cabinets */
-  wallSharingMode: WallSharingMode;
 }
 
 // ============================================================================
@@ -133,17 +103,13 @@ export interface CornerConfig {
 
 /**
  * Part roles specific to corner cabinets
- * These extend the base CabinetPartRole union
+ * Note: Door uses standard 'DOOR' role for front hiding/handles integration
  */
 export type CornerPartRole =
-  | 'CORNER_LEFT_SIDE'      // Left arm side panel
-  | 'CORNER_RIGHT_SIDE'     // Right arm side panel
-  | 'CORNER_BACK_LEFT'      // Left arm back panel
-  | 'CORNER_BACK_RIGHT'     // Right arm back panel
-  | 'CORNER_DIAGONAL_FRONT' // Diagonal front panel (L-shaped)
-  | 'CORNER_BOTTOM'         // L-shaped or trapezoid bottom
-  | 'CORNER_TOP'            // L-shaped or trapezoid top
-  | 'CORNER_SHELF'          // Corner shelf (L-shaped or trapezoid)
-  | 'CORNER_DOOR_LEFT'      // Bi-fold left part
-  | 'CORNER_DOOR_RIGHT'     // Bi-fold right part
-  | 'CORNER_FILLER';        // Filler panel for dead zone
+  | 'CORNER_SIDE_INTERNAL'  // Internal side panel (at wall)
+  | 'CORNER_SIDE_EXTERNAL'  // External side panel (where other cabinet joins)
+  | 'CORNER_BACK'           // Back panel
+  | 'CORNER_BOTTOM'         // Bottom panel
+  | 'CORNER_TOP'            // Top panel
+  | 'CORNER_SHELF'          // Shelf
+  | 'CORNER_FRONT_PANEL';   // Front closing panel (structural, inset)

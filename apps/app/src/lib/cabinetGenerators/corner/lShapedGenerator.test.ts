@@ -1,13 +1,13 @@
 /**
- * Tests for L-Shaped Corner Cabinet Generator
+ * Tests for Corner Cabinet Generator
  *
  * Tests cover:
- * - Part generation (bottom, top, sides, rails, backs, fronts, shelves)
- * - Coordinate system (origin at front corner)
- * - Panel geometry (TWO_RECT vs L_SHAPE)
+ * - Part generation (bottom, top, sides, back, front panel, door, shelves)
+ * - Coordinate system (origin at front-left corner)
  * - Mount types (inset/overlay)
- * - Wall sharing modes
- * - Front types (NONE, SINGLE, ANGLED)
+ * - Front types (NONE, SINGLE)
+ * - Door position (LEFT, RIGHT)
+ * - Optional side front panel
  */
 
 import { generateLShapedCorner } from './lShapedGenerator';
@@ -48,9 +48,9 @@ const createMaterials = (): CabinetMaterials => ({
 
 const createDefaultParams = (overrides?: Partial<CornerInternalCabinetParams>): CornerInternalCabinetParams => ({
   type: 'CORNER_INTERNAL',
-  width: 900,
+  width: 1000,
   height: 720,
-  depth: 560,
+  depth: 600,
   topBottomPlacement: 'inset',
   hasBack: true,
   backOverlapRatio: 0.667,
@@ -102,237 +102,226 @@ describe('generateLShapedCorner', () => {
       );
 
       // Body parts should use body material
-      const bottomParts = findPartsByRole(parts, 'CORNER_BOTTOM');
-      expect(bottomParts.every(p => p.materialId === 'body-mat')).toBe(true);
+      const bottomPart = findPartsByRole(parts, 'CORNER_BOTTOM')[0];
+      expect(bottomPart.materialId).toBe('body-mat');
 
       // Back parts should use back material
-      const backParts = parts.filter(p => p.name.includes('Plecy'));
-      expect(backParts.every(p => p.materialId === 'back-mat')).toBe(true);
+      const backPart = findPartsByRole(parts, 'CORNER_BACK')[0];
+      expect(backPart.materialId).toBe('back-mat');
     });
-  });
 
-  describe('bottom panels (TWO_RECT mode)', () => {
-    it('should generate two bottom panels in TWO_RECT mode', () => {
+    it('should generate all required structural parts', () => {
       const params = createDefaultParams();
       const parts = generateLShapedCorner(
         cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial
       );
 
-      const bottomParts = findPartsByRole(parts, 'CORNER_BOTTOM');
-      expect(bottomParts.length).toBe(2);
-      expect(bottomParts.some(p => p.name.includes('ramię A'))).toBe(true);
-      expect(bottomParts.some(p => p.name.includes('ramię B'))).toBe(true);
-    });
-
-    it('should use RECT shape type in TWO_RECT mode', () => {
-      const params = createDefaultParams();
-      const parts = generateLShapedCorner(
-        cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial
-      );
-
-      const bottomParts = findPartsByRole(parts, 'CORNER_BOTTOM');
-      expect(bottomParts.every(p => p.shapeType === 'RECT')).toBe(true);
+      // Check for all main parts
+      expect(findPartsByRole(parts, 'CORNER_BOTTOM').length).toBe(1);
+      expect(findPartsByRole(parts, 'CORNER_TOP').length).toBe(1);
+      expect(findPartsByRole(parts, 'CORNER_SIDE_INTERNAL').length).toBe(1);
+      expect(findPartsByRole(parts, 'CORNER_SIDE_EXTERNAL').length).toBe(1);
+      expect(findPartsByRole(parts, 'CORNER_BACK').length).toBe(1);
     });
   });
 
-  describe('bottom panels (L_SHAPE mode)', () => {
-    it('should generate single L-shaped bottom panel in L_SHAPE mode', () => {
-      const cornerConfig = CornerDomain.updatePanelGeometry(
-        CornerDomain.createConfig(),
-        'L_SHAPE'
-      );
-      const params = createDefaultParams({ cornerConfig });
-
-      const parts = generateLShapedCorner(
-        cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial
-      );
-
-      const bottomParts = findPartsByRole(parts, 'CORNER_BOTTOM');
-      expect(bottomParts.length).toBe(1);
-      expect(bottomParts[0].shapeType).toBe('L_SHAPE');
-      expect(bottomParts[0].name).toBe('Dno');
-    });
-
-    it('should have correct L-shape params', () => {
-      const cornerConfig = CornerDomain.updatePanelGeometry(
-        CornerDomain.createConfig(),
-        'L_SHAPE'
-      );
-      const params = createDefaultParams({ cornerConfig });
-
+  describe('bottom panel', () => {
+    it('should generate rectangular bottom panel', () => {
+      const params = createDefaultParams();
       const parts = generateLShapedCorner(
         cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial
       );
 
       const bottomPart = findPartsByRole(parts, 'CORNER_BOTTOM')[0];
-      expect(bottomPart.shapeParams.type).toBe('L_SHAPE');
+      expect(bottomPart.shapeType).toBe('RECT');
+      expect(bottomPart.name).toBe('Dół');
+    });
 
-      const shapeParams = bottomPart.shapeParams as { type: 'L_SHAPE'; x: number; y: number; cutX: number; cutY: number };
-      expect(shapeParams.cutX).toBeGreaterThan(0);
-      expect(shapeParams.cutY).toBeGreaterThan(0);
+    it('should have bottom panel width = W - 2*t for inset mounting', () => {
+      const params = createDefaultParams();
+      const parts = generateLShapedCorner(
+        cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial
+      );
+
+      const bottomPart = findPartsByRole(parts, 'CORNER_BOTTOM')[0];
+      // W=1000, t=18, so width = 1000 - 36 = 964
+      expect(bottomPart.width).toBe(964);
+    });
+
+    it('should position bottom panel at Y = t/2', () => {
+      const params = createDefaultParams();
+      const parts = generateLShapedCorner(
+        cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial
+      );
+
+      const bottomPart = findPartsByRole(parts, 'CORNER_BOTTOM')[0];
+      // Bottom should be at Y = t/2 = 18/2 = 9
+      expect(bottomPart.position[1]).toBeCloseTo(9, 0);
+    });
+  });
+
+  describe('top panel', () => {
+    it('should generate rectangular top panel', () => {
+      const params = createDefaultParams();
+      const parts = generateLShapedCorner(
+        cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial
+      );
+
+      const topPart = findPartsByRole(parts, 'CORNER_TOP')[0];
+      expect(topPart.shapeType).toBe('RECT');
+      expect(topPart.name).toBe('Góra');
+    });
+
+    it('should position top panel at Y = H - t/2', () => {
+      const params = createDefaultParams();
+      const parts = generateLShapedCorner(
+        cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial
+      );
+
+      const topPart = findPartsByRole(parts, 'CORNER_TOP')[0];
+      // Top should be at Y = H - t/2 = 720 - 9 = 711
+      expect(topPart.position[1]).toBeCloseTo(711, 0);
     });
   });
 
   describe('side panels', () => {
-    it('should generate both sides in FULL_ISOLATION mode', () => {
+    it('should generate internal side panel at wall', () => {
       const params = createDefaultParams();
       const parts = generateLShapedCorner(
         cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial
       );
 
-      const leftSides = findPartsByRole(parts, 'CORNER_LEFT_SIDE');
-      const rightSides = findPartsByRole(parts, 'CORNER_RIGHT_SIDE');
-
-      expect(leftSides.length).toBe(1);
-      expect(rightSides.length).toBe(1);
+      const internalSide = findPartsByRole(parts, 'CORNER_SIDE_INTERNAL')[0];
+      expect(internalSide).toBeDefined();
+      expect(internalSide.name).toBe('Bok wewnętrzny');
     });
 
-    it('should not generate left side in SHARED_LEFT mode', () => {
-      const cornerConfig = CornerDomain.updateWallSharingMode(
-        CornerDomain.createConfig(),
-        'SHARED_LEFT'
-      );
-      const params = createDefaultParams({ cornerConfig });
-
-      const parts = generateLShapedCorner(
-        cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial
-      );
-
-      const leftSides = findPartsByRole(parts, 'CORNER_LEFT_SIDE');
-      const rightSides = findPartsByRole(parts, 'CORNER_RIGHT_SIDE');
-
-      expect(leftSides.length).toBe(0);
-      expect(rightSides.length).toBe(1);
-    });
-
-    it('should not generate right side in SHARED_RIGHT mode', () => {
-      const cornerConfig = CornerDomain.updateWallSharingMode(
-        CornerDomain.createConfig(),
-        'SHARED_RIGHT'
-      );
-      const params = createDefaultParams({ cornerConfig });
-
-      const parts = generateLShapedCorner(
-        cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial
-      );
-
-      const leftSides = findPartsByRole(parts, 'CORNER_LEFT_SIDE');
-      const rightSides = findPartsByRole(parts, 'CORNER_RIGHT_SIDE');
-
-      expect(leftSides.length).toBe(1);
-      expect(rightSides.length).toBe(0);
-    });
-
-    it('should not generate any sides in SHARED_BOTH mode', () => {
-      const cornerConfig = CornerDomain.updateWallSharingMode(
-        CornerDomain.createConfig(),
-        'SHARED_BOTH'
-      );
-      const params = createDefaultParams({ cornerConfig });
-
-      const parts = generateLShapedCorner(
-        cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial
-      );
-
-      const leftSides = findPartsByRole(parts, 'CORNER_LEFT_SIDE');
-      const rightSides = findPartsByRole(parts, 'CORNER_RIGHT_SIDE');
-
-      expect(leftSides.length).toBe(0);
-      expect(rightSides.length).toBe(0);
-    });
-
-    it('should have sides with bodyDepth dimension (not full D)', () => {
+    it('should generate external side panel', () => {
       const params = createDefaultParams();
       const parts = generateLShapedCorner(
         cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial
       );
 
-      const leftSide = findPartsByRole(parts, 'CORNER_LEFT_SIDE')[0];
+      const externalSide = findPartsByRole(parts, 'CORNER_SIDE_EXTERNAL')[0];
+      expect(externalSide).toBeDefined();
+      expect(externalSide.name).toBe('Bok zewnętrzny');
+    });
 
-      // Side width should be bodyDepth (560), not D (900)
-      expect(leftSide.width).toBe(560);
+    it('should position internal side at X = t/2', () => {
+      const params = createDefaultParams();
+      const parts = generateLShapedCorner(
+        cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial
+      );
+
+      const internalSide = findPartsByRole(parts, 'CORNER_SIDE_INTERNAL')[0];
+      // Internal side at X = t/2 = 9
+      expect(internalSide.position[0]).toBeCloseTo(9, 0);
+    });
+
+    it('should position external side at X = W - t/2', () => {
+      const params = createDefaultParams();
+      const parts = generateLShapedCorner(
+        cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial
+      );
+
+      const externalSide = findPartsByRole(parts, 'CORNER_SIDE_EXTERNAL')[0];
+      // External side at X = W - t/2 = 1000 - 9 = 991
+      expect(externalSide.position[0]).toBeCloseTo(991, 0);
+    });
+
+    it('should have sides with depth D', () => {
+      const params = createDefaultParams();
+      const parts = generateLShapedCorner(
+        cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial
+      );
+
+      const internalSide = findPartsByRole(parts, 'CORNER_SIDE_INTERNAL')[0];
+      const externalSide = findPartsByRole(parts, 'CORNER_SIDE_EXTERNAL')[0];
+      expect(internalSide.width).toBe(600); // D
+      expect(externalSide.width).toBe(600); // D
     });
   });
 
-  describe('front rail (wieniec przedni)', () => {
-    it('should generate front rail when enabled', () => {
-      const params = createDefaultParams();
-      const parts = generateLShapedCorner(
-        cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial
-      );
-
-      const frontRail = findPartByName(parts, 'Wieniec przedni');
-      expect(frontRail).toBeDefined();
-    });
-
-    it('should not generate front rail when disabled', () => {
-      const cornerConfig = CornerDomain.updateFrontRail(
-        CornerDomain.createConfig(),
-        false
-      );
-      const params = createDefaultParams({ cornerConfig });
-
-      const parts = generateLShapedCorner(
-        cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial
-      );
-
-      const frontRail = findPartByName(parts, 'Wieniec przedni');
-      expect(frontRail).toBeUndefined();
-    });
-
-    it('should have correct front rail dimensions', () => {
-      const cornerConfig = {
-        ...CornerDomain.createConfig(),
-        frontRailWidth: 100,
-      };
-      const params = createDefaultParams({ cornerConfig });
-
-      const parts = generateLShapedCorner(
-        cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial
-      );
-
-      const frontRail = findPartByName(parts, 'Wieniec przedni');
-      expect(frontRail?.height).toBe(100); // frontRailWidth
-    });
-  });
-
-  describe('back panels', () => {
-    it('should generate back panels when hasBack is true', () => {
+  describe('back panel', () => {
+    it('should generate back panel when hasBack is true', () => {
       const params = createDefaultParams({ hasBack: true });
       const parts = generateLShapedCorner(
         cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial
       );
 
-      const backParts = parts.filter(p => p.name.includes('Plecy'));
-      expect(backParts.length).toBeGreaterThan(0);
+      const backPart = findPartsByRole(parts, 'CORNER_BACK')[0];
+      expect(backPart).toBeDefined();
+      expect(backPart.name).toBe('Plecy');
     });
 
-    it('should not generate back panels when hasBack is false', () => {
+    it('should not generate back panel when hasBack is false', () => {
       const params = createDefaultParams({ hasBack: false });
       const parts = generateLShapedCorner(
         cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial
       );
 
-      const backParts = parts.filter(p => p.name.includes('Plecy'));
+      const backParts = findPartsByRole(parts, 'CORNER_BACK');
       expect(backParts.length).toBe(0);
     });
 
-    it('should generate two back panels (arm A and arm B)', () => {
-      const params = createDefaultParams({ hasBack: true });
+    it('should position back panel at Z = D + backT/2 (behind cabinet)', () => {
+      const params = createDefaultParams();
       const parts = generateLShapedCorner(
         cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial
       );
 
-      const backA = findPartByName(parts, 'Plecy (ramię A)');
-      const backB = findPartByName(parts, 'Plecy (ramię B)');
+      const backPart = findPartsByRole(parts, 'CORNER_BACK')[0];
+      // Back at Z = D + backT/2 = 600 + 1.5 = 601.5 (outside/behind cabinet body)
+      expect(backPart.position[2]).toBeCloseTo(601.5, 0);
+    });
 
-      expect(backA).toBeDefined();
-      expect(backB).toBeDefined();
+    it('should have back panel width = W (overlaps sides)', () => {
+      const params = createDefaultParams();
+      const parts = generateLShapedCorner(
+        cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial
+      );
+
+      const backPart = findPartsByRole(parts, 'CORNER_BACK')[0];
+      // Back panel overlaps sides: width = W = 1000
+      expect(backPart.width).toBe(1000);
+    });
+
+    it('should have back panel height = H for inset mounting', () => {
+      const params = createDefaultParams();
+      const parts = generateLShapedCorner(
+        cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial
+      );
+
+      const backPart = findPartsByRole(parts, 'CORNER_BACK')[0];
+      expect(backPart.height).toBe(720); // H
     });
   });
 
-  describe('front panels (doors)', () => {
-    it('should not generate front for NONE type', () => {
+  describe('front panel and door', () => {
+    it('should generate front panel for SINGLE type', () => {
+      const params = createDefaultParams();
+      const parts = generateLShapedCorner(
+        cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial
+      );
+
+      const frontPanel = findPartsByRole(parts, 'CORNER_FRONT_PANEL')[0];
+      expect(frontPanel).toBeDefined();
+      expect(frontPanel.name).toBe('Panel przedni');
+    });
+
+    it('should generate door for SINGLE type', () => {
+      const params = createDefaultParams();
+      const parts = generateLShapedCorner(
+        cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial
+      );
+
+      // Door uses standard DOOR role for front hiding/handles integration
+      const door = findPartsByRole(parts, 'DOOR')[0];
+      expect(door).toBeDefined();
+      expect(door.name).toBe('Drzwi');
+    });
+
+    it('should not generate front panel or door for NONE type', () => {
       const cornerConfig = CornerDomain.updateFrontType(
         CornerDomain.createConfig(),
         'NONE'
@@ -343,73 +332,75 @@ describe('generateLShapedCorner', () => {
         cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial
       );
 
-      const frontPart = findPartsByRole(parts, 'CORNER_DIAGONAL_FRONT');
-      expect(frontPart.length).toBe(0);
+      const frontPanels = findPartsByRole(parts, 'CORNER_FRONT_PANEL');
+      const doors = findPartsByRole(parts, 'DOOR');
+      expect(frontPanels.length).toBe(0);
+      expect(doors.length).toBe(0);
     });
 
-    it('should generate straight front for SINGLE type', () => {
-      const cornerConfig = CornerDomain.updateFrontType(
-        CornerDomain.createConfig(),
-        'SINGLE'
-      );
+    it('should position door on right when doorPosition is RIGHT', () => {
+      const cornerConfig = {
+        ...CornerDomain.createConfig(),
+        doorPosition: 'RIGHT' as const,
+        doorWidth: 450,
+      };
       const params = createDefaultParams({ cornerConfig });
 
       const parts = generateLShapedCorner(
         cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial
       );
 
-      const frontPart = findPartsByRole(parts, 'CORNER_DIAGONAL_FRONT')[0];
-      expect(frontPart).toBeDefined();
-      expect(frontPart.name).toBe('Front');
-      // SINGLE front should not be rotated (parallel to XY plane)
-      expect(frontPart.rotation[1]).toBe(0);
+      const door = findPartsByRole(parts, 'DOOR')[0];
+      const frontPanel = findPartsByRole(parts, 'CORNER_FRONT_PANEL')[0];
+
+      // Door should be to the right of front panel
+      expect(door.position[0]).toBeGreaterThan(frontPanel.position[0]);
     });
 
-    it('should generate angled front for ANGLED type', () => {
-      const params = createDefaultParams(); // Default is ANGLED
+    it('should position door on left when doorPosition is LEFT', () => {
+      const cornerConfig = {
+        ...CornerDomain.createConfig(),
+        doorPosition: 'LEFT' as const,
+        doorWidth: 450,
+      };
+      const params = createDefaultParams({ cornerConfig });
+
       const parts = generateLShapedCorner(
         cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial
       );
 
-      const frontPart = findPartsByRole(parts, 'CORNER_DIAGONAL_FRONT')[0];
-      expect(frontPart).toBeDefined();
-      expect(frontPart.name).toBe('Front skośny');
-      // ANGLED front should be rotated (45° = π/4)
-      expect(Math.abs(frontPart.rotation[1])).toBeCloseTo(Math.PI / 4, 2);
+      const door = findPartsByRole(parts, 'DOOR')[0];
+      const frontPanel = findPartsByRole(parts, 'CORNER_FRONT_PANEL')[0];
+
+      // Door should be to the left of front panel
+      expect(door.position[0]).toBeLessThan(frontPanel.position[0]);
     });
 
-    it('should respect LEFT/RIGHT orientation for angled front rotation', () => {
-      const leftConfig = CornerDomain.createConfig(); // Default LEFT
-      const rightConfig = CornerDomain.updateOrientation(leftConfig, 'RIGHT');
+    it('should include door metadata with hinge side', () => {
+      const cornerConfig = {
+        ...CornerDomain.createConfig(),
+        hingeSide: 'right' as const,
+      };
+      const params = createDefaultParams({ cornerConfig });
 
-      const paramsLeft = createDefaultParams({ cornerConfig: leftConfig });
-      const paramsRight = createDefaultParams({ cornerConfig: rightConfig });
-
-      const partsLeft = generateLShapedCorner(
-        cabinetId, furnitureId, paramsLeft, materials, bodyMaterial, backMaterial
-      );
-      const partsRight = generateLShapedCorner(
-        cabinetId, furnitureId, paramsRight, materials, bodyMaterial, backMaterial
+      const parts = generateLShapedCorner(
+        cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial
       );
 
-      const frontLeft = findPartsByRole(partsLeft, 'CORNER_DIAGONAL_FRONT')[0];
-      const frontRight = findPartsByRole(partsRight, 'CORNER_DIAGONAL_FRONT')[0];
-
-      // LEFT orientation should have negative rotation, RIGHT should have positive
-      expect(frontLeft.rotation[1]).toBeLessThan(0);
-      expect(frontRight.rotation[1]).toBeGreaterThan(0);
+      const door = findPartsByRole(parts, 'DOOR')[0];
+      expect(door.cabinetMetadata?.doorMetadata?.hingeSide).toBe('RIGHT');
     });
   });
 
   describe('shelves', () => {
-    it('should generate shelves', () => {
+    it('should generate at least one shelf', () => {
       const params = createDefaultParams();
       const parts = generateLShapedCorner(
         cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial
       );
 
       const shelfParts = findPartsByRole(parts, 'CORNER_SHELF');
-      expect(shelfParts.length).toBeGreaterThan(0);
+      expect(shelfParts.length).toBeGreaterThanOrEqual(1);
     });
 
     it('should have shelf index in metadata', () => {
@@ -418,53 +409,19 @@ describe('generateLShapedCorner', () => {
         cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial
       );
 
-      const shelfParts = findPartsByRole(parts, 'CORNER_SHELF');
-      expect(shelfParts[0].cabinetMetadata?.index).toBe(0);
+      const shelfPart = findPartsByRole(parts, 'CORNER_SHELF')[0];
+      expect(shelfPart.cabinetMetadata?.index).toBe(0);
     });
-  });
 
-  describe('coordinate system (origin at front corner)', () => {
-    it('should have all parts in positive Z region (into corner)', () => {
+    it('should have shelf width = W - 2*t', () => {
       const params = createDefaultParams();
       const parts = generateLShapedCorner(
         cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial
       );
 
-      // All Z positions should be >= 0 (or close to 0 for front parts)
-      const minZ = Math.min(...parts.map(p => p.position[2]));
-      expect(minZ).toBeGreaterThanOrEqual(-50); // Allow small margin for fronts
-    });
-
-    it('should have parts positioned starting from X=0', () => {
-      const params = createDefaultParams();
-      const parts = generateLShapedCorner(
-        cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial
-      );
-
-      // Left side should be near X=0
-      const leftSide = findPartsByRole(parts, 'CORNER_LEFT_SIDE')[0];
-      expect(leftSide.position[0]).toBeLessThan(50); // Near X=0
-    });
-
-    it('should position parts within bounding box W x D', () => {
-      const params = createDefaultParams();
-      const parts = generateLShapedCorner(
-        cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial
-      );
-
-      const { W, D } = params.cornerConfig;
-
-      // Check X positions are within [0, W]
-      parts.forEach(part => {
-        expect(part.position[0]).toBeGreaterThanOrEqual(-50);
-        expect(part.position[0]).toBeLessThanOrEqual(W + 50);
-      });
-
-      // Check Z positions are within [0, D] (with margin for front)
-      parts.forEach(part => {
-        expect(part.position[2]).toBeGreaterThanOrEqual(-50);
-        expect(part.position[2]).toBeLessThanOrEqual(D + 50);
-      });
+      const shelfPart = findPartsByRole(parts, 'CORNER_SHELF')[0];
+      // W - 2*t = 1000 - 36 = 964
+      expect(shelfPart.width).toBe(964);
     });
   });
 
@@ -481,9 +438,9 @@ describe('generateLShapedCorner', () => {
         cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial
       );
 
-      const leftSide = findPartsByRole(parts, 'CORNER_LEFT_SIDE')[0];
+      const internalSide = findPartsByRole(parts, 'CORNER_SIDE_INTERNAL')[0];
       // For inset mounting, side height = cabinet height
-      expect(leftSide.height).toBe(720);
+      expect(internalSide.height).toBe(720);
     });
 
     it('should adjust side height for overlay mounting', () => {
@@ -498,15 +455,14 @@ describe('generateLShapedCorner', () => {
         cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial
       );
 
-      const leftSide = findPartsByRole(parts, 'CORNER_LEFT_SIDE')[0];
+      const internalSide = findPartsByRole(parts, 'CORNER_SIDE_INTERNAL')[0];
       // For overlay mounting, side height = cabinet height - 2 * thickness
-      expect(leftSide.height).toBe(720 - 2 * 18);
+      expect(internalSide.height).toBe(720 - 2 * 18);
     });
   });
 
   describe('leg offset', () => {
     it('should apply leg offset to Y positions', () => {
-      // Create proper legs config using LegsDomain
       const legsConfig = LegsDomain.createLegsConfig(true, 'STANDARD');
       const params = createDefaultParams({ legs: legsConfig });
 
@@ -516,31 +472,14 @@ describe('generateLShapedCorner', () => {
 
       const expectedOffset = LegsDomain.calculateLegHeightOffset(legsConfig);
 
-      // All Y positions should be elevated by leg height
-      const bottomParts = findPartsByRole(parts, 'CORNER_BOTTOM');
-      bottomParts.forEach(part => {
-        expect(part.position[1]).toBeGreaterThanOrEqual(expectedOffset);
-      });
+      // Bottom panel should be elevated by leg height
+      const bottomPart = findPartsByRole(parts, 'CORNER_BOTTOM')[0];
+      expect(bottomPart.position[1]).toBeGreaterThanOrEqual(expectedOffset);
     });
   });
 
   describe('edge banding', () => {
-    it('should apply L_SHAPE edge banding for L-shaped panels', () => {
-      const cornerConfig = CornerDomain.updatePanelGeometry(
-        CornerDomain.createConfig(),
-        'L_SHAPE'
-      );
-      const params = createDefaultParams({ cornerConfig });
-
-      const parts = generateLShapedCorner(
-        cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial
-      );
-
-      const bottomPart = findPartsByRole(parts, 'CORNER_BOTTOM')[0];
-      expect(bottomPart.edgeBanding.type).toBe('L_SHAPE');
-    });
-
-    it('should apply RECT edge banding for rectangular panels', () => {
+    it('should apply RECT edge banding to all body panels', () => {
       const params = createDefaultParams();
       const parts = generateLShapedCorner(
         cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial
@@ -548,6 +487,47 @@ describe('generateLShapedCorner', () => {
 
       const bottomPart = findPartsByRole(parts, 'CORNER_BOTTOM')[0];
       expect(bottomPart.edgeBanding.type).toBe('RECT');
+    });
+  });
+
+  describe('coordinate system', () => {
+    it('should have all parts in positive coordinate space', () => {
+      const params = createDefaultParams();
+      const parts = generateLShapedCorner(
+        cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial
+      );
+
+      // All parts except front panels (which are at Z=-t/2) should be >= 0
+      parts.forEach(part => {
+        expect(part.position[0]).toBeGreaterThanOrEqual(-50); // X
+        expect(part.position[1]).toBeGreaterThanOrEqual(0);   // Y
+        // Z can be negative for front panels
+      });
+    });
+
+    it('should position parts within bounding box W x H x D', () => {
+      const params = createDefaultParams();
+      const { W, D } = params.cornerConfig;
+      const H = params.height;
+
+      const parts = generateLShapedCorner(
+        cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial
+      );
+
+      // Check X positions are within [0, W + margin]
+      parts.forEach(part => {
+        expect(part.position[0]).toBeLessThanOrEqual(W + 50);
+      });
+
+      // Check Z positions are within [-50, D+50]
+      parts.forEach(part => {
+        expect(part.position[2]).toBeLessThanOrEqual(D + 50);
+      });
+
+      // Check Y positions are within [0, H+50]
+      parts.forEach(part => {
+        expect(part.position[1]).toBeLessThanOrEqual(H + 50);
+      });
     });
   });
 });

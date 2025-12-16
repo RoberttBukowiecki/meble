@@ -508,18 +508,14 @@ export const PartDomain = {
       DECORATIVE_TOP: 'Blenda górna',
       DECORATIVE_BOTTOM: 'Cokół',
       PARTITION: 'Przegroda',
-      // Corner cabinet roles
-      CORNER_LEFT_SIDE: 'Bok lewy (narożnik)',
-      CORNER_RIGHT_SIDE: 'Bok prawy (narożnik)',
-      CORNER_BACK_LEFT: 'Tył lewy (narożnik)',
-      CORNER_BACK_RIGHT: 'Tył prawy (narożnik)',
-      CORNER_DIAGONAL_FRONT: 'Front diagonalny',
-      CORNER_BOTTOM: 'Dno narożne',
-      CORNER_TOP: 'Góra narożna',
-      CORNER_SHELF: 'Półka narożna',
-      CORNER_DOOR_LEFT: 'Drzwi narożne lewe',
-      CORNER_DOOR_RIGHT: 'Drzwi narożne prawe',
-      CORNER_FILLER: 'Wypełnienie narożnika',
+      // Corner cabinet roles (door uses standard DOOR role)
+      CORNER_SIDE_INTERNAL: 'Bok wewnętrzny (narożnik)',
+      CORNER_SIDE_EXTERNAL: 'Bok zewnętrzny (narożnik)',
+      CORNER_BACK: 'Plecy (narożnik)',
+      CORNER_BOTTOM: 'Dno (narożnik)',
+      CORNER_TOP: 'Góra (narożnik)',
+      CORNER_SHELF: 'Półka (narożnik)',
+      CORNER_FRONT_PANEL: 'Panel przedni (narożnik)',
     };
     return labels[role] ?? role;
   },

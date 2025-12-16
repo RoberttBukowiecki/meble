@@ -10,7 +10,9 @@ const customJestConfig = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '^@meble/ui$': '<rootDir>/../../packages/ui/src/index.tsx',
+    '^@meble/config$': '<rootDir>/../../packages/config/src/index.ts',
     '^@meble/constants$': '<rootDir>/test/__mocks__/constants.js',
+    '^@meble/analytics$': '<rootDir>/test/__mocks__/analytics.ts',
     '^uuid$': '<rootDir>/test/__mocks__/uuid.js',
     '\\.(css|less|sass|scss)$': 'identity-obj-proxy',
     '^.+\\.(svg|png|jpg|jpeg|gif|webp|avif|ico|bmp)$': '<rootDir>/test/__mocks__/fileMock.js',

@@ -3,7 +3,7 @@
  * Centralized keyboard shortcuts and settings
  */
 
-import { CabinetParams, CabinetType, DoorConfig, DrawerSlideType, DrawerSlideConfig, DrawerConfiguration, EdgeBandingRect, LegPreset, LegFinish, LegShape, LegCountMode, InternalCornerType, CornerConfig, LEG_FINISH_COLORS, HangerCutoutConfig, FoldingDoorConfig } from "@/types";
+import { CabinetParams, CabinetType, DoorConfig, DrawerSlideType, DrawerSlideConfig, DrawerConfiguration, EdgeBandingRect, LegPreset, LegFinish, LegShape, LegCountMode, CornerConfig, LEG_FINISH_COLORS, HangerCutoutConfig, FoldingDoorConfig } from "@/types";
 
 // Utility types/helpers for keyboard shortcuts
 export type ShortcutKeys = string | string[];
@@ -812,42 +812,20 @@ export const FOLDING_DOOR_LIMITS = {
 
 /**
  * Default corner configuration
- * Uses coordinate system: W (external width), D (external depth), bodyDepth
+ * - W: Full cabinet width
+ * - D: Cabinet depth
+ * - doorWidth: Width of the door opening
  */
 export const DEFAULT_CORNER_CONFIG: CornerConfig = {
-  cornerType: 'L_SHAPED',
-  cornerOrientation: 'LEFT',
-  W: 900,
-  D: 900,
-  bodyDepth: 560,
+  wallSide: 'LEFT',
+  W: 1000,
+  D: 600,
   bottomMount: 'inset',
   topMount: 'inset',
-  panelGeometry: 'L_SHAPE',
-  frontRail: true,
-  frontRailMount: 'inset',
-  frontRailWidth: 100,
   frontType: 'SINGLE',
-  frontAngle: 45,
   doorGap: 2,
-  wallSharingMode: 'FULL_ISOLATION',
-};
-
-/**
- * Corner cabinet presets by internal corner type
- */
-export const CORNER_CABINET_PRESETS: Record<InternalCornerType, Partial<CornerConfig>> = {
-  L_SHAPED: {
-    cornerType: 'L_SHAPED',
-    frontType: 'ANGLED',
-  },
-  BLIND_CORNER: {
-    cornerType: 'BLIND_CORNER',
-    frontType: 'NONE',
-  },
-  LAZY_SUSAN: {
-    cornerType: 'LAZY_SUSAN',
-    frontType: 'BIFOLD',
-  },
+  doorPosition: 'RIGHT',
+  doorWidth: 450,
 };
 
 export const CABINET_PRESETS: Record<CabinetType, Partial<CabinetParams>> = {

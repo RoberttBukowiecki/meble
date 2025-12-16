@@ -85,13 +85,23 @@ function createTrapezoidGeometry(params: ShapeParamsTrapezoid, depth: number): T
 
 /**
  * Create polygon geometry from ShapeParamsPolygon
+ *
+ * IMPORTANT: Points are expected to already be centered around (0,0).
+ * We use bounding box center for centering (not vertex centroid) because
+ * for shapes with asymmetric vertex distribution (e.g., back panel with
+ * cutouts at the top), vertex centroid would incorrectly offset the geometry.
  */
 function createPolygonGeometry(params: ShapeParamsPolygon, depth: number): THREE.BufferGeometry {
   const { points } = params;
 
-  // Calculate centroid for centering
-  const cx = points.reduce((sum, p) => sum + p[0], 0) / points.length;
-  const cy = points.reduce((sum, p) => sum + p[1], 0) / points.length;
+  // Calculate bounding box center for proper centering
+  // This is more accurate than vertex centroid for shapes with asymmetric vertex distribution
+  const minX = Math.min(...points.map(p => p[0]));
+  const maxX = Math.max(...points.map(p => p[0]));
+  const minY = Math.min(...points.map(p => p[1]));
+  const maxY = Math.max(...points.map(p => p[1]));
+  const cx = (minX + maxX) / 2;
+  const cy = (minY + maxY) / 2;
 
   const shape = new THREE.Shape();
   shape.moveTo(points[0][0] - cx, points[0][1] - cy);

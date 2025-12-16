@@ -41,9 +41,9 @@ import {
   FoldingDoorConfig,
   CornerInternalCabinetParams,
   CornerConfig,
-  CornerOrientation,
   CornerFrontType,
-  CornerPanelGeometry,
+  CornerWallSide,
+  CornerDoorPosition,
   DrawerConfiguration,
   SideFrontsConfig,
   Material,
@@ -524,13 +524,13 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
                         </h3>
 
                         <div className="grid gap-4">
-                            {/* Corner Orientation and Door Type */}
+                            {/* Wall Side and Front Type */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label className="text-xs text-muted-foreground">Orientacja narożnika</Label>
+                                    <Label className="text-xs text-muted-foreground">Strona przy ścianie</Label>
                                     <Select
-                                        value={getCornerConfig()?.cornerOrientation || 'LEFT'}
-                                        onValueChange={(val: CornerOrientation) => updateCornerConfig({ cornerOrientation: val })}
+                                        value={getCornerConfig()?.wallSide || 'LEFT'}
+                                        onValueChange={(val: CornerWallSide) => updateCornerConfig({ wallSide: val })}
                                     >
                                         <SelectTrigger className="h-9">
                                             <SelectValue />
@@ -544,7 +544,7 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
                                 <div className="space-y-2">
                                     <Label className="text-xs text-muted-foreground">Typ frontu</Label>
                                     <Select
-                                        value={getCornerConfig()?.frontType || 'NONE'}
+                                        value={getCornerConfig()?.frontType || 'SINGLE'}
                                         onValueChange={(val: CornerFrontType) => updateCornerConfig({ frontType: val })}
                                     >
                                         <SelectTrigger className="h-9">
@@ -552,8 +552,7 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="NONE">Brak (otwarty)</SelectItem>
-                                            <SelectItem value="SINGLE">Prosty (0°)</SelectItem>
-                                            <SelectItem value="ANGLED">Diagonalny (45°)</SelectItem>
+                                            <SelectItem value="SINGLE">Drzwi + panel</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -561,56 +560,26 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
 
                             {/* Dimensions */}
                             <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <Label className="text-xs text-muted-foreground">Wymiary zewnętrzne</Label>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-7 px-2 text-xs"
-                                        onClick={() => {
-                                            const config = getCornerConfig();
-                                            if (config) {
-                                                updateCornerConfig({
-                                                    W: config.D,
-                                                    D: config.W,
-                                                });
-                                            }
-                                        }}
-                                    >
-                                        <ArrowLeftRight className="h-3 w-3 mr-1" />
-                                        Zamień W/D
-                                    </Button>
-                                </div>
-                                <div className="grid grid-cols-3 gap-4">
+                                <Label className="text-xs text-muted-foreground">Wymiary</Label>
+                                <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-1">
-                                        <Label className="text-[10px] text-muted-foreground">Szerokość W (mm)</Label>
+                                        <Label className="text-[10px] text-muted-foreground">Szerokość W</Label>
                                         <NumberInput
-                                            value={getCornerConfig()?.W || 900}
+                                            value={getCornerConfig()?.W || 1000}
                                             onChange={(val) => updateCornerConfig({ W: val })}
-                                            min={600}
+                                            min={400}
                                             max={1500}
                                             allowNegative={false}
                                             className="h-9"
                                         />
                                     </div>
                                     <div className="space-y-1">
-                                        <Label className="text-[10px] text-muted-foreground">Głębokość D (mm)</Label>
+                                        <Label className="text-[10px] text-muted-foreground">Głębokość D</Label>
                                         <NumberInput
-                                            value={getCornerConfig()?.D || 900}
+                                            value={getCornerConfig()?.D || 600}
                                             onChange={(val) => updateCornerConfig({ D: val })}
-                                            min={600}
-                                            max={1500}
-                                            allowNegative={false}
-                                            className="h-9"
-                                        />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <Label className="text-[10px] text-muted-foreground">Głębokość korpusu (mm)</Label>
-                                        <NumberInput
-                                            value={getCornerConfig()?.bodyDepth || 560}
-                                            onChange={(val) => updateCornerConfig({ bodyDepth: val })}
                                             min={300}
-                                            max={800}
+                                            max={900}
                                             allowNegative={false}
                                             className="h-9"
                                         />
@@ -618,34 +587,44 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
                                 </div>
                             </div>
 
-                            {/* Panel Geometry */}
-                            <div className="space-y-2">
-                                <Label className="text-xs text-muted-foreground">Geometria paneli (góra/dół)</Label>
-                                <Select
-                                    value={getCornerConfig()?.panelGeometry || 'TWO_RECT'}
-                                    onValueChange={(val: CornerPanelGeometry) => updateCornerConfig({ panelGeometry: val })}
-                                >
-                                    <SelectTrigger className="h-9">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="TWO_RECT">Dwa prostokąty</SelectItem>
-                                        <SelectItem value="L_SHAPE">L-kształt (wymaga DXF)</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                            {/* Door config (only when front type is SINGLE) */}
+                            {getCornerConfig()?.frontType === 'SINGLE' && (
+                                <div className="space-y-2">
+                                    <Label className="text-xs text-muted-foreground">Konfiguracja drzwi</Label>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-1">
+                                            <Label className="text-[10px] text-muted-foreground">Pozycja drzwi</Label>
+                                            <Select
+                                                value={getCornerConfig()?.doorPosition || 'RIGHT'}
+                                                onValueChange={(val: CornerDoorPosition) => updateCornerConfig({ doorPosition: val })}
+                                            >
+                                                <SelectTrigger className="h-9">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="LEFT">Po lewej</SelectItem>
+                                                    <SelectItem value="RIGHT">Po prawej</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label className="text-[10px] text-muted-foreground">Szerokość drzwi</Label>
+                                            <NumberInput
+                                                value={getCornerConfig()?.doorWidth || 450}
+                                                onChange={(val) => updateCornerConfig({ doorWidth: val })}
+                                                min={200}
+                                                max={800}
+                                                allowNegative={false}
+                                                className="h-9"
+                                            />
+                                        </div>
+                                    </div>
+                                    <p className="text-[10px] text-muted-foreground">
+                                        Szerokość panelu zamykającego: {(getCornerConfig()?.W || 1000) - (getCornerConfig()?.doorWidth || 450) - 40} mm
+                                    </p>
+                                </div>
+                            )}
 
-                            {/* Front Rail Toggle */}
-                            <div className="flex items-center justify-between border rounded-md p-2">
-                                <Label className="text-sm cursor-pointer flex-1" htmlFor="front-rail-mode">
-                                    Wieniec przedni (górna listwa)
-                                </Label>
-                                <Switch
-                                    id="front-rail-mode"
-                                    checked={getCornerConfig()?.frontRail ?? true}
-                                    onCheckedChange={(checked) => updateCornerConfig({ frontRail: checked })}
-                                />
-                            </div>
                         </div>
                     </div>
 

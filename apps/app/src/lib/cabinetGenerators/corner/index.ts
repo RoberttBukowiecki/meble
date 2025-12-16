@@ -1,8 +1,7 @@
 /**
- * Corner Cabinet Generator
+ * Corner Cabinet Generator (Simplified)
  *
  * Main entry point for corner cabinet part generation.
- * Dispatches to specific generators based on corner type.
  */
 
 import type {
@@ -24,50 +23,14 @@ export function generateCornerInternalCabinet(
   bodyMaterial: Material,
   backMaterial?: Material
 ): GeneratedPart[] {
-  const { cornerConfig } = params;
-
-  switch (cornerConfig.cornerType) {
-    case 'L_SHAPED':
-      return generateLShapedCorner(
-        cabinetId,
-        furnitureId,
-        params,
-        materials,
-        bodyMaterial,
-        backMaterial
-      );
-    case 'BLIND_CORNER':
-      // Phase 1E - not yet implemented
-      // For now, fall back to L-shaped
-      return generateLShapedCorner(
-        cabinetId,
-        furnitureId,
-        params,
-        materials,
-        bodyMaterial,
-        backMaterial
-      );
-    case 'LAZY_SUSAN':
-      // Phase 1E - not yet implemented
-      // For now, fall back to L-shaped
-      return generateLShapedCorner(
-        cabinetId,
-        furnitureId,
-        params,
-        materials,
-        bodyMaterial,
-        backMaterial
-      );
-    default:
-      return generateLShapedCorner(
-        cabinetId,
-        furnitureId,
-        params,
-        materials,
-        bodyMaterial,
-        backMaterial
-      );
-  }
+  return generateLShapedCorner(
+    cabinetId,
+    furnitureId,
+    params,
+    materials,
+    bodyMaterial,
+    backMaterial
+  );
 }
 
 // Re-export for direct access

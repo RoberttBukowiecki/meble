@@ -151,13 +151,10 @@ export type {
 
 // Corner cabinet types
 export type {
-  InternalCornerType,
-  ExternalCornerType,
-  CornerOrientation,
+  CornerWallSide,
+  CornerDoorPosition,
   CornerFrontType,
-  CornerPanelGeometry,
   CornerMountType,
-  WallSharingMode,
   CornerConfig,
   CornerPartRole,
 } from './corner';

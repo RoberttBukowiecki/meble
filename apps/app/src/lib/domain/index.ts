@@ -40,7 +40,6 @@ export type { GeneratedPartData } from './part';
 export { LegsDomain } from './legs';
 
 export { CornerDomain, CORNER_DEFAULTS, CORNER_LIMITS } from './corner';
-export type { LShapeCutDimensions, PanelGeometry, CornerPanelPositions } from './corner';
 
 // Shared types
 export type {

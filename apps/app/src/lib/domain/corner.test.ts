@@ -4,7 +4,7 @@
  * Tests cover:
  * - Creators (createConfig, createParams)
  * - Updaters (immutable updates)
- * - Calculators (L-shape cut, dead zone, diagonal width, positions)
+ * - Calculators (front panel width, side height, bounding box)
  * - Validators
  * - Queries
  */
@@ -20,473 +20,356 @@ describe('CornerDomain', () => {
     it('should create default corner config with correct fields', () => {
       const config = CornerDomain.createConfig();
 
-      expect(config.cornerType).toBe('L_SHAPED');
-      expect(config.cornerOrientation).toBe('LEFT');
+      expect(config.wallSide).toBe('LEFT');
       expect(config.W).toBe(CORNER_DEFAULTS.W);
       expect(config.D).toBe(CORNER_DEFAULTS.D);
-      expect(config.bodyDepth).toBe(CORNER_DEFAULTS.bodyDepth);
       expect(config.bottomMount).toBe('inset');
       expect(config.topMount).toBe('inset');
-      expect(config.panelGeometry).toBe('TWO_RECT');
-      expect(config.frontRail).toBe(true);
-      expect(config.frontType).toBe('ANGLED');
-      expect(config.wallSharingMode).toBe('FULL_ISOLATION');
+      expect(config.frontType).toBe('SINGLE');
+      expect(config.doorGap).toBe(2);
+      expect(config.doorPosition).toBe('RIGHT');
+      expect(config.doorWidth).toBe(450);
     });
 
-    it('should create config with specified type and orientation', () => {
-      const config = CornerDomain.createConfig('BLIND_CORNER', 'RIGHT');
+    it('should create config with specified wall side', () => {
+      const config = CornerDomain.createConfig('RIGHT');
 
-      expect(config.cornerType).toBe('BLIND_CORNER');
-      expect(config.cornerOrientation).toBe('RIGHT');
+      expect(config.wallSide).toBe('RIGHT');
     });
   });
 
   describe('createParams', () => {
     it('should create corner cabinet params with defaults', () => {
-      const params = CornerDomain.createParams(900, 720, 560);
+      const params = CornerDomain.createParams(1000, 720, 600);
 
       expect(params.type).toBe('CORNER_INTERNAL');
-      expect(params.width).toBe(900);
+      expect(params.width).toBe(1000);
       expect(params.height).toBe(720);
-      expect(params.depth).toBe(560);
+      expect(params.depth).toBe(600);
       expect(params.cornerConfig).toBeDefined();
-      expect(params.hasBack).toBe(true);
     });
 
     it('should merge custom corner config', () => {
-      const params = CornerDomain.createParams(900, 720, 560, {
-        frontType: 'SINGLE',
-        panelGeometry: 'L_SHAPE',
+      const params = CornerDomain.createParams(1000, 720, 600, {
+        frontType: 'NONE',
       });
 
-      expect(params.cornerConfig.frontType).toBe('SINGLE');
-      expect(params.cornerConfig.panelGeometry).toBe('L_SHAPE');
+      expect(params.cornerConfig.frontType).toBe('NONE');
     });
   });
 
   // ==========================================================================
   // UPDATERS
   // ==========================================================================
-  describe('updaters (immutability)', () => {
-    let baseConfig: CornerConfig;
+  describe('updateDimensions', () => {
+    it('should update W and D dimensions', () => {
+      const config = CornerDomain.createConfig();
+      const updated = CornerDomain.updateDimensions(config, 1200, 700);
 
-    beforeEach(() => {
-      baseConfig = CornerDomain.createConfig();
+      expect(updated.W).toBe(1200);
+      expect(updated.D).toBe(700);
+      // Original should be unchanged
+      expect(config.W).toBe(CORNER_DEFAULTS.W);
     });
 
-    it('updateDimensions should return new config with updated W and D', () => {
-      const updated = CornerDomain.updateDimensions(baseConfig, 1000, 800);
+    it('should clamp dimensions to limits', () => {
+      const config = CornerDomain.createConfig();
 
-      expect(updated).not.toBe(baseConfig);
-      expect(updated.W).toBe(1000);
-      expect(updated.D).toBe(800);
-      expect(baseConfig.W).toBe(CORNER_DEFAULTS.W); // Original unchanged
-    });
-
-    it('updateDimensions should clamp values to limits', () => {
-      const tooSmall = CornerDomain.updateDimensions(baseConfig, 100, 100);
+      const tooSmall = CornerDomain.updateDimensions(config, 100, 100);
       expect(tooSmall.W).toBe(CORNER_LIMITS.MIN_W);
       expect(tooSmall.D).toBe(CORNER_LIMITS.MIN_D);
 
-      const tooLarge = CornerDomain.updateDimensions(baseConfig, 5000, 5000);
-      expect(tooLarge.W).toBe(CORNER_LIMITS.MAX_W);
-      expect(tooLarge.D).toBe(CORNER_LIMITS.MAX_D);
+      const tooBig = CornerDomain.updateDimensions(config, 5000, 2000);
+      expect(tooBig.W).toBe(CORNER_LIMITS.MAX_W);
+      expect(tooBig.D).toBe(CORNER_LIMITS.MAX_D);
+    });
+  });
+
+  describe('updateWallSide', () => {
+    it('should update wall side', () => {
+      const config = CornerDomain.createConfig('LEFT');
+      const updated = CornerDomain.updateWallSide(config, 'RIGHT');
+
+      expect(updated.wallSide).toBe('RIGHT');
+    });
+  });
+
+  describe('updateDoorPosition', () => {
+    it('should update door position', () => {
+      const config = CornerDomain.createConfig();
+      const updated = CornerDomain.updateDoorPosition(config, 'LEFT');
+
+      expect(updated.doorPosition).toBe('LEFT');
+    });
+  });
+
+  describe('updateDoorWidth', () => {
+    it('should update door width', () => {
+      const config = CornerDomain.createConfig();
+      const updated = CornerDomain.updateDoorWidth(config, 500);
+
+      expect(updated.doorWidth).toBe(500);
     });
 
-    it('updateBodyDepth should return new config with updated bodyDepth', () => {
-      const updated = CornerDomain.updateBodyDepth(baseConfig, 400);
+    it('should clamp door width to limits', () => {
+      const config = CornerDomain.createConfig();
 
-      expect(updated.bodyDepth).toBe(400);
-      expect(baseConfig.bodyDepth).toBe(CORNER_DEFAULTS.bodyDepth);
+      const tooSmall = CornerDomain.updateDoorWidth(config, 50);
+      expect(tooSmall.doorWidth).toBe(CORNER_LIMITS.MIN_DOOR_WIDTH);
+
+      const tooBig = CornerDomain.updateDoorWidth(config, 1200);
+      expect(tooBig.doorWidth).toBe(CORNER_LIMITS.MAX_DOOR_WIDTH);
     });
+  });
 
-    it('updateBodyDepth should clamp to limits', () => {
-      const tooSmall = CornerDomain.updateBodyDepth(baseConfig, 100);
-      expect(tooSmall.bodyDepth).toBe(CORNER_LIMITS.MIN_BODY_DEPTH);
+  describe('updateBottomMount', () => {
+    it('should update bottom mount type', () => {
+      const config = CornerDomain.createConfig();
+      const updated = CornerDomain.updateBottomMount(config, 'overlay');
 
-      const tooLarge = CornerDomain.updateBodyDepth(baseConfig, 2000);
-      expect(tooLarge.bodyDepth).toBe(CORNER_LIMITS.MAX_BODY_DEPTH);
+      expect(updated.bottomMount).toBe('overlay');
     });
+  });
 
-    it('updateOrientation should change corner orientation', () => {
-      const updated = CornerDomain.updateOrientation(baseConfig, 'RIGHT');
+  describe('updateTopMount', () => {
+    it('should update top mount type', () => {
+      const config = CornerDomain.createConfig();
+      const updated = CornerDomain.updateTopMount(config, 'overlay');
 
-      expect(updated.cornerOrientation).toBe('RIGHT');
-      expect(baseConfig.cornerOrientation).toBe('LEFT');
+      expect(updated.topMount).toBe('overlay');
     });
+  });
 
-    it('updatePanelGeometry should change panel type', () => {
-      const updated = CornerDomain.updatePanelGeometry(baseConfig, 'L_SHAPE');
+  describe('updateFrontType', () => {
+    it('should update front type', () => {
+      const config = CornerDomain.createConfig();
+      const updated = CornerDomain.updateFrontType(config, 'NONE');
 
-      expect(updated.panelGeometry).toBe('L_SHAPE');
-      expect(baseConfig.panelGeometry).toBe('TWO_RECT');
+      expect(updated.frontType).toBe('NONE');
     });
+  });
 
-    it('updateFrontRail should toggle and configure front rail', () => {
-      const disabled = CornerDomain.updateFrontRail(baseConfig, false);
-      expect(disabled.frontRail).toBe(false);
+  describe('updateHingeSide', () => {
+    it('should update hinge side', () => {
+      const config = CornerDomain.createConfig();
+      const updated = CornerDomain.updateHingeSide(config, 'right');
 
-      const customWidth = CornerDomain.updateFrontRail(baseConfig, true, 'overlay', 150);
-      expect(customWidth.frontRail).toBe(true);
-      expect(customWidth.frontRailMount).toBe('overlay');
-      expect(customWidth.frontRailWidth).toBe(150);
-    });
-
-    it('updateFrontType should change front type', () => {
-      const updated = CornerDomain.updateFrontType(baseConfig, 'SINGLE');
-
-      expect(updated.frontType).toBe('SINGLE');
-      expect(baseConfig.frontType).toBe('ANGLED');
-    });
-
-    it('updateFrontAngle should clamp angle between 30-60', () => {
-      const tooSmall = CornerDomain.updateFrontAngle(baseConfig, 10);
-      expect(tooSmall.frontAngle).toBe(30);
-
-      const tooLarge = CornerDomain.updateFrontAngle(baseConfig, 90);
-      expect(tooLarge.frontAngle).toBe(60);
-
-      const valid = CornerDomain.updateFrontAngle(baseConfig, 45);
-      expect(valid.frontAngle).toBe(45);
-    });
-
-    it('updateWallSharingMode should change wall sharing', () => {
-      const updated = CornerDomain.updateWallSharingMode(baseConfig, 'SHARED_LEFT');
-
-      expect(updated.wallSharingMode).toBe('SHARED_LEFT');
-      expect(baseConfig.wallSharingMode).toBe('FULL_ISOLATION');
+      expect(updated.hingeSide).toBe('right');
     });
   });
 
   // ==========================================================================
   // CALCULATORS
   // ==========================================================================
-  describe('calculators', () => {
-    describe('calculateLShapeCut', () => {
-      it('should calculate cut dimensions for overlay mounting', () => {
-        const cut = CornerDomain.calculateLShapeCut(900, 900, 560, false, 18);
+  describe('calculateFrontPanelWidth', () => {
+    it('should calculate front panel width correctly', () => {
+      const config: CornerConfig = {
+        ...CornerDomain.createConfig(),
+        W: 1000,
+        doorWidth: 450,
+        doorGap: 2,
+      };
+      // Front panel width = W - doorWidth - gap*3 - bodyThickness*2
+      // = 1000 - 450 - 6 - 36 = 508
+      const panelWidth = CornerDomain.calculateFrontPanelWidth(config, 18);
+      expect(panelWidth).toBe(508);
+    });
+  });
 
-        // Cut = external - bodyDepth
-        expect(cut.cutX).toBe(340); // 900 - 560
-        expect(cut.cutY).toBe(340); // 900 - 560
-      });
-
-      it('should add thickness for inset mounting', () => {
-        const cut = CornerDomain.calculateLShapeCut(900, 900, 560, true, 18);
-
-        // Cut = (external - bodyDepth) + thickness
-        expect(cut.cutX).toBe(358); // 340 + 18
-        expect(cut.cutY).toBe(358); // 340 + 18
-      });
-
-      it('should handle asymmetric dimensions', () => {
-        const cut = CornerDomain.calculateLShapeCut(1000, 800, 500, false, 18);
-
-        expect(cut.cutX).toBe(500); // 1000 - 500
-        expect(cut.cutY).toBe(300); // 800 - 500
-      });
+  describe('calculateSideHeight', () => {
+    it('should return full height for inset mounting', () => {
+      const height = CornerDomain.calculateSideHeight(720, 'inset', 'inset', 18);
+      expect(height).toBe(720);
     });
 
-    describe('shouldUseLShape', () => {
-      it('should return true for L_SHAPE geometry with FULL_ISOLATION', () => {
-        const config = CornerDomain.createConfig();
-        const withLShape = CornerDomain.updatePanelGeometry(config, 'L_SHAPE');
-
-        expect(CornerDomain.shouldUseLShape(withLShape)).toBe(true);
-      });
-
-      it('should return false for TWO_RECT geometry', () => {
-        const config = CornerDomain.createConfig();
-
-        expect(CornerDomain.shouldUseLShape(config)).toBe(false);
-      });
-
-      it('should return false for L_SHAPE with SHARED_BOTH (edge banding issue)', () => {
-        const config = CornerDomain.createConfig();
-        let updated = CornerDomain.updatePanelGeometry(config, 'L_SHAPE');
-        updated = CornerDomain.updateWallSharingMode(updated, 'SHARED_BOTH');
-
-        expect(CornerDomain.shouldUseLShape(updated)).toBe(false);
-      });
+    it('should subtract thickness for overlay mounting', () => {
+      const height = CornerDomain.calculateSideHeight(720, 'overlay', 'overlay', 18);
+      expect(height).toBe(720 - 2 * 18);
     });
 
-    describe('getEdgeBandingForLShape', () => {
-      it('should return all edges banded for FULL_ISOLATION', () => {
-        const config = CornerDomain.createConfig();
-        const banding = CornerDomain.getEdgeBandingForLShape(config);
-
-        expect(banding.type).toBe('L_SHAPE');
-        expect(banding.edge1).toBe(true); // Front
-        expect(banding.edge2).toBe(true); // Front-right
-        expect(banding.edge3).toBe(true); // Inner horizontal
-        expect(banding.edge4).toBe(true); // Inner vertical
-        expect(banding.edge5).toBe(true); // Back-left
-        expect(banding.edge6).toBe(true); // Outer-left
-      });
-
-      it('should hide back-left edge for SHARED_LEFT', () => {
-        const config = CornerDomain.createConfig();
-        const sharedLeft = CornerDomain.updateWallSharingMode(config, 'SHARED_LEFT');
-        const banding = CornerDomain.getEdgeBandingForLShape(sharedLeft);
-
-        expect(banding.edge5).toBe(false); // Back-left hidden
-        expect(banding.edge6).toBe(true);  // Outer-left visible
-      });
-
-      it('should hide outer-left edge for SHARED_RIGHT', () => {
-        const config = CornerDomain.createConfig();
-        const sharedRight = CornerDomain.updateWallSharingMode(config, 'SHARED_RIGHT');
-        const banding = CornerDomain.getEdgeBandingForLShape(sharedRight);
-
-        expect(banding.edge5).toBe(true);  // Back-left visible
-        expect(banding.edge6).toBe(false); // Outer-left hidden
-      });
+    it('should handle mixed mounting', () => {
+      const height = CornerDomain.calculateSideHeight(720, 'overlay', 'inset', 18);
+      expect(height).toBe(720 - 18);
     });
+  });
 
-    describe('calculateDeadZone', () => {
-      it('should calculate dead zone from W, D, and bodyDepth', () => {
-        const config = CornerDomain.createConfig();
-        const deadZone = CornerDomain.calculateDeadZone(config);
+  describe('calculateBoundingBox', () => {
+    it('should return correct bounding box', () => {
+      const config = CornerDomain.createConfig();
+      const bbox = CornerDomain.calculateBoundingBox(config, 720);
 
-        // Dead zone = W - bodyDepth and D - bodyDepth
-        expect(deadZone.width).toBe(340);  // 900 - 560
-        expect(deadZone.depth).toBe(340);  // 900 - 560
-      });
-
-      it('should handle asymmetric dimensions', () => {
-        let config = CornerDomain.createConfig();
-        config = CornerDomain.updateDimensions(config, 1000, 800);
-        config = CornerDomain.updateBodyDepth(config, 500);
-
-        const deadZone = CornerDomain.calculateDeadZone(config);
-
-        expect(deadZone.width).toBe(500);  // 1000 - 500
-        expect(deadZone.depth).toBe(300);  // 800 - 500
-      });
+      expect(bbox.width).toBe(config.W);
+      expect(bbox.height).toBe(720);
+      expect(bbox.depth).toBe(config.D);
     });
+  });
 
-    describe('calculateDiagonalWidth', () => {
-      it('should calculate hypotenuse of dead zone for 45° angle', () => {
-        const config = CornerDomain.createConfig();
-        const diagonalWidth = CornerDomain.calculateDiagonalWidth(config);
+  describe('calculateInteriorSpace', () => {
+    it('should return interior space dimensions', () => {
+      const config = CornerDomain.createConfig();
+      const interior = CornerDomain.calculateInteriorSpace(config, 720, 18, 3);
 
-        // For 340x340 dead zone, hypotenuse = sqrt(340² + 340²) ≈ 480.8
-        // Minus 2 * doorGap (2 * 2 = 4)
-        expect(diagonalWidth).toBeCloseTo(477, 0);
-      });
-
-      it('should account for door gap', () => {
-        let config = CornerDomain.createConfig();
-        config = { ...config, doorGap: 5 };
-
-        const diagonalWidth = CornerDomain.calculateDiagonalWidth(config);
-
-        // 480.8 - (2 * 5) = 470.8
-        expect(diagonalWidth).toBeCloseTo(471, 0);
-      });
-    });
-
-    describe('calculateSideHeight', () => {
-      it('should return full height for inset mounting', () => {
-        const height = CornerDomain.calculateSideHeight(720, 'inset', 'inset', 18);
-
-        expect(height).toBe(720);
-      });
-
-      it('should subtract thickness for overlay mounting', () => {
-        const bothOverlay = CornerDomain.calculateSideHeight(720, 'overlay', 'overlay', 18);
-        expect(bothOverlay).toBe(684); // 720 - 18 - 18
-
-        const bottomOnly = CornerDomain.calculateSideHeight(720, 'overlay', 'inset', 18);
-        expect(bottomOnly).toBe(702); // 720 - 18
-
-        const topOnly = CornerDomain.calculateSideHeight(720, 'inset', 'overlay', 18);
-        expect(topOnly).toBe(702); // 720 - 18
-      });
-    });
-
-    describe('calculateShelfPositions', () => {
-      it('should return empty array for 0 shelves', () => {
-        const positions = CornerDomain.calculateShelfPositions(720, 18, 0);
-        expect(positions).toEqual([]);
-      });
-
-      it('should return evenly spaced positions for 1 shelf', () => {
-        const positions = CornerDomain.calculateShelfPositions(720, 18, 1);
-
-        // Usable height = 720 - 36 = 684
-        // 1 shelf divides into 2 spaces: 684/2 = 342
-        // Shelf at: 18 + 342 = 360
-        expect(positions).toHaveLength(1);
-        expect(positions[0]).toBe(360);
-      });
-
-      it('should return evenly spaced positions for multiple shelves', () => {
-        const positions = CornerDomain.calculateShelfPositions(720, 18, 3);
-
-        // Usable height = 684, 3 shelves = 4 spaces
-        // Spacing = 684/4 = 171
-        // Shelves at: 18 + 171 = 189, 18 + 342 = 360, 18 + 513 = 531
-        expect(positions).toHaveLength(3);
-        expect(positions[0]).toBe(189);
-        expect(positions[1]).toBe(360);
-        expect(positions[2]).toBe(531);
-      });
-    });
-
-    describe('calculateBoundingBox', () => {
-      it('should return correct bounding box dimensions', () => {
-        const config = CornerDomain.createConfig();
-        const box = CornerDomain.calculateBoundingBox(config, 720);
-
-        expect(box.width).toBe(900);
-        expect(box.height).toBe(720);
-        expect(box.depth).toBe(900);
-      });
+      // Width = W - 2*t = 1000 - 36 = 964
+      expect(interior.width).toBe(config.W - 36);
+      // Height = H - 2*t = 720 - 36 = 684
+      expect(interior.height).toBe(720 - 36);
+      // Depth = D - t - backT = 600 - 18 - 3 = 579
+      expect(interior.depth).toBe(config.D - 21);
     });
   });
 
   // ==========================================================================
   // VALIDATORS
   // ==========================================================================
-  describe('validators', () => {
-    describe('validate', () => {
-      it('should return valid for default config', () => {
-        const config = CornerDomain.createConfig();
-        const result = CornerDomain.validate(config);
+  describe('validate', () => {
+    it('should pass for valid config', () => {
+      const config = CornerDomain.createConfig();
+      const result = CornerDomain.validate(config);
 
-        expect(result.valid).toBe(true);
-        expect(result.errors).toHaveLength(0);
-      });
-
-      it('should return errors for W out of range', () => {
-        const config = { ...CornerDomain.createConfig(), W: 100 };
-        const result = CornerDomain.validate(config);
-
-        expect(result.valid).toBe(false);
-        expect(result.errors).toContain(
-          `Szerokość W musi być między ${CORNER_LIMITS.MIN_W}-${CORNER_LIMITS.MAX_W}mm`
-        );
-      });
-
-      it('should return errors for D out of range', () => {
-        const config = { ...CornerDomain.createConfig(), D: 5000 };
-        const result = CornerDomain.validate(config);
-
-        expect(result.valid).toBe(false);
-        expect(result.errors).toContain(
-          `Głębokość D musi być między ${CORNER_LIMITS.MIN_D}-${CORNER_LIMITS.MAX_D}mm`
-        );
-      });
-
-      it('should return errors for bodyDepth >= W', () => {
-        const config = { ...CornerDomain.createConfig(), bodyDepth: 1000 };
-        const result = CornerDomain.validate(config);
-
-        expect(result.valid).toBe(false);
-        expect(result.errors).toContain('Głębokość korpusu musi być mniejsza niż szerokość W');
-      });
-
-      it('should return errors for bodyDepth >= D', () => {
-        const config = { ...CornerDomain.createConfig(), W: 1200, D: 500, bodyDepth: 560 };
-        const result = CornerDomain.validate(config);
-
-        expect(result.valid).toBe(false);
-        expect(result.errors).toContain('Głębokość korpusu musi być mniejsza niż głębokość D');
-      });
-
-      it('should return errors for frontRailWidth out of range', () => {
-        const config = { ...CornerDomain.createConfig(), frontRailWidth: 10 };
-        const result = CornerDomain.validate(config);
-
-        expect(result.valid).toBe(false);
-        expect(result.errors.some(e => e.includes('wieńca'))).toBe(true);
-      });
+      expect(result.valid).toBe(true);
+      expect(result.errors).toHaveLength(0);
     });
 
-    describe('validateParams', () => {
-      it('should return valid for valid params', () => {
-        const params = CornerDomain.createParams(900, 720, 560);
-        const result = CornerDomain.validateParams(params);
+    it('should fail when W is too small', () => {
+      const config: CornerConfig = {
+        ...CornerDomain.createConfig(),
+        W: 100,
+      };
+      const result = CornerDomain.validate(config);
 
-        expect(result.valid).toBe(true);
-      });
+      expect(result.valid).toBe(false);
+      expect(result.errors.length).toBeGreaterThan(0);
+    });
 
-      it('should return errors for height out of range', () => {
-        const params = CornerDomain.createParams(900, 50, 560);
-        const result = CornerDomain.validateParams(params);
+    it('should fail when D is too large', () => {
+      const config: CornerConfig = {
+        ...CornerDomain.createConfig(),
+        D: 2000,
+      };
+      const result = CornerDomain.validate(config);
 
-        expect(result.valid).toBe(false);
-        expect(result.errors.some(e => e.includes('Wysokość'))).toBe(true);
-      });
+      expect(result.valid).toBe(false);
+    });
+
+    it('should fail when door width is too small', () => {
+      const config: CornerConfig = {
+        ...CornerDomain.createConfig(),
+        doorWidth: 50,
+      };
+      const result = CornerDomain.validate(config);
+
+      expect(result.valid).toBe(false);
+      expect(result.errors.some(e => e.includes('drzwi'))).toBe(true);
+    });
+
+    it('should fail when door width is too large', () => {
+      const config: CornerConfig = {
+        ...CornerDomain.createConfig(),
+        W: 500,
+        doorWidth: 450, // >= W - 100
+      };
+      const result = CornerDomain.validate(config);
+
+      expect(result.valid).toBe(false);
+    });
+  });
+
+  describe('validateParams', () => {
+    it('should pass for valid params', () => {
+      const params = CornerDomain.createParams(1000, 720, 600);
+      const result = CornerDomain.validateParams(params);
+
+      expect(result.valid).toBe(true);
+    });
+
+    it('should fail when height is out of range', () => {
+      const params = CornerDomain.createParams(1000, 50, 600);
+      const result = CornerDomain.validateParams(params);
+
+      expect(result.valid).toBe(false);
     });
   });
 
   // ==========================================================================
   // QUERIES
   // ==========================================================================
-  describe('queries', () => {
-    it('hasDiagonalFront should return true for ANGLED front type', () => {
-      const config = CornerDomain.createConfig();
-      expect(CornerDomain.hasDiagonalFront(config)).toBe(true);
-
-      const single = CornerDomain.updateFrontType(config, 'SINGLE');
-      expect(CornerDomain.hasDiagonalFront(single)).toBe(false);
-    });
-
-    it('hasSharedWalls should detect wall sharing', () => {
-      const config = CornerDomain.createConfig();
-      expect(CornerDomain.hasSharedWalls(config)).toBe(false);
-
-      const sharedLeft = CornerDomain.updateWallSharingMode(config, 'SHARED_LEFT');
-      expect(CornerDomain.hasSharedWalls(sharedLeft)).toBe(true);
-    });
-
-    it('hasFront should return true for non-NONE front types', () => {
+  describe('hasFront', () => {
+    it('should return true for SINGLE front type', () => {
       const config = CornerDomain.createConfig();
       expect(CornerDomain.hasFront(config)).toBe(true);
-
-      const noFront = CornerDomain.updateFrontType(config, 'NONE');
-      expect(CornerDomain.hasFront(noFront)).toBe(false);
     });
 
-    it('hasLeftSide should return based on wall sharing', () => {
-      const config = CornerDomain.createConfig();
-      expect(CornerDomain.hasLeftSide(config)).toBe(true);
+    it('should return false for NONE front type', () => {
+      const config = CornerDomain.updateFrontType(
+        CornerDomain.createConfig(),
+        'NONE'
+      );
+      expect(CornerDomain.hasFront(config)).toBe(false);
+    });
+  });
 
-      const sharedLeft = CornerDomain.updateWallSharingMode(config, 'SHARED_LEFT');
-      expect(CornerDomain.hasLeftSide(sharedLeft)).toBe(false);
-
-      const sharedBoth = CornerDomain.updateWallSharingMode(config, 'SHARED_BOTH');
-      expect(CornerDomain.hasLeftSide(sharedBoth)).toBe(false);
+  describe('isWallLeft', () => {
+    it('should return true for LEFT wall side', () => {
+      const config = CornerDomain.createConfig('LEFT');
+      expect(CornerDomain.isWallLeft(config)).toBe(true);
     });
 
-    it('hasRightSide should return based on wall sharing', () => {
-      const config = CornerDomain.createConfig();
-      expect(CornerDomain.hasRightSide(config)).toBe(true);
+    it('should return false for RIGHT wall side', () => {
+      const config = CornerDomain.createConfig('RIGHT');
+      expect(CornerDomain.isWallLeft(config)).toBe(false);
+    });
+  });
 
-      const sharedRight = CornerDomain.updateWallSharingMode(config, 'SHARED_RIGHT');
-      expect(CornerDomain.hasRightSide(sharedRight)).toBe(false);
+  describe('isDoorLeft', () => {
+    it('should return true for LEFT door position', () => {
+      const config = CornerDomain.updateDoorPosition(
+        CornerDomain.createConfig(),
+        'LEFT'
+      );
+      expect(CornerDomain.isDoorLeft(config)).toBe(true);
     });
 
-    it('getTypeLabel should return Polish labels', () => {
-      expect(CornerDomain.getTypeLabel('L_SHAPED')).toBe('L-kształtna (diagonalna)');
-      expect(CornerDomain.getTypeLabel('BLIND_CORNER')).toBe('Ślepa narożna');
+    it('should return false for RIGHT door position', () => {
+      const config = CornerDomain.createConfig(); // Default is RIGHT
+      expect(CornerDomain.isDoorLeft(config)).toBe(false);
+    });
+  });
+
+  describe('getWallSideLabel', () => {
+    it('should return Polish label for LEFT', () => {
+      expect(CornerDomain.getWallSideLabel('LEFT')).toContain('Lewa');
     });
 
-    it('getFrontTypeLabel should return Polish labels', () => {
-      expect(CornerDomain.getFrontTypeLabel('ANGLED')).toBe('Pojedyncze (skośne)');
-      expect(CornerDomain.getFrontTypeLabel('SINGLE')).toBe('Pojedyncze (proste)');
+    it('should return Polish label for RIGHT', () => {
+      expect(CornerDomain.getWallSideLabel('RIGHT')).toContain('Prawa');
+    });
+  });
+
+  describe('getDoorPositionLabel', () => {
+    it('should return Polish label for LEFT', () => {
+      expect(CornerDomain.getDoorPositionLabel('LEFT')).toContain('lewej');
+    });
+
+    it('should return Polish label for RIGHT', () => {
+      expect(CornerDomain.getDoorPositionLabel('RIGHT')).toContain('prawej');
+    });
+  });
+
+  describe('getFrontTypeLabel', () => {
+    it('should return Polish labels', () => {
       expect(CornerDomain.getFrontTypeLabel('NONE')).toBe('Brak');
+      expect(CornerDomain.getFrontTypeLabel('SINGLE')).toContain('panel');
     });
+  });
 
-    it('getSummary should return formatted summary', () => {
+  describe('getSummary', () => {
+    it('should return human-readable summary', () => {
       const config = CornerDomain.createConfig();
       const summary = CornerDomain.getSummary(config);
 
-      expect(summary).toContain('L-kształtna');
-      expect(summary).toContain('900×900mm');
-      expect(summary).toContain('(L)');
+      expect(summary).toContain('1000');
+      expect(summary).toContain('600');
+      expect(summary).toContain('L'); // LEFT wall side
     });
   });
 });

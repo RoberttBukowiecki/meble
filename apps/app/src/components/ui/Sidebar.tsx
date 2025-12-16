@@ -3,7 +3,8 @@ import { useTranslations } from 'next-intl';
 import { useShallow } from 'zustand/react/shallow';
 import { useStore, useSelectedPart, useSelectedCabinet } from '@/lib/store';
 import { Button } from '@meble/ui';
-import { Plus, Download, Settings, List, Package, House } from 'lucide-react';
+import { Plus, Download, Settings, List, Package, House, Database } from 'lucide-react';
+import { useIsAdmin } from '@/hooks';
 import { APP_NAME } from '@meble/constants';
 import { PropertiesPanel } from './PropertiesPanel';
 import { PartsTable } from './PartsTable';
@@ -40,6 +41,7 @@ export function Sidebar() {
   );
   const selectedPart = useSelectedPart();
   const selectedCabinet = useSelectedCabinet();
+  const { isAdmin } = useIsAdmin();
   const [showErrorDialog, setShowErrorDialog] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<TabType>('properties');
@@ -61,6 +63,45 @@ export function Sidebar() {
     }
 
     setExportDialogOpen(true);
+  };
+
+  const handleExportSceneData = () => {
+    // Export minimal scene data for admin analysis
+    const sceneData = {
+      exportedAt: new Date().toISOString(),
+      partsCount: parts.length,
+      parts: parts.map((part) => ({
+        id: part.id,
+        name: part.name,
+        // Dimensions (BOX)
+        width: part.width,
+        height: part.height,
+        depth: part.depth,
+        // Position in 3D space
+        position: {
+          x: part.position[0],
+          y: part.position[1],
+          z: part.position[2],
+        },
+        // Rotation in radians
+        rotation: {
+          x: part.rotation[0],
+          y: part.rotation[1],
+          z: part.rotation[2],
+        },
+        shapeType: part.shapeType,
+      })),
+    };
+
+    const blob = new Blob([JSON.stringify(sceneData, null, 2)], {
+      type: 'application/json',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `scene-data_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -104,6 +145,20 @@ export function Sidebar() {
             <Download className="h-4 w-4 mr-2" />
             {t('exportCSV')}
           </Button>
+
+          {/* Admin-only: Export scene data */}
+          {isAdmin && (
+            <Button
+              onClick={handleExportSceneData}
+              variant="outline"
+              className="w-full h-11 md:h-8 border-dashed border-amber-500 text-amber-600 hover:bg-amber-50"
+              size="sm"
+              disabled={parts.length === 0}
+            >
+              <Database className="h-4 w-4 mr-2" />
+              Export Scene (Admin)
+            </Button>
+          )}
         </div>
       </div>
 
