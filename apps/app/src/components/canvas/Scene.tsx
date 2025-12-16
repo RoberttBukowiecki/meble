@@ -13,6 +13,8 @@ import { Part3D } from './Part3D';
 import { Room3D } from './Room3D';
 import { RoomLighting } from './RoomLighting';
 import { FloorCeiling3D } from './FloorCeiling3D';
+import { CabinetLegs } from './Leg3D';
+import { getCabinetTransform } from '@/lib/store/utils';
 import { Button } from '@meble/ui';
 import { Camera, Move, RotateCw, Maximize2, PanelRight } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
@@ -62,7 +64,8 @@ export function Scene({ onOpenMobileSidebar, isMobile }: SceneProps) {
     dimensionSettings,
     showGrid,
     graphicsSettings,
-    rooms
+    rooms,
+    cabinets,
   } = useStore(
       useShallow((state) => ({
         isTransforming: state.isTransforming,
@@ -84,6 +87,7 @@ export function Scene({ onOpenMobileSidebar, isMobile }: SceneProps) {
         showGrid: state.showGrid,
         graphicsSettings: state.graphicsSettings,
         rooms: state.rooms,
+        cabinets: state.cabinets,
       }))
     );
   const controlsRef = useRef<OrbitControlsType>(null);
@@ -277,6 +281,18 @@ export function Scene({ onOpenMobileSidebar, isMobile }: SceneProps) {
           {parts.map((part) => (
             <Part3D key={part.id} part={part} />
           ))}
+
+          {/* Cabinet legs (rendered separately, not as Part) */}
+          {cabinets.filter(c => c.legs && c.legs.length > 0).map(cabinet => {
+            const cabinetParts = parts.filter(p => cabinet.partIds.includes(p.id));
+            if (cabinetParts.length === 0) return null;
+            const { center } = getCabinetTransform(cabinetParts);
+            return (
+              <group key={`legs-${cabinet.id}`} position={center.toArray()}>
+                <CabinetLegs legs={cabinet.legs!} />
+              </group>
+            );
+          })}
 
           {/* Transform controls for cabinet groups (translate/rotate) */}
           {selectedCabinetId && (transformMode === 'translate' || transformMode === 'rotate') && (

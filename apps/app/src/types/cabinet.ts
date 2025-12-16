@@ -2,12 +2,12 @@
  * Cabinet type definitions
  */
 
-import type { DoorConfig, DoorMetadata, HingeSide } from './door';
+import type { DoorConfig, DoorMetadata, HingeSide, FoldingDoorConfig } from './door';
 import type { HandleConfig, HandleMetadata } from './handle';
 import type { DrawerSlideType, DrawerConfiguration } from './drawer';
 import type { CabinetInteriorConfig } from './cabinetInterior';
 import type { SideFrontsConfig, DecorativePanelsConfig } from './decorative';
-import type { LegsConfig } from './legs';
+import type { LegsConfig, LegData } from './legs';
 import type { CornerConfig, CornerPartRole } from './corner';
 
 /**
@@ -32,8 +32,25 @@ export type CabinetType =
   | 'WARDROBE'
   | 'BOOKSHELF'
   | 'DRAWER'
+  | 'WALL'              // Wall-mounted cabinet
   | 'CORNER_INTERNAL'   // Internal corner cabinet (Phase 1)
   | 'CORNER_EXTERNAL';  // External corner cabinet (Phase 2)
+
+/**
+ * Mounting hanger cutout configuration
+ * Cutouts on the back panel for furniture hangers (zawieszki meblowe)
+ */
+export interface HangerCutoutConfig {
+  enabled: boolean;
+  /** Width of the cutout (mm) - typically 40-60mm */
+  width: number;
+  /** Height of the cutout (mm) - typically 30-50mm */
+  height: number;
+  /** Horizontal inset from cabinet edge (mm) */
+  horizontalInset: number;
+  /** Vertical inset from top edge (mm) */
+  verticalInset: number;
+}
 
 /**
  * Cabinet material configuration
@@ -117,6 +134,27 @@ export interface DrawerCabinetParams extends CabinetBaseParams {
 }
 
 /**
+ * Wall-mounted cabinet parameters
+ * Cabinet designed for wall mounting using furniture hangers (zawieszki meblowe)
+ * No legs - mounted directly to wall
+ */
+export interface WallCabinetParams extends CabinetBaseParams {
+  type: 'WALL';
+  /** Number of internal shelves (0-5) */
+  shelfCount: number;
+  /** Whether to add doors */
+  hasDoors: boolean;
+  /** Door configuration */
+  doorConfig?: DoorConfig;
+  /** Handle configuration for doors */
+  handleConfig?: HandleConfig;
+  /** Folding door configuration (front łamany) */
+  foldingDoorConfig?: FoldingDoorConfig;
+  /** Mounting hanger cutouts on back panel */
+  hangerCutouts?: HangerCutoutConfig;
+}
+
+/**
  * Internal corner cabinet parameters (Phase 1)
  * For cabinets that fit into internal corners where two walls meet
  */
@@ -156,6 +194,7 @@ export type CabinetParams =
   | WardrobeCabinetParams
   | BookshelfCabinetParams
   | DrawerCabinetParams
+  | WallCabinetParams
   | CornerInternalCabinetParams
   | CornerExternalCabinetParams;
 
@@ -172,6 +211,8 @@ export interface Cabinet {
   materials: CabinetMaterials;
   topBottomPlacement: TopBottomPlacement;
   partIds: string[];  // Array of part IDs that belong to this cabinet
+  /** Cabinet legs data (for 3D rendering, not cut parts) */
+  legs?: LegData[];
   createdAt: Date;
   updatedAt: Date;
   /** Visual-only: hide fronts (doors, drawer fronts) in 3D view */
@@ -202,7 +243,6 @@ export type CabinetPartRole =
   | 'DECORATIVE_TOP'    // Top decorative panel (blenda, trim, full panel)
   | 'DECORATIVE_BOTTOM' // Bottom decorative panel (plinth, trim, full panel)
   | 'PARTITION'         // Vertical divider between columns in interior
-  | 'LEG'               // Cabinet leg (not a cut part - accessory)
   // Corner cabinet specific roles
   | CornerPartRole;
 
@@ -214,7 +254,6 @@ export interface CabinetPartMetadata {
   role: CabinetPartRole;
   index?: number; // For shelves, doors, drawers (0-based)
   drawerIndex?: number; // Which drawer this part belongs to (0-based)
-  legIndex?: number; // Which leg (0-based, for multi-leg setups)
   // Door-specific metadata
   doorMetadata?: DoorMetadata;
   handleMetadata?: HandleMetadata;

@@ -3,6 +3,7 @@ import { updateSession } from '@/lib/supabase/middleware';
 
 // Routes that require authentication
 const PROTECTED_ROUTES = [
+  '/admin',
   '/dashboard',
   '/settings',
   '/projects',
@@ -54,14 +55,28 @@ export async function middleware(request: NextRequest) {
   }
 
   // Return 401 for protected API routes
+  // Include cookies from supabaseResponse to ensure session cleanup happens
   if (isProtectedApiRoute && !user) {
-    return NextResponse.json(
+    const response = NextResponse.json(
       {
         success: false,
         error: { code: 'UNAUTHORIZED', message: 'Authentication required' },
       },
       { status: 401 }
     );
+
+    // Copy cookies from supabase response (important for session cleanup)
+    supabaseResponse.cookies.getAll().forEach((cookie) => {
+      response.cookies.set(cookie.name, cookie.value, {
+        ...cookie,
+        // Ensure proper cookie options for auth cookies
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+      });
+    });
+
+    return response;
   }
 
   return supabaseResponse;

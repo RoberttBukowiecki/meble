@@ -28,10 +28,12 @@ export { generateKitchenCabinet } from './kitchenCabinet';
 export { generateWardrobe } from './wardrobe';
 export { generateBookshelf } from './bookshelf';
 export { generateDrawerCabinet } from './drawerCabinet';
+export { generateWallCabinet } from './wallCabinet';
 export { generateCornerInternalCabinet } from './corner';
 
 // Re-export utility functions
-export { generateBackPanel } from './backPanel';
+export { generateBackPanel, generateBackPanelWithCutouts } from './backPanel';
+export { generateFoldingDoors } from './foldingDoors';
 export { generateDoors } from './doors';
 export { generateDrawers, calculateDrawerBoxDimensions } from './drawers';
 export {
@@ -49,14 +51,14 @@ export {
   hasInteriorContent,
   getInteriorSummary,
 } from './interior';
-export { generateLegs, parseLegNotes } from './legs';
-export type { LegPartNotes } from './legs';
+export { generateLegs } from './legs';
 
 // Import generators for the factory function
 import { generateKitchenCabinet } from './kitchenCabinet';
 import { generateWardrobe } from './wardrobe';
 import { generateBookshelf } from './bookshelf';
 import { generateDrawerCabinet } from './drawerCabinet';
+import { generateWallCabinet } from './wallCabinet';
 import { generateCornerInternalCabinet } from './corner';
 
 /**
@@ -73,10 +75,12 @@ export function getGeneratorForType(type: CabinetType): CabinetGenerator {
       return generateBookshelf;
     case 'DRAWER':
       return generateDrawerCabinet;
+    case 'WALL':
+      return generateWallCabinet;
     case 'CORNER_INTERNAL':
       return generateCornerInternalCabinet as CabinetGenerator;
     case 'CORNER_EXTERNAL':
-      // Phase 2 - not yet implemented, return empty generator
+      // Not yet implemented, return empty generator
       return () => [];
   }
 }

@@ -1,29 +1,57 @@
 /**
  * GET /api/admin/stats - Dashboard statistics
+ *
+ * Supports two auth modes:
+ * 1. Direct browser request with Supabase session cookies
+ * 2. Internal server-to-server request with X-Admin-User-Id header (from app API proxy)
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/utils/supabase/server';
+import { createClient, createServiceClient } from '@/utils/supabase/server';
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    // Check for internal server-to-server request (from app API proxy)
+    const adminUserId = request.headers.get('X-Admin-User-Id');
 
-    // Verify admin access
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
-        { status: 401 }
-      );
-    }
+    let userId: string;
+    let supabase;
 
-    const { data: isAdmin } = await supabase.rpc('is_admin' as never, { p_user_id: user.id } as never);
-    if (!isAdmin) {
-      return NextResponse.json(
-        { success: false, error: { code: 'FORBIDDEN', message: 'Admin access required' } },
-        { status: 403 }
-      );
+    if (adminUserId) {
+      // Internal request - app already verified admin status
+      // Use service client for data access
+      supabase = createServiceClient();
+      userId = adminUserId;
+
+      // Double-check admin status for security
+      const { data: isAdmin } = await supabase.rpc('is_admin' as never, { p_user_id: userId } as never);
+      if (!isAdmin) {
+        return NextResponse.json(
+          { success: false, error: { code: 'FORBIDDEN', message: 'Admin access required' } },
+          { status: 403 }
+        );
+      }
+    } else {
+      // Direct browser request - use cookie-based auth
+      supabase = await createClient();
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return NextResponse.json(
+          { success: false, error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
+          { status: 401 }
+        );
+      }
+
+      const { data: isAdmin } = await supabase.rpc('is_admin' as never, { p_user_id: user.id } as never);
+      if (!isAdmin) {
+        return NextResponse.json(
+          { success: false, error: { code: 'FORBIDDEN', message: 'Admin access required' } },
+          { status: 403 }
+        );
+      }
+
+      userId = user.id;
     }
 
     // Get date ranges

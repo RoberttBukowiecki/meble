@@ -14,7 +14,6 @@ import { generateDrawers } from './drawers';
 import { generateSideFronts } from './sideFronts';
 import { generateDecorativePanels } from './decorativePanels';
 import { generateInterior, hasInteriorContent } from './interior';
-import { generateLegs } from './legs';
 import { LegsDomain } from '@/lib/domain/legs';
 
 export function generateDrawerCabinet(
@@ -158,6 +157,7 @@ export function generateDrawerCabinet(
       overlapRatio: backOverlapRatio ?? 0.667,
       mountType: backMountType ?? 'overlap',
       topBottomPlacement,
+      legOffset,
     });
     parts.push(backPanel);
   }
@@ -174,6 +174,7 @@ export function generateDrawerCabinet(
       frontMaterialThickness: thickness,
       sideFrontsConfig: drawerParams.sideFronts,
       defaultFrontMaterialId: materials.frontMaterialId,
+      legOffset,
     });
     parts.push(...sideFrontParts);
   }
@@ -190,22 +191,12 @@ export function generateDrawerCabinet(
       frontThickness: thickness,
       bodyThickness: thickness,
       decorativePanels: drawerParams.decorativePanels,
+      legOffset,
     });
     parts.push(...decorativeParts);
   }
 
-  // 9. LEGS (if configured)
-  if (drawerParams.legs?.enabled) {
-    const legParts = generateLegs(
-      cabinetId,
-      furnitureId,
-      drawerParams.legs,
-      width,
-      depth,
-      materials
-    );
-    parts.push(...legParts);
-  }
+  // NOTE: Legs are now generated separately and stored in Cabinet.legs (not as Part)
 
   return parts;
 }

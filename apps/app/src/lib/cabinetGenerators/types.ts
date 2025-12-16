@@ -13,6 +13,7 @@ import type {
   DoorConfig,
   HandleConfig,
   SideFrontsConfig,
+  HangerCutoutConfig,
 } from '@/types';
 
 // Re-export Material type for use in generators
@@ -50,6 +51,16 @@ export interface BackPanelConfig {
   overlapRatio: number;
   mountType: BackMountType;
   topBottomPlacement: TopBottomPlacement;
+  /** Y offset added by legs (0 if no legs) */
+  legOffset?: number;
+}
+
+/**
+ * Back panel config with hanger cutouts for wall-mounted cabinets
+ */
+export interface BackPanelWithCutoutsConfig extends BackPanelConfig {
+  /** Hanger cutout configuration */
+  hangerCutouts: HangerCutoutConfig;
 }
 
 // ============================================================================
@@ -66,6 +77,8 @@ export interface DoorGenerationConfig {
   frontMaterialId: string;
   doorConfig: DoorConfig;
   handleConfig?: HandleConfig;
+  /** Y offset added by legs (0 if no legs) */
+  legOffset?: number;
 }
 
 // ============================================================================
@@ -84,4 +97,6 @@ export interface SideFrontGenerationConfig {
   defaultFrontMaterialId: string;
   /** Map of all materials for looking up custom material thickness */
   materialsMap?: Map<string, Material>;
+  /** Y offset added by legs (0 if no legs) */
+  legOffset?: number;
 }

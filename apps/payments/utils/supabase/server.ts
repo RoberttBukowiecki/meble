@@ -1,4 +1,5 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { Database } from '@/types_db';
 
@@ -38,6 +39,21 @@ export const createClient = async () => {
           }
         }
       }
+    }
+  );
+};
+
+// Service role client for admin operations (bypasses RLS)
+// Use only for server-to-server requests where user is already verified
+export const createServiceClient = () => {
+  return createSupabaseClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SECRET_KEY!,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
     }
   );
 };

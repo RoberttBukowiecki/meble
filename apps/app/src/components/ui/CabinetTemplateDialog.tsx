@@ -36,11 +36,14 @@ import {
   CabinetMaterials,
   TopBottomPlacement,
   KitchenCabinetParams,
+  WallCabinetParams,
+  HangerCutoutConfig,
+  FoldingDoorConfig,
   CornerInternalCabinetParams,
   CornerConfig,
   CornerOrientation,
-  DeadZonePreset,
-  CornerDimensionMode,
+  CornerFrontType,
+  CornerPanelGeometry,
   DrawerConfiguration,
   SideFrontsConfig,
   Material,
@@ -49,6 +52,10 @@ import {
   CABINET_PRESETS,
   DEFAULT_BACK_OVERLAP_RATIO,
   DEFAULT_DOOR_CONFIG,
+  DEFAULT_HANGER_CUTOUT_CONFIG,
+  DEFAULT_FOLDING_DOOR_CONFIG,
+  HANGER_CUTOUT_LIMITS,
+  FOLDING_DOOR_LIMITS,
 } from '@/lib/config';
 import { Drawer, CornerDomain } from '@/lib/domain';
 import { DrawerConfigDialog } from './DrawerConfigDialog';
@@ -57,9 +64,10 @@ import { DecorativePanelsConfigDialog } from './DecorativePanelsConfigDialog';
 import { InteriorConfigDialog } from './InteriorConfigDialog';
 import { getDefaultMaterials, getDefaultBackMaterial } from '@/lib/store/utils';
 import { getSideFrontsSummary, hasSideFronts, hasDecorativePanels, getDecorativePanelsSummary, hasInteriorContent, getInteriorSummary } from '@/lib/cabinetGenerators';
-import { Settings2, PanelLeftDashed, AlertTriangle, RectangleHorizontal, Grip, Box, Warehouse, Library, Layers, PanelTop, LayoutGrid, CornerUpRight } from 'lucide-react';
+import { Settings2, PanelLeftDashed, AlertTriangle, RectangleHorizontal, Grip, Box, Warehouse, Library, Layers, PanelTop, LayoutGrid, CornerUpRight, Footprints, ArrowLeftRight, SquareStack, Scissors } from 'lucide-react';
 import { FrontsConfigDialog } from './FrontsConfigDialog';
 import { HandlesConfigDialog } from './HandlesConfigDialog';
+import { LegsConfigDialog, getLegsSummary, hasLegs } from './LegsConfigDialog';
 import { cn } from '@/lib/utils';
 
 interface CabinetTemplateDialogProps {
@@ -154,6 +162,7 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
     const [sideFrontsDialogOpen, setSideFrontsDialogOpen] = useState(false);
     const [decorativePanelsDialogOpen, setDecorativePanelsDialogOpen] = useState(false);
     const [interiorDialogOpen, setInteriorDialogOpen] = useState(false);
+    const [legsDialogOpen, setLegsDialogOpen] = useState(false);
 
     // Get material preferences from store for interior config
     const interiorMaterialPreferences = useStore((state) => state.interiorMaterialPreferences);
@@ -209,6 +218,65 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
         onChange({
             ...params,
             cornerConfig: { ...currentConfig, ...updates },
+        } as any);
+    };
+
+    // Wall cabinet specific accessors
+    const getHangerCutoutsEnabled = (): boolean => {
+        if (params.type !== 'WALL') return false;
+        return (params as WallCabinetParams).hangerCutouts?.enabled ?? DEFAULT_HANGER_CUTOUT_CONFIG.enabled;
+    };
+
+    const getHangerCutoutWidth = (): number => {
+        if (params.type !== 'WALL') return DEFAULT_HANGER_CUTOUT_CONFIG.width;
+        return (params as WallCabinetParams).hangerCutouts?.width ?? DEFAULT_HANGER_CUTOUT_CONFIG.width;
+    };
+
+    const getHangerCutoutHeight = (): number => {
+        if (params.type !== 'WALL') return DEFAULT_HANGER_CUTOUT_CONFIG.height;
+        return (params as WallCabinetParams).hangerCutouts?.height ?? DEFAULT_HANGER_CUTOUT_CONFIG.height;
+    };
+
+    const getHangerCutoutHorizontalInset = (): number => {
+        if (params.type !== 'WALL') return DEFAULT_HANGER_CUTOUT_CONFIG.horizontalInset;
+        return (params as WallCabinetParams).hangerCutouts?.horizontalInset ?? DEFAULT_HANGER_CUTOUT_CONFIG.horizontalInset;
+    };
+
+    const getHangerCutoutVerticalInset = (): number => {
+        if (params.type !== 'WALL') return DEFAULT_HANGER_CUTOUT_CONFIG.verticalInset;
+        return (params as WallCabinetParams).hangerCutouts?.verticalInset ?? DEFAULT_HANGER_CUTOUT_CONFIG.verticalInset;
+    };
+
+    const updateHangerCutouts = (updates: Partial<HangerCutoutConfig>) => {
+        if (params.type !== 'WALL') return;
+        const currentConfig = (params as WallCabinetParams).hangerCutouts ?? DEFAULT_HANGER_CUTOUT_CONFIG;
+        onChange({
+            ...params,
+            hangerCutouts: { ...currentConfig, ...updates },
+        } as any);
+    };
+
+    const getFoldingDoorEnabled = (): boolean => {
+        if (params.type !== 'WALL') return false;
+        return (params as WallCabinetParams).foldingDoorConfig?.enabled ?? false;
+    };
+
+    const getFoldingSplitRatio = (): number => {
+        if (params.type !== 'WALL') return DEFAULT_FOLDING_DOOR_CONFIG.splitRatio;
+        return (params as WallCabinetParams).foldingDoorConfig?.splitRatio ?? DEFAULT_FOLDING_DOOR_CONFIG.splitRatio;
+    };
+
+    const getFoldingSectionGap = (): number => {
+        if (params.type !== 'WALL') return DEFAULT_FOLDING_DOOR_CONFIG.sectionGap;
+        return (params as WallCabinetParams).foldingDoorConfig?.sectionGap ?? DEFAULT_FOLDING_DOOR_CONFIG.sectionGap;
+    };
+
+    const updateFoldingDoor = (updates: Partial<FoldingDoorConfig>) => {
+        if (params.type !== 'WALL') return;
+        const currentConfig = (params as WallCabinetParams).foldingDoorConfig ?? DEFAULT_FOLDING_DOOR_CONFIG;
+        onChange({
+            ...params,
+            foldingDoorConfig: { ...currentConfig, ...updates },
         } as any);
     };
 
@@ -456,7 +524,7 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
                         </h3>
 
                         <div className="grid gap-4">
-                            {/* Corner Orientation */}
+                            {/* Corner Orientation and Door Type */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label className="text-xs text-muted-foreground">Orientacja narożnika</Label>
@@ -474,73 +542,229 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
                                     </Select>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label className="text-xs text-muted-foreground">Tryb wymiarów</Label>
+                                    <Label className="text-xs text-muted-foreground">Typ frontu</Label>
                                     <Select
-                                        value={getCornerConfig()?.dimensionMode || 'SYMMETRIC'}
-                                        onValueChange={(val: CornerDimensionMode) => updateCornerConfig({ dimensionMode: val })}
+                                        value={getCornerConfig()?.frontType || 'NONE'}
+                                        onValueChange={(val: CornerFrontType) => updateCornerConfig({ frontType: val })}
                                     >
                                         <SelectTrigger className="h-9">
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="SYMMETRIC">Symetryczne</SelectItem>
-                                            <SelectItem value="ASYMMETRIC">Asymetryczne</SelectItem>
+                                            <SelectItem value="NONE">Brak (otwarty)</SelectItem>
+                                            <SelectItem value="SINGLE">Prosty (0°)</SelectItem>
+                                            <SelectItem value="ANGLED">Diagonalny (45°)</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
                             </div>
 
-                            {/* Arm Dimensions */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label className="text-xs text-muted-foreground">Ramię A (mm)</Label>
-                                    <NumberInput
-                                        value={getCornerConfig()?.armA || 800}
-                                        onChange={(val) => {
+                            {/* Dimensions */}
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <Label className="text-xs text-muted-foreground">Wymiary zewnętrzne</Label>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-7 px-2 text-xs"
+                                        onClick={() => {
                                             const config = getCornerConfig();
-                                            const updates: Partial<CornerConfig> = { armA: val };
-                                            if (config?.dimensionMode === 'SYMMETRIC') {
-                                                updates.armB = val;
+                                            if (config) {
+                                                updateCornerConfig({
+                                                    W: config.D,
+                                                    D: config.W,
+                                                });
                                             }
-                                            updateCornerConfig(updates);
                                         }}
-                                        min={300}
-                                        max={1500}
-                                        allowNegative={false}
-                                        className="h-9"
-                                    />
+                                    >
+                                        <ArrowLeftRight className="h-3 w-3 mr-1" />
+                                        Zamień W/D
+                                    </Button>
                                 </div>
-                                <div className="space-y-2">
-                                    <Label className="text-xs text-muted-foreground">Ramię B (mm)</Label>
-                                    <NumberInput
-                                        value={getCornerConfig()?.armB || 800}
-                                        onChange={(val) => updateCornerConfig({ armB: val })}
-                                        min={300}
-                                        max={1500}
-                                        allowNegative={false}
-                                        disabled={getCornerConfig()?.dimensionMode === 'SYMMETRIC'}
-                                        className="h-9"
-                                    />
+                                <div className="grid grid-cols-3 gap-4">
+                                    <div className="space-y-1">
+                                        <Label className="text-[10px] text-muted-foreground">Szerokość W (mm)</Label>
+                                        <NumberInput
+                                            value={getCornerConfig()?.W || 900}
+                                            onChange={(val) => updateCornerConfig({ W: val })}
+                                            min={600}
+                                            max={1500}
+                                            allowNegative={false}
+                                            className="h-9"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-[10px] text-muted-foreground">Głębokość D (mm)</Label>
+                                        <NumberInput
+                                            value={getCornerConfig()?.D || 900}
+                                            onChange={(val) => updateCornerConfig({ D: val })}
+                                            min={600}
+                                            max={1500}
+                                            allowNegative={false}
+                                            className="h-9"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-[10px] text-muted-foreground">Głębokość korpusu (mm)</Label>
+                                        <NumberInput
+                                            value={getCornerConfig()?.bodyDepth || 560}
+                                            onChange={(val) => updateCornerConfig({ bodyDepth: val })}
+                                            min={300}
+                                            max={800}
+                                            allowNegative={false}
+                                            className="h-9"
+                                        />
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* Dead Zone Preset */}
+                            {/* Panel Geometry */}
                             <div className="space-y-2">
-                                <Label className="text-xs text-muted-foreground">Martwa strefa</Label>
+                                <Label className="text-xs text-muted-foreground">Geometria paneli (góra/dół)</Label>
                                 <Select
-                                    value={getCornerConfig()?.deadZonePreset || 'STANDARD'}
-                                    onValueChange={(val: DeadZonePreset) => updateCornerConfig({ deadZonePreset: val })}
+                                    value={getCornerConfig()?.panelGeometry || 'TWO_RECT'}
+                                    onValueChange={(val: CornerPanelGeometry) => updateCornerConfig({ panelGeometry: val })}
                                 >
                                     <SelectTrigger className="h-9">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="MINIMAL">Minimalna (więcej miejsca)</SelectItem>
-                                        <SelectItem value="STANDARD">Standardowa</SelectItem>
-                                        <SelectItem value="ACCESSIBLE">Łatwy dostęp</SelectItem>
+                                        <SelectItem value="TWO_RECT">Dwa prostokąty</SelectItem>
+                                        <SelectItem value="L_SHAPE">L-kształt (wymaga DXF)</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
+
+                            {/* Front Rail Toggle */}
+                            <div className="flex items-center justify-between border rounded-md p-2">
+                                <Label className="text-sm cursor-pointer flex-1" htmlFor="front-rail-mode">
+                                    Wieniec przedni (górna listwa)
+                                </Label>
+                                <Switch
+                                    id="front-rail-mode"
+                                    checked={getCornerConfig()?.frontRail ?? true}
+                                    onCheckedChange={(checked) => updateCornerConfig({ frontRail: checked })}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <Separator />
+                </>
+            )}
+
+            {/* Section: Wall Cabinet Configuration (only for wall cabinets) */}
+            {type === 'WALL' && (
+                <>
+                    <div className="space-y-4">
+                        <h3 className="text-sm font-semibold text-foreground/80 flex items-center gap-2">
+                            <SquareStack className="h-4 w-4" />
+                            Konfiguracja szafki wiszącej
+                        </h3>
+
+                        <div className="grid gap-4">
+                            {/* Hanger Cutouts */}
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between border rounded-md p-2 h-9">
+                                    <Label className="text-sm cursor-pointer flex-1" htmlFor="hanger-cutouts">
+                                        Wycięcia na zawieszki
+                                    </Label>
+                                    <Switch
+                                        id="hanger-cutouts"
+                                        checked={getHangerCutoutsEnabled()}
+                                        onCheckedChange={(val) => updateHangerCutouts({ enabled: val })}
+                                    />
+                                </div>
+
+                                {getHangerCutoutsEnabled() && (
+                                    <div className="bg-muted/30 p-3 rounded-md space-y-3">
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="space-y-1">
+                                                <Label className="text-[10px] text-muted-foreground">Szerokość (mm)</Label>
+                                                <NumberInput
+                                                    value={getHangerCutoutWidth()}
+                                                    onChange={(val) => updateHangerCutouts({ width: val })}
+                                                    min={HANGER_CUTOUT_LIMITS.MIN_WIDTH}
+                                                    max={HANGER_CUTOUT_LIMITS.MAX_WIDTH}
+                                                    className="h-8"
+                                                />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <Label className="text-[10px] text-muted-foreground">Wysokość (mm)</Label>
+                                                <NumberInput
+                                                    value={getHangerCutoutHeight()}
+                                                    onChange={(val) => updateHangerCutouts({ height: val })}
+                                                    min={HANGER_CUTOUT_LIMITS.MIN_HEIGHT}
+                                                    max={HANGER_CUTOUT_LIMITS.MAX_HEIGHT}
+                                                    className="h-8"
+                                                />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <Label className="text-[10px] text-muted-foreground">Wcięcie poziome (mm)</Label>
+                                                <NumberInput
+                                                    value={getHangerCutoutHorizontalInset()}
+                                                    onChange={(val) => updateHangerCutouts({ horizontalInset: val })}
+                                                    min={HANGER_CUTOUT_LIMITS.MIN_INSET}
+                                                    className="h-8"
+                                                />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <Label className="text-[10px] text-muted-foreground">Wcięcie pionowe (mm)</Label>
+                                                <NumberInput
+                                                    value={getHangerCutoutVerticalInset()}
+                                                    onChange={(val) => updateHangerCutouts({ verticalInset: val })}
+                                                    min={HANGER_CUTOUT_LIMITS.MIN_INSET}
+                                                    className="h-8"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Folding Door */}
+                            {getHasDoors() && (
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between border rounded-md p-2 h-9">
+                                        <Label className="text-sm cursor-pointer flex-1" htmlFor="folding-door">
+                                            Front łamany (2 sekcje)
+                                        </Label>
+                                        <Switch
+                                            id="folding-door"
+                                            checked={getFoldingDoorEnabled()}
+                                            onCheckedChange={(val) => updateFoldingDoor({ enabled: val })}
+                                        />
+                                    </div>
+
+                                    {getFoldingDoorEnabled() && (
+                                        <div className="bg-muted/30 p-3 rounded-md space-y-3">
+                                            <div className="space-y-2">
+                                                <div className="flex justify-between">
+                                                    <Label className="text-xs">Proporcja podziału (dolna sekcja)</Label>
+                                                    <span className="text-xs font-mono">{Math.round(getFoldingSplitRatio() * 100)}%</span>
+                                                </div>
+                                                <Slider
+                                                    value={[getFoldingSplitRatio() * 100]}
+                                                    onValueChange={([val]) => updateFoldingDoor({ splitRatio: val / 100 })}
+                                                    min={FOLDING_DOOR_LIMITS.MIN_SPLIT_RATIO * 100}
+                                                    max={FOLDING_DOOR_LIMITS.MAX_SPLIT_RATIO * 100}
+                                                    step={5}
+                                                />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <Label className="text-[10px] text-muted-foreground">Przerwa między sekcjami (mm)</Label>
+                                                <NumberInput
+                                                    value={getFoldingSectionGap()}
+                                                    onChange={(val) => updateFoldingDoor({ sectionGap: val })}
+                                                    min={FOLDING_DOOR_LIMITS.MIN_GAP}
+                                                    max={FOLDING_DOOR_LIMITS.MAX_GAP}
+                                                    className="h-8"
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -579,7 +803,7 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
                     )}
                     
                     {/* Doors Main Toggle */}
-                    {(type === 'KITCHEN' || type === 'WARDROBE') && (
+                    {(type === 'KITCHEN' || type === 'WARDROBE' || type === 'WALL') && (
                         <div className="flex items-center justify-between p-3 rounded-lg border bg-card shadow-sm">
                              <div className="space-y-1">
                                 <div className="flex items-center gap-2">
@@ -612,7 +836,7 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
                     )}
 
                     {/* Conditional Door Configuration */}
-                    {getHasDoors() && type === 'KITCHEN' && (
+                    {getHasDoors() && (type === 'KITCHEN' || type === 'WALL') && (
                         <>
                             <ConfigRow
                                 title="Konfiguracja frontów"
@@ -701,6 +925,20 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
                             </Button>
                         }
                     />
+
+                    {/* Legs Configuration - not for wall cabinets */}
+                    {type !== 'WALL' && (
+                        <ConfigRow
+                            title="Nóżki"
+                            description={getLegsSummary(params.legs, params.width)}
+                            icon={<Footprints className="h-4 w-4" />}
+                            action={
+                                <Button variant="outline" size="sm" onClick={() => setLegsDialogOpen(true)}>
+                                    Konfiguruj
+                                </Button>
+                            }
+                        />
+                    )}
                 </div>
             </div>
 
@@ -763,6 +1001,13 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
                 onShelfMaterialChange={setLastUsedShelfMaterial}
                 onDrawerBoxMaterialChange={setLastUsedDrawerBoxMaterial}
                 onDrawerBottomMaterialChange={setLastUsedDrawerBottomMaterial}
+            />
+            <LegsConfigDialog
+                open={legsDialogOpen}
+                onOpenChange={setLegsDialogOpen}
+                config={params.legs}
+                onConfigChange={(config) => onChange({ ...params, legs: config } as any)}
+                cabinetWidth={params.width ?? 600}
             />
         </div>
     )
@@ -922,6 +1167,13 @@ export function CabinetTemplateDialog({ open, onOpenChange, furnitureId }: Cabin
                 description="Szafka dedykowana wyłącznie pod szuflady."
                 icon={<Layers className="w-6 h-6" />}
                 onClick={() => handleSelectType('DRAWER')}
+              />
+              <TemplateCard
+                type="WALL"
+                title="Szafka wisząca"
+                description="Szafka ścienna z wycięciami na zawieszki, opcja frontu łamanego."
+                icon={<SquareStack className="w-6 h-6" />}
+                onClick={() => handleSelectType('WALL')}
               />
             </div>
           )}

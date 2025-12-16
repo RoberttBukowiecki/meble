@@ -19,7 +19,13 @@ export type {
 export type { MaterialCategory, Material } from './material';
 
 // Edge banding types
-export type { EdgeBandingRect, EdgeBandingGeneric, EdgeBanding } from './edge';
+export type {
+  EdgeBandingRect,
+  EdgeBandingLShape,
+  EdgeBandingTrapezoid,
+  EdgeBandingGeneric,
+  EdgeBanding,
+} from './edge';
 
 // Furniture types
 export type { Furniture } from './furniture';
@@ -37,6 +43,7 @@ export type {
   DoorOpeningDirection,
   DoorConfig,
   DoorMetadata,
+  FoldingDoorConfig,
 } from './door';
 
 // Handle types
@@ -116,7 +123,10 @@ export type {
   LegCountMode,
   LegTypeConfig,
   LegsConfig,
+  LegPosition,
+  LegData,
 } from './legs';
+export { LEG_FINISH_COLORS, getLegColor } from './legs';
 
 // Cabinet types
 export type {
@@ -129,6 +139,8 @@ export type {
   WardrobeCabinetParams,
   BookshelfCabinetParams,
   DrawerCabinetParams,
+  WallCabinetParams,
+  HangerCutoutConfig,
   CornerInternalCabinetParams,
   CornerExternalCabinetParams,
   CabinetParams,
@@ -142,11 +154,10 @@ export type {
   InternalCornerType,
   ExternalCornerType,
   CornerOrientation,
-  CornerDoorType,
-  DeadZonePreset,
+  CornerFrontType,
+  CornerPanelGeometry,
+  CornerMountType,
   WallSharingMode,
-  CornerDimensionMode,
-  CornerMechanismType,
   CornerConfig,
   CornerPartRole,
 } from './corner';

@@ -30,6 +30,7 @@ export function generateSideFronts(config: SideFrontGenerationConfig): Generated
     sideFrontsConfig,
     defaultFrontMaterialId,
     materialsMap,
+    legOffset = 0,
   } = config;
 
   const parts: GeneratedPart[] = [];
@@ -56,6 +57,7 @@ export function generateSideFronts(config: SideFrontGenerationConfig): Generated
       defaultFrontMaterialId,
       sideFrontThickness: getMaterialThickness(leftConfig.materialId),
       side: 'left',
+      legOffset,
     });
     parts.push(leftPart);
   }
@@ -75,6 +77,7 @@ export function generateSideFronts(config: SideFrontGenerationConfig): Generated
       defaultFrontMaterialId,
       sideFrontThickness: getMaterialThickness(rightConfig.materialId),
       side: 'right',
+      legOffset,
     });
     parts.push(rightPart);
   }
@@ -94,6 +97,7 @@ interface SingleSideFrontParams {
   defaultFrontMaterialId: string;
   sideFrontThickness: number;
   side: 'left' | 'right';
+  legOffset: number;
 }
 
 /**
@@ -112,6 +116,7 @@ function generateSingleSideFront(params: SingleSideFrontParams): GeneratedPart {
     defaultFrontMaterialId,
     sideFrontThickness,
     side,
+    legOffset,
   } = params;
 
   // Determine material
@@ -142,8 +147,8 @@ function generateSingleSideFront(params: SingleSideFrontParams): GeneratedPart {
       ? -(cabinetWidth / 2 + sideFrontThickness / 2)
       : cabinetWidth / 2 + sideFrontThickness / 2;
 
-  // Calculate Y position (center of the side front, considering offsets)
-  const sideFrontY = sideFrontConfig.bottomOffset + sideFrontHeight / 2;
+  // Calculate Y position (center of the side front, considering offsets and leg offset)
+  const sideFrontY = sideFrontConfig.bottomOffset + sideFrontHeight / 2 + legOffset;
 
   // Calculate Z position
   // The side front extends from the back of the cabinet to forwardProtrusion beyond the front

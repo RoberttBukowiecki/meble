@@ -6,6 +6,7 @@ import {
   useEffect,
   useState,
   useCallback,
+  useRef,
   ReactNode,
 } from 'react';
 import { User, Session, AuthError } from '@supabase/supabase-js';
@@ -41,13 +42,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const initialized = useRef(false);
 
   const supabase = getSupabaseBrowserClient();
 
-  // Fetch user profile
-  const fetchProfile = useCallback(
-    async (userId: string) => {
-      const { data, error } = await supabase
+  // Fetch user profile - memoized without supabase in deps (it's a singleton)
+  const fetchProfile = useCallback(async (userId: string) => {
+    try {
+      const { data, error } = await getSupabaseBrowserClient()
         .from('profiles')
         .select('*')
         .eq('id', userId)
@@ -66,9 +68,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           createdAt: data.created_at,
         });
       }
-    },
-    [supabase]
-  );
+    } catch (error) {
+      console.error('Failed to fetch profile:', error);
+    }
+  }, []);
 
   // Migrate guest credits after sign in
   const migrateGuestCredits = useCallback(async () => {
@@ -85,7 +88,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (response.ok) {
-        // Clear guest session after successful migration
         localStorage.removeItem('meblarz_guest_session');
       }
     } catch (error) {
@@ -93,22 +95,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Initialize auth state
+  // Initialize auth state - runs only once
   useEffect(() => {
+    if (initialized.current) return;
+    initialized.current = true;
+
     const initAuth = async () => {
       try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
+        const { data: { user: validatedUser }, error: userError } =
+          await supabase.auth.getUser();
 
-        if (session?.user) {
-          setUser(session.user);
-          setSession(session);
-          await fetchProfile(session.user.id);
+        if (userError || !validatedUser) {
+          // No valid session
+          setUser(null);
+          setSession(null);
+          setProfile(null);
+        } else {
+          // Valid user found
+          const { data: { session: currentSession } } =
+            await supabase.auth.getSession();
+
+          setUser(validatedUser);
+          setSession(currentSession);
+
+          // Fetch profile in background, don't block loading
+          fetchProfile(validatedUser.id);
         }
       } catch (error) {
         console.error('Auth initialization error:', error);
+        setUser(null);
+        setSession(null);
+        setProfile(null);
       } finally {
+        // Always finish loading
         setIsLoading(false);
       }
     };
@@ -116,28 +135,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     initAuth();
 
     // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, newSession) => {
+        setSession(newSession);
+        setUser(newSession?.user ?? null);
 
-      if (session?.user) {
-        await fetchProfile(session.user.id);
-      } else {
-        setProfile(null);
-      }
+        if (newSession?.user) {
+          fetchProfile(newSession.user.id);
+        } else {
+          setProfile(null);
+        }
 
-      // Handle specific events
-      if (event === 'SIGNED_IN') {
-        // Migrate guest credits if available
-        await migrateGuestCredits();
-      }
+        if (event === 'SIGNED_IN') {
+          migrateGuestCredits();
+        }
 
-      if (event === 'SIGNED_OUT') {
-        setProfile(null);
+        if (event === 'SIGNED_OUT') {
+          setProfile(null);
+        }
       }
-    });
+    );
 
     return () => {
       subscription.unsubscribe();
@@ -211,12 +228,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Refresh session
   const refreshSession = async () => {
-    const {
-      data: { session },
-    } = await supabase.auth.refreshSession();
-    if (session) {
-      setSession(session);
-      setUser(session.user);
+    const { data: { session: newSession } } = await supabase.auth.refreshSession();
+    if (newSession) {
+      setSession(newSession);
+      setUser(newSession.user);
     }
   };
 

@@ -25,6 +25,8 @@ export interface DecorativePanelGeneratorConfig {
   frontThickness: number;
   bodyThickness: number;
   decorativePanels: DecorativePanelsConfig;
+  /** Y offset added by legs (0 if no legs) */
+  legOffset?: number;
 }
 
 // Panel type labels for naming
@@ -46,15 +48,15 @@ export function generateDecorativePanels(
   config: DecorativePanelGeneratorConfig
 ): GeneratedPart[] {
   const parts: GeneratedPart[] = [];
-  const { decorativePanels } = config;
+  const { decorativePanels, legOffset = 0 } = config;
 
   if (decorativePanels.top?.enabled) {
-    const topPart = generatePanel(config, decorativePanels.top, 'TOP');
+    const topPart = generatePanel(config, decorativePanels.top, 'TOP', legOffset);
     if (topPart) parts.push(topPart);
   }
 
   if (decorativePanels.bottom?.enabled) {
-    const bottomPart = generatePanel(config, decorativePanels.bottom, 'BOTTOM');
+    const bottomPart = generatePanel(config, decorativePanels.bottom, 'BOTTOM', legOffset);
     if (bottomPart) parts.push(bottomPart);
   }
 
@@ -68,7 +70,8 @@ export function generateDecorativePanels(
 function generatePanel(
   config: DecorativePanelGeneratorConfig,
   panel: DecorativePanelConfig,
-  position: 'TOP' | 'BOTTOM'
+  position: 'TOP' | 'BOTTOM',
+  legOffset: number
 ): GeneratedPart | null {
   const {
     cabinetId,
@@ -98,7 +101,7 @@ function generatePanel(
       // Blenda sits on top of cabinet, flush with front
       // Full width, uses front material thickness
       panelDepth = cabinetDepth; // Full depth to cover top
-      positionY = cabinetHeight + panelHeight / 2;
+      positionY = cabinetHeight + panelHeight / 2 + legOffset;
       positionZ = 0;
       break;
 
@@ -106,7 +109,7 @@ function generatePanel(
       // Plinth sits below cabinet with recess
       // Full width, depth based on recess
       panelDepth = cabinetDepth - recess;
-      positionY = -panelHeight / 2;
+      positionY = -panelHeight / 2 + legOffset;
       // Z position accounts for recess (moved back from front)
       positionZ = -recess / 2;
       break;
@@ -115,9 +118,9 @@ function generatePanel(
       // Thin strip attached to front face
       panelDepth = panel.thickness ?? TRIM_STRIP_CONFIG.DEFAULT_THICKNESS;
       if (position === 'TOP') {
-        positionY = cabinetHeight - panelHeight / 2;
+        positionY = cabinetHeight - panelHeight / 2 + legOffset;
       } else {
-        positionY = panelHeight / 2;
+        positionY = panelHeight / 2 + legOffset;
       }
       // Positioned in front of cabinet
       positionZ = cabinetDepth / 2 + panelDepth / 2;
@@ -127,9 +130,9 @@ function generatePanel(
       // Full decorative panel like side fronts
       panelDepth = frontThickness;
       if (position === 'TOP') {
-        positionY = cabinetHeight + panelHeight / 2;
+        positionY = cabinetHeight + panelHeight / 2 + legOffset;
       } else {
-        positionY = -panelHeight / 2;
+        positionY = -panelHeight / 2 + legOffset;
       }
       // Flush with cabinet front
       positionZ = cabinetDepth / 2 + panelDepth / 2;

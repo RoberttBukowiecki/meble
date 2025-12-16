@@ -7,6 +7,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 
+// CORS headers for cross-origin requests from main app
+const corsHeaders = {
+  'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Credentials': 'true',
+};
+
+// Handle preflight requests
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders });
+}
+
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
@@ -25,7 +38,7 @@ export async function GET(request: NextRequest) {
             message: 'Authentication required',
           },
         },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       );
     }
 
@@ -43,7 +56,7 @@ export async function GET(request: NextRequest) {
             message: 'Failed to get credit balance',
           },
         },
-        { status: 500 }
+        { status: 500, headers: corsHeaders }
       );
     }
 
@@ -82,7 +95,7 @@ export async function GET(request: NextRequest) {
             purchasedAt: p.created_at,
           })) || [],
       },
-    });
+    }, { headers: corsHeaders });
   } catch (error) {
     console.error('Credits error:', error);
     return NextResponse.json(
@@ -93,7 +106,7 @@ export async function GET(request: NextRequest) {
           message: 'Internal server error',
         },
       },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }

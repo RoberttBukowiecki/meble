@@ -111,6 +111,16 @@ Detailed business logic documentation for key subsystems:
 |--------|---------------|
 | Interior Configuration | `apps/app/docs/interior-config-business-logic.md` |
 | Interior Tests | `apps/app/docs/interior-config-test-plan.md` |
+| **Database Structure** | `apps/app/docs/DATABASE-STRUCTURE.md` |
+
+**Database Domains** (Supabase - `lqwdhiyozxgtovecvxaw`):
+- **Users**: `auth.users` + `profiles` (extended user data, tenant membership)
+- **Credits**: `export_credits` (auth users), `guest_credits` (anonymous), `export_sessions` (24h re-exports)
+- **Payments**: `payments` (unified - PayU, Przelewy24, Stripe, manual)
+- **Shop**: `shop_products`, `shop_orders`, `cart_items` (mini e-commerce)
+- **Producers**: `producers`, `producer_quotes`, `producer_orders`, `commissions` (cutting service marketplace)
+- **Tenants (B2B)**: `tenants`, `tenant_users`, `tenant_materials`, `tenant_subscriptions` (white-label)
+- **Admin**: `admin_users`, `audit_logs`, `analytics_daily`
 
 **Interior Configuration System** (`apps/app/docs/interior-config-business-logic.md`):
 - Recursive zone-based architecture (max 4 levels: depths 0-3)

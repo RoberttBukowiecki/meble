@@ -3,6 +3,12 @@
  *
  * Types for corner cabinets - specialized cabinets designed for corner spaces
  * where two walls meet. Supports internal corners (Phase 1) and external corners (Phase 2).
+ *
+ * Coordinate system:
+ * - Origin (0,0,0) at external front corner
+ * - X axis: Points RIGHT (along arm A width)
+ * - Y axis: Points UP (height)
+ * - Z axis: Points BACK (into the corner)
  */
 
 // ============================================================================
@@ -29,23 +35,14 @@ export type CornerOrientation = 'LEFT' | 'RIGHT';
 // ============================================================================
 
 /**
- * Door configuration for corner cabinets
+ * Front/door type for corner cabinets
  */
-export type CornerDoorType =
-  | 'BI_FOLD'         // Folding doors (2-part)
-  | 'SINGLE_DIAGONAL' // Single door on diagonal front
-  | 'DOUBLE_L'        // Two door sets (L-configuration)
-  | 'NONE';           // No doors (open shelving)
-
-/**
- * Dead zone handling presets
- * Controls the inaccessible area in the corner
- */
-export type DeadZonePreset =
-  | 'MINIMAL'     // Smallest dead zone, maximum usable space
-  | 'STANDARD'    // Balanced approach (default)
-  | 'ACCESSIBLE'  // Larger opening for better access
-  | 'CUSTOM';     // User-defined dimensions
+export type CornerFrontType =
+  | 'NONE'     // No front (open shelving)
+  | 'SINGLE'   // Single door parallel to X axis
+  | 'BIFOLD'   // Bi-fold (2 panels with hinge between) - future
+  | 'DOUBLE'   // Two separate doors (one per arm) - future
+  | 'ANGLED';  // Single diagonal door at angle
 
 /**
  * Wall sharing mode for adjacent cabinets
@@ -58,25 +55,30 @@ export type WallSharingMode =
   | 'SHARED_BOTH';   // Both sides shared (rare)
 
 /**
- * Dimension mode for corner arms
+ * Panel geometry type for top/bottom panels
  */
-export type CornerDimensionMode = 'SYMMETRIC' | 'ASYMMETRIC';
+export type CornerPanelGeometry = 'TWO_RECT' | 'L_SHAPE';
 
 /**
- * Internal mechanism types (extensible for future)
+ * Mount type for panels (inset between sides or overlay on sides)
  */
-export type CornerMechanismType =
-  | 'FIXED_SHELVES'  // Standard fixed shelves
-  | 'LAZY_SUSAN'     // Rotating carousel (future)
-  | 'PULL_OUT'       // Pull-out shelves/baskets (future)
-  | 'MAGIC_CORNER';  // Magic corner system (future)
+export type CornerMountType = 'overlay' | 'inset';
 
 // ============================================================================
 // Corner Configuration Interface
 // ============================================================================
 
 /**
- * Corner-specific configuration (embedded in CornerInternalCabinetParams)
+ * Corner-specific configuration
+ *
+ * Dimension terminology:
+ * - W: External width of cabinet (left arm span)
+ * - D: External depth of cabinet (right arm span)
+ * - bodyDepth: Depth of cabinet body panels (how deep shelves/sides extend)
+ *
+ * Example: W=900, D=900, bodyDepth=560
+ * This creates a corner cabinet where both arms are 900mm,
+ * but the actual shelf/side depth is 560mm.
  */
 export interface CornerConfig {
   /** Type of corner cabinet */
@@ -84,39 +86,45 @@ export interface CornerConfig {
   /** Left or right corner orientation */
   cornerOrientation: CornerOrientation;
 
-  // Dimensions
-  /** Symmetric or asymmetric arm dimensions */
-  dimensionMode: CornerDimensionMode;
-  /** Length of first arm (mm) */
-  armA: number;
-  /** Length of second arm (mm) - equals armA if SYMMETRIC */
-  armB: number;
-  /** Angle in degrees (default: 90) */
-  cornerAngle: number;
+  // External dimensions
+  /** External width (mm) - full span of arm A */
+  W: number;
+  /** External depth (mm) - full span of arm B */
+  D: number;
+  /** Body panel depth (mm) - how deep panels/shelves extend */
+  bodyDepth: number;
 
-  // Dead zone handling
-  /** Preset for dead zone dimensions */
-  deadZonePreset: DeadZonePreset;
-  /** Custom depth when preset is CUSTOM (mm) */
-  deadZoneDepth?: number;
-  /** Custom width when preset is CUSTOM (mm) */
-  deadZoneWidth?: number;
+  // Mounting options
+  /** Bottom panel mounting (overlay sits under sides, inset between sides) */
+  bottomMount: CornerMountType;
+  /** Top panel mounting */
+  topMount: CornerMountType;
+
+  // Panel geometry
+  /** Panel geometry: two rectangles or single L-shape */
+  panelGeometry: CornerPanelGeometry;
+
+  // Front rail / wieniec przedni
+  /** Enable front rail at top */
+  frontRail: boolean;
+  /** Front rail mounting type */
+  frontRailMount?: CornerMountType;
+  /** Front rail width (mm), default 100 */
+  frontRailWidth?: number;
+
+  // Door/front configuration
+  /** Type of front (doors) */
+  frontType: CornerFrontType;
+  /** Hinge side for SINGLE/BIFOLD doors */
+  hingeSide?: 'left' | 'right';
+  /** Front angle for ANGLED type (degrees, default 45) */
+  frontAngle?: number;
+  /** Gap between door and frame (mm, default 2) */
+  doorGap?: number;
 
   // Wall sharing
   /** How side walls are shared with adjacent cabinets */
   wallSharingMode: WallSharingMode;
-
-  // Doors
-  /** Type of doors for corner cabinet */
-  cornerDoorType: CornerDoorType;
-
-  // Internal mechanism
-  /** Type of internal storage mechanism */
-  mechanismType: CornerMechanismType;
-
-  // L-Shaped specific
-  /** Width of diagonal front panel (auto-calculated if not provided) */
-  diagonalWidth?: number;
 }
 
 // ============================================================================

@@ -13,7 +13,6 @@
     "@heroicons/react": "^2.2.0",
     "@meble/analytics": "*",
     "@meble/constants": "*",
-    "@meble/payments": "*",
     "@meble/i18n": "*",
     "@meble/ui": "*",
     "next": "16.0.8",

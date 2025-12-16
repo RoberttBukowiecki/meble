@@ -21,6 +21,7 @@ export function generateDoors(config: DoorGenerationConfig): GeneratedPart[] {
     frontMaterialId,
     doorConfig,
     handleConfig,
+    legOffset = 0,
   } = config;
 
   const parts: GeneratedPart[] = [];
@@ -42,7 +43,7 @@ export function generateDoors(config: DoorGenerationConfig): GeneratedPart[] {
       width: doorWidth,
       height: doorHeight,
       depth: thickness,
-      position: [0, cabinetHeight / 2, cabinetDepth / 2 + thickness / 2],
+      position: [0, cabinetHeight / 2 + legOffset, cabinetDepth / 2 + thickness / 2],
       rotation: [0, 0, 0],
       materialId: frontMaterialId,
       edgeBanding: { type: 'RECT', top: true, bottom: true, left: true, right: true },
@@ -73,7 +74,7 @@ export function generateDoors(config: DoorGenerationConfig): GeneratedPart[] {
       width: doorWidth,
       height: doorHeight,
       depth: thickness,
-      position: [-doorWidth / 2 - DOOR_GAP / 2, cabinetHeight / 2, cabinetDepth / 2 + thickness / 2],
+      position: [-doorWidth / 2 - DOOR_GAP / 2, cabinetHeight / 2 + legOffset, cabinetDepth / 2 + thickness / 2],
       rotation: [0, 0, 0],
       materialId: frontMaterialId,
       edgeBanding: { type: 'RECT', top: true, bottom: true, left: true, right: true },
@@ -101,7 +102,7 @@ export function generateDoors(config: DoorGenerationConfig): GeneratedPart[] {
       width: doorWidth,
       height: doorHeight,
       depth: thickness,
-      position: [doorWidth / 2 + DOOR_GAP / 2, cabinetHeight / 2, cabinetDepth / 2 + thickness / 2],
+      position: [doorWidth / 2 + DOOR_GAP / 2, cabinetHeight / 2 + legOffset, cabinetDepth / 2 + thickness / 2],
       rotation: [0, 0, 0],
       materialId: frontMaterialId,
       edgeBanding: { type: 'RECT', top: true, bottom: true, left: true, right: true },

@@ -440,6 +440,17 @@ function CabinetPropertiesPanel({
             <AccordionContent className="pb-4 pt-1 space-y-4 border-t mt-1">
               <AssemblyConfig params={localParams} onChange={updateLocalParams} />
               <BackWallConfig params={localParams} onChange={updateLocalParams} />
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="legs" className="border rounded-md px-2 bg-card">
+            <AccordionTrigger className="py-3 text-xs font-medium hover:no-underline">
+              <div className="flex items-center gap-2">
+                <Footprints className="h-4 w-4 text-muted-foreground" />
+                Nóżki
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pb-4 pt-1 border-t mt-1">
               <LegsConfig params={localParams} onChange={updateLocalParams} />
             </AccordionContent>
           </AccordionItem>

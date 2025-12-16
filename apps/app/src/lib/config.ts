@@ -3,7 +3,7 @@
  * Centralized keyboard shortcuts and settings
  */
 
-import { CabinetParams, CabinetType, DoorConfig, DrawerSlideType, DrawerSlideConfig, DrawerConfiguration, EdgeBandingRect, LegPreset, LegFinish, LegShape, LegCountMode, InternalCornerType, CornerConfig } from "@/types";
+import { CabinetParams, CabinetType, DoorConfig, DrawerSlideType, DrawerSlideConfig, DrawerConfiguration, EdgeBandingRect, LegPreset, LegFinish, LegShape, LegCountMode, InternalCornerType, CornerConfig, LEG_FINISH_COLORS, HangerCutoutConfig, FoldingDoorConfig } from "@/types";
 
 // Utility types/helpers for keyboard shortcuts
 export type ShortcutKeys = string | string[];
@@ -706,16 +706,17 @@ export const LEG_PRESET_OPTIONS: Array<{
 /**
  * Leg finish options for UI dropdowns
  * Common finishes for furniture legs with corresponding colors for 3D rendering
+ * Colors are sourced from LEG_FINISH_COLORS in types/legs.ts
  */
 export const LEG_FINISH_OPTIONS: Array<{
   value: LegFinish;
   labelPl: string;
   color: string;
 }> = [
-  { value: 'BLACK_PLASTIC', labelPl: 'Plastik czarny', color: '#1a1a1a' },
-  { value: 'CHROME', labelPl: 'Chrom', color: '#c0c0c0' },
-  { value: 'BRUSHED_STEEL', labelPl: 'Stal szczotkowana', color: '#8c8c8c' },
-  { value: 'WHITE_PLASTIC', labelPl: 'Plastik biały', color: '#f5f5f5' },
+  { value: 'BLACK_PLASTIC', labelPl: 'Plastik czarny', color: LEG_FINISH_COLORS.BLACK_PLASTIC },
+  { value: 'CHROME', labelPl: 'Chrom', color: LEG_FINISH_COLORS.CHROME },
+  { value: 'BRUSHED_STEEL', labelPl: 'Stal szczotkowana', color: LEG_FINISH_COLORS.BRUSHED_STEEL },
+  { value: 'WHITE_PLASTIC', labelPl: 'Plastik biały', color: LEG_FINISH_COLORS.WHITE_PLASTIC },
 ];
 
 /**
@@ -760,23 +761,75 @@ export const LEG_DEFAULTS = {
 } as const;
 
 // ============================================================================
+// Wall Cabinet Configuration
+// ============================================================================
+
+/**
+ * Default hanger cutout configuration for wall-mounted cabinets
+ * Standard dimensions for furniture hangers (zawieszki meblowe)
+ */
+export const DEFAULT_HANGER_CUTOUT_CONFIG: HangerCutoutConfig = {
+  enabled: true,
+  width: 50,           // mm - standard hanger width
+  height: 40,          // mm - standard hanger height
+  horizontalInset: 50, // mm - distance from side edge
+  verticalInset: 30,   // mm - distance from top edge
+};
+
+/**
+ * Hanger cutout limits for validation
+ */
+export const HANGER_CUTOUT_LIMITS = {
+  MIN_WIDTH: 30,
+  MAX_WIDTH: 100,
+  MIN_HEIGHT: 20,
+  MAX_HEIGHT: 80,
+  MIN_INSET: 20,
+} as const;
+
+/**
+ * Default folding door configuration
+ */
+export const DEFAULT_FOLDING_DOOR_CONFIG: FoldingDoorConfig = {
+  enabled: false,
+  splitRatio: 0.5,  // Equal split between upper and lower sections
+  sectionGap: 3,    // mm - gap between sections
+};
+
+/**
+ * Folding door limits for validation
+ */
+export const FOLDING_DOOR_LIMITS = {
+  MIN_SPLIT_RATIO: 0.3,
+  MAX_SPLIT_RATIO: 0.7,
+  MIN_GAP: 2,
+  MAX_GAP: 10,
+} as const;
+
+// ============================================================================
 // Corner Cabinet Configuration
 // ============================================================================
 
 /**
  * Default corner configuration
+ * Uses coordinate system: W (external width), D (external depth), bodyDepth
  */
 export const DEFAULT_CORNER_CONFIG: CornerConfig = {
   cornerType: 'L_SHAPED',
   cornerOrientation: 'LEFT',
-  dimensionMode: 'SYMMETRIC',
-  armA: 800,
-  armB: 800,
-  cornerAngle: 90,
-  deadZonePreset: 'STANDARD',
+  W: 900,
+  D: 900,
+  bodyDepth: 560,
+  bottomMount: 'inset',
+  topMount: 'inset',
+  panelGeometry: 'L_SHAPE',
+  frontRail: true,
+  frontRailMount: 'inset',
+  frontRailWidth: 100,
+  frontType: 'SINGLE',
+  frontAngle: 45,
+  doorGap: 2,
   wallSharingMode: 'FULL_ISOLATION',
-  cornerDoorType: 'SINGLE_DIAGONAL',
-  mechanismType: 'FIXED_SHELVES',
 };
 
 /**
@@ -785,18 +838,15 @@ export const DEFAULT_CORNER_CONFIG: CornerConfig = {
 export const CORNER_CABINET_PRESETS: Record<InternalCornerType, Partial<CornerConfig>> = {
   L_SHAPED: {
     cornerType: 'L_SHAPED',
-    cornerDoorType: 'SINGLE_DIAGONAL',
-    mechanismType: 'FIXED_SHELVES',
+    frontType: 'ANGLED',
   },
   BLIND_CORNER: {
     cornerType: 'BLIND_CORNER',
-    cornerDoorType: 'NONE',
-    mechanismType: 'PULL_OUT',
+    frontType: 'NONE',
   },
   LAZY_SUSAN: {
     cornerType: 'LAZY_SUSAN',
-    cornerDoorType: 'BI_FOLD',
-    mechanismType: 'LAZY_SUSAN',
+    frontType: 'BIFOLD',
   },
 };
 
@@ -849,6 +899,24 @@ export const CABINET_PRESETS: Record<CabinetType, Partial<CabinetParams>> = {
     hasBack: true,
     backOverlapRatio: DEFAULT_BACK_OVERLAP_RATIO,
     backMountType: 'overlap',
+  },
+  WALL: {
+    type: 'WALL',
+    width: 800,
+    height: 720,
+    depth: 350,  // Wall cabinets are typically shallower
+    shelfCount: 1,
+    hasDoors: true,
+    topBottomPlacement: 'inset',
+    hasBack: true,
+    backOverlapRatio: DEFAULT_BACK_OVERLAP_RATIO,
+    backMountType: 'overlap',
+    doorConfig: {
+      layout: 'DOUBLE',
+      openingDirection: 'LIFT_UP',  // Wall cabinets typically open upward
+    },
+    hangerCutouts: DEFAULT_HANGER_CUTOUT_CONFIG,
+    // Note: legs intentionally not included - wall cabinets don't have legs
   },
   CORNER_INTERNAL: {
     type: 'CORNER_INTERNAL',

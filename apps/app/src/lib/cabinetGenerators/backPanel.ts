@@ -2,7 +2,7 @@
  * Back panel generation for cabinets
  */
 
-import { GeneratedPart, BackPanelConfig } from './types';
+import { GeneratedPart, BackPanelConfig, BackPanelWithCutoutsConfig } from './types';
 import { MIN_BACK_OVERLAP } from './constants';
 import { BACK_PANEL_CONFIG } from '../config';
 
@@ -28,6 +28,7 @@ export function generateBackPanel(config: BackPanelConfig): GeneratedPart {
     backMaterialThickness,
     overlapRatio,
     topBottomPlacement,
+    legOffset = 0,
   } = config;
 
   // Calculate overlap depth (how much back panel overlaps onto body panel edges)
@@ -70,8 +71,8 @@ export function generateBackPanel(config: BackPanelConfig): GeneratedPart {
   // So back panel CENTER is at: -cabinetDepth/2 - backMaterialThickness/2
   const backZPosition = -cabinetDepth / 2 - backMaterialThickness / 2;
 
-  // Y position: center of cabinet height
-  const backYPosition = cabinetHeight / 2;
+  // Y position: center of cabinet height + leg offset
+  const backYPosition = cabinetHeight / 2 + legOffset;
 
   return {
     name: 'Plecy',
@@ -88,6 +89,118 @@ export function generateBackPanel(config: BackPanelConfig): GeneratedPart {
     depth: backMaterialThickness,
     position: [0, backYPosition, backZPosition],
     rotation: [0, 0, 0], // Facing backward, parallel to XY plane
+    materialId: backMaterialId,
+    edgeBanding: {
+      type: 'RECT',
+      top: false,
+      bottom: false,
+      left: false,
+      right: false,
+    },
+    cabinetMetadata: {
+      cabinetId,
+      role: 'BACK',
+    },
+  };
+}
+
+/**
+ * Generate back panel with hanger cutouts for wall-mounted cabinets
+ *
+ * Creates rectangular cutouts in the top-left and top-right corners
+ * for mounting furniture hangers (zawieszki meblowe).
+ *
+ * If cutouts are disabled, returns a standard rectangular back panel.
+ */
+export function generateBackPanelWithCutouts(config: BackPanelWithCutoutsConfig): GeneratedPart {
+  const { hangerCutouts, ...baseConfig } = config;
+
+  // If cutouts are disabled, return standard rectangular back
+  if (!hangerCutouts.enabled) {
+    return generateBackPanel(baseConfig);
+  }
+
+  const {
+    cabinetId,
+    furnitureId,
+    cabinetWidth,
+    cabinetHeight,
+    cabinetDepth,
+    bodyMaterialThickness,
+    backMaterialId,
+    backMaterialThickness,
+    overlapRatio,
+    topBottomPlacement,
+    legOffset = 0,
+  } = config;
+
+  // Calculate base dimensions (same logic as generateBackPanel)
+  const overlapDepth = Math.max(
+    bodyMaterialThickness * overlapRatio,
+    MIN_BACK_OVERLAP
+  );
+
+  const edgeInset = bodyMaterialThickness - overlapDepth;
+
+  let backWidth = cabinetWidth - 2 * edgeInset;
+  let backHeight = cabinetHeight - 2 * edgeInset;
+
+  backWidth = Math.max(backWidth, BACK_PANEL_CONFIG.MIN_WIDTH);
+  backHeight = Math.max(backHeight, BACK_PANEL_CONFIG.MIN_HEIGHT);
+
+  const backZPosition = -cabinetDepth / 2 - backMaterialThickness / 2;
+  const backYPosition = cabinetHeight / 2 + legOffset;
+
+  // Extract cutout dimensions
+  const { width: cutW, height: cutH, horizontalInset, verticalInset } = hangerCutouts;
+
+  // Create polygon with cutouts
+  // Polygon is centered at (0,0), coordinates relative to panel center
+  const halfW = backWidth / 2;
+  const halfH = backHeight / 2;
+
+  // Build polygon points clockwise from bottom-left corner
+  // The cutouts are "notches" in the top corners
+  const points: [number, number][] = [
+    // Bottom edge (left to right)
+    [-halfW, -halfH],
+    [halfW, -halfH],
+
+    // Right edge going up to cutout start
+    [halfW, halfH - verticalInset - cutH],
+
+    // Right cutout (going inward, up, outward)
+    [halfW - horizontalInset, halfH - verticalInset - cutH],
+    [halfW - horizontalInset, halfH - verticalInset],
+    [halfW - horizontalInset - cutW, halfH - verticalInset],
+    [halfW - horizontalInset - cutW, halfH],
+
+    // Top edge between cutouts (right to left)
+    [-halfW + horizontalInset + cutW, halfH],
+
+    // Left cutout (going inward, down, outward)
+    [-halfW + horizontalInset + cutW, halfH - verticalInset],
+    [-halfW + horizontalInset, halfH - verticalInset],
+    [-halfW + horizontalInset, halfH - verticalInset - cutH],
+    [-halfW, halfH - verticalInset - cutH],
+
+    // Back to start (implicitly closed)
+  ];
+
+  return {
+    name: 'Plecy',
+    furnitureId,
+    group: cabinetId,
+    shapeType: 'POLYGON',
+    shapeParams: {
+      type: 'POLYGON',
+      points,
+    },
+    width: backWidth,
+    height: backHeight,
+    depth: backMaterialThickness,
+    position: [0, backYPosition, backZPosition],
+    rotation: [0, 0, 0],
     materialId: backMaterialId,
     edgeBanding: {
       type: 'RECT',

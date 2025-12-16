@@ -150,7 +150,21 @@ function normalizeEdgeBanding(edgeBanding: Part['edgeBanding']): string {
     return `RECT:${Number(top)}${Number(bottom)}${Number(left)}${Number(right)}`;
   }
 
-  return `GENERIC:${[...edgeBanding.edges].sort((a, b) => a - b).join(',')}`;
+  if (edgeBanding.type === 'L_SHAPE') {
+    const { edge1, edge2, edge3, edge4, edge5, edge6 } = edgeBanding;
+    return `L_SHAPE:${Number(edge1)}${Number(edge2)}${Number(edge3)}${Number(edge4)}${Number(edge5)}${Number(edge6)}`;
+  }
+
+  if (edgeBanding.type === 'TRAPEZOID') {
+    const { front, back, left, right } = edgeBanding;
+    return `TRAPEZOID:${Number(front)}${Number(back)}${Number(left)}${Number(right)}`;
+  }
+
+  if (edgeBanding.type === 'GENERIC') {
+    return `GENERIC:${[...edgeBanding.edges].sort((a, b) => a - b).join(',')}`;
+  }
+
+  return 'UNKNOWN';
 }
 
 /**

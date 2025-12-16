@@ -6,9 +6,11 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
-const API_BASE = process.env.NEXT_PUBLIC_PAYMENTS_API_URL || '/api';
+// Use local API routes for admin (same-origin cookies work reliably)
+// Local routes proxy to payments API server-side
+const API_BASE = '/api';
 
 // Types
 export interface AdminStats {
@@ -96,7 +98,9 @@ export function useAdminStats() {
       setIsLoading(true);
       setError(null);
 
-      const response = await fetch(`${API_BASE}/admin/stats`);
+      const response = await fetch(`${API_BASE}/admin/stats`, {
+        credentials: 'include',
+      });
       const data = await response.json();
 
       if (!data.success) {
@@ -129,7 +133,9 @@ export function useAdminAnalytics(period: string = '30d') {
       setIsLoading(true);
       setError(null);
 
-      const response = await fetch(`${API_BASE}/admin/analytics?period=${period}`);
+      const response = await fetch(`${API_BASE}/admin/analytics?period=${period}`, {
+        credentials: 'include',
+      });
       const data = await response.json();
 
       if (!data.success) {
@@ -161,32 +167,45 @@ export function useAuditLogs(filters: {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
-  const [offset, setOffset] = useState(0);
+
+  // Use ref for offset to avoid stale closure issues in loadMore
+  const offsetRef = useRef(0);
+  const isLoadingRef = useRef(false);
 
   const fetchLogs = useCallback(async (reset = false) => {
+    // Prevent duplicate requests
+    if (isLoadingRef.current) return;
+    isLoadingRef.current = true;
+
     try {
       setIsLoading(true);
       setError(null);
+
+      const currentOffset = reset ? 0 : offsetRef.current;
 
       const params = new URLSearchParams();
       if (filters.action) params.append('action', filters.action);
       if (filters.resourceType) params.append('resourceType', filters.resourceType);
       params.append('limit', String(filters.limit || 50));
-      params.append('offset', String(reset ? 0 : offset));
+      params.append('offset', String(currentOffset));
 
-      const response = await fetch(`${API_BASE}/admin/audit?${params}`);
+      const response = await fetch(`${API_BASE}/admin/audit?${params}`, {
+        credentials: 'include',
+      });
       const data = await response.json();
 
       if (!data.success) {
         throw new Error(data.error?.message || 'Failed to fetch logs');
       }
 
+      const newLogs = data.data.logs;
+
       if (reset) {
-        setLogs(data.data.logs);
-        setOffset(data.data.logs.length);
+        setLogs(newLogs);
+        offsetRef.current = newLogs.length;
       } else {
-        setLogs(prev => [...prev, ...data.data.logs]);
-        setOffset(prev => prev + data.data.logs.length);
+        setLogs(prev => [...prev, ...newLogs]);
+        offsetRef.current += newLogs.length;
       }
 
       setTotal(data.data.pagination.total);
@@ -194,12 +213,14 @@ export function useAuditLogs(filters: {
       setError(err instanceof Error ? err.message : 'Failed to fetch logs');
     } finally {
       setIsLoading(false);
+      isLoadingRef.current = false;
     }
-  }, [filters.action, filters.resourceType, filters.limit, offset]);
+  }, [filters.action, filters.resourceType, filters.limit]);
 
   useEffect(() => {
-    setOffset(0);
+    offsetRef.current = 0;
     fetchLogs(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.action, filters.resourceType]);
 
   return {

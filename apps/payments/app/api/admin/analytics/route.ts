@@ -1,29 +1,52 @@
 /**
  * GET /api/admin/analytics - Historical analytics data
+ *
+ * Supports two auth modes:
+ * 1. Direct browser request with Supabase session cookies
+ * 2. Internal server-to-server request with X-Admin-User-Id header
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/utils/supabase/server';
+import { createClient, createServiceClient } from '@/utils/supabase/server';
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    // Check for internal server-to-server request
+    const adminUserId = request.headers.get('X-Admin-User-Id');
 
-    // Verify admin access
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
-        { status: 401 }
-      );
-    }
+    let supabase;
 
-    const { data: isAdmin } = await supabase.rpc('is_admin' as never, { p_user_id: user.id } as never);
-    if (!isAdmin) {
-      return NextResponse.json(
-        { success: false, error: { code: 'FORBIDDEN', message: 'Admin access required' } },
-        { status: 403 }
-      );
+    if (adminUserId) {
+      // Internal request - use service client
+      supabase = createServiceClient();
+
+      // Verify admin status
+      const { data: isAdmin } = await supabase.rpc('is_admin' as never, { p_user_id: adminUserId } as never);
+      if (!isAdmin) {
+        return NextResponse.json(
+          { success: false, error: { code: 'FORBIDDEN', message: 'Admin access required' } },
+          { status: 403 }
+        );
+      }
+    } else {
+      // Direct browser request - use cookie-based auth
+      supabase = await createClient();
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return NextResponse.json(
+          { success: false, error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
+          { status: 401 }
+        );
+      }
+
+      const { data: isAdmin } = await supabase.rpc('is_admin' as never, { p_user_id: user.id } as never);
+      if (!isAdmin) {
+        return NextResponse.json(
+          { success: false, error: { code: 'FORBIDDEN', message: 'Admin access required' } },
+          { status: 403 }
+        );
+      }
     }
 
     const { searchParams } = new URL(request.url);
@@ -128,23 +151,39 @@ export async function GET(request: NextRequest) {
 // POST - Trigger analytics update
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    // Check for internal server-to-server request
+    const adminUserId = request.headers.get('X-Admin-User-Id');
 
-    // Verify admin access
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
-        { status: 401 }
-      );
-    }
+    let supabase;
 
-    const { data: isAdmin } = await supabase.rpc('is_admin' as never, { p_user_id: user.id } as never);
-    if (!isAdmin) {
-      return NextResponse.json(
-        { success: false, error: { code: 'FORBIDDEN', message: 'Admin access required' } },
-        { status: 403 }
-      );
+    if (adminUserId) {
+      supabase = createServiceClient();
+
+      const { data: isAdmin } = await supabase.rpc('is_admin' as never, { p_user_id: adminUserId } as never);
+      if (!isAdmin) {
+        return NextResponse.json(
+          { success: false, error: { code: 'FORBIDDEN', message: 'Admin access required' } },
+          { status: 403 }
+        );
+      }
+    } else {
+      supabase = await createClient();
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return NextResponse.json(
+          { success: false, error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
+          { status: 401 }
+        );
+      }
+
+      const { data: isAdmin } = await supabase.rpc('is_admin' as never, { p_user_id: user.id } as never);
+      if (!isAdmin) {
+        return NextResponse.json(
+          { success: false, error: { code: 'FORBIDDEN', message: 'Admin access required' } },
+          { status: 403 }
+        );
+      }
     }
 
     // Update today's analytics

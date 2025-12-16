@@ -7,16 +7,107 @@
  */
 
 import { useRef, useMemo } from 'react';
+import * as THREE from 'three';
 import { Mesh } from 'three';
 import { ThreeEvent } from '@react-three/fiber';
 import { Edges } from '@react-three/drei';
 import { useShallow } from 'zustand/react/shallow';
 import { useMaterial, useStore, useIsPartHidden } from '@/lib/store';
-import { PART_CONFIG, MATERIAL_CONFIG, LEG_FINISH_OPTIONS } from '@/lib/config';
-import type { Part } from '@/types';
+import { PART_CONFIG, MATERIAL_CONFIG } from '@/lib/config';
+import type { Part, ShapeParamsLShape, ShapeParamsTrapezoid, ShapeParamsPolygon } from '@/types';
 import { isPartColliding, isGroupColliding, getGroupId } from '@/lib/collisionDetection';
 import { Handle3D } from './Handle3D';
-import { parseLegNotes, LegPartNotes } from '@/lib/cabinetGenerators/legs';
+
+// ============================================================================
+// GEOMETRY CREATION FUNCTIONS
+// ============================================================================
+
+/**
+ * Create L-shape geometry from ShapeParamsLShape
+ */
+function createLShapeGeometry(params: ShapeParamsLShape, depth: number): THREE.BufferGeometry {
+  const { x, y, cutX, cutY } = params;
+
+  // Create 2D shape (centered)
+  const shape = new THREE.Shape();
+  shape.moveTo(-x / 2, -y / 2);           // Start at bottom-left
+  shape.lineTo(x / 2, -y / 2);            // Bottom edge
+  shape.lineTo(x / 2, y / 2 - cutY);      // Right edge (partial)
+  shape.lineTo(x / 2 - cutX, y / 2 - cutY); // Inner horizontal
+  shape.lineTo(x / 2 - cutX, y / 2);      // Inner vertical
+  shape.lineTo(-x / 2, y / 2);            // Top edge
+  shape.closePath();
+
+  // Extrude to 3D
+  const geometry = new THREE.ExtrudeGeometry(shape, {
+    depth: depth,
+    bevelEnabled: false,
+  });
+
+  // Center the geometry (ExtrudeGeometry extrudes along +Z)
+  geometry.translate(0, 0, -depth / 2);
+
+  return geometry;
+}
+
+/**
+ * Create trapezoid geometry from ShapeParamsTrapezoid
+ */
+function createTrapezoidGeometry(params: ShapeParamsTrapezoid, depth: number): THREE.BufferGeometry {
+  const { frontX, backX, y, skosSide } = params;
+
+  const shape = new THREE.Shape();
+  const halfY = y / 2;
+
+  if (skosSide === 'left') {
+    const diff = backX - frontX;
+    shape.moveTo(-frontX / 2 + diff / 2, -halfY);
+    shape.lineTo(frontX / 2 + diff / 2, -halfY);
+    shape.lineTo(backX / 2, halfY);
+    shape.lineTo(-backX / 2, halfY);
+  } else {
+    const diff = backX - frontX;
+    shape.moveTo(-frontX / 2 - diff / 2, -halfY);
+    shape.lineTo(frontX / 2 - diff / 2, -halfY);
+    shape.lineTo(backX / 2, halfY);
+    shape.lineTo(-backX / 2, halfY);
+  }
+  shape.closePath();
+
+  const geometry = new THREE.ExtrudeGeometry(shape, {
+    depth: depth,
+    bevelEnabled: false,
+  });
+  geometry.translate(0, 0, -depth / 2);
+
+  return geometry;
+}
+
+/**
+ * Create polygon geometry from ShapeParamsPolygon
+ */
+function createPolygonGeometry(params: ShapeParamsPolygon, depth: number): THREE.BufferGeometry {
+  const { points } = params;
+
+  // Calculate centroid for centering
+  const cx = points.reduce((sum, p) => sum + p[0], 0) / points.length;
+  const cy = points.reduce((sum, p) => sum + p[1], 0) / points.length;
+
+  const shape = new THREE.Shape();
+  shape.moveTo(points[0][0] - cx, points[0][1] - cy);
+  for (let i = 1; i < points.length; i++) {
+    shape.lineTo(points[i][0] - cx, points[i][1] - cy);
+  }
+  shape.closePath();
+
+  const geometry = new THREE.ExtrudeGeometry(shape, {
+    depth: depth,
+    bevelEnabled: false,
+  });
+  geometry.translate(0, 0, -depth / 2);
+
+  return geometry;
+}
 
 interface Part3DProps {
   part: Part;
@@ -70,10 +161,6 @@ export function Part3D({ part }: Part3DProps) {
   // PERFORMANCE: Use optimized selector - only re-renders when THIS part's hidden status changes
   const isManuallyHidden = useIsPartHidden(part.id);
 
-  // Check if this is a leg part and parse its notes
-  const isLegPart = part.cabinetMetadata?.role === 'LEG';
-  const legNotes: LegPartNotes | null = isLegPart && part.notes ? parseLegNotes(part.notes) : null;
-
   // Hide this part when it or its cabinet is being transformed (preview mesh is shown instead)
   const isBeingTransformed =
     transformingPartId === part.id ||
@@ -99,15 +186,10 @@ export function Part3D({ part }: Part3DProps) {
   const isColliding = isPartColliding(part.id, collisions) ||
     (groupId ? isGroupColliding(groupId, collisions) : false);
 
-  // Determine part color - legs use finish color, others use material color
+  // Determine part color from material
   const color = useMemo(() => {
-    if (isLegPart && legNotes) {
-      // Find the color for this leg's finish from config
-      const finishOption = LEG_FINISH_OPTIONS.find(opt => opt.value === legNotes.finish);
-      return finishOption?.color || '#1a1a1a'; // Default to black plastic color
-    }
     return material?.color || MATERIAL_CONFIG.DEFAULT_MATERIAL_COLOR;
-  }, [isLegPart, legNotes, material?.color]);
+  }, [material?.color]);
 
   // Helper to get all part IDs for a cabinet
   const getCabinetPartIds = (cabinetId: string): string[] => {
@@ -177,29 +259,26 @@ export function Part3D({ part }: Part3DProps) {
   };
 
   const geometry = useMemo(() => {
-    // Special handling for leg parts
-    if (isLegPart && legNotes) {
-      const radius = legNotes.diameter / 2;
-      const height = legNotes.height;
-
-      if (legNotes.shape === 'ROUND') {
-        // Cylinder geometry for round legs (radialSegments: 16 for smooth appearance)
-        return <cylinderGeometry args={[radius, radius, height, 16]} />;
-      } else {
-        // Box geometry for square legs
-        return <boxGeometry args={[legNotes.diameter, height, legNotes.diameter]} />;
-      }
-    }
-
-    // Regular part geometry
     switch (part.shapeType) {
       case 'RECT': {
         return <boxGeometry args={[part.width, part.height, part.depth]} />;
       }
+      case 'L_SHAPE': {
+        const geom = createLShapeGeometry(part.shapeParams as ShapeParamsLShape, part.depth);
+        return <primitive object={geom} attach="geometry" />;
+      }
+      case 'TRAPEZOID': {
+        const geom = createTrapezoidGeometry(part.shapeParams as ShapeParamsTrapezoid, part.depth);
+        return <primitive object={geom} attach="geometry" />;
+      }
+      case 'POLYGON': {
+        const geom = createPolygonGeometry(part.shapeParams as ShapeParamsPolygon, part.depth);
+        return <primitive object={geom} attach="geometry" />;
+      }
       default:
-         return <boxGeometry args={[part.width, part.height, part.depth]} />;
+        return <boxGeometry args={[part.width, part.height, part.depth]} />;
     }
-  }, [part.shapeType, part.width, part.height, part.depth, part.shapeParams, isLegPart, legNotes]);
+  }, [part.shapeType, part.width, part.height, part.depth, part.shapeParams]);
 
   // Hide this part when:
   // - Being transformed (preview mesh is shown instead)
@@ -252,8 +331,6 @@ export function Part3D({ part }: Part3DProps) {
           color={color}
           emissive={getEmissiveColor()}
           emissiveIntensity={getEmissiveIntensity()}
-          metalness={legNotes?.finish === 'CHROME' || legNotes?.finish === 'BRUSHED_STEEL' ? 0.8 : 0}
-          roughness={legNotes?.finish === 'CHROME' ? 0.2 : legNotes?.finish === 'BRUSHED_STEEL' ? 0.5 : 0.8}
         />
 
         {showEdges && (

@@ -7,6 +7,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 
+// CORS headers for cross-origin requests from main app
+const corsHeaders = {
+  'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Credentials': 'true',
+};
+
+// Handle preflight requests
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders });
+}
+
 interface UseCreditBody {
   projectHash: string;
 }
@@ -24,7 +37,7 @@ export async function POST(request: NextRequest) {
             message: 'projectHash is required',
           },
         },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -44,7 +57,7 @@ export async function POST(request: NextRequest) {
             message: 'Authentication required',
           },
         },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       );
     }
 
@@ -64,7 +77,7 @@ export async function POST(request: NextRequest) {
             message: 'Failed to use credit',
           },
         },
-        { status: 500 }
+        { status: 500, headers: corsHeaders }
       );
     }
 
@@ -79,7 +92,7 @@ export async function POST(request: NextRequest) {
             message: result?.message || 'No credits available',
           },
         },
-        { status: 402 }
+        { status: 402, headers: corsHeaders }
       );
     }
 
@@ -92,7 +105,7 @@ export async function POST(request: NextRequest) {
         message: result.message,
         isFreeReexport: result.is_free_reexport,
       },
-    });
+    }, { headers: corsHeaders });
   } catch (error) {
     console.error('Use credit error:', error);
     return NextResponse.json(
@@ -103,7 +116,7 @@ export async function POST(request: NextRequest) {
           message: 'Internal server error',
         },
       },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }

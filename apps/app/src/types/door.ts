@@ -36,4 +36,18 @@ export interface DoorMetadata {
   hingeSide?: HingeSide;
   openingDirection: DoorOpeningDirection;
   openingAngle?: number; // Future: for animation (0-120 degrees)
+  /** For folding doors - identifies which section */
+  foldingSection?: 'UPPER' | 'LOWER';
+}
+
+/**
+ * Folding door (front łamany) configuration
+ * A door split into 2 horizontal sections that fold together when opening upward
+ */
+export interface FoldingDoorConfig {
+  enabled: boolean;
+  /** Split ratio - fraction of height for bottom section (0.3-0.7, default 0.5) */
+  splitRatio: number;
+  /** Gap between sections (mm) */
+  sectionGap: number;
 }

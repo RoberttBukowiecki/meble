@@ -183,31 +183,73 @@ export const useGuestCredit = async (sessionId: string, projectHash: string) => 
 // ============================================================================
 
 /**
- * Check if user is admin
+ * Check if user is admin (uses profiles.role)
  */
 export const isUserAdmin = async (userId: string) => {
-  const { data, error } = await supabaseAdmin
-    .from('admin_users')
-    .select('id, role')
-    .eq('user_id', userId)
+  const { data } = await supabaseAdmin
+    .from('profiles')
+    .select('role')
+    .eq('id', userId)
     .eq('is_active', true)
+    .in('role', ['admin', 'super_admin'])
     .maybeSingle();
 
   return !!data;
 };
 
 /**
- * Get admin role
+ * Get admin role (uses profiles.role)
  */
-export const getAdminRole = async (userId: string) => {
-  const { data, error } = await supabaseAdmin
-    .from('admin_users')
+export const getAdminRole = async (userId: string): Promise<string | null> => {
+  const { data } = await supabaseAdmin
+    .from('profiles')
     .select('role')
-    .eq('user_id', userId)
+    .eq('id', userId)
     .eq('is_active', true)
+    .in('role', ['admin', 'super_admin'])
     .maybeSingle();
 
   return data?.role || null;
+};
+
+/**
+ * Set user as admin
+ */
+export const setUserAdmin = async (
+  userId: string,
+  role: 'admin' | 'super_admin',
+  permissions: Record<string, boolean> = {}
+) => {
+  const { data, error } = await supabaseAdmin
+    .from('profiles')
+    .update({
+      role,
+      admin_permissions: permissions,
+    })
+    .eq('id', userId)
+    .select()
+    .single();
+
+  if (error) throw new Error(`Failed to set admin role: ${error.message}`);
+  return data;
+};
+
+/**
+ * Remove admin role from user
+ */
+export const removeUserAdmin = async (userId: string) => {
+  const { data, error } = await supabaseAdmin
+    .from('profiles')
+    .update({
+      role: 'user',
+      admin_permissions: {},
+    })
+    .eq('id', userId)
+    .select()
+    .single();
+
+  if (error) throw new Error(`Failed to remove admin role: ${error.message}`);
+  return data;
 };
 
 // ============================================================================

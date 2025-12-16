@@ -26,7 +26,9 @@ import type {
   LegFinish,
   LegShape,
   LegCountMode,
+  LegData,
 } from '@/types';
+import { LEG_FINISH_COLORS, getLegColor } from '@/types';
 import { ValidationResult, validResult, invalidResult } from './types';
 
 // ============================================================================
@@ -64,12 +66,7 @@ export const LEG_PRESETS: Record<LegPreset, Omit<LegTypeConfig, 'preset'>> = {
   },
 };
 
-export const LEG_FINISH_COLORS: Record<LegFinish, string> = {
-  BLACK_PLASTIC: '#1a1a1a',
-  CHROME: '#c0c0c0',
-  BRUSHED_STEEL: '#8a8a8a',
-  WHITE_PLASTIC: '#f0f0f0',
-};
+// LEG_FINISH_COLORS is imported from @/types - single source of truth
 
 export const LEG_DEFAULTS = {
   enabled: false,
@@ -301,12 +298,7 @@ export function calculateLegHeightOffset(legsConfig?: LegsConfig): number {
   return legsConfig.currentHeight;
 }
 
-/**
- * Get leg color from finish
- */
-export function getLegColor(finish: LegFinish): string {
-  return LEG_FINISH_COLORS[finish] ?? LEG_FINISH_COLORS.BLACK_PLASTIC;
-}
+// getLegColor is imported from @/types - single source of truth
 
 /**
  * Calculate height range for current preset

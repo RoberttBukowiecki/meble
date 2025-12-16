@@ -53,3 +53,46 @@ export interface LegsConfig {
   currentHeight: number; // mm - actual current height (within adjust range)
   cornerInset: number; // mm - inset from cabinet edges
 }
+
+// ============================================================================
+// Leg Instance Types (for 3D rendering)
+// ============================================================================
+
+/**
+ * Color mapping for leg finishes
+ */
+export const LEG_FINISH_COLORS: Record<LegFinish, string> = {
+  BLACK_PLASTIC: '#1a1a1a',
+  CHROME: '#c0c0c0',
+  BRUSHED_STEEL: '#8a8a8a',
+  WHITE_PLASTIC: '#f0f0f0',
+};
+
+/**
+ * Position of a single leg in 3D space (relative to cabinet center)
+ */
+export interface LegPosition {
+  x: number; // mm - X position relative to cabinet center
+  z: number; // mm - Z position relative to cabinet center
+}
+
+/**
+ * Complete data for a single leg instance (for rendering)
+ * Analogous to HandleMetadata for handles
+ */
+export interface LegData {
+  index: number; // Leg index (0-based)
+  position: LegPosition; // Position relative to cabinet center
+  shape: LegShape;
+  finish: LegFinish;
+  color: string; // Resolved color from finish
+  height: number; // mm - actual height
+  diameter: number; // mm - diameter/width
+}
+
+/**
+ * Helper function to get leg color from finish
+ */
+export function getLegColor(finish: LegFinish): string {
+  return LEG_FINISH_COLORS[finish] ?? LEG_FINISH_COLORS.BLACK_PLASTIC;
+}

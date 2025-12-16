@@ -508,7 +508,6 @@ export const PartDomain = {
       DECORATIVE_TOP: 'Blenda górna',
       DECORATIVE_BOTTOM: 'Cokół',
       PARTITION: 'Przegroda',
-      LEG: 'Nóżka',
       // Corner cabinet roles
       CORNER_LEFT_SIDE: 'Bok lewy (narożnik)',
       CORNER_RIGHT_SIDE: 'Bok prawy (narożnik)',

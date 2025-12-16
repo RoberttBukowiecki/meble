@@ -6,8 +6,10 @@ import type {
   CabinetParams,
   CabinetType,
   CabinetRegenerationSnapshot,
+  LegData,
 } from '@/types';
 import { getGeneratorForType } from '../../cabinetGenerators';
+import { generateLegs } from '../../cabinetGenerators/legs';
 import {
   applyCabinetTransform,
   getCabinetTransform,
@@ -48,6 +50,12 @@ export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
       updatedAt: now,
     }));
 
+    // Generate legs separately (they are accessories, not cut parts)
+    let legs: LegData[] | undefined;
+    if (params.legs?.enabled) {
+      legs = generateLegs(params.legs, params.width, params.depth);
+    }
+
     const cabinet: Cabinet = {
       id: cabinetId,
       name: `Szafka ${get().cabinets.length + 1}`,
@@ -57,6 +65,7 @@ export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
       materials,
       topBottomPlacement: params.topBottomPlacement,
       partIds: parts.map((p) => p.id),
+      legs,
       createdAt: now,
       updatedAt: now,
     };
@@ -137,6 +146,12 @@ export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
           updatedAt: now,
         }));
 
+        // Regenerate legs
+        let legs: LegData[] | undefined;
+        if (params.legs?.enabled) {
+          legs = generateLegs(params.legs, params.width, params.depth);
+        }
+
         const remainingParts = state.parts.filter((p) => !cabinet.partIds.includes(p.id));
 
         const updatedCabinet = {
@@ -146,6 +161,7 @@ export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
           materials,
           topBottomPlacement: params.topBottomPlacement,
           partIds: newParts.map((p) => p.id),
+          legs,
           updatedAt: now,
         };
 
@@ -231,6 +247,12 @@ export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
       updatedAt: now,
     }));
 
+    // Regenerate legs
+    let legs: LegData[] | undefined;
+    if (params.legs?.enabled) {
+      legs = generateLegs(params.legs, params.width, params.depth);
+    }
+
     // Record history before making changes
     if (!skipHistory) {
       const beforeSnapshot: CabinetRegenerationSnapshot = {
@@ -273,6 +295,7 @@ export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
         type: params.type,
         topBottomPlacement: params.topBottomPlacement,
         partIds: newParts.map((p) => p.id),
+        legs,
         updatedAt: now,
       };
 

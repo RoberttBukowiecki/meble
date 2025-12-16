@@ -71,7 +71,10 @@ interface CreditsState {
   reset: () => void;
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_PAYMENTS_API_URL || '/api';
+// Use local API routes for authenticated user credits (same-origin cookies)
+// Guest credits still use payments API (no auth cookies needed)
+const LOCAL_API = '/api';
+const PAYMENTS_API = process.env.NEXT_PUBLIC_PAYMENTS_API_URL || '/api';
 
 const initialState = {
   userBalance: null,
@@ -95,7 +98,8 @@ export const useCreditsStore = create<CreditsState>((set, get) => ({
     set({ userLoading: true, userError: null });
 
     try {
-      const response = await fetch(`${API_BASE}/credits`, {
+      // Use local API for authenticated user (same-origin cookies work reliably)
+      const response = await fetch(`${LOCAL_API}/credits`, {
         method: 'GET',
         credentials: 'include',
         headers: {
@@ -126,8 +130,9 @@ export const useCreditsStore = create<CreditsState>((set, get) => ({
     set({ guestLoading: true, guestError: null, guestSessionId: sessionId });
 
     try {
+      // Guest credits use payments API (no auth cookies needed)
       const response = await fetch(
-        `${API_BASE}/guest/credits?sessionId=${encodeURIComponent(sessionId)}`,
+        `${PAYMENTS_API}/guest/credits?sessionId=${encodeURIComponent(sessionId)}`,
         {
           method: 'GET',
           headers: {
@@ -169,7 +174,8 @@ export const useCreditsStore = create<CreditsState>((set, get) => ({
     set({ isUsingCredit: true, userError: null });
 
     try {
-      const response = await fetch(`${API_BASE}/credits/use`, {
+      // Use local API for authenticated user (same-origin cookies work reliably)
+      const response = await fetch(`${LOCAL_API}/credits/use`, {
         method: 'POST',
         credentials: 'include',
         headers: {
@@ -227,12 +233,14 @@ export const useCreditsStore = create<CreditsState>((set, get) => ({
     set({ isUsingCredit: true, guestError: null });
 
     try {
-      const response = await fetch(`${API_BASE}/guest/credits/use`, {
+      // Guest credits use payments API (no auth cookies needed)
+      const response = await fetch(`${PAYMENTS_API}/guest/credits/use`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-session-id': sessionId,
         },
-        body: JSON.stringify({ sessionId, projectHash }),
+        body: JSON.stringify({ projectHash }),
       });
 
       const data = await response.json();
