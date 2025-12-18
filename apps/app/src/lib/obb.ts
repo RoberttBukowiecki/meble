@@ -386,6 +386,114 @@ export function getOBBEdges(obb: OrientedBoundingBox): OBBEdge[] {
 }
 
 // ============================================================================
+// Face Edge Extraction
+// ============================================================================
+
+/**
+ * Information about which face an edge belongs to
+ */
+export interface FaceEdgeInfo {
+  edge: OBBEdge;
+  faceAxisIndex: 0 | 1 | 2;
+  faceSign: 1 | -1;
+  edgeDirection: Vec3; // Direction of the edge
+}
+
+/**
+ * Get the 4 edges of a specific OBB face
+ */
+export function getFaceEdges(face: OBBFace): OBBEdge[] {
+  const corners = face.corners;
+  const edges: OBBEdge[] = [];
+
+  for (let i = 0; i < 4; i++) {
+    const start = corners[i];
+    const end = corners[(i + 1) % 4];
+    const direction = vec3Normalize(vec3Sub(end, start));
+    const midpoint: Vec3 = [
+      (start[0] + end[0]) / 2,
+      (start[1] + end[1]) / 2,
+      (start[2] + end[2]) / 2,
+    ];
+    edges.push({ start, end, direction, midpoint });
+  }
+
+  return edges;
+}
+
+/**
+ * Calculate the perpendicular distance from an edge to a face plane
+ * Returns null if the edge is parallel to the face (not a valid T-joint)
+ */
+export function calculateEdgeToFaceDistance(
+  edge: OBBEdge,
+  face: OBBFace
+): number | null {
+  // Check if edge is perpendicular to face normal (valid T-joint configuration)
+  const edgeDotNormal = Math.abs(vec3Dot(edge.direction, face.normal));
+
+  // Edge should be approximately parallel to the face (perpendicular to normal)
+  // Allow some tolerance for non-perfect alignments
+  if (edgeDotNormal > 0.3) return null; // Edge is not parallel to face
+
+  // Calculate distance from edge midpoint to face plane
+  const toFace = vec3Sub(face.center, edge.midpoint);
+  const distance = Math.abs(vec3Dot(toFace, face.normal));
+
+  return distance;
+}
+
+/**
+ * Calculate snap offset to bring an edge to a face (T-joint snap)
+ * The offset moves the edge to touch the face plane
+ */
+export function calculateEdgeToFaceSnapOffset(
+  edge: OBBEdge,
+  face: OBBFace,
+  collisionOffset: number
+): Vec3 {
+  // Direction from edge to face along face normal
+  const toFace = vec3Sub(face.center, edge.midpoint);
+  const signedDistance = vec3Dot(toFace, face.normal);
+
+  // Apply collision offset
+  const adjustedDistance = signedDistance > 0
+    ? signedDistance - collisionOffset
+    : signedDistance + collisionOffset;
+
+  return vec3Scale(face.normal, adjustedDistance);
+}
+
+/**
+ * Check if an edge is within the bounds of a face (for T-joint validity)
+ * Returns true if the edge midpoint projects within the face area
+ *
+ * @param edge - The edge to check
+ * @param face - The target face
+ * @param tolerance - Max distance outside face bounds (default 20mm - very tight)
+ */
+export function isEdgeWithinFaceBounds(
+  edge: OBBEdge,
+  face: OBBFace,
+  tolerance: number = 20 // 20mm tolerance - tighter to avoid spurious T-joints
+): boolean {
+  // Project edge midpoint onto face plane
+  const toEdge = vec3Sub(edge.midpoint, face.center);
+
+  // Get face tangent directions from corners
+  const tangent1 = vec3Normalize(vec3Sub(face.corners[1], face.corners[0]));
+  const tangent2 = vec3Normalize(vec3Sub(face.corners[3], face.corners[0]));
+
+  // Project onto tangent directions
+  const proj1 = Math.abs(vec3Dot(toEdge, tangent1));
+  const proj2 = Math.abs(vec3Dot(toEdge, tangent2));
+
+  // Check if within face bounds (with tolerance)
+  // Use strict bounds to avoid spurious T-joint snaps
+  return proj1 <= face.halfSize[0] + tolerance && proj2 <= face.halfSize[1] + tolerance;
+}
+
+// ============================================================================
 // OBB Distance Calculations
 // ============================================================================
 

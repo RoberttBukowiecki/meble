@@ -344,6 +344,14 @@ export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
 
     const now = new Date();
 
+    // Calculate final world transform to store on cabinet
+    const finalWorldTransform = {
+      position: roundPosition(newCenter.toArray() as [number, number, number]),
+      rotation: transform.rotation
+        ? (transform.rotation as [number, number, number])
+        : (cabinet.worldTransform?.rotation ?? [0, 0, 0]),
+    };
+
     set((state) => {
       const updatedParts = state.parts.map((part) => {
         if (!cabinet.partIds.includes(part.id)) return part;
@@ -381,7 +389,17 @@ export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
         };
       });
 
-      return { parts: updatedParts };
+      // Update cabinet with worldTransform
+      const updatedCabinets = state.cabinets.map((c) => {
+        if (c.id !== id) return c;
+        return {
+          ...c,
+          worldTransform: finalWorldTransform,
+          updatedAt: now,
+        };
+      });
+
+      return { parts: updatedParts, cabinets: updatedCabinets };
     });
 
     triggerDebouncedCollisionDetection(get);

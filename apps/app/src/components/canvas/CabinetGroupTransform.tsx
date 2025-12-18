@@ -79,6 +79,7 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
 
   const {
     updatePartsBatch,
+    updateCabinet,
     transformMode,
     setIsTransforming,
     setTransformingCabinetId,
@@ -92,6 +93,7 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
   } = useStore(
     useShallow((state) => ({
       updatePartsBatch: state.updatePartsBatch,
+      updateCabinet: state.updateCabinet,
       transformMode: state.transformMode,
       setIsTransforming: state.setIsTransforming,
       setTransformingCabinetId: state.setTransformingCabinetId,
@@ -375,6 +377,45 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
       updatePartsBatch(updates);
     }
 
+    // Calculate and update cabinet worldTransform
+    // Position: average of all part positions after transform
+    // Rotation: from the group quaternion (what user dragged)
+    const newCenterPos = new THREE.Vector3();
+    previewTransformsRef.current.forEach((transform) => {
+      newCenterPos.add(new THREE.Vector3().fromArray(transform.position));
+    });
+    if (previewTransformsRef.current.size > 0) {
+      newCenterPos.divideScalar(previewTransformsRef.current.size);
+    }
+
+    // Get rotation from group (Euler angles to avoid gimbal lock)
+    const groupEuler = new THREE.Euler().setFromQuaternion(group.quaternion, 'XYZ');
+
+    // Get current cabinet to read existing worldTransform rotation
+    const currentCabinet = allCabinets.find((c) => c.id === cabinetId);
+    const existingRotation = currentCabinet?.worldTransform?.rotation ?? [0, 0, 0];
+
+    // For rotation: add delta rotation to existing rotation
+    // Delta = group.quaternion * inverse(initialGroupQuaternion)
+    const deltaQuat = group.quaternion.clone().multiply(initialGroupQuaternion.current.clone().invert());
+    const existingQuat = new THREE.Quaternion().setFromEuler(
+      new THREE.Euler(existingRotation[0], existingRotation[1], existingRotation[2], 'XYZ')
+    );
+    const newRotQuat = deltaQuat.multiply(existingQuat);
+    const newRotEuler = new THREE.Euler().setFromQuaternion(newRotQuat, 'XYZ');
+
+    // Update cabinet with new worldTransform
+    updateCabinet(cabinetId, {
+      worldTransform: {
+        position: [
+          Math.round(newCenterPos.x),
+          Math.round(newCenterPos.y),
+          Math.round(newCenterPos.z),
+        ] as [number, number, number],
+        rotation: [newRotEuler.x, newRotEuler.y, newRotEuler.z] as [number, number, number],
+      },
+    });
+
     // Build afterState for history
     const afterState: Record<string, PartTransform> = {};
     previewTransformsRef.current.forEach((transform, partId) => {
@@ -388,7 +429,7 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
 
     // Clear preview
     previewTransformsRef.current.clear();
-  }, [target, setIsTransforming, setTransformingCabinetId, commitBatch, detectCollisions, clearSnapPoints, clearDimensionLines, updatePartsBatch]);
+  }, [target, setIsTransforming, setTransformingCabinetId, commitBatch, detectCollisions, clearSnapPoints, clearDimensionLines, updatePartsBatch, updateCabinet, cabinetId, allCabinets]);
 
   // Get current preview state
   const isShowingPreview = isDraggingRef.current && previewTransformsRef.current.size > 0;

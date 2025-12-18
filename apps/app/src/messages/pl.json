@@ -2,7 +2,7 @@
   "Sidebar": {
     "addPart": "Dodaj część",
     "addCabinet": "Dodaj szafkę",
-    "exportCSV": "Eksportuj CSV",
+    "exportCSV": "Eksport",
     "propertiesTab": "Właściwości",
     "listTab": "Lista",
     "listTabWithCount": "Lista ({count})",
@@ -171,13 +171,18 @@
     "continue": "Rozumiem, kontynuuj"
   },
   "ExportDialog": {
-    "title": "Eksportuj do CSV",
-    "description": "Wybierz kolumny do eksportu i sprawdź podgląd danych.",
+    "title": "Eksport",
+    "description": "Wybierz kolumny CSV i pobierz dane jako CSV lub DXF.",
     "selectColumns": "Wybierz kolumny",
     "preview": "Podgląd (pierwsze 5 wierszy)",
     "csvPreview": "Podgląd CSV",
     "noData": "Brak danych do wyświetlenia",
     "showingFirst": "Pokazuję {count} z {total} wierszy",
+    "exportCSV": "Pobierz CSV",
+    "exportDXF": "Pobierz DXF",
+    "dxfHint": "DXF generujemy tylko dla nieregularnych kształtów (L, trapez, wielokąt).",
+    "dxfCount": "Części wymagające DXF: {count}",
+    "dxfMissing": "Brak części wymagających DXF — pobierz tylko CSV.",
     "export": "Eksportuj",
     "cancel": "Anuluj",
     "columns": {
@@ -195,5 +200,14 @@
       "cabinetRole": "Rola w szafce",
       "drawerIndex": "Nr szuflady"
     }
+  },
+  "CopySceneDialog": {
+    "title": "Kopiuj scenę",
+    "description": "Wybierz części do skopiowania do schowka jako JSON.",
+    "selectAll": "Zaznacz wszystkie",
+    "selectedCount": "Wybrano {count} części",
+    "copy": "Kopiuj",
+    "copied": "Skopiowano!",
+    "cancel": "Anuluj"
   }
 }

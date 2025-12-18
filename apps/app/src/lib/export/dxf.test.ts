@@ -421,4 +421,82 @@ describe('DXF Export', () => {
       expect(result!.content).toContain('$INSUNITS');
     });
   });
+
+  describe('geometry generation (captured vertices)', () => {
+    const { default: originalRequire } = module;
+
+    const loadWithMockedDxf = (part: Part) => {
+      const calls: Array<{ points: any[]; options: any }> = [];
+      jest.resetModules();
+      jest.doMock('@tarikjabiri/dxf', () => {
+        const LWPolylineFlags = { Closed: 1 };
+        return {
+          LWPolylineFlags,
+          Units: { Millimeters: 'mm' },
+          point2d: (x: number, y: number) => ({ x, y }),
+          DxfWriter: class {
+            setUnits() {}
+            addLWPolyline(points: any[], options: any) {
+              calls.push({ points, options });
+            }
+            stringify() {
+              return 'MOCK_DXF';
+            }
+          },
+        };
+      });
+
+      // Re-require module with mocked DXF writer
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { generatePartDXF: generate } = require('./dxf');
+      generate(part);
+      return calls;
+    };
+
+    it('uses correct vertex order for L_SHAPE', () => {
+      const calls = loadWithMockedDxf(createLShapePart());
+      expect(calls).toHaveLength(1);
+      const { points, options } = calls[0];
+      expect(options.flags).toBe(1); // Closed polyline
+      expect(points.map((p) => p.point)).toEqual([
+        { x: 0, y: 0 },
+        { x: 900, y: 0 },
+        { x: 900, y: 560 },
+        { x: 560, y: 560 },
+        { x: 560, y: 900 },
+        { x: 0, y: 900 },
+      ]);
+    });
+
+    it('uses correct vertex order for TRAPEZOID (left skos)', () => {
+      const calls = loadWithMockedDxf(createTrapezoidPart());
+      const { points } = calls[0];
+      expect(points.map((p) => p.point)).toEqual([
+        { x: 50, y: 0 },
+        { x: 500, y: 0 },
+        { x: 500, y: 400 },
+        { x: 0, y: 400 },
+      ]);
+    });
+
+    it('preserves polygon points order', () => {
+      const polygon = createPolygonPart({
+        shapeParams: {
+          type: 'POLYGON',
+          points: [
+            [10, 20],
+            [30, 40],
+            [50, 60],
+          ],
+        },
+      });
+      const calls = loadWithMockedDxf(polygon);
+      const { points } = calls[0];
+      expect(points.map((p) => p.point)).toEqual([
+        { x: 10, y: 20 },
+        { x: 30, y: 40 },
+        { x: 50, y: 60 },
+      ]);
+    });
+  });
 });

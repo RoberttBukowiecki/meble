@@ -81,14 +81,19 @@ jest.mock('@/lib/projectHash', () => ({
 jest.mock('next-intl', () => ({
   useTranslations: () => (key: string) => {
     const translations: Record<string, string> = {
-      title: 'Export CSV',
-      description: 'Export your project parts to CSV',
+      title: 'Export',
+      description: 'Export your project parts',
       selectColumns: 'Select columns',
       preview: 'Preview',
       csvPreview: 'CSV Preview',
       noData: 'No data',
       cancel: 'Anuluj',
-      export: 'Eksportuj',
+      exportCSV: 'Download CSV',
+      exportDXF: 'Download DXF',
+      dxfHint: 'DXF hint',
+      dxfMissing: 'No DXF-only parts',
+      dxfCount: 'DXF count: {count}',
+      export: 'Export',
       showingFirst: 'Showing 5 of {total} parts',
       'columns.furniture': 'Furniture',
       'columns.partName': 'Part Name',
@@ -259,7 +264,7 @@ describe('ExportDialog', () => {
     it('enables export button when user has credits', () => {
       render(<ExportDialog {...defaultProps} />);
 
-      const exportButton = screen.getByRole('button', { name: /Eksportuj/i });
+      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
       expect(exportButton).not.toBeDisabled();
     });
 
@@ -268,7 +273,7 @@ describe('ExportDialog', () => {
 
       render(<ExportDialog {...defaultProps} />);
 
-      const exportButton = screen.getByRole('button', { name: /Eksportuj/i });
+      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
       expect(exportButton).toBeDisabled();
     });
 
@@ -291,7 +296,7 @@ describe('ExportDialog', () => {
       const user = userEvent.setup();
       render(<ExportDialog {...defaultProps} />);
 
-      const exportButton = screen.getByRole('button', { name: /Eksportuj/i });
+      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
       await user.click(exportButton);
 
       await waitFor(() => {
@@ -317,7 +322,7 @@ describe('ExportDialog', () => {
       const user = userEvent.setup();
       render(<ExportDialog {...defaultProps} />);
 
-      const exportButton = screen.getByRole('button', { name: /Eksportuj/i });
+      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
       await user.click(exportButton);
 
       await waitFor(() => {
@@ -343,11 +348,11 @@ describe('ExportDialog', () => {
       const user = userEvent.setup();
       render(<ExportDialog {...defaultProps} />);
 
-      const exportButton = screen.getByRole('button', { name: /Eksportuj/i });
+      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
       await user.click(exportButton);
 
       await waitFor(() => {
-        expect(screen.getByText(/Eksport ukończony/i)).toBeInTheDocument();
+        expect(screen.getByText(/Eksport CSV ukończony/i)).toBeInTheDocument();
       });
     });
 
@@ -365,7 +370,7 @@ describe('ExportDialog', () => {
       const user = userEvent.setup();
       render(<ExportDialog {...defaultProps} />);
 
-      const exportButton = screen.getByRole('button', { name: /Eksportuj/i });
+      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
       await user.click(exportButton);
 
       await waitFor(() => {
@@ -422,7 +427,7 @@ describe('ExportDialog', () => {
       const user = userEvent.setup();
       render(<ExportDialog {...defaultProps} />);
 
-      const exportButton = screen.getByRole('button', { name: /Eksportuj/i });
+      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
       await user.click(exportButton);
 
       await waitFor(() => {
@@ -469,7 +474,7 @@ describe('ExportDialog', () => {
       render(<ExportDialog {...defaultProps} />);
 
       expect(screen.getByRole('button', { name: /Kup kredyty/i })).toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: /Eksportuj/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Download CSV/i })).not.toBeInTheDocument();
     });
   });
 
@@ -499,7 +504,7 @@ describe('ExportDialog', () => {
       const user = userEvent.setup();
       render(<ExportDialog {...defaultProps} />);
 
-      const exportButton = screen.getByRole('button', { name: /Eksportuj/i });
+      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
       await user.click(exportButton);
 
       await waitFor(() => {
@@ -525,7 +530,7 @@ describe('ExportDialog', () => {
       const user = userEvent.setup();
       render(<ExportDialog {...defaultProps} />);
 
-      const exportButton = screen.getByRole('button', { name: /Eksportuj/i });
+      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
       await user.click(exportButton);
 
       await waitFor(() => {
@@ -589,6 +594,32 @@ describe('ExportDialog', () => {
     });
   });
 
+  describe('DXF export state', () => {
+    it('disables DXF export when there are no non-rect parts', () => {
+      render(<ExportDialog {...defaultProps} />);
+
+      const dxfButton = screen.getByRole('button', { name: /Download DXF/i });
+      expect(dxfButton).toBeDisabled();
+    });
+
+    it('enables DXF export when non-rect parts exist', () => {
+      mockParts.length = 0;
+      mockParts.push(createTestPart({ id: 'rect-1' }));
+      mockParts.push(
+        createTestPart({
+          id: 'lshape-1',
+          shapeType: 'L_SHAPE',
+          shapeParams: { type: 'L_SHAPE', x: 300, y: 300, cutX: 80, cutY: 80 } as any,
+        })
+      );
+
+      render(<ExportDialog {...defaultProps} />);
+
+      const dxfButton = screen.getByRole('button', { name: /Download DXF/i });
+      expect(dxfButton).not.toBeDisabled();
+    });
+  });
+
   describe('analytics tracking', () => {
     it('tracks EXPORT_INITIATED on dialog open', () => {
       render(<ExportDialog {...defaultProps} />);
@@ -617,7 +648,7 @@ describe('ExportDialog', () => {
       const user = userEvent.setup();
       render(<ExportDialog {...defaultProps} />);
 
-      const exportButton = screen.getByRole('button', { name: /Eksportuj/i });
+      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
       await user.click(exportButton);
 
       await waitFor(() => {
@@ -647,7 +678,7 @@ describe('ExportDialog', () => {
       const user = userEvent.setup();
       render(<ExportDialog {...defaultProps} />);
 
-      const exportButton = screen.getByRole('button', { name: /Eksportuj/i });
+      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
       await user.click(exportButton);
 
       await waitFor(() => {
@@ -671,7 +702,7 @@ describe('ExportDialog', () => {
       const user = userEvent.setup();
       render(<ExportDialog {...defaultProps} />);
 
-      const exportButton = screen.getByRole('button', { name: /Eksportuj/i });
+      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
       await user.click(exportButton);
 
       await waitFor(() => {
@@ -699,7 +730,7 @@ describe('ExportDialog', () => {
     it('renders dialog title', () => {
       render(<ExportDialog {...defaultProps} />);
 
-      expect(screen.getByText('Export CSV')).toBeInTheDocument();
+      expect(screen.getByText('Export')).toBeInTheDocument();
     });
   });
 
@@ -724,11 +755,11 @@ describe('ExportDialog', () => {
       const user = userEvent.setup();
       render(<ExportDialog {...defaultProps} />);
 
-      const exportButton = screen.getByRole('button', { name: /Eksportuj/i });
+      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
       await user.click(exportButton);
 
       // Should show loading state
-      expect(screen.getByText(/Eksportowanie/i)).toBeInTheDocument();
+      expect(screen.getByText(/Eksportowanie CSV/i)).toBeInTheDocument();
 
       // Cleanup
       resolveCredit!({ creditUsed: true, creditsRemaining: 7, isFreeReexport: false });
@@ -753,11 +784,11 @@ describe('ExportDialog', () => {
       const user = userEvent.setup();
       render(<ExportDialog {...defaultProps} />);
 
-      const exportButton = screen.getByRole('button', { name: /Eksportuj/i });
+      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
       await user.click(exportButton);
 
       // Button should be disabled during processing
-      const processingButton = screen.getByRole('button', { name: /Eksportowanie/i });
+      const processingButton = screen.getByRole('button', { name: /Eksportowanie CSV/i });
       expect(processingButton).toBeDisabled();
 
       // Cleanup

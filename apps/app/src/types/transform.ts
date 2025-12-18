@@ -22,7 +22,7 @@ export type ResizeHandle =
 /**
  * Snap point type
  */
-export type SnapType = 'edge' | 'face';
+export type SnapType = 'edge' | 'face' | 'edge-to-face';
 
 /**
  * Active snap point for visualization
@@ -79,9 +79,12 @@ export interface BoundingFace {
 export type SnapAxisConstraint = 'X' | 'Y' | 'Z' | 'XY' | 'XZ' | 'YZ' | 'XYZ' | null;
 
 /**
- * Snap version - V1 uses individual part faces, V2 uses group bounding boxes
+ * Snap version:
+ * - v1: Uses individual part faces (legacy)
+ * - v2: Uses group bounding boxes
+ * - v3: Face-to-face with movement direction awareness (recommended)
  */
-export type SnapVersion = 'v1' | 'v2';
+export type SnapVersion = 'v1' | 'v2' | 'v3';
 
 /**
  * Snap settings configuration
@@ -91,8 +94,9 @@ export interface SnapSettings {
   showGuides: boolean;          // Show visual snap lines (default: true)
   magneticPull: boolean;        // Enable magnetic pull effect (default: true)
   strengthCurve: 'linear' | 'quadratic'; // Distance-based strength
-  edgeSnap: boolean;            // Enable edge-to-edge snapping
-  faceSnap: boolean;            // Enable face-to-face snapping
+  edgeSnap: boolean;            // Enable edge-to-edge snapping (parallel faces alignment)
+  faceSnap: boolean;            // Enable face-to-face snapping (opposite normals)
+  tJointSnap: boolean;          // Enable T-joint snapping (perpendicular normals)
   collisionOffset: number;      // Offset to prevent collision detection (default: 0.5mm)
   version: SnapVersion;         // Snap version: 'v1' (faces) or 'v2' (bounding boxes)
 }

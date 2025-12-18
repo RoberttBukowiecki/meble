@@ -69,14 +69,19 @@ jest.mock('@/lib/projectHash', () => ({
 jest.mock('next-intl', () => ({
   useTranslations: () => (key: string) => {
     const translations: Record<string, string> = {
-      title: 'Export CSV',
+      title: 'Export',
       description: 'Export your project',
       selectColumns: 'Select columns',
       preview: 'Preview',
       csvPreview: 'CSV Preview',
       noData: 'No data',
       cancel: 'Anuluj',
-      export: 'Eksportuj',
+      exportCSV: 'Download CSV',
+      exportDXF: 'Download DXF',
+      dxfHint: 'DXF hint',
+      dxfMissing: 'No DXF-only parts',
+      dxfCount: 'DXF count: {count}',
+      export: 'Export',
       'columns.furniture': 'Furniture',
       'columns.partName': 'Part Name',
       'columns.material': 'Material',
@@ -161,7 +166,7 @@ describe('Guest User Export Flow', () => {
 
       // Should show "Kup kredyty" button
       expect(screen.getByRole('button', { name: /Kup kredyty/i })).toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: /Eksportuj/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Download CSV/i })).not.toBeInTheDocument();
 
       // Should show no credits warning
       expect(screen.getByText(/Brak kredytów/i)).toBeInTheDocument();
@@ -215,7 +220,7 @@ describe('Guest User Export Flow', () => {
       render(<ExportDialog {...defaultProps} />);
 
       // Click export
-      const exportButton = screen.getByRole('button', { name: /Eksportuj/i });
+      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
       await user.click(exportButton);
 
       // Verify guest credit use was called
@@ -250,7 +255,7 @@ describe('Guest User Export Flow', () => {
       const user = userEvent.setup();
       render(<ExportDialog {...defaultProps} />);
 
-      const exportButton = screen.getByRole('button', { name: /Eksportuj/i });
+      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
       await user.click(exportButton);
 
       // Verify success message
@@ -287,7 +292,7 @@ describe('Guest User Export Flow', () => {
       const user = userEvent.setup();
       render(<ExportDialog {...defaultProps} />);
 
-      const exportButton = screen.getByRole('button', { name: /Eksportuj/i });
+      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
       await user.click(exportButton);
 
       // Verify free re-export message
@@ -338,7 +343,7 @@ describe('Guest User Export Flow', () => {
       const user = userEvent.setup();
       render(<ExportDialog {...defaultProps} />);
 
-      const exportButton = screen.getByRole('button', { name: /Eksportuj/i });
+      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
       await user.click(exportButton);
 
       // Verify error tracking
@@ -366,7 +371,7 @@ describe('Guest User Export Flow', () => {
       const user = userEvent.setup();
       render(<ExportDialog {...defaultProps} />);
 
-      const exportButton = screen.getByRole('button', { name: /Eksportuj/i });
+      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
       await user.click(exportButton);
 
       // Verify error message
@@ -391,7 +396,7 @@ describe('Guest User Export Flow', () => {
       const user = userEvent.setup();
       render(<ExportDialog {...defaultProps} />);
 
-      const exportButton = screen.getByRole('button', { name: /Eksportuj/i });
+      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
       await user.click(exportButton);
 
       // Credits should still show original count
@@ -416,7 +421,7 @@ describe('Guest User Export Flow', () => {
       render(<ExportDialog {...defaultProps} />);
 
       // Dialog should still render
-      expect(screen.getByText('Export CSV')).toBeInTheDocument();
+      expect(screen.getByText('Export')).toBeInTheDocument();
     });
 
     it('shows loading during guest export process', async () => {
@@ -440,11 +445,11 @@ describe('Guest User Export Flow', () => {
       const user = userEvent.setup();
       render(<ExportDialog {...defaultProps} />);
 
-      const exportButton = screen.getByRole('button', { name: /Eksportuj/i });
+      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
       await user.click(exportButton);
 
       // Should show loading
-      expect(screen.getByText(/Eksportowanie/i)).toBeInTheDocument();
+      expect(screen.getByText(/Eksportowanie CSV/i)).toBeInTheDocument();
 
       // Cleanup
       resolveCredit!({ creditUsed: true, creditsRemaining: 0, isFreeReexport: false });
@@ -473,7 +478,7 @@ describe('Guest User Export Flow', () => {
       const user = userEvent.setup();
       render(<ExportDialog {...defaultProps} />);
 
-      const exportButton = screen.getByRole('button', { name: /Eksportuj/i });
+      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
       await user.click(exportButton);
 
       // Should still work
@@ -528,7 +533,7 @@ describe('Guest User Export Flow', () => {
       // Should show auth user credits
       expect(screen.getByText('5 kredytów')).toBeInTheDocument();
 
-      const exportButton = screen.getByRole('button', { name: /Eksportuj/i });
+      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
       await user.click(exportButton);
 
       // Should use auth credit function
@@ -607,7 +612,7 @@ describe('Guest User Export Flow', () => {
       const user = userEvent.setup();
       render(<ExportDialog {...defaultProps} />);
 
-      const exportButton = screen.getByRole('button', { name: /Eksportuj/i });
+      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
       await user.click(exportButton);
 
       // Verify export completed tracking

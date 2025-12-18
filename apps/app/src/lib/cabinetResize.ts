@@ -16,7 +16,202 @@ import type {
 } from '@/types';
 
 // ============================================================================
-// Bounding Box Calculations
+// Types
+// ============================================================================
+
+/** Oriented Bounding Box - includes rotation */
+export interface CabinetOBB {
+  center: [number, number, number];
+  size: [number, number, number];
+  rotation: THREE.Quaternion;
+}
+
+// ============================================================================
+// Oriented Bounding Box Calculations
+// ============================================================================
+
+/** Default part rotations by cabinet role */
+const DEFAULT_PART_ROTATIONS: Record<string, [number, number, number]> = {
+  BOTTOM: [-Math.PI / 2, 0, 0],
+  TOP: [-Math.PI / 2, 0, 0],
+  LEFT: [0, 0, Math.PI / 2],
+  RIGHT: [0, 0, -Math.PI / 2],
+  BACK: [0, 0, 0],
+  SHELF: [-Math.PI / 2, 0, 0],
+  FRONT: [0, 0, 0],
+};
+
+/**
+ * Get cabinet rotation from reference part
+ */
+function getCabinetRotation(parts: Part[]): THREE.Quaternion {
+  const referencePart = parts.find((p) => p.cabinetMetadata?.role === 'BOTTOM') ?? parts[0];
+
+  if (!referencePart?.rotation) {
+    return new THREE.Quaternion();
+  }
+
+  const currentRotation = new THREE.Quaternion().setFromEuler(
+    new THREE.Euler().fromArray(referencePart.rotation)
+  );
+
+  const role = referencePart.cabinetMetadata?.role ?? 'BOTTOM';
+  const defaultRotationArray = DEFAULT_PART_ROTATIONS[role] ?? [0, 0, 0];
+  const defaultRotation = new THREE.Quaternion().setFromEuler(
+    new THREE.Euler().fromArray(defaultRotationArray)
+  );
+
+  // Cabinet rotation = currentRotation * inverse(defaultRotation)
+  return currentRotation.clone().multiply(defaultRotation.clone().invert());
+}
+
+/**
+ * Calculate Oriented Bounding Box for cabinet parts
+ * Returns center, size in local space, and cabinet rotation
+ */
+export function calculateCabinetOBB(parts: Part[]): CabinetOBB {
+  if (parts.length === 0) {
+    return {
+      center: [0, 0, 0],
+      size: [0, 0, 0],
+      rotation: new THREE.Quaternion(),
+    };
+  }
+
+  const cabinetRotation = getCabinetRotation(parts);
+  const inverseRotation = cabinetRotation.clone().invert();
+
+  // Transform all corners to cabinet-local space
+  let minX = Infinity, minY = Infinity, minZ = Infinity;
+  let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+
+  parts.forEach((part) => {
+    const halfW = part.width / 2;
+    const halfH = part.height / 2;
+    const halfD = part.depth / 2;
+
+    const localCorners: [number, number, number][] = [
+      [-halfW, -halfH, -halfD],
+      [+halfW, -halfH, -halfD],
+      [-halfW, +halfH, -halfD],
+      [+halfW, +halfH, -halfD],
+      [-halfW, -halfH, +halfD],
+      [+halfW, -halfH, +halfD],
+      [-halfW, +halfH, +halfD],
+      [+halfW, +halfH, +halfD],
+    ];
+
+    // Part's world transform
+    const partEuler = new THREE.Euler(part.rotation[0], part.rotation[1], part.rotation[2], 'XYZ');
+    const partMatrix = new THREE.Matrix4();
+    partMatrix.makeRotationFromEuler(partEuler);
+    partMatrix.setPosition(part.position[0], part.position[1], part.position[2]);
+
+    localCorners.forEach((corner) => {
+      // Transform to world space
+      const worldCorner = new THREE.Vector3(corner[0], corner[1], corner[2]).applyMatrix4(partMatrix);
+      // Then to cabinet-local space (inverse cabinet rotation)
+      worldCorner.applyQuaternion(inverseRotation);
+
+      minX = Math.min(minX, worldCorner.x);
+      minY = Math.min(minY, worldCorner.y);
+      minZ = Math.min(minZ, worldCorner.z);
+      maxX = Math.max(maxX, worldCorner.x);
+      maxY = Math.max(maxY, worldCorner.y);
+      maxZ = Math.max(maxZ, worldCorner.z);
+    });
+  });
+
+  // Center in cabinet-local space, then transform back to world
+  const localCenter = new THREE.Vector3(
+    (minX + maxX) / 2,
+    (minY + maxY) / 2,
+    (minZ + maxZ) / 2
+  );
+  const worldCenter = localCenter.clone().applyQuaternion(cabinetRotation);
+
+  return {
+    center: [worldCenter.x, worldCenter.y, worldCenter.z],
+    size: [maxX - minX, maxY - minY, maxZ - minZ],
+    rotation: cabinetRotation,
+  };
+}
+
+/**
+ * Get world position of resize handle for OBB
+ */
+export function getOBBHandlePosition(
+  obb: CabinetOBB,
+  handle: CabinetResizeHandle
+): [number, number, number] {
+  // Local position on cabinet face
+  let localPos: [number, number, number];
+
+  switch (handle) {
+    case 'width+':
+      localPos = [obb.size[0] / 2, 0, 0];
+      break;
+    case 'width-':
+      localPos = [-obb.size[0] / 2, 0, 0];
+      break;
+    case 'height+':
+      localPos = [0, obb.size[1] / 2, 0];
+      break;
+    case 'height-':
+      localPos = [0, -obb.size[1] / 2, 0];
+      break;
+    case 'depth+':
+      localPos = [0, 0, obb.size[2] / 2];
+      break;
+    case 'depth-':
+      localPos = [0, 0, -obb.size[2] / 2];
+      break;
+  }
+
+  // Transform to world space
+  const worldPos = new THREE.Vector3(...localPos).applyQuaternion(obb.rotation);
+  worldPos.add(new THREE.Vector3(...obb.center));
+
+  return [worldPos.x, worldPos.y, worldPos.z];
+}
+
+/**
+ * Get handle normal in world space for OBB
+ */
+export function getOBBHandleNormal(
+  obb: CabinetOBB,
+  handle: CabinetResizeHandle
+): [number, number, number] {
+  let localNormal: [number, number, number];
+
+  switch (handle) {
+    case 'width+':
+      localNormal = [1, 0, 0];
+      break;
+    case 'width-':
+      localNormal = [-1, 0, 0];
+      break;
+    case 'height+':
+      localNormal = [0, 1, 0];
+      break;
+    case 'height-':
+      localNormal = [0, -1, 0];
+      break;
+    case 'depth+':
+      localNormal = [0, 0, 1];
+      break;
+    case 'depth-':
+      localNormal = [0, 0, -1];
+      break;
+  }
+
+  // Transform to world space
+  const worldNormal = new THREE.Vector3(...localNormal).applyQuaternion(obb.rotation);
+  return [worldNormal.x, worldNormal.y, worldNormal.z];
+}
+
+// ============================================================================
+// Axis-Aligned Bounding Box Calculations (legacy)
 // ============================================================================
 
 /**

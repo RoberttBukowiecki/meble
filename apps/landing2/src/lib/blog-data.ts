@@ -65,7 +65,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     category: 'guides',
     featured: true,
     image: {
-      src: '/img/blog/szafa-na-wymiar.jpg',
+      src: '/img/blog/jak-zaprojektowac-szafe-na-wymiar-poradnik.webp',
       alt: {
         pl: 'Projekt szafy na wymiar w programie 3D',
         en: 'Custom wardrobe design in 3D software',
@@ -255,7 +255,7 @@ Designing a custom wardrobe yourself requires preparation but gives incredible s
     category: 'savings',
     featured: true,
     image: {
-      src: '/img/blog/koszt-szafy.jpg',
+      src: '/img/blog/ile-kosztuje-szafa-na-wymiar-2024.webp',
       alt: {
         pl: 'Kalkulator kosztów szafy na wymiar',
         en: 'Custom wardrobe cost calculator',
@@ -452,7 +452,7 @@ Using **free furniture design software**, you can:
     readingTime: 6,
     category: 'guides',
     image: {
-      src: '/img/blog/pomiary-wneki.jpg',
+      src: '/img/blog/jak-zmierzyc-wneke-pod-szafe-krok-po-kroku.webp',
       alt: {
         pl: 'Jak prawidłowo zmierzyć wnękę pod szafę',
         en: 'How to properly measure alcove for wardrobe',
@@ -646,7 +646,7 @@ Got your accurate measurements? Now you can design a wardrobe perfectly fitted t
     category: 'diy',
     featured: true,
     image: {
-      src: '/img/blog/meble-diy.jpg',
+      src: '/img/blog/meble-diy-od-czego-zaczac-poradnik-dla-poczatkujacych.webp',
       alt: {
         pl: 'Meble DIY - narzędzia i materiały dla początkujących',
         en: 'DIY furniture - tools and materials for beginners',
@@ -891,7 +891,7 @@ DIY furniture is a fantastic hobby that saves money and creates unique home furn
     readingTime: 7,
     category: 'tools',
     image: {
-      src: '/img/blog/lista-ciecia.jpg',
+      src: '/img/blog/lista-ciecia-plyt-meblowych-jak-wygenerowac-i-zamowic.webp',
       alt: {
         pl: 'Lista cięcia płyt meblowych w formacie CSV',
         en: 'Furniture board cut list in CSV format',
@@ -1089,7 +1089,7 @@ A cut list is a crucial document for DIY furniture building. The easiest way is 
     readingTime: 8,
     category: 'inspiration',
     image: {
-      src: '/img/blog/szafa-wnekowa-vs-wolnostojaca.jpg',
+      src: '/img/blog/szafa-wnekowa-czy-wolnostojaca-co-wybrac.webp',
       alt: {
         pl: 'Porównanie szafy wnękowej i wolnostojącej',
         en: 'Comparison of built-in and freestanding wardrobe',

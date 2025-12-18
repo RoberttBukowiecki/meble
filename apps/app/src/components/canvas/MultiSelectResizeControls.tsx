@@ -15,7 +15,6 @@
 
 import { useRef, useCallback, useEffect, useState, useMemo } from 'react';
 import { useThree, ThreeEvent } from '@react-three/fiber';
-import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { useStore, useMaterial, useSelectedParts } from '@/lib/store';
 import { useShallow } from 'zustand/react/shallow';
@@ -28,17 +27,13 @@ import {
   captureInitialTransforms,
   calculateEdgeBasedResize,
   getHandleAxisName,
+  getHandleAxisIndex,
 } from '@/lib/cabinetResize';
+import { ResizeHandleMesh, DimensionDisplay } from './resize';
 
 // ============================================================================
 // Constants
 // ============================================================================
-
-/** Visual size of resize handle in mm */
-const HANDLE_SIZE = 25;
-
-/** Hitbox size for easier clicking (invisible, larger) */
-const HITBOX_SIZE = 60;
 
 /** All 6 resize handles */
 const HANDLES: CabinetResizeHandle[] = [
@@ -59,16 +54,6 @@ interface MultiSelectResizeControlsProps {
   onTransformEnd: () => void;
 }
 
-interface HandleMeshProps {
-  boundingBox: CabinetBoundingBox;
-  handle: CabinetResizeHandle;
-  isDragging: boolean;
-  isHovered: boolean;
-  onPointerDown: (e: ThreeEvent<PointerEvent>, handle: CabinetResizeHandle) => void;
-  onPointerEnter: (handle: CabinetResizeHandle) => void;
-  onPointerLeave: () => void;
-}
-
 interface DragState {
   isDragging: boolean;
   handle: CabinetResizeHandle | null;
@@ -77,78 +62,6 @@ interface DragState {
   initialTransforms: Map<string, CabinetPartInitialTransform>;
   previewTransforms: Map<string, CabinetPartPreview>;
   previewBoundingBox: CabinetBoundingBox | null;
-}
-
-// ============================================================================
-// Handle Mesh Component
-// ============================================================================
-
-function HandleMesh({
-  boundingBox,
-  handle,
-  isDragging,
-  isHovered,
-  onPointerDown,
-  onPointerEnter,
-  onPointerLeave,
-}: HandleMeshProps) {
-  const position = useMemo(
-    () => getCabinetHandlePosition(boundingBox, handle),
-    [boundingBox, handle]
-  );
-
-  const normal = useMemo(
-    () => getCabinetHandleNormal(handle),
-    [handle]
-  );
-
-  // Calculate handle rotation to face outward
-  const rotation = useMemo(() => {
-    const up = new THREE.Vector3(0, 1, 0);
-    const dir = new THREE.Vector3(...normal);
-    const quaternion = new THREE.Quaternion().setFromUnitVectors(up, dir);
-    const euler = new THREE.Euler().setFromQuaternion(quaternion);
-    return [euler.x, euler.y, euler.z] as [number, number, number];
-  }, [normal]);
-
-  // Handle color based on state - using config colors
-  const color = useMemo(() => {
-    if (isDragging) return PART_CONFIG.RESIZE_HANDLE_ACTIVE_COLOR;
-    if (isHovered) return PART_CONFIG.RESIZE_HANDLE_HOVER_COLOR;
-    return PART_CONFIG.RESIZE_HANDLE_COLOR;
-  }, [isDragging, isHovered]);
-
-  const emissiveIntensity = useMemo(() => {
-    if (isDragging) return PART_CONFIG.RESIZE_HANDLE_ACTIVE_EMISSIVE_INTENSITY;
-    if (isHovered) return PART_CONFIG.RESIZE_HANDLE_HOVER_EMISSIVE_INTENSITY;
-    return PART_CONFIG.RESIZE_HANDLE_EMISSIVE_INTENSITY;
-  }, [isDragging, isHovered]);
-
-  const scale = isHovered || isDragging ? 1.2 : 1;
-
-  return (
-    <group position={position} rotation={rotation}>
-      {/* Invisible hitbox for easier clicking */}
-      <mesh
-        onPointerDown={(e) => onPointerDown(e, handle)}
-        onPointerEnter={() => onPointerEnter(handle)}
-        onPointerLeave={onPointerLeave}
-      >
-        <boxGeometry args={[HITBOX_SIZE, 5, HITBOX_SIZE]} />
-        <meshBasicMaterial visible={false} />
-      </mesh>
-
-      {/* Visible handle */}
-      <mesh scale={scale}>
-        <boxGeometry args={[HANDLE_SIZE, 5, HANDLE_SIZE]} />
-        <meshStandardMaterial
-          color={color}
-          emissive={color}
-          emissiveIntensity={emissiveIntensity}
-        />
-      </mesh>
-    </group>
-  );
 }
 
 // ============================================================================
@@ -178,50 +91,6 @@ function PreviewPartMesh({ preview, materialId }: PreviewPartMeshProps) {
         emissiveIntensity={PART_CONFIG.MULTISELECT_EMISSIVE_INTENSITY}
       />
     </mesh>
-  );
-}
-
-// ============================================================================
-// Dimension Display Component
-// ============================================================================
-
-interface DimensionDisplayProps {
-  boundingBox: CabinetBoundingBox;
-  activeHandle: CabinetResizeHandle;
-}
-
-function DimensionDisplay({ boundingBox, activeHandle }: DimensionDisplayProps) {
-  const axisName = getHandleAxisName(activeHandle);
-  const position = getCabinetHandlePosition(boundingBox, activeHandle);
-
-  // Get dimension value based on axis
-  const dimension = useMemo(() => {
-    switch (axisName) {
-      case 'width': return boundingBox.size[0];
-      case 'height': return boundingBox.size[1];
-      case 'depth': return boundingBox.size[2];
-    }
-  }, [axisName, boundingBox.size]);
-
-  const labels: Record<string, string> = {
-    width: 'Szer.',
-    height: 'Wys.',
-    depth: 'Glebokość',
-  };
-
-  // Offset position slightly for visibility
-  const displayPos: [number, number, number] = [
-    position[0],
-    position[1] + 40,
-    position[2],
-  ];
-
-  return (
-    <Html position={displayPos} center>
-      <div className="pointer-events-none rounded bg-background/90 px-2 py-1 text-xs font-medium text-foreground shadow-sm backdrop-blur-sm">
-        {labels[axisName]}: {Math.round(dimension)}mm
-      </div>
-    </Html>
   );
 }
 
@@ -496,6 +365,20 @@ export function MultiSelectResizeControls({
     return null;
   }
 
+  // Get dimension info for active handle
+  const activeDimensionInfo = (() => {
+    if (!activeHandle) return null;
+    const axis = getHandleAxisName(activeHandle);
+    const axisIndex = getHandleAxisIndex(activeHandle);
+    const dimension = displayBoundingBox.size[axisIndex];
+    const pos = getCabinetHandlePosition(displayBoundingBox, activeHandle);
+    return {
+      axis,
+      dimension,
+      position: [pos[0], pos[1] + 40, pos[2]] as [number, number, number],
+    };
+  })();
+
   return (
     <group>
       {/* Preview meshes during drag */}
@@ -512,24 +395,30 @@ export function MultiSelectResizeControls({
       })}
 
       {/* Resize handles */}
-      {HANDLES.map((handle) => (
-        <HandleMesh
-          key={handle}
-          boundingBox={displayBoundingBox}
-          handle={handle}
-          isDragging={activeHandle === handle}
-          isHovered={hoveredHandle === handle}
-          onPointerDown={handlePointerDown}
-          onPointerEnter={setHoveredHandle}
-          onPointerLeave={() => setHoveredHandle(null)}
-        />
-      ))}
+      {HANDLES.map((handle) => {
+        const position = getCabinetHandlePosition(displayBoundingBox, handle);
+        const normal = getCabinetHandleNormal(handle);
+        return (
+          <ResizeHandleMesh
+            key={handle}
+            position={position}
+            normal={normal}
+            handleId={handle}
+            isDragging={activeHandle === handle}
+            isHovered={hoveredHandle === handle}
+            onPointerDown={(e, id) => handlePointerDown(e, id as CabinetResizeHandle)}
+            onPointerEnter={(id) => setHoveredHandle(id as CabinetResizeHandle)}
+            onPointerLeave={() => setHoveredHandle(null)}
+          />
+        );
+      })}
 
       {/* Dimension display during drag */}
-      {activeHandle && (
+      {activeDimensionInfo && (
         <DimensionDisplay
-          boundingBox={displayBoundingBox}
-          activeHandle={activeHandle}
+          position={activeDimensionInfo.position}
+          dimension={activeDimensionInfo.dimension}
+          axis={activeDimensionInfo.axis}
         />
       )}
     </group>

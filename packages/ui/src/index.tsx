@@ -20,6 +20,7 @@ export * from "./components/ui/tooltip";
 export * from "./components/ui/logo";
 export * from "./components/ui/separator";
 export * from "./components/ui/popover"
+export * from "./components/ui/scroll-area"
 
 // Lib
 export * from "./lib/utils";

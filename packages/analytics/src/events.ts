@@ -118,7 +118,7 @@ export interface EventProperties {
   [AnalyticsEvent.EXPORT_COMPLETED]: {
     parts_count: number;
     used_credit: boolean;
-    export_format?: 'csv' | 'pdf';
+    export_format?: 'csv' | 'pdf' | 'dxf';
   };
   [AnalyticsEvent.SMART_EXPORT_USED]: {
     parts_count: number;

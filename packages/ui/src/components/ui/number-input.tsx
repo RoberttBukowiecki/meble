@@ -96,10 +96,13 @@ const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
 
       setLocalValue(inputValue);
 
-      // If it's a valid complete number, update immediately
+      // If it's a valid complete number, update immediately (only if changed)
       const parsed = parseValue(inputValue);
       if (parsed !== null) {
-        onChange(clampValue(parsed));
+        const clamped = clampValue(parsed);
+        if (clamped !== value) {
+          onChange(clamped);
+        }
       }
     };
 
@@ -109,11 +112,18 @@ const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
       const parsed = parseValue(localValue);
       if (parsed !== null) {
         const clamped = clampValue(parsed);
-        onChange(clamped);
+        // Only call onChange if the value actually changed
+        if (clamped !== value) {
+          onChange(clamped);
+        }
         setLocalValue(String(clamped));
       } else {
-        // Reset to the external value if invalid
-        setLocalValue(value !== undefined ? String(value) : "");
+        // Empty or invalid input - default to 0 (clamped by min/max)
+        const defaultValue = clampValue(0);
+        if (defaultValue !== value) {
+          onChange(defaultValue);
+        }
+        setLocalValue(String(defaultValue));
       }
 
       props.onBlur?.(e);

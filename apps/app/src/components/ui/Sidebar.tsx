@@ -3,7 +3,7 @@ import { useTranslations } from 'next-intl';
 import { useShallow } from 'zustand/react/shallow';
 import { useStore, useSelectedPart, useSelectedCabinet } from '@/lib/store';
 import { Button } from '@meble/ui';
-import { Plus, Download, Settings, List, Package, House, Database } from 'lucide-react';
+import { Plus, Download, Settings, List, Package, House, Database, Copy, Check } from 'lucide-react';
 import { useIsAdmin } from '@/hooks';
 import { APP_NAME } from '@meble/constants';
 import { PropertiesPanel } from './PropertiesPanel';
@@ -14,6 +14,7 @@ import { CabinetTemplateDialog } from './CabinetTemplateDialog';
 import { HistoryButtons } from './HistoryButtons';
 import { SettingsDropdown } from './SettingsDropdown';
 import { ExportDialog } from './ExportDialog';
+import { CopySceneDialog, copySceneToClipboard } from './CopySceneDialog';
 import { UserMenu } from '@/components/auth';
 import {
   Dialog,
@@ -47,6 +48,8 @@ export function Sidebar() {
   const [activeTab, setActiveTab] = useState<TabType>('properties');
   const [cabinetDialogOpen, setCabinetDialogOpen] = useState(false);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [copyDialogOpen, setCopyDialogOpen] = useState(false);
+  const [justCopied, setJustCopied] = useState(false);
 
   const handleAddPart = () => {
     addPart(selectedFurnitureId);
@@ -104,6 +107,21 @@ export function Sidebar() {
     URL.revokeObjectURL(url);
   };
 
+  const handleCopyScene = async () => {
+    // If more than 2 parts, open dialog for selection
+    if (parts.length > 2) {
+      setCopyDialogOpen(true);
+      return;
+    }
+
+    // For 2 or fewer parts, copy directly to clipboard
+    const success = await copySceneToClipboard(parts);
+    if (success) {
+      setJustCopied(true);
+      setTimeout(() => setJustCopied(false), 2000);
+    }
+  };
+
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
@@ -157,6 +175,29 @@ export function Sidebar() {
             >
               <Database className="h-4 w-4 mr-2" />
               Export Scene (Admin)
+            </Button>
+          )}
+
+          {/* Admin-only: Copy scene data */}
+          {isAdmin && (
+            <Button
+              onClick={handleCopyScene}
+              variant="outline"
+              className="w-full h-11 md:h-8 border-dashed border-amber-500 text-amber-600 hover:bg-amber-50"
+              size="sm"
+              disabled={parts.length === 0}
+            >
+              {justCopied ? (
+                <>
+                  <Check className="h-4 w-4 mr-2" />
+                  Skopiowano!
+                </>
+              ) : (
+                <>
+                  <Copy className="h-4 w-4 mr-2" />
+                  Copy Scene (Admin)
+                </>
+              )}
             </Button>
           )}
         </div>
@@ -228,10 +269,16 @@ export function Sidebar() {
         furnitureId={selectedFurnitureId}
       />
 
-      {/* Export CSV Dialog */}
+      {/* Export Dialog */}
       <ExportDialog
         open={exportDialogOpen}
         onOpenChange={setExportDialogOpen}
+      />
+
+      {/* Copy Scene Dialog (Admin) */}
+      <CopySceneDialog
+        open={copyDialogOpen}
+        onOpenChange={setCopyDialogOpen}
       />
 
       {/* Validation Error Dialog */}

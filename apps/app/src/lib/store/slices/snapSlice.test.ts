@@ -20,8 +20,9 @@ describe('snapSlice', () => {
       strengthCurve: 'linear',
       edgeSnap: true,
       faceSnap: true,
+      tJointSnap: true,
       collisionOffset: 1,
-      version: 'v2', // V2 is default for new users
+      version: 'v3', // V3 is default - movement-aware face-to-face snapping
     });
   });
 
@@ -57,8 +58,9 @@ describe('snapSlice', () => {
       strengthCurve: 'linear',
       edgeSnap: true,
       faceSnap: true,
+      tJointSnap: true,
       collisionOffset: 1,
-      version: 'v2',
+      version: 'v3',
     });
   });
 
@@ -75,6 +77,14 @@ describe('snapSlice', () => {
     store.getState().setSnapVersion('v1');
     store.getState().setSnapVersion('v2');
     expect(store.getState().snapSettings.version).toBe('v2');
+  });
+
+  it('sets snap version to v3', () => {
+    const store = createSnapStore();
+
+    store.getState().setSnapVersion('v1');
+    store.getState().setSnapVersion('v3');
+    expect(store.getState().snapSettings.version).toBe('v3');
   });
 
   it('updates snap version via updateSnapSettings', () => {

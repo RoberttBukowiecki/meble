@@ -41,6 +41,7 @@ function createDefaultSnapSettings(overrides: Partial<SnapSettings> = {}): SnapS
     strengthCurve: 'linear',
     edgeSnap: true,
     faceSnap: true,
+    tJointSnap: true,
     collisionOffset: 1,
     version: 'v2',
     ...overrides,

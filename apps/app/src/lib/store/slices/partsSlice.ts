@@ -134,6 +134,19 @@ export const createPartsSlice: StoreSlice<PartsSlice> = (set, get) => ({
         }
       }
 
+      // Sync shapeParams when width/height are updated directly (e.g., from 3D resize)
+      // Only for RECT shape type - other shapes need manual shapeParams updates
+      if (!patch.shapeParams && (patch.width !== undefined || patch.height !== undefined)) {
+        if (currentPart.shapeType === 'RECT') {
+          const currentParams = currentPart.shapeParams as { type: 'RECT'; x: number; y: number };
+          updatedPatch.shapeParams = {
+            type: 'RECT',
+            x: patch.width ?? currentParams.x,
+            y: patch.height ?? currentParams.y,
+          };
+        }
+      }
+
       // Round transform values to 2 decimal places (only if they have more)
       if (updatedPatch.position) {
         updatedPatch.position = roundPosition(updatedPatch.position);
@@ -242,6 +255,19 @@ export const createPartsSlice: StoreSlice<PartsSlice> = (set, get) => ({
               updatedPatch.height = Math.max(...ys) - Math.min(...ys);
               break;
             }
+          }
+        }
+
+        // Sync shapeParams when width/height are updated directly (e.g., from 3D resize)
+        // Only for RECT shape type - other shapes need manual shapeParams updates
+        if (!patch.shapeParams && (patch.width !== undefined || patch.height !== undefined)) {
+          if (part.shapeType === 'RECT') {
+            const currentParams = part.shapeParams as { type: 'RECT'; x: number; y: number };
+            updatedPatch.shapeParams = {
+              type: 'RECT',
+              x: patch.width ?? currentParams.x,
+              y: patch.height ?? currentParams.y,
+            };
           }
         }
 

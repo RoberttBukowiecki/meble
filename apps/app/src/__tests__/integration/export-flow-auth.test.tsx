@@ -69,14 +69,19 @@ jest.mock('@/lib/projectHash', () => ({
 jest.mock('next-intl', () => ({
   useTranslations: () => (key: string) => {
     const translations: Record<string, string> = {
-      title: 'Export CSV',
+      title: 'Export',
       description: 'Export your project',
       selectColumns: 'Select columns',
       preview: 'Preview',
       csvPreview: 'CSV Preview',
       noData: 'No data',
       cancel: 'Anuluj',
-      export: 'Eksportuj',
+      exportCSV: 'Download CSV',
+      exportDXF: 'Download DXF',
+      dxfHint: 'DXF hint',
+      dxfMissing: 'No DXF-only parts',
+      dxfCount: 'DXF count: {count}',
+      export: 'Export',
       'columns.furniture': 'Furniture',
       'columns.partName': 'Part Name',
       'columns.material': 'Material',
@@ -175,7 +180,7 @@ describe('Authenticated User Export Flow', () => {
       expect(screen.getByText('5 kredytów')).toBeInTheDocument();
 
       // Click export
-      const exportButton = screen.getByRole('button', { name: /Eksportuj/i });
+      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
       await user.click(exportButton);
 
       // Verify credit use API was called
@@ -226,7 +231,7 @@ describe('Authenticated User Export Flow', () => {
       render(<ExportDialog {...defaultProps} />);
 
       // Click export
-      const exportButton = screen.getByRole('button', { name: /Eksportuj/i });
+      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
       await user.click(exportButton);
 
       // Verify free re-export message
@@ -258,7 +263,7 @@ describe('Authenticated User Export Flow', () => {
 
       // Should show "Kup kredyty" button instead of export
       expect(screen.getByRole('button', { name: /Kup kredyty/i })).toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: /Eksportuj/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Download CSV/i })).not.toBeInTheDocument();
 
       // Should show no credits warning
       expect(screen.getByText(/Brak kredytów/i)).toBeInTheDocument();
@@ -310,7 +315,7 @@ describe('Authenticated User Export Flow', () => {
       const user = userEvent.setup();
       render(<ExportDialog {...defaultProps} />);
 
-      const exportButton = screen.getByRole('button', { name: /Eksportuj/i });
+      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
       await user.click(exportButton);
 
       await waitFor(() => {
@@ -334,7 +339,7 @@ describe('Authenticated User Export Flow', () => {
       const user = userEvent.setup();
       render(<ExportDialog {...defaultProps} />);
 
-      const exportButton = screen.getByRole('button', { name: /Eksportuj/i });
+      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
       await user.click(exportButton);
 
       // Verify error tracking
@@ -360,7 +365,7 @@ describe('Authenticated User Export Flow', () => {
       const user = userEvent.setup();
       render(<ExportDialog {...defaultProps} />);
 
-      const exportButton = screen.getByRole('button', { name: /Eksportuj/i });
+      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
       await user.click(exportButton);
 
       // Verify error message
@@ -383,7 +388,7 @@ describe('Authenticated User Export Flow', () => {
       const user = userEvent.setup();
       render(<ExportDialog {...defaultProps} />);
 
-      const exportButton = screen.getByRole('button', { name: /Eksportuj/i });
+      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
       await user.click(exportButton);
 
       // Credits should still show original count
@@ -457,11 +462,11 @@ describe('Authenticated User Export Flow', () => {
       const user = userEvent.setup();
       render(<ExportDialog {...defaultProps} />);
 
-      const exportButton = screen.getByRole('button', { name: /Eksportuj/i });
+      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
       await user.click(exportButton);
 
       // Should show loading
-      expect(screen.getByText(/Eksportowanie/i)).toBeInTheDocument();
+      expect(screen.getByText(/Eksportowanie CSV/i)).toBeInTheDocument();
 
       // Cleanup
       resolveCredit!({ creditUsed: true, creditsRemaining: 4, isFreeReexport: false });

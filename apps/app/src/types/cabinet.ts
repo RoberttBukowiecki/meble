@@ -217,6 +217,14 @@ export interface Cabinet {
   updatedAt: Date;
   /** Visual-only: hide fronts (doors, drawer fronts) in 3D view */
   hideFronts?: boolean;
+  /**
+   * World transform of the cabinet (source of truth for rotation)
+   * Stored as Euler angles to avoid gimbal lock issues during editing
+   */
+  worldTransform?: {
+    position: [number, number, number];
+    rotation: [number, number, number]; // Euler angles in radians
+  };
 }
 
 /**

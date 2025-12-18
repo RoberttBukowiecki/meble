@@ -59,10 +59,11 @@ export function SnapControlPanel() {
         variant={snapEnabled ? 'default' : 'ghost'}
         size="sm"
         onClick={toggleSnap}
-        className="h-8 px-2"
+        className="h-8 gap-1 px-2"
         title={snapEnabled ? 'Wyłącz przyciąganie' : 'Włącz przyciąganie'}
       >
         <Magnet className="h-4 w-4" />
+        <span className="text-xs uppercase opacity-70">{snapSettings.version}</span>
       </Button>
 
       {/* Settings Dropdown */}
@@ -85,9 +86,12 @@ export function SnapControlPanel() {
           <div className="px-2 py-1.5">
             <div className="mb-1.5 text-sm font-medium">Tryb przyciągania</div>
             <DropdownMenuRadioGroup
-              value={snapSettings.version || 'v2'}
+              value={snapSettings.version || 'v3'}
               onValueChange={handleVersionChange}
             >
+              <DropdownMenuRadioItem value="v3" className="text-sm">
+                V3 - Inteligentne przyciąganie
+              </DropdownMenuRadioItem>
               <DropdownMenuRadioItem value="v2" className="text-sm">
                 V2 - Obwiednia szafy
               </DropdownMenuRadioItem>
@@ -130,6 +134,16 @@ export function SnapControlPanel() {
           >
             Przyciąganie powierzchni
           </DropdownMenuCheckboxItem>
+
+          {/* T-Joint Snap (only visible for V3) */}
+          {snapSettings.version === 'v3' && (
+            <DropdownMenuCheckboxItem
+              checked={snapSettings.tJointSnap}
+              onCheckedChange={(checked) => updateSnapSettings({ tJointSnap: checked })}
+            >
+              Przyciąganie T-joint
+            </DropdownMenuCheckboxItem>
+          )}
 
           <DropdownMenuSeparator />
 

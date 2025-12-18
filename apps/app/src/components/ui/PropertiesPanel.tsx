@@ -63,6 +63,7 @@ import {
   Label,
 } from '@meble/ui';
 import { cn } from '@/lib/utils';
+import { getCabinetTransform } from '@/lib/store/utils';
 
 import { getCabinetTypeLabel } from '@/lib/cabinetHelpers';
 import { DimensionsConfig } from './DimensionsConfig';
@@ -296,25 +297,22 @@ function CabinetPropertiesPanel({
     }
   };
 
-  // Calculate cabinet center and rotation from its parts
+  // Get cabinet transform - prefer stored worldTransform (source of truth) over calculated
   const cabinetParts = parts.filter((p) => selectedCabinet.partIds.includes(p.id));
-  const cabinetCenter: [number, number, number] = cabinetParts.length > 0
-    ? (() => {
-        const sum = cabinetParts.reduce(
-          (acc, p) => [acc[0] + p.position[0], acc[1] + p.position[1], acc[2] + p.position[2]] as [number, number, number],
-          [0, 0, 0] as [number, number, number]
-        );
-        return [
-          Math.round(sum[0] / cabinetParts.length),
-          Math.round(sum[1] / cabinetParts.length),
-          Math.round(sum[2] / cabinetParts.length)
-        ] as [number, number, number];
-      })()
-    : [0, 0, 0];
+  const { center: calculatedCenter } = getCabinetTransform(cabinetParts);
 
-  // Get rotation from reference part (bottom or first)
-  const referencePart = cabinetParts.find((p) => p.cabinetMetadata?.role === 'BOTTOM') ?? cabinetParts[0];
-  const cabinetRotation: [number, number, number] = referencePart?.rotation ?? [0, 0, 0];
+  // Use stored worldTransform if available (prevents gimbal lock issues)
+  // Fall back to calculated values for legacy cabinets without worldTransform
+  const cabinetCenter: [number, number, number] = selectedCabinet.worldTransform?.position ?? [
+    Math.round(calculatedCenter.x),
+    Math.round(calculatedCenter.y),
+    Math.round(calculatedCenter.z),
+  ];
+
+  // Use stored rotation (Euler angles) to avoid gimbal lock during editing
+  const cabinetRotation: [number, number, number] = selectedCabinet.worldTransform?.rotation ?? [0, 0, 0];
+
+  // Convert to degrees for display
   const cabinetRotationDegrees = cabinetRotation.map(
     (r) => Math.round((r * 180) / Math.PI * 100) / 100
   ) as [number, number, number];
@@ -326,8 +324,16 @@ function CabinetPropertiesPanel({
   };
 
   const handleCabinetRotationUpdate = (axis: 0 | 1 | 2, valueDegrees: number) => {
-    const newRotation = [...cabinetRotation] as [number, number, number];
-    newRotation[axis] = (valueDegrees * Math.PI) / 180;
+    // Build new rotation from current displayed values, updating only the changed axis
+    const newRotationDegrees = [...cabinetRotationDegrees] as [number, number, number];
+    newRotationDegrees[axis] = valueDegrees;
+
+    // Convert to radians
+    const newRotation: [number, number, number] = [
+      (newRotationDegrees[0] * Math.PI) / 180,
+      (newRotationDegrees[1] * Math.PI) / 180,
+      (newRotationDegrees[2] * Math.PI) / 180,
+    ];
     updateCabinetTransform(selectedCabinet.id, { rotation: newRotation });
   };
 

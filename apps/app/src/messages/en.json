@@ -161,12 +161,18 @@
     "continue": "I understand, continue"
   },
   "ExportDialog": {
-    "title": "Export to CSV",
-    "description": "Select columns to export and review data preview.",
+    "title": "Export",
+    "description": "Select CSV columns and download data as CSV or DXF.",
     "selectColumns": "Select Columns",
     "preview": "Preview (first 5 rows)",
+    "csvPreview": "CSV Preview",
     "noData": "No data to display",
     "showingFirst": "Showing {count} of {total} rows",
+    "exportCSV": "Download CSV",
+    "exportDXF": "Download DXF",
+    "dxfHint": "DXF is generated only for non-rectangular shapes (L, trapezoid, polygon).",
+    "dxfCount": "Parts requiring DXF: {count}",
+    "dxfMissing": "No DXF-only parts — download CSV instead.",
     "export": "Export",
     "cancel": "Cancel",
     "columns": {
@@ -184,5 +190,14 @@
       "cabinetRole": "Cabinet Role",
       "drawerIndex": "Drawer No."
     }
+  },
+  "CopySceneDialog": {
+    "title": "Copy Scene",
+    "description": "Select parts to copy to clipboard as JSON.",
+    "selectAll": "Select all",
+    "selectedCount": "{count} parts selected",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "cancel": "Cancel"
   }
 }

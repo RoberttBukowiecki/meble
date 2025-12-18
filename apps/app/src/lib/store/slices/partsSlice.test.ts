@@ -99,6 +99,34 @@ describe('partsSlice', () => {
     expect(store.getState().detectCollisions).toHaveBeenCalledTimes(1);
   });
 
+  it('syncs shapeParams when width/height are updated directly (3D resize)', () => {
+    const part = createBasePart();
+    const store = createPartsStore({ parts: [part] });
+
+    // Simulate 3D resize updating width/height directly
+    store.getState().updatePart(part.id, { width: 800, height: 500 }, true);
+    jest.runOnlyPendingTimers();
+
+    const updated = store.getState().parts[0];
+    expect(updated.width).toBe(800);
+    expect(updated.height).toBe(500);
+    // shapeParams should be synced for RECT type
+    expect(updated.shapeParams).toEqual({ type: 'RECT', x: 800, y: 500 });
+  });
+
+  it('syncs shapeParams when only width is updated', () => {
+    const part = createBasePart();
+    const store = createPartsStore({ parts: [part] });
+
+    store.getState().updatePart(part.id, { width: 700 }, true);
+    jest.runOnlyPendingTimers();
+
+    const updated = store.getState().parts[0];
+    expect(updated.width).toBe(700);
+    expect(updated.height).toBe(400); // unchanged
+    expect(updated.shapeParams).toEqual({ type: 'RECT', x: 700, y: 400 });
+  });
+
   it('updates depth when material changes', () => {
     const part = createBasePart({ materialId: 'm1', depth: 16 });
     const store = createPartsStore({ parts: [part] });

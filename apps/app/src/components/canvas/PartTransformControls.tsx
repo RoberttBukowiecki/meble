@@ -12,6 +12,7 @@ import { useSnapContext } from '@/lib/snap-context';
 import { useDimensionContext } from '@/lib/dimension-context';
 import { calculateSnapSimple } from '@/lib/snapping';
 import { calculatePartSnapV2 } from '@/lib/snapping-v2';
+import { calculatePartSnapV3 } from '@/lib/snapping-v3';
 import { calculateDimensions } from '@/lib/dimension-calculator';
 import { getPartBoundingBoxAtPosition, getOtherBoundingBoxes } from '@/lib/bounding-box-utils';
 import type { TransformControls as TransformControlsImpl } from 'three-stdlib';
@@ -123,8 +124,19 @@ export function PartTransformControls({
         if (snapEnabled) {
           let snapResult;
 
-          // Use V2 snapping for bounding box based snapping, V1 for face-to-face
-          if (snapSettings.version === 'v2') {
+          // Select snap algorithm based on version
+          if (snapSettings.version === 'v3') {
+            // V3: Movement-aware face-to-face snapping
+            // Only snaps on the drag axis to prevent unwanted position jumps
+            snapResult = calculatePartSnapV3(
+              part,
+              position,
+              parts,
+              cabinets,
+              snapSettings,
+              effectiveAxis
+            );
+          } else if (snapSettings.version === 'v2') {
             // V2: Group bounding box based snapping
             snapResult = calculatePartSnapV2(
               part,
@@ -135,7 +147,7 @@ export function PartTransformControls({
               effectiveAxis
             );
           } else {
-            // V1: Individual part face snapping
+            // V1: Individual part face snapping (legacy)
             const otherParts = parts.filter(
               (p) =>
                 p.id !== part.id &&
@@ -153,10 +165,10 @@ export function PartTransformControls({
           }
 
           if (snapResult.snapped && snapResult.snapPoints.length > 0) {
-            // Apply snap offset ONLY on the drag axis
+            // Apply snap only on the drag axis to prevent unwanted position jumps
             const axisIndex = effectiveAxis === 'X' ? 0 : effectiveAxis === 'Y' ? 1 : 2;
             position[axisIndex] = snapResult.position[axisIndex];
-            target.position.setComponent(axisIndex, position[axisIndex]);
+            target.position.set(position[0], position[1], position[2]);
             setSnapPoints(snapResult.snapPoints);
           } else {
             clearSnapPoints();

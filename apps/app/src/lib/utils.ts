@@ -50,15 +50,44 @@ export function roundPosition(pos: [number, number, number]): [number, number, n
 }
 
 /**
+ * Snap radians to common angles (0°, ±90°, ±180°) if within tolerance.
+ * This fixes floating-point drift that causes values like -89.89° instead of -90°.
+ *
+ * @param radians - The angle in radians
+ * @param toleranceDegrees - How close (in degrees) the value must be to snap (default: 0.5°)
+ */
+function snapToCommonAngle(radians: number, toleranceDegrees: number = 0.5): number {
+  const toleranceRad = (toleranceDegrees * Math.PI) / 180;
+
+  // Common angles in radians: 0°, ±90°, ±180°, 270° (-90°)
+  const commonAngles = [
+    0,
+    Math.PI / 2,      // 90°
+    Math.PI,          // 180°
+    -Math.PI / 2,     // -90°
+    -Math.PI,         // -180°
+    (3 * Math.PI) / 2, // 270°
+  ];
+
+  for (const angle of commonAngles) {
+    if (Math.abs(radians - angle) < toleranceRad) {
+      return angle;
+    }
+  }
+
+  return radians;
+}
+
+/**
  * Round rotation tuple to 4 decimal places to preserve precision for standard angles.
- * Radians require higher precision than positions because values like PI/2 (90°)
- * are ~1.5708, and 2 decimal places would cause visible drift (e.g., -89.95° instead of -90°).
+ * Also snaps to common angles (0°, ±90°, ±180°) if within 0.5° tolerance to fix
+ * floating-point drift from Three.js TransformControls.
  */
 export function roundRotation(rot: [number, number, number]): [number, number, number] {
   return [
-    roundToDecimals(rot[0], 4),
-    roundToDecimals(rot[1], 4),
-    roundToDecimals(rot[2], 4),
+    snapToCommonAngle(roundToDecimals(rot[0], 4)),
+    snapToCommonAngle(roundToDecimals(rot[1], 4)),
+    snapToCommonAngle(roundToDecimals(rot[2], 4)),
   ];
 }
 

@@ -15,7 +15,6 @@ import {
   TableHeader,
   TableRow,
   Label,
-  Checkbox, // Assuming Checkbox exists or using standard input with better styling
   Badge,
 } from '@meble/ui';
 import { track, AnalyticsEvent } from '@meble/analytics';
@@ -26,6 +25,13 @@ import {
   downloadCSV,
   DEFAULT_COLUMNS,
 } from '@/lib/csv';
+import JSZip from 'jszip';
+import {
+  generateAllPartsDXF,
+  countDXFParts,
+  type DXFExportResult,
+} from '@/lib/export/dxf';
+import type { Part, Material, Furniture } from '@/types';
 import { generatePartsHash } from '@/lib/projectHash';
 import { Download, CreditCard, Sparkles, Clock, Loader2, ShoppingCart } from 'lucide-react';
 import { useCredits } from '@/hooks/useCredits';
@@ -51,6 +57,7 @@ export function ExportDialog({
   );
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [exportStatus, setExportStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
+  const [exportingFormat, setExportingFormat] = useState<'csv' | 'dxf' | null>(null);
   const [exportMessage, setExportMessage] = useState<string | null>(null);
 
   // Credits hooks - use based on auth status
@@ -68,6 +75,8 @@ export function ExportDialog({
     if (parts.length === 0) return null;
     return generatePartsHash(parts);
   }, [parts]);
+
+  const dxfPartsCount = useMemo(() => countDXFParts(parts), [parts]);
 
   // Track when export dialog opens
   useEffect(() => {
@@ -98,8 +107,18 @@ export function ExportDialog({
     return generateCSV(parts, materials, furnitures, selectedColumns);
   }, [parts, materials, furnitures, selectedColumns]);
 
-  const handleExport = async () => {
+  const handleExport = async (format: 'csv' | 'dxf') => {
     if (!projectHash) return;
+
+    if (format === 'dxf' && dxfPartsCount === 0) {
+      setExportStatus('error');
+      setExportMessage(t('dxfMissing'));
+      track(AnalyticsEvent.EXPORT_VALIDATION_FAILED, {
+        error_count: 1,
+        error_types: ['no_dxf_parts'],
+      });
+      return;
+    }
 
     // If no credits, show purchase modal and track
     if (!hasCredits) {
@@ -109,6 +128,7 @@ export function ExportDialog({
     }
 
     setExportStatus('processing');
+    setExportingFormat(format);
     setExportMessage(null);
 
     try {
@@ -119,6 +139,7 @@ export function ExportDialog({
         // Credit use failed - likely no credits
         setExportStatus('error');
         setExportMessage(credits.error || 'Nie udało się użyć kredytu');
+        setExportingFormat(null);
         track(AnalyticsEvent.EXPORT_VALIDATION_FAILED, {
           error_count: 1,
           error_types: ['no_credits'],
@@ -126,16 +147,43 @@ export function ExportDialog({
         return;
       }
 
-      // Generate and download CSV
-      const csv = generateCSV(parts, materials, furnitures, selectedColumns);
       const timestamp = new Date().toISOString().split('T')[0];
-      downloadCSV(csv, `e-meble_export_${timestamp}.csv`);
+
+      if (format === 'csv') {
+        const csv = generateCSV(parts, materials, furnitures, selectedColumns);
+        downloadCSV(csv, `e-meble_export_${timestamp}.csv`);
+      } else {
+        const dxfFiles = generateAllPartsDXF(parts);
+
+        if (dxfFiles.length === 0) {
+          setExportStatus('error');
+          setExportMessage(t('dxfMissing'));
+          setExportingFormat(null);
+          track(AnalyticsEvent.EXPORT_VALIDATION_FAILED, {
+            error_count: 1,
+            error_types: ['no_dxf_parts'],
+          });
+          return;
+        }
+
+        const zip = new JSZip();
+        dxfFiles.forEach((file) => {
+          zip.file(file.filename, file.content);
+        });
+
+        const manifest = buildDXFManifest(parts, materials, furnitures, dxfFiles);
+        zip.file('manifest.json', JSON.stringify(manifest, null, 2));
+
+        const archive = await zip.generateAsync({ type: 'uint8array' });
+        const blob = new Blob([archive], { type: 'application/zip' });
+        downloadBlob(blob, `e-meble_export_${timestamp}.zip`);
+      }
 
       // Track successful export
       track(AnalyticsEvent.EXPORT_COMPLETED, {
         parts_count: parts.length,
         used_credit: !result.isFreeReexport,
-        export_format: 'csv',
+        export_format: format,
       });
 
       // Track Smart Export usage
@@ -147,18 +195,21 @@ export function ExportDialog({
       setExportMessage(
         result.isFreeReexport
           ? 'Darmowy re-export (Smart Export aktywny)'
-          : `Eksport ukończony. Pozostało kredytów: ${result.creditsRemaining}`
+          : `Eksport ${format.toUpperCase()} ukończony. Pozostało kredytów: ${result.creditsRemaining}`
       );
+      setExportingFormat(null);
 
       // Close dialog after short delay on success
       setTimeout(() => {
         onOpenChange(false);
         setExportStatus('idle');
         setExportMessage(null);
+        setExportingFormat(null);
       }, 1500);
     } catch (error) {
       setExportStatus('error');
       setExportMessage('Wystąpił błąd podczas eksportu');
+      setExportingFormat(null);
       track(AnalyticsEvent.EXPORT_VALIDATION_FAILED, {
         error_count: 1,
         error_types: ['unknown_error'],
@@ -277,6 +328,22 @@ export function ExportDialog({
               placeholder={t('noData')}
             />
           </div>
+
+          <div className="space-y-2">
+            <h3 className="text-sm font-semibold">DXF</h3>
+            <p className="text-xs text-muted-foreground">{t('dxfHint')}</p>
+            <div
+              className={`rounded-md border px-3 py-2 text-xs ${
+                dxfPartsCount === 0
+                  ? 'bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:text-amber-200'
+                  : 'bg-emerald-50 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-200'
+              }`}
+            >
+              {dxfPartsCount === 0
+                ? t('dxfMissing')
+                : t('dxfCount', { count: dxfPartsCount })}
+            </div>
+          </div>
         </div>
 
         {/* Export Status Message */}
@@ -324,23 +391,43 @@ export function ExportDialog({
           </Button>
 
           {hasCredits ? (
-            <Button
-              onClick={handleExport}
-              disabled={parts.length === 0 || selectedColumns.length === 0 || exportStatus === 'processing'}
-              className="w-full sm:w-auto"
-            >
-              {exportStatus === 'processing' ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Eksportowanie...
-                </>
-              ) : (
-                <>
-                  <Download className="mr-2 h-4 w-4" />
-                  {t('export')}
-                </>
-              )}
-            </Button>
+            <div className="flex w-full sm:w-auto flex-col sm:flex-row gap-2">
+              <Button
+                variant="secondary"
+                onClick={() => handleExport('dxf')}
+                disabled={parts.length === 0 || dxfPartsCount === 0 || exportStatus === 'processing'}
+                className="w-full sm:w-auto"
+              >
+                {exportStatus === 'processing' && exportingFormat === 'dxf' ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Eksportowanie DXF...
+                  </>
+                ) : (
+                  <>
+                    <Download className="mr-2 h-4 w-4" />
+                    {t('exportDXF')}
+                  </>
+                )}
+              </Button>
+              <Button
+                onClick={() => handleExport('csv')}
+                disabled={parts.length === 0 || selectedColumns.length === 0 || exportStatus === 'processing'}
+                className="w-full sm:w-auto"
+              >
+                {exportStatus === 'processing' && exportingFormat === 'csv' ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Eksportowanie CSV...
+                  </>
+                ) : (
+                  <>
+                    <Download className="mr-2 h-4 w-4" />
+                    {t('exportCSV')}
+                  </>
+                )}
+              </Button>
+            </div>
           ) : (
             <Button
               onClick={handleBuyCredits}
@@ -368,4 +455,52 @@ export function ExportDialog({
     />
     </>
   );
+}
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+function buildDXFManifest(
+  parts: Part[],
+  materials: Material[],
+  furnitures: Furniture[],
+  dxfFiles: DXFExportResult[]
+) {
+  const materialById = new Map(materials.map((m) => [m.id, m]));
+  const furnitureById = new Map(furnitures.map((f) => [f.id, f]));
+  const partById = new Map(parts.map((p) => [p.id, p]));
+
+  return {
+    generatedAt: new Date().toISOString(),
+    totalParts: parts.length,
+    dxfFileCount: dxfFiles.length,
+    note: 'Rectangular parts do not require DXF. Use the CSV for full part list and cutting details.',
+    files: dxfFiles.map((file) => {
+      const part = partById.get(file.partId);
+      const material = part ? materialById.get(part.materialId) : undefined;
+      const furniture = part ? furnitureById.get(part.furnitureId) : undefined;
+
+      return {
+        file: file.filename,
+        partId: file.partId,
+        name: file.partName,
+        furniture: furniture?.name ?? null,
+        material: material?.name ?? null,
+        thicknessMm: part?.depth ?? null,
+        dimensionsMm: part ? [part.width, part.height] : null,
+        shapeType: part?.shapeType ?? null,
+        notes: part?.notes ?? null,
+        cabinetRole: part?.cabinetMetadata?.role ?? null,
+        drawerIndex: part?.cabinetMetadata?.drawerIndex ?? null,
+      };
+    }),
+  };
 }

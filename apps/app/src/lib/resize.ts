@@ -40,30 +40,36 @@ const vec3Scale = (v: Vec3, s: number): Vec3 => [v[0] * s, v[1] * s, v[2] * s];
  * Apply Euler rotation (XYZ order) to a vector
  */
 function rotateVector(vec: Vec3, rotation: Vec3): Vec3 {
+  // Match Three.js Euler 'XYZ' rotation matrix to stay consistent with R3F objects
   const [rx, ry, rz] = rotation;
-  const cx = Math.cos(rx), sx = Math.sin(rx);
-  const cy = Math.cos(ry), sy = Math.sin(ry);
-  const cz = Math.cos(rz), sz = Math.sin(rz);
 
-  let [x, y, z] = vec;
+  const cx = Math.cos(rx);
+  const sx = Math.sin(rx);
+  const cy = Math.cos(ry);
+  const sy = Math.sin(ry);
+  const cz = Math.cos(rz);
+  const sz = Math.sin(rz);
 
-  // Rotate X
-  const y1 = y * cx - z * sx;
-  const z1 = y * sx + z * cx;
-  y = y1;
-  z = z1;
+  // Matrix components from THREE.Matrix4.setFromEuler (order: XYZ)
+  const m11 = cy * cz;
+  const m12 = -cy * sz;
+  const m13 = sy;
 
-  // Rotate Y
-  const x1 = x * cy + z * sy;
-  const z2 = -x * sy + z * cy;
-  x = x1;
-  z = z2;
+  const m21 = sx * sy * cz + cx * sz;
+  const m22 = -sx * sy * sz + cx * cz;
+  const m23 = -sx * cy;
 
-  // Rotate Z
-  const x2 = x * cz - y * sz;
-  const y2 = x * sz + y * cz;
+  const m31 = -cx * sy * cz + sx * sz;
+  const m32 = cx * sy * sz + sx * cz;
+  const m33 = cx * cy;
 
-  return [x2, y2, z];
+  const [x, y, z] = vec;
+
+  return [
+    m11 * x + m12 * y + m13 * z,
+    m21 * x + m22 * y + m23 * z,
+    m31 * x + m32 * y + m33 * z,
+  ];
 }
 
 // ============================================================================

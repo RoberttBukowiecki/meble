@@ -14,6 +14,7 @@ import type { Part, Cabinet, SnapSettings, SnapResult, SnapPoint } from '@/types
 import {
   type Vec3,
   type OBBFace,
+  type OBBEdge,
   vec3Add,
   vec3Sub,
   vec3Dot,
@@ -24,6 +25,10 @@ import {
   calculateFaceAlignmentDistance,
   calculateFaceAlignmentOffset,
   areOBBsWithinSnapRange,
+  getFaceEdges,
+  calculateEdgeToFaceDistance,
+  calculateEdgeToFaceSnapOffset,
+  isEdgeWithinFaceBounds,
 } from './obb';
 import {
   type GroupBoundingBoxes,
@@ -41,12 +46,13 @@ import {
  * Snap candidate for V2 snapping
  */
 export interface SnapV2Candidate {
-  type: 'face' | 'edge';
-  variant?: 'connection' | 'alignment'; // connection = opposite faces, alignment = same direction
+  type: 'face' | 'edge' | 'edge-to-face';
+  variant?: 'connection' | 'alignment' | 't-joint'; // t-joint = edge to face (perpendicular)
   sourceGroupId: string;
   targetGroupId: string;
   sourceFace: OBBFace;
   targetFace: OBBFace;
+  sourceEdge?: OBBEdge; // For edge-to-face snaps
   snapOffset: Vec3;
   distance: number;
   alignment: number; // 0-1, how well faces align
@@ -71,6 +77,93 @@ const MAX_SNAP_POINTS = 5;
 
 /** Penalty factor for extended box snaps (prefer core box) */
 const EXTENDED_BOX_PENALTY = 0.8;
+
+// ============================================================================
+// Collision Detection
+// ============================================================================
+
+/**
+ * Check if two AABBs overlap
+ */
+function doAABBsOverlap(
+  aabbA: { min: Vec3; max: Vec3 },
+  aabbB: { min: Vec3; max: Vec3 }
+): boolean {
+  return (
+    aabbA.min[0] < aabbB.max[0] && aabbA.max[0] > aabbB.min[0] &&
+    aabbA.min[1] < aabbB.max[1] && aabbA.max[1] > aabbB.min[1] &&
+    aabbA.min[2] < aabbB.max[2] && aabbA.max[2] > aabbB.min[2]
+  );
+}
+
+/**
+ * Get AABB from OBB faces
+ */
+function getAABBFromFaces(faces: OBBFace[]): { min: Vec3; max: Vec3 } {
+  let minX = Infinity, minY = Infinity, minZ = Infinity;
+  let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+
+  for (const face of faces) {
+    for (const corner of face.corners) {
+      minX = Math.min(minX, corner[0]);
+      minY = Math.min(minY, corner[1]);
+      minZ = Math.min(minZ, corner[2]);
+      maxX = Math.max(maxX, corner[0]);
+      maxY = Math.max(maxY, corner[1]);
+      maxZ = Math.max(maxZ, corner[2]);
+    }
+  }
+
+  return {
+    min: [minX, minY, minZ],
+    max: [maxX, maxY, maxZ],
+  };
+}
+
+/**
+ * Check if applying a snap offset would cause collision
+ * Returns true if the snap would result in overlapping parts
+ */
+function wouldSnapCauseCollision(
+  movingGroup: GroupBoundingBoxes,
+  targetGroup: GroupBoundingBoxes,
+  snapOffset: Vec3,
+  collisionOffset: number
+): boolean {
+  // Get AABBs
+  const movingAABB = getAABBFromFaces(movingGroup.faces.core);
+  const targetAABB = getAABBFromFaces(targetGroup.faces.core);
+
+  // Apply snap offset to moving AABB
+  const movedAABB: { min: Vec3; max: Vec3 } = {
+    min: [
+      movingAABB.min[0] + snapOffset[0],
+      movingAABB.min[1] + snapOffset[1],
+      movingAABB.min[2] + snapOffset[2],
+    ],
+    max: [
+      movingAABB.max[0] + snapOffset[0],
+      movingAABB.max[1] + snapOffset[1],
+      movingAABB.max[2] + snapOffset[2],
+    ],
+  };
+
+  // Shrink by collision offset to allow touching (not overlapping)
+  const shrunkMovedAABB: { min: Vec3; max: Vec3 } = {
+    min: [
+      movedAABB.min[0] + collisionOffset,
+      movedAABB.min[1] + collisionOffset,
+      movedAABB.min[2] + collisionOffset,
+    ],
+    max: [
+      movedAABB.max[0] - collisionOffset,
+      movedAABB.max[1] - collisionOffset,
+      movedAABB.max[2] - collisionOffset,
+    ],
+  };
+
+  return doAABBsOverlap(shrunkMovedAABB, targetAABB);
+}
 
 // ============================================================================
 // Face-to-Face Snap Calculations
@@ -131,10 +224,19 @@ function findFaceSnapCandidates(
           // Calculate distance
           const distance = calculateFaceAlignmentDistance(sourceFace, targetFace);
           if (distance === null || distance > settings.distance) continue;
-          
+
           // Calculate snap offset (flush, no collision offset)
           const snapOffset = calculateFaceAlignmentOffset(sourceFace, targetFace);
-          
+
+          // IMPORTANT: Reject alignment snaps that would cause collision
+          // This prevents parts from being "aligned" in a way that causes overlap
+          const wouldCollide = wouldSnapCauseCollision(movingGroup, targetGroup, snapOffset, collisionOffset);
+          if (wouldCollide) {
+            // Debug: see which alignment snaps are rejected
+            console.log(`Rejected alignment snap: offset=[${snapOffset.map(n => n.toFixed(1))}], distance=${distance.toFixed(1)}`);
+            continue; // Skip this candidate - it would cause collision
+          }
+
           candidates.push({
             type: 'face',
             variant: 'alignment',
@@ -148,6 +250,60 @@ function findFaceSnapCandidates(
             usedExtendedBox: usedExtended,
           });
         }
+      }
+    }
+  }
+
+  return candidates;
+}
+
+/**
+ * Find edge-to-face snap candidates between two groups (T-joint snapping)
+ * This allows perpendicular connections where an edge of one part touches a face of another
+ */
+function findEdgeToFaceSnapCandidates(
+  movingGroup: GroupBoundingBoxes,
+  targetGroup: GroupBoundingBoxes,
+  settings: SnapSettings
+): SnapV2Candidate[] {
+  const candidates: SnapV2Candidate[] = [];
+  const collisionOffset = settings.collisionOffset ?? 1.0;
+
+  // For each face of the moving group, get its edges
+  // and try to snap them to faces of the target group
+  for (const sourceFace of movingGroup.faces.core) {
+    const sourceEdges = getFaceEdges(sourceFace);
+
+    for (const targetFace of targetGroup.faces.core) {
+      // Skip if faces are parallel (not a T-joint configuration)
+      const facesDot = Math.abs(vec3Dot(sourceFace.normal, targetFace.normal));
+      if (facesDot > 0.3) continue; // Faces should be roughly perpendicular for T-joint
+
+      for (const edge of sourceEdges) {
+        // Check if this edge can snap to the target face
+        const distance = calculateEdgeToFaceDistance(edge, targetFace);
+        if (distance === null || distance > settings.distance) continue;
+
+        // Check if edge is within reasonable bounds of target face
+        // Use 0 tolerance - edge must actually project onto the face area
+        if (!isEdgeWithinFaceBounds(edge, targetFace, 0)) continue;
+
+        // Calculate snap offset
+        const snapOffset = calculateEdgeToFaceSnapOffset(edge, targetFace, collisionOffset);
+
+        candidates.push({
+          type: 'edge-to-face',
+          variant: 't-joint',
+          sourceGroupId: movingGroup.groupId,
+          targetGroupId: targetGroup.groupId,
+          sourceFace,
+          targetFace,
+          sourceEdge: edge,
+          snapOffset,
+          distance,
+          alignment: 1.0 - facesDot, // Higher score for more perpendicular faces
+          usedExtendedBox: false,
+        });
       }
     }
   }
@@ -176,11 +332,17 @@ function scoreSnapCandidate(
 
   // Prefer core BB over extended BB
   const extendedPenalty = candidate.usedExtendedBox ? EXTENDED_BOX_PENALTY : 1.0;
-  
-  // Slight preference for connection over alignment if distances are equal, 
-  // but let distance be the main factor.
-  // Maybe 0.95 for alignment to break ties?
-  const variantFactor = candidate.variant === 'alignment' ? 0.95 : 1.0;
+
+  // Variant scoring:
+  // - connection (opposite faces): 1.0 (preferred)
+  // - alignment (same direction): 0.95 (second preference)
+  // - t-joint (edge to face): 0.7 (lowest priority - only use when no face snaps available)
+  let variantFactor = 1.0;
+  if (candidate.variant === 'alignment') {
+    variantFactor = 0.95;
+  } else if (candidate.variant === 't-joint') {
+    variantFactor = 0.7; // Significantly lower to prefer face snaps
+  }
 
   return distanceScore * alignmentScore * extendedPenalty * variantFactor;
 }
@@ -232,8 +394,14 @@ export function calculateSnapV2Simple(
       continue;
     }
 
-    // Find face snap candidates
-    const candidates = findFaceSnapCandidates(movingGroup, targetGroup, settings);
+    // Find face snap candidates (connection and alignment)
+    const faceCandidates = findFaceSnapCandidates(movingGroup, targetGroup, settings);
+
+    // Find edge-to-face snap candidates (T-joints)
+    const edgeCandidates = findEdgeToFaceSnapCandidates(movingGroup, targetGroup, settings);
+
+    // Combine all candidates
+    const candidates = [...faceCandidates, ...edgeCandidates];
 
     // Filter candidates that primarily affect the drag axis
     for (const candidate of candidates) {
@@ -304,8 +472,14 @@ export function calculateSnapV2(
       continue;
     }
 
-    // Find face snap candidates
-    const candidates = findFaceSnapCandidates(movingGroup, targetGroup, settings);
+    // Find face snap candidates (connection and alignment)
+    const faceCandidates = findFaceSnapCandidates(movingGroup, targetGroup, settings);
+
+    // Find edge-to-face snap candidates (T-joints)
+    const edgeCandidates = findEdgeToFaceSnapCandidates(movingGroup, targetGroup, settings);
+
+    // Combine all candidates
+    const candidates = [...faceCandidates, ...edgeCandidates];
 
     for (const candidate of candidates) {
       const score = scoreSnapCandidate(candidate, settings);
