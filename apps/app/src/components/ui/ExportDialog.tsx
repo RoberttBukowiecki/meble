@@ -174,8 +174,7 @@ export function ExportDialog({
         const manifest = buildDXFManifest(parts, materials, furnitures, dxfFiles);
         zip.file('manifest.json', JSON.stringify(manifest, null, 2));
 
-        const archive = await zip.generateAsync({ type: 'uint8array' });
-        const blob = new Blob([archive], { type: 'application/zip' });
+        const blob = await zip.generateAsync({ type: 'blob' });
         downloadBlob(blob, `e-meble_export_${timestamp}.zip`);
       }
 
