@@ -18,6 +18,7 @@ export * from "./components/ui/switch";
 export * from "./components/ui/table";
 export * from "./components/ui/tooltip";
 export * from "./components/ui/logo";
+export * from "./components/ui/payu-logo";
 export * from "./components/ui/separator";
 export * from "./components/ui/popover"
 export * from "./components/ui/scroll-area"

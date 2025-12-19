@@ -2,6 +2,7 @@
  * Payment Success Page
  *
  * Displayed after successful payment completion.
+ * Fetches actual payment details from the payments API.
  */
 
 'use client';
@@ -9,27 +10,56 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Button } from '@meble/ui';
-import { CheckCircle, ArrowLeft, CreditCard, Loader2 } from 'lucide-react';
+import { CheckCircle, ArrowLeft, CreditCard, Loader2, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
+
+const PAYMENTS_API = process.env.NEXT_PUBLIC_PAYMENTS_API_URL || 'http://localhost:3002/api';
+
+interface PaymentData {
+  status: string;
+  amount: number;
+  currency: string;
+  metadata?: {
+    credits?: number;
+    packageId?: string;
+  };
+}
 
 function PaymentSuccessContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get('orderId');
-  const [isVerifying, setIsVerifying] = useState(true);
-  const [credits, setCredits] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [payment, setPayment] = useState<PaymentData | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Simulate verification delay and credit fetch
-    const timer = setTimeout(() => {
-      setIsVerifying(false);
-      // Credits would be fetched from API in real implementation
-      setCredits(5); // Placeholder
-    }, 1500);
+    async function fetchPaymentStatus() {
+      if (!orderId) {
+        setIsLoading(false);
+        return;
+      }
 
-    return () => clearTimeout(timer);
+      try {
+        const response = await fetch(`${PAYMENTS_API}/payments/${orderId}/status`);
+        const data = await response.json();
+
+        if (data.success && data.data) {
+          setPayment(data.data);
+        } else {
+          setError('Nie udało się pobrać szczegółów płatności');
+        }
+      } catch (err) {
+        console.error('Failed to fetch payment status:', err);
+        setError('Błąd połączenia z serwerem');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchPaymentStatus();
   }, [orderId]);
 
-  if (isVerifying) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
@@ -41,31 +71,55 @@ function PaymentSuccessContent() {
     );
   }
 
+  const credits = payment?.metadata?.credits;
+  const isPending = payment?.status === 'pending';
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="max-w-md w-full text-center space-y-6">
-        {/* Success Icon */}
+        {/* Success/Pending Icon */}
         <div className="flex justify-center">
-          <div className="rounded-full bg-green-100 p-4">
-            <CheckCircle className="h-16 w-16 text-green-600" />
+          <div className={`rounded-full p-4 ${isPending ? 'bg-yellow-100' : 'bg-green-100'}`}>
+            {isPending ? (
+              <Loader2 className="h-16 w-16 text-yellow-600 animate-spin" />
+            ) : (
+              <CheckCircle className="h-16 w-16 text-green-600" />
+            )}
           </div>
         </div>
 
         {/* Title */}
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold">Płatność zakończona!</h1>
+          <h1 className="text-2xl font-bold">
+            {isPending ? 'Płatność w trakcie...' : 'Płatność zakończona!'}
+          </h1>
           <p className="text-muted-foreground">
-            Dziękujemy za zakup. Twoje kredyty zostały dodane do konta.
+            {isPending
+              ? 'Oczekujemy na potwierdzenie płatności. Kredyty zostaną dodane automatycznie.'
+              : 'Dziękujemy za zakup. Twoje kredyty zostały dodane do konta.'
+            }
           </p>
         </div>
 
         {/* Credits Info */}
-        {credits !== null && (
+        {credits !== undefined && credits !== null && (
           <div className="flex items-center justify-center gap-2 p-4 rounded-lg bg-muted">
             <CreditCard className="h-5 w-5 text-primary" />
             <span className="font-semibold">
-              +{credits} kredyt{credits === 1 ? '' : credits < 5 ? 'y' : 'ów'}
+              {credits === -1 ? (
+                'Nielimitowane eksporty (30 dni)'
+              ) : (
+                `+${credits} kredyt${credits === 1 ? '' : credits < 5 ? 'y' : 'ów'}`
+              )}
             </span>
+          </div>
+        )}
+
+        {/* Error */}
+        {error && (
+          <div className="flex items-center justify-center gap-2 p-4 rounded-lg bg-yellow-50 text-yellow-800">
+            <AlertCircle className="h-5 w-5" />
+            <span className="text-sm">{error}</span>
           </div>
         )}
 

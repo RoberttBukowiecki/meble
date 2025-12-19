@@ -253,6 +253,9 @@ importers:
       '@meble/ui':
         specifier: '*'
         version: link:../../packages/ui
+      lucide-react:
+        specifier: 0.556.0
+        version: 0.556.0(react@19.2.1)
       next:
         specifier: 16.0.8
         version: 16.0.8(@babel/core@7.28.5)(react-dom@19.2.1)(react@19.2.1)
@@ -265,6 +268,9 @@ importers:
       react:
         specifier: ^19.2.1
         version: 19.2.1
+      react-cookie-consent:
+        specifier: ^9.0.0
+        version: 9.0.0(react@19.2.1)
       react-dom:
         specifier: ^19.2.1
         version: 19.2.1(react@19.2.1)
@@ -6528,6 +6534,10 @@ packages:
     resolution: {integrity: sha512-/imKNG4EbWNrVjoNC/1H5/9GFy+tqjGBHCaSsN+P2RnPqjsLmv6UD3Ej+Kj8nBWaRAwyk7kK5ZUc+OEatnTR3A==}
     hasBin: true
 
+  /js-cookie@2.2.1:
+    resolution: {integrity: sha512-HvdH2LzI/EAZcUwA8+0nKNtWHqS+ZmijLA30RwZA0bo7ToCckjK5MkGhjED9KoRcXO6BaGI3I9UIzSA1FKFPOQ==}
+    dev: false
+
   /js-tokens@4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
 
@@ -7518,6 +7528,16 @@ packages:
 
   /ramda@0.29.1:
     resolution: {integrity: sha512-OfxIeWzd4xdUNxlWhgFazxsA/nl3mS4/jGZI5n00uWOoSSFRhC1b6gl6xvmzUamgmqELraWp0J/qqVlXYPDPyA==}
+    dev: false
+
+  /react-cookie-consent@9.0.0(react@19.2.1):
+    resolution: {integrity: sha512-Blyj+m+Zz7SFHYqT18p16EANgnSg2sIyU6Yp3vk83AnOnSW7qnehPkUe4+8+qxztJrNmCH5GP+VHsWzAKVOoZA==}
+    engines: {node: '>=10'}
+    peerDependencies:
+      react: '>=16'
+    dependencies:
+      js-cookie: 2.2.1
+      react: 19.2.1
     dev: false
 
   /react-dom@19.2.1(react@19.2.1):

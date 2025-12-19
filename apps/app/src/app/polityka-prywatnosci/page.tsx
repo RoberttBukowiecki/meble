@@ -316,10 +316,51 @@ export default function PolitykaPage() {
             </p>
           </section>
 
-          {/* Section 8: Cookies */}
+          {/* Section 8: PayU RODO */}
           <section>
             <h2 className="text-2xl font-semibold mb-4">
-              8. Pliki cookies
+              8. Informacja o przetwarzaniu danych przez PayU
+            </h2>
+            <p>
+              W przypadku platnosci za posrednictwem systemu PayU, administratorem
+              Twoich danych osobowych w zakresie niezbednym do realizacji platnosci jest:
+            </p>
+            <div className="bg-muted p-4 rounded-lg mt-4">
+              <p className="font-semibold">PayU S.A.</p>
+              <p>ul. Grunwaldzka 186</p>
+              <p>60-166 Poznan</p>
+            </div>
+            <div className="mt-4 space-y-3">
+              <p>
+                <strong>Cele przetwarzania:</strong> realizacja transakcji platniczej,
+                powiadamianie o statusie platnosci, obsluga reklamacji oraz
+                wypelnianie obowiazkow prawnych.
+              </p>
+              <p>
+                <strong>Twoje prawa:</strong> dostep do danych, sprostowanie,
+                ograniczenie przetwarzania, sprzeciw, przenoszenie danych, usuniecie danych.
+              </p>
+              <p>
+                Podanie danych jest dobrowolne, lecz niezbedne do realizacji platnosci.
+              </p>
+              <p>
+                Wiecej informacji:{' '}
+                <a
+                  href="https://poland.payu.com/privacy-portal/privacy-principles/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  Polityka prywatnosci PayU
+                </a>
+              </p>
+            </div>
+          </section>
+
+          {/* Section 9: Cookies */}
+          <section>
+            <h2 className="text-2xl font-semibold mb-4">
+              9. Pliki cookies
             </h2>
             <p>
               Nasza strona wykorzystuje pliki cookies w nastepujacych celach:
@@ -345,10 +386,10 @@ export default function PolitykaPage() {
             </p>
           </section>
 
-          {/* Section 9: Data Retention */}
+          {/* Section 10: Data Retention */}
           <section>
             <h2 className="text-2xl font-semibold mb-4">
-              9. Okres przechowywania danych
+              10. Okres przechowywania danych
             </h2>
             <p>
               Twoje dane przechowujemy przez okres:
@@ -371,10 +412,10 @@ export default function PolitykaPage() {
             </ul>
           </section>
 
-          {/* Section 10: Right to Complaint */}
+          {/* Section 11: Right to Complaint */}
           <section>
             <h2 className="text-2xl font-semibold mb-4">
-              10. Prawo do wniesienia skargi
+              11. Prawo do wniesienia skargi
             </h2>
             <p>
               Jezeli uwazasz, ze Twoje dane osobowe sa przetwarzane niezgodnie z
@@ -400,10 +441,10 @@ export default function PolitykaPage() {
             </div>
           </section>
 
-          {/* Section 11: Changes to Policy */}
+          {/* Section 12: Changes to Policy */}
           <section>
             <h2 className="text-2xl font-semibold mb-4">
-              11. Zmiany w Polityce Prywatnosci
+              12. Zmiany w Polityce Prywatnosci
             </h2>
             <p>
               Zastrzegamy sobie prawo do wprowadzania zmian w niniejszej Polityce
@@ -416,9 +457,9 @@ export default function PolitykaPage() {
             </p>
           </section>
 
-          {/* Section 12: Contact */}
+          {/* Section 13: Contact */}
           <section>
-            <h2 className="text-2xl font-semibold mb-4">12. Kontakt</h2>
+            <h2 className="text-2xl font-semibold mb-4">13. Kontakt</h2>
             <p>
               W sprawach dotyczacych ochrony danych osobowych mozesz sie z nami
               skontaktowac:

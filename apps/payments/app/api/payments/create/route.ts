@@ -2,10 +2,12 @@
  * POST /api/payments/create
  *
  * Create a new payment for credit purchase.
+ * Supports both authenticated users (via Bearer token) and guests (via session ID).
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/utils/supabase/server';
+import { createClient, createServiceClient } from '@/utils/supabase/server';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import {
   getPaymentService,
   getCreditPackage,
@@ -26,7 +28,7 @@ interface CreatePaymentBody {
 const corsHeaders = {
   'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, x-session-id',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-session-id',
   'Access-Control-Allow-Credentials': 'true',
 };
 
@@ -59,13 +61,36 @@ export async function POST(request: NextRequest) {
       request.headers.get('x-real-ip') ||
       '127.0.0.1';
 
-    // Get supabase client
-    const supabase = await createClient();
+    let userId: string | undefined;
+    let userEmail: string | undefined;
 
-    // Try to get authenticated user
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    // Check for Bearer token in Authorization header (cross-origin authenticated request)
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.slice(7);
+
+      // Verify token with Supabase
+      const supabase = createSupabaseClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
+      );
+
+      const { data: { user }, error } = await supabase.auth.getUser(token);
+
+      if (!error && user) {
+        userId = user.id;
+        userEmail = user.email;
+      }
+    } else {
+      // Try to get user from cookies (same-origin request)
+      const supabase = await createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user) {
+        userId = user.id;
+        userEmail = user.email;
+      }
+    }
 
     // Get guest session ID from header
     const guestSessionId = request.headers.get('x-session-id');
@@ -101,7 +126,7 @@ export async function POST(request: NextRequest) {
       const pkg = getCreditPackage(body.packageId)!;
 
       // For guests, email is required
-      if (!user && !body.email) {
+      if (!userId && !body.email) {
         return NextResponse.json(
           {
             success: false,
@@ -115,7 +140,7 @@ export async function POST(request: NextRequest) {
       }
 
       // For guests, session ID is required
-      if (!user && !guestSessionId) {
+      if (!userId && !guestSessionId) {
         return NextResponse.json(
           {
             success: false,
@@ -128,7 +153,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const email = body.email || user?.email || '';
+      const email = body.email || userEmail || '';
 
       // Create payment via service
       const paymentService = getPaymentService();
@@ -136,8 +161,8 @@ export async function POST(request: NextRequest) {
         {
           packageId: body.packageId,
           provider: body.provider,
-          userId: user?.id,
-          guestSessionId: user ? undefined : guestSessionId || undefined,
+          userId: userId,
+          guestSessionId: userId ? undefined : guestSessionId || undefined,
           email,
           customerIp,
           returnUrl: body.returnUrl,
@@ -162,15 +187,19 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Save payment to database
+      // Save payment to database using service client (bypasses RLS)
+      const supabase = createServiceClient();
+
+      console.log('Saving payment with external_order_id:', result.externalOrderId);
+
       const { data: payment, error: dbError } = await supabase
         .from('payments')
         .insert({
           payment_type: 'credit_purchase',
           provider: body.provider,
           external_order_id: result.externalOrderId,
-          user_id: user?.id || null,
-          guest_session_id: user ? null : guestSessionId,
+          user_id: userId || null,
+          guest_session_id: userId ? null : guestSessionId,
           amount: pkg.price,
           currency: 'PLN',
           status: 'pending',
@@ -186,7 +215,9 @@ export async function POST(request: NextRequest) {
 
       if (dbError) {
         console.error('Failed to save payment:', dbError);
-        // Still return success - payment was created
+        // Still return success - payment was created in PayU
+      } else {
+        console.log('Payment saved successfully:', payment?.id, payment?.external_order_id);
       }
 
       return NextResponse.json({

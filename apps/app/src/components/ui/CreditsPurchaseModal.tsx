@@ -18,9 +18,12 @@ import {
   Button,
   Input,
   Label,
+  Checkbox,
+  PayULogo,
 } from '@meble/ui';
 import { track, AnalyticsEvent } from '@meble/analytics';
-import { Check, CreditCard, Loader2, Sparkles, Zap } from 'lucide-react';
+import { Check, ChevronDown, CreditCard, Loader2, Sparkles, Zap } from 'lucide-react';
+import Link from 'next/link';
 import { usePayment } from '@/hooks/usePayment';
 import { EXPORT_PACKAGES, ExportPackageId } from "@meble/config";
 
@@ -60,6 +63,8 @@ export function CreditsPurchaseModal({
   const [selectedProvider] = useState<PaymentProvider>('payu');
   const [email, setEmail] = useState(userEmail || '');
   const [emailError, setEmailError] = useState<string | null>(null);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [showPayuInfo, setShowPayuInfo] = useState(false);
 
   const { createPayment, isCreating, error: paymentError } = usePayment();
 
@@ -244,8 +249,73 @@ export function CreditsPurchaseModal({
           )}
 
           {/* Payment Provider Info */}
-          <div className="p-3 rounded-lg bg-muted/50 text-sm text-muted-foreground">
-            Platnosc realizowana przez PayU
+          <div className="space-y-4">
+            {/* PayU Logo and info */}
+            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+              <div className="flex items-center gap-3">
+                <PayULogo size="sm" />
+                <span className="text-sm text-muted-foreground">
+                  Bezpieczna płatność
+                </span>
+              </div>
+            </div>
+
+            {/* Terms acceptance */}
+            <div className="flex items-start gap-3">
+              <Checkbox
+                id="terms"
+                checked={termsAccepted}
+                onCheckedChange={(checked) => setTermsAccepted(checked === true)}
+                className="mt-0.5"
+              />
+              <label htmlFor="terms" className="text-sm text-muted-foreground leading-relaxed cursor-pointer">
+                Akceptuję{' '}
+                <Link href="/regulamin" className="text-primary hover:underline" target="_blank">
+                  regulamin serwisu
+                </Link>
+                {' '}oraz{' '}
+                <a
+                  href="https://static.payu.com/sites/terms/files/payu_terms_of_service_single_transaction_pl_pl.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  regulamin płatności PayU
+                </a>
+              </label>
+            </div>
+
+            {/* PayU RODO Info - Collapsible */}
+            <div className="text-xs text-muted-foreground">
+              <button
+                type="button"
+                onClick={() => setShowPayuInfo(!showPayuInfo)}
+                className="flex items-center gap-1 hover:text-foreground transition-colors"
+              >
+                <ChevronDown className={`h-3 w-3 transition-transform ${showPayuInfo ? 'rotate-180' : ''}`} />
+                Informacja o przetwarzaniu danych
+              </button>
+              {showPayuInfo && (
+                <div className="mt-2 p-3 rounded bg-muted/30 space-y-2">
+                  <p>
+                    Administratorem danych w zakresie płatności jest PayU S.A. z siedzibą
+                    w Poznaniu (60-166), ul. Grunwaldzka 186.
+                  </p>
+                  <p>
+                    Dane przetwarzane są w celu realizacji transakcji płatniczej.
+                    Podanie danych jest dobrowolne, lecz niezbędne do realizacji płatności.
+                  </p>
+                  <a
+                    href="https://poland.payu.com/privacy-portal/privacy-principles/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline inline-block"
+                  >
+                    Polityka prywatności PayU
+                  </a>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Error Display */}
@@ -260,7 +330,7 @@ export function CreditsPurchaseModal({
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isCreating}>
             Anuluj
           </Button>
-          <Button onClick={handlePurchase} disabled={isCreating || !email}>
+          <Button onClick={handlePurchase} disabled={isCreating || !email || !termsAccepted}>
             {isCreating ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />

@@ -5,7 +5,7 @@ import { updateSession } from '@/utils/supabase/middleware';
 const corsHeaders = {
   'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, x-session-id, Authorization',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-session-id',
   'Access-Control-Allow-Credentials': 'true',
 };
 

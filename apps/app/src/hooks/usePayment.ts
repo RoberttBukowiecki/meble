@@ -6,6 +6,7 @@
  */
 
 import { useState, useCallback } from 'react';
+import { createClient } from '@/lib/supabase/client';
 
 interface CreatePaymentParams {
   packageType: 'single' | 'starter' | 'standard' | 'pro';
@@ -27,7 +28,7 @@ interface UsePaymentReturn {
   error: string | null;
 }
 
-// Payments API URL - should point to payments app
+// Payments API URL
 const API_BASE = process.env.NEXT_PUBLIC_PAYMENTS_API_URL || 'http://localhost:3002/api';
 
 /**
@@ -47,9 +48,16 @@ export function usePayment(): UsePaymentReturn {
         'Content-Type': 'application/json',
       };
 
-      // Add session ID header for guest purchases
+      // For guests, add session ID header
       if (params.sessionId) {
         headers['x-session-id'] = params.sessionId;
+      } else {
+        // For authenticated users, get Supabase access token and pass it
+        const supabase = createClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          headers['Authorization'] = `Bearer ${session.access_token}`;
+        }
       }
 
       // Build return URL based on current location
@@ -59,7 +67,6 @@ export function usePayment(): UsePaymentReturn {
 
       const response = await fetch(`${API_BASE}/payments/create`, {
         method: 'POST',
-        credentials: 'include',
         headers,
         body: JSON.stringify({
           type: 'credit_purchase',

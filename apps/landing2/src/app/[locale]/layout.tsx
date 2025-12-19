@@ -15,6 +15,7 @@ import {
   type SupportedLocale,
 } from '@/lib/seo';
 import '@/styles/globals.css';
+import { CookieConsentBanner } from '@/components/CookieConsentBanner';
 
 type Props = {
   children: React.ReactNode;
@@ -202,6 +203,7 @@ export default async function LocaleLayout({ children, params }: Props) {
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <NextIntlClientProvider messages={messages}>
               {children}
+              <CookieConsentBanner />
             </NextIntlClientProvider>
           </ThemeProvider>
         </AnalyticsProvider>
