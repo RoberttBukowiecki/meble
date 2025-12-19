@@ -70,6 +70,10 @@ export function ExportDialog({
   const hasUnlimited = isAuthenticated && userCredits.balance?.hasUnlimited;
   const hasCredits = hasUnlimited || availableCredits > 0;
 
+  // Check if user has ever had credits (for Smart Export eligibility)
+  // Guest: check if balance exists, Auth: check if balance exists
+  const hasEverHadCredits = credits.balance !== null;
+
   // Generate project hash for Smart Export
   const projectHash = useMemo(() => {
     if (parts.length === 0) return null;
@@ -120,8 +124,9 @@ export function ExportDialog({
       return;
     }
 
-    // If no credits, show purchase modal and track
-    if (!hasCredits) {
+    // If never had credits, show purchase modal
+    // (Smart Export requires at least one previous purchase)
+    if (!hasEverHadCredits) {
       track(AnalyticsEvent.PURCHASE_MODAL_OPENED, { trigger: 'export' });
       setShowPurchaseModal(true);
       return;
@@ -136,14 +141,22 @@ export function ExportDialog({
       const result = await credits.useCredit(projectHash);
 
       if (!result) {
-        // Credit use failed - likely no credits
-        setExportStatus('error');
-        setExportMessage(credits.error || 'Nie udało się użyć kredytu');
+        // Credit use failed - show purchase modal if no credits
+        setExportStatus('idle');
         setExportingFormat(null);
-        track(AnalyticsEvent.EXPORT_VALIDATION_FAILED, {
-          error_count: 1,
-          error_types: ['no_credits'],
-        });
+
+        // Check if it's an insufficient credits error
+        if (credits.error?.includes('credit') || credits.error?.includes('kredyt') || !hasCredits) {
+          track(AnalyticsEvent.PURCHASE_MODAL_OPENED, { trigger: 'export_no_credits' });
+          setShowPurchaseModal(true);
+        } else {
+          setExportStatus('error');
+          setExportMessage(credits.error || 'Nie udało się użyć kredytu');
+          track(AnalyticsEvent.EXPORT_VALIDATION_FAILED, {
+            error_count: 1,
+            error_types: ['credit_error'],
+          });
+        }
         return;
       }
 
@@ -371,8 +384,21 @@ export function ExportDialog({
           </div>
         )}
 
-        {/* No Credits Warning */}
-        {!hasCredits && !credits.isLoading && (
+        {/* No Credits Warning - but Smart Export might be available */}
+        {!hasCredits && hasEverHadCredits && !credits.isLoading && (
+          <div className="mx-6 mb-4 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-sm flex items-start gap-2">
+            <Clock className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
+            <div>
+              <span className="font-medium text-blue-700 dark:text-blue-300">0 kredytów.</span>
+              <span className="text-blue-600 dark:text-blue-400 ml-1">
+                Jeśli eksportowałeś ten projekt w ciągu 24h, re-eksport jest darmowy (Smart Export).
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Never had credits */}
+        {!hasEverHadCredits && !credits.isLoading && (
           <div className="mx-6 mb-4 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-sm flex items-start gap-2">
             <CreditCard className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
             <div>
@@ -389,7 +415,8 @@ export function ExportDialog({
             {t('cancel')}
           </Button>
 
-          {hasCredits ? (
+          {/* Show export buttons if user has credits OR might have Smart Export available */}
+          {(hasCredits || hasEverHadCredits) ? (
             <div className="flex w-full sm:w-auto flex-col sm:flex-row gap-2">
               <Button
                 variant="secondary"

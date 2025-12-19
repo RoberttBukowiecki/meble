@@ -7,7 +7,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -51,6 +51,9 @@ function getAvailablePackages(isAuthenticated: boolean) {
   });
 }
 
+const GUEST_EMAIL_KEY = 'e-meble-guest-email';
+export const EXPORT_DIALOG_PENDING_KEY = 'e-meble-export-dialog-pending';
+
 export function CreditsPurchaseModal({
   open,
   onOpenChange,
@@ -67,6 +70,16 @@ export function CreditsPurchaseModal({
   const [showPayuInfo, setShowPayuInfo] = useState(false);
 
   const { createPayment, isCreating, error: paymentError } = usePayment();
+
+  // Load saved guest email on mount
+  useEffect(() => {
+    if (!isAuthenticated && !userEmail) {
+      const savedEmail = localStorage.getItem(GUEST_EMAIL_KEY);
+      if (savedEmail) {
+        setEmail(savedEmail);
+      }
+    }
+  }, [isAuthenticated, userEmail]);
 
   const availablePackages = getAvailablePackages(isAuthenticated);
 
@@ -118,6 +131,12 @@ export function CreditsPurchaseModal({
     });
 
     if (result.success && result.redirectUrl) {
+      // Save guest email for future use
+      if (!isAuthenticated && email) {
+        localStorage.setItem(GUEST_EMAIL_KEY, email);
+      }
+      // Save flag to reopen export dialog after returning from payment
+      localStorage.setItem(EXPORT_DIALOG_PENDING_KEY, 'true');
       // Redirect to payment provider
       window.location.href = result.redirectUrl;
     } else {

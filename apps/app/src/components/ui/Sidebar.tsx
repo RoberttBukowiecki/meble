@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { useShallow } from 'zustand/react/shallow';
 import { useStore, useSelectedPart, useSelectedCabinet } from '@/lib/store';
@@ -14,6 +14,7 @@ import { CabinetTemplateDialog } from './CabinetTemplateDialog';
 import { HistoryButtons } from './HistoryButtons';
 import { SettingsDropdown } from './SettingsDropdown';
 import { ExportDialog } from './ExportDialog';
+import { EXPORT_DIALOG_PENDING_KEY } from './CreditsPurchaseModal';
 import { CopySceneDialog, copySceneToClipboard } from './CopySceneDialog';
 import { UserMenu } from '@/components/auth';
 import {
@@ -50,6 +51,19 @@ export function Sidebar() {
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [copyDialogOpen, setCopyDialogOpen] = useState(false);
   const [justCopied, setJustCopied] = useState(false);
+
+  // Check if we should reopen export dialog after returning from payment
+  useEffect(() => {
+    const shouldOpenExport = localStorage.getItem(EXPORT_DIALOG_PENDING_KEY);
+    if (shouldOpenExport === 'true') {
+      // Remove flag first to prevent loops
+      localStorage.removeItem(EXPORT_DIALOG_PENDING_KEY);
+      // Open export dialog after a short delay (let app initialize)
+      setTimeout(() => {
+        setExportDialogOpen(true);
+      }, 500);
+    }
+  }, []);
 
   const handleAddPart = () => {
     addPart(selectedFurnitureId);

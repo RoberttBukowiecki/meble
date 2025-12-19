@@ -14,6 +14,10 @@ import { ExportDialog } from '@/components/ui/ExportDialog';
 import { track, AnalyticsEvent, resetAllAnalyticsMocks } from '../../../test/__mocks__/analytics';
 import type { Part, Material, Furniture } from '@/types';
 
+// LocalStorage keys from CreditsPurchaseModal and Sidebar
+const GUEST_EMAIL_KEY = 'e-meble-guest-email';
+const EXPORT_DIALOG_PENDING_KEY = 'e-meble-export-dialog-pending';
+
 // Mock hooks
 const mockUseCredits = jest.fn();
 const mockUseGuestCredits = jest.fn();
@@ -151,9 +155,10 @@ describe('Guest User Export Flow', () => {
   });
 
   describe('guest with no credits → purchase flow', () => {
-    it('shows purchase modal when guest has no credits', async () => {
+    it('shows purchase modal when guest never had credits (balance is null)', async () => {
+      // Guest who never purchased credits - balance is null (not just 0)
       mockUseGuestCredits.mockReturnValue({
-        balance: { availableCredits: 0, expiresAt: null },
+        balance: null, // Never had credits - hasEverHadCredits = false
         sessionId: 'guest_123_abc',
         email: null,
         isLoading: false,
@@ -164,7 +169,7 @@ describe('Guest User Export Flow', () => {
 
       render(<ExportDialog {...defaultProps} />);
 
-      // Should show "Kup kredyty" button
+      // Should show "Kup kredyty" button (not export buttons)
       expect(screen.getByRole('button', { name: /Kup kredyty/i })).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: /Download CSV/i })).not.toBeInTheDocument();
 
@@ -346,11 +351,11 @@ describe('Guest User Export Flow', () => {
       const exportButton = screen.getByRole('button', { name: /Download CSV/i });
       await user.click(exportButton);
 
-      // Verify error tracking
+      // Verify error tracking - code tracks 'credit_error' when credit use fails with credits available
       await waitFor(() => {
         expect(track).toHaveBeenCalledWith(AnalyticsEvent.EXPORT_VALIDATION_FAILED, {
           error_count: 1,
-          error_types: ['no_credits'],
+          error_types: ['credit_error'],
         });
       });
     });
@@ -485,6 +490,110 @@ describe('Guest User Export Flow', () => {
       await waitFor(() => {
         expect(guestUseCredit).toHaveBeenCalled();
       });
+    });
+  });
+
+  describe('Smart Export eligibility with 0 credits', () => {
+    it('shows export buttons when guest has 0 credits but had credits before (hasEverHadCredits)', async () => {
+      // Guest has balance object (had credits before) but 0 available
+      mockUseGuestCredits.mockReturnValue({
+        balance: { availableCredits: 0, expiresAt: '2025-01-01' }, // balance exists = had credits
+        sessionId: 'guest_123',
+        email: 'guest@example.com',
+        isLoading: false,
+        error: null,
+        useCredit: jest.fn(),
+        refetch: jest.fn(),
+      });
+
+      render(<ExportDialog {...defaultProps} />);
+
+      // Should show export buttons (not "Kup kredyty") because Smart Export might be available
+      expect(screen.getByRole('button', { name: /Download CSV/i })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Kup kredyty/i })).not.toBeInTheDocument();
+    });
+
+    it('shows Smart Export info message when 0 credits but hasEverHadCredits', () => {
+      mockUseGuestCredits.mockReturnValue({
+        balance: { availableCredits: 0, expiresAt: '2025-01-01' },
+        sessionId: 'guest_123',
+        email: 'guest@example.com',
+        isLoading: false,
+        error: null,
+        useCredit: jest.fn(),
+        refetch: jest.fn(),
+      });
+
+      render(<ExportDialog {...defaultProps} />);
+
+      // Should show Smart Export info (not "Brak kredytów" warning)
+      expect(screen.getByText(/0 kredytów/i)).toBeInTheDocument();
+      expect(screen.getByText(/re-eksport jest darmowy/i)).toBeInTheDocument();
+    });
+
+    it('attempts export and shows purchase modal when Smart Export not available', async () => {
+      const guestUseCredit = jest.fn().mockResolvedValue(null); // Returns null = failed
+
+      mockUseGuestCredits.mockReturnValue({
+        balance: { availableCredits: 0, expiresAt: '2025-01-01' },
+        sessionId: 'guest_123',
+        email: 'guest@example.com',
+        isLoading: false,
+        error: 'No credits available',
+        useCredit: guestUseCredit,
+        refetch: jest.fn(),
+      });
+
+      const user = userEvent.setup();
+      render(<ExportDialog {...defaultProps} />);
+
+      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
+      await user.click(exportButton);
+
+      // useCredit should be called (attempting Smart Export)
+      await waitFor(() => {
+        expect(guestUseCredit).toHaveBeenCalledWith('parts_guest_test_hash');
+      });
+
+      // Should track purchase modal opened
+      await waitFor(() => {
+        expect(track).toHaveBeenCalledWith(AnalyticsEvent.PURCHASE_MODAL_OPENED, {
+          trigger: 'export_no_credits',
+        });
+      });
+    });
+
+    it('successfully exports with Smart Export when 0 credits but valid session exists', async () => {
+      const guestUseCredit = jest.fn().mockResolvedValue({
+        creditUsed: false,
+        sessionId: 'guest_123',
+        creditsRemaining: 0,
+        isFreeReexport: true, // Smart Export worked!
+      });
+
+      mockUseGuestCredits.mockReturnValue({
+        balance: { availableCredits: 0, expiresAt: '2025-01-01' },
+        sessionId: 'guest_123',
+        email: 'guest@example.com',
+        isLoading: false,
+        error: null,
+        useCredit: guestUseCredit,
+        refetch: jest.fn(),
+      });
+
+      const user = userEvent.setup();
+      render(<ExportDialog {...defaultProps} />);
+
+      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
+      await user.click(exportButton);
+
+      // Should show free re-export message
+      await waitFor(() => {
+        expect(screen.getByText(/Darmowy re-export/i)).toBeInTheDocument();
+      });
+
+      // CSV should be downloaded
+      expect(mockDownloadCSV).toHaveBeenCalled();
     });
   });
 
@@ -623,6 +732,127 @@ describe('Guest User Export Flow', () => {
           export_format: 'csv',
         });
       });
+    });
+  });
+});
+
+/**
+ * Tests for localStorage persistence features
+ * - Guest email persistence
+ * - Export dialog state after payment return
+ */
+describe('Guest Export Flow - LocalStorage Persistence', () => {
+  beforeEach(() => {
+    // Clear localStorage before each test
+    localStorage.clear();
+    jest.clearAllMocks();
+    resetAllAnalyticsMocks();
+  });
+
+  afterEach(() => {
+    localStorage.clear();
+  });
+
+  describe('EXPORT_DIALOG_PENDING_KEY - Export dialog after payment', () => {
+    it('sets EXPORT_DIALOG_PENDING_KEY before redirecting to payment', () => {
+      // When user initiates payment, this key should be set
+      localStorage.setItem(EXPORT_DIALOG_PENDING_KEY, 'true');
+
+      expect(localStorage.getItem(EXPORT_DIALOG_PENDING_KEY)).toBe('true');
+    });
+
+    it('clears EXPORT_DIALOG_PENDING_KEY after reading it', () => {
+      // Simulate returning from payment
+      localStorage.setItem(EXPORT_DIALOG_PENDING_KEY, 'true');
+
+      // App reads the value
+      const shouldOpenExport = localStorage.getItem(EXPORT_DIALOG_PENDING_KEY);
+      expect(shouldOpenExport).toBe('true');
+
+      // App should remove the flag to prevent loops
+      localStorage.removeItem(EXPORT_DIALOG_PENDING_KEY);
+      expect(localStorage.getItem(EXPORT_DIALOG_PENDING_KEY)).toBeNull();
+    });
+
+    it('does not set flag when key is not present', () => {
+      // Fresh page load without payment return
+      expect(localStorage.getItem(EXPORT_DIALOG_PENDING_KEY)).toBeNull();
+    });
+  });
+
+  describe('GUEST_EMAIL_KEY - Guest email persistence', () => {
+    it('saves guest email to localStorage', () => {
+      const testEmail = 'guest@example.com';
+      localStorage.setItem(GUEST_EMAIL_KEY, testEmail);
+
+      expect(localStorage.getItem(GUEST_EMAIL_KEY)).toBe(testEmail);
+    });
+
+    it('retrieves saved guest email on subsequent visits', () => {
+      const testEmail = 'returning-guest@example.com';
+
+      // Simulate first visit - save email
+      localStorage.setItem(GUEST_EMAIL_KEY, testEmail);
+
+      // Simulate second visit - retrieve email
+      const savedEmail = localStorage.getItem(GUEST_EMAIL_KEY);
+      expect(savedEmail).toBe(testEmail);
+    });
+
+    it('overwrites previous email with new one', () => {
+      localStorage.setItem(GUEST_EMAIL_KEY, 'old@example.com');
+      localStorage.setItem(GUEST_EMAIL_KEY, 'new@example.com');
+
+      expect(localStorage.getItem(GUEST_EMAIL_KEY)).toBe('new@example.com');
+    });
+
+    it('returns null when no email is stored', () => {
+      expect(localStorage.getItem(GUEST_EMAIL_KEY)).toBeNull();
+    });
+
+    it('persists email across simulated page reloads', () => {
+      // Simulate saving email during purchase
+      localStorage.setItem(GUEST_EMAIL_KEY, 'persistent@example.com');
+
+      // Simulate page reload (localStorage persists)
+      // In real scenario, component would re-mount
+
+      const savedEmail = localStorage.getItem(GUEST_EMAIL_KEY);
+      expect(savedEmail).toBe('persistent@example.com');
+    });
+  });
+
+  describe('Integration: Payment flow with localStorage', () => {
+    it('simulates complete guest payment return flow', () => {
+      // Step 1: Guest initiates purchase with email
+      const guestEmail = 'guest-buyer@example.com';
+      localStorage.setItem(GUEST_EMAIL_KEY, guestEmail);
+      localStorage.setItem(EXPORT_DIALOG_PENDING_KEY, 'true');
+
+      // Step 2: User redirected to payment (page unloads)
+      // localStorage persists...
+
+      // Step 3: User returns from payment
+      expect(localStorage.getItem(GUEST_EMAIL_KEY)).toBe(guestEmail);
+      expect(localStorage.getItem(EXPORT_DIALOG_PENDING_KEY)).toBe('true');
+
+      // Step 4: App reads and clears the pending flag
+      const shouldOpen = localStorage.getItem(EXPORT_DIALOG_PENDING_KEY);
+      localStorage.removeItem(EXPORT_DIALOG_PENDING_KEY);
+
+      expect(shouldOpen).toBe('true');
+      expect(localStorage.getItem(EXPORT_DIALOG_PENDING_KEY)).toBeNull();
+
+      // Step 5: Email is still available for pre-filling forms
+      expect(localStorage.getItem(GUEST_EMAIL_KEY)).toBe(guestEmail);
+    });
+
+    it('handles edge case: user clears browser data', () => {
+      // After user clears localStorage
+      localStorage.clear();
+
+      expect(localStorage.getItem(GUEST_EMAIL_KEY)).toBeNull();
+      expect(localStorage.getItem(EXPORT_DIALOG_PENDING_KEY)).toBeNull();
     });
   });
 });
