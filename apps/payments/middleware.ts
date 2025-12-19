@@ -1,7 +1,20 @@
-import { type NextRequest } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { updateSession } from '@/utils/supabase/middleware';
 
+// CORS headers for cross-origin requests from main app
+const corsHeaders = {
+  'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, x-session-id, Authorization',
+  'Access-Control-Allow-Credentials': 'true',
+};
+
 export async function middleware(request: NextRequest) {
+  // Handle CORS preflight requests for API routes
+  if (request.method === 'OPTIONS' && request.nextUrl.pathname.startsWith('/api/')) {
+    return NextResponse.json({}, { headers: corsHeaders });
+  }
+
   return await updateSession(request);
 }
 
