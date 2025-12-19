@@ -10,7 +10,6 @@ import { pickTransform } from '@/lib/store/history/utils';
 import { SCENE_CONFIG, PART_CONFIG, MATERIAL_CONFIG } from '@/lib/config';
 import { useSnapContext } from '@/lib/snap-context';
 import { useDimensionContext } from '@/lib/dimension-context';
-import { calculateSnapSimple } from '@/lib/snapping';
 import { calculatePartSnapV2 } from '@/lib/snapping-v2';
 import { calculatePartSnapV3 } from '@/lib/snapping-v3';
 import { calculateDimensions } from '@/lib/dimension-calculator';
@@ -110,6 +109,12 @@ export function PartTransformControls({
     if (!target || !isDraggingRef.current) return;
 
     const position = target.position.toArray() as [number, number, number];
+    const currentRotation = target.rotation.toArray().slice(0, 3) as [number, number, number];
+
+    // Debug: Check if rotation is being preserved during drag (log only first few times)
+    if (Math.random() < 0.02) { // Log ~2% of frames to avoid spam
+      console.log('[Transform] During drag - target rotation:', currentRotation.map(r => (r * 180 / Math.PI).toFixed(1)));
+    }
 
     // Only process for translate mode
     if (mode === 'translate') {
@@ -125,19 +130,8 @@ export function PartTransformControls({
           let snapResult;
 
           // Select snap algorithm based on version
-          if (snapSettings.version === 'v3') {
-            // V3: Movement-aware face-to-face snapping
-            // Only snaps on the drag axis to prevent unwanted position jumps
-            snapResult = calculatePartSnapV3(
-              part,
-              position,
-              parts,
-              cabinets,
-              snapSettings,
-              effectiveAxis
-            );
-          } else if (snapSettings.version === 'v2') {
-            // V2: Group bounding box based snapping
+          if (snapSettings.version === 'v2') {
+            // V2: Group bounding box based snapping (for cabinet arrangement)
             snapResult = calculatePartSnapV2(
               part,
               position,
@@ -147,18 +141,12 @@ export function PartTransformControls({
               effectiveAxis
             );
           } else {
-            // V1: Individual part face snapping (legacy)
-            const otherParts = parts.filter(
-              (p) =>
-                p.id !== part.id &&
-                (!part.cabinetMetadata?.cabinetId ||
-                  p.cabinetMetadata?.cabinetId !== part.cabinetMetadata.cabinetId)
-            );
-
-            snapResult = calculateSnapSimple(
+            // V3: Movement-aware face-to-face snapping (default, recommended)
+            snapResult = calculatePartSnapV3(
               part,
               position,
-              otherParts,
+              parts,
+              cabinets,
               snapSettings,
               effectiveAxis
             );
@@ -218,6 +206,14 @@ export function PartTransformControls({
     isDraggingRef.current = true;
     initialTransformRef.current = pickTransform(part);
 
+    // Debug: log rotation being used
+    console.log('[Transform] Part rotation (radians):', part.rotation);
+    console.log('[Transform] Part rotation (degrees):', part.rotation.map(r => (r * 180 / Math.PI).toFixed(1)));
+    console.log('[Transform] Part dimensions:', [part.width, part.height, part.depth]);
+    if (target) {
+      console.log('[Transform] Target rotation (euler):', target.rotation.toArray().slice(0, 3));
+    }
+
     beginBatch('TRANSFORM_PART', {
       targetId: part.id,
       before: initialTransformRef.current,
@@ -225,7 +221,7 @@ export function PartTransformControls({
 
     setTransformingPartId(part.id); // Hide original Part3D, show preview
     onTransformStart();
-  }, [part, beginBatch, onTransformStart, setTransformingPartId]);
+  }, [part, target, beginBatch, onTransformStart, setTransformingPartId]);
 
   const handleTransformEnd = useCallback(() => {
     isDraggingRef.current = false;

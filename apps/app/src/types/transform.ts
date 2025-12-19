@@ -80,25 +80,30 @@ export type SnapAxisConstraint = 'X' | 'Y' | 'Z' | 'XY' | 'XZ' | 'YZ' | 'XYZ' | 
 
 /**
  * Snap version:
- * - v1: Uses individual part faces (legacy)
- * - v2: Uses group bounding boxes
+ * - v2: Uses group bounding boxes (for cabinet arrangement)
  * - v3: Face-to-face with movement direction awareness (recommended)
  */
-export type SnapVersion = 'v1' | 'v2' | 'v3';
+export type SnapVersion = 'v2' | 'v3';
 
 /**
  * Snap settings configuration
  */
 export interface SnapSettings {
-  distance: number;             // Snap threshold in mm (default: 10)
-  showGuides: boolean;          // Show visual snap lines (default: true)
-  magneticPull: boolean;        // Enable magnetic pull effect (default: true)
-  strengthCurve: 'linear' | 'quadratic'; // Distance-based strength
-  edgeSnap: boolean;            // Enable edge-to-edge snapping (parallel faces alignment)
-  faceSnap: boolean;            // Enable face-to-face snapping (opposite normals)
+  // Core settings
+  distance: number;             // Snap threshold in mm (default: 20)
+  collisionOffset: number;      // Gap between snapped faces in mm (default: 1.0)
+
+  // Snap types
+  faceSnap: boolean;            // Enable face-to-face snapping (opposite normals) - "connection"
+  edgeSnap: boolean;            // Enable parallel face alignment - "alignment"
   tJointSnap: boolean;          // Enable T-joint snapping (perpendicular normals)
-  collisionOffset: number;      // Offset to prevent collision detection (default: 0.5mm)
-  version: SnapVersion;         // Snap version: 'v1' (faces) or 'v2' (bounding boxes)
+
+  // Visualization
+  showGuides: boolean;          // Show visual snap lines (default: true)
+  debug: boolean;               // Show debug visualization (OBBs, faces, normals)
+
+  // Version
+  version: SnapVersion;         // v2 for cabinet groups, v3 for parts (default: v3)
 }
 
 /**

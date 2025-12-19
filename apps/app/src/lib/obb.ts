@@ -73,6 +73,10 @@ export const vec3Negate = (v: Vec3): Vec3 => [-v[0], -v[1], -v[2]];
 
 /**
  * Apply Euler rotation (XYZ order) to a point
+ *
+ * Three.js Euler 'XYZ' means rotation matrix is Rx * Ry * Rz
+ * For a point transform: v' = Rx * Ry * Rz * v
+ * Reading right to left: apply Z first, then Y, then X
  */
 export function rotatePoint(point: Vec3, rotation: Vec3): Vec3 {
   const [rx, ry, rz] = rotation;
@@ -84,23 +88,26 @@ export function rotatePoint(point: Vec3, rotation: Vec3): Vec3 {
 
   let [x, y, z] = point;
 
-  // Rotate X
-  const y1 = y * cx - z * sx;
-  const z1 = y * sx + z * cx;
+  // Apply rotations in reverse order to match Three.js Euler 'XYZ'
+  // Three.js: Rx * Ry * Rz means apply Z first, then Y, then X
+
+  // Rotate Z first
+  const x1 = x * cz - y * sz;
+  const y1 = x * sz + y * cz;
+  x = x1;
   y = y1;
+
+  // Rotate Y second
+  const x2 = x * cy + z * sy;
+  const z1 = -x * sy + z * cy;
+  x = x2;
   z = z1;
 
-  // Rotate Y
-  const x1 = x * cy + z * sy;
-  const z2 = -x * sy + z * cy;
-  x = x1;
-  z = z2;
+  // Rotate X last
+  const y2 = y * cx - z * sx;
+  const z2 = y * sx + z * cx;
 
-  // Rotate Z
-  const x2 = x * cz - y * sz;
-  const y2 = x * sz + y * cz;
-
-  return [x2, y2, z];
+  return [x, y2, z2];
 }
 
 /**
@@ -117,6 +124,8 @@ export function getRotationAxes(rotation: Vec3): [Vec3, Vec3, Vec3] {
 /**
  * Create rotation matrix from Euler angles (XYZ order)
  * Returns 3x3 matrix as flat array [row0, row1, row2]
+ *
+ * Three.js Euler 'XYZ' rotation matrix: Rx * Ry * Rz
  */
 export function createRotationMatrix(rotation: Vec3): number[] {
   const [rx, ry, rz] = rotation;
@@ -125,11 +134,11 @@ export function createRotationMatrix(rotation: Vec3): number[] {
   const cy = Math.cos(ry), sy = Math.sin(ry);
   const cz = Math.cos(rz), sz = Math.sin(rz);
 
-  // Combined rotation matrix (XYZ order)
+  // Combined rotation matrix: Rx * Ry * Rz (matches Three.js Euler 'XYZ')
   return [
     cy * cz, -cy * sz, sy,
-    sx * sy * cz + cx * sz, -sx * sy * sz + cx * cz, -sx * cy,
-    -cx * sy * cz + sx * sz, cx * sy * sz + sx * cz, cx * cy,
+    sx * sy * cz + cx * sz, cx * cz - sx * sy * sz, -sx * cy,
+    sx * sz - cx * sy * cz, cx * sy * sz + sx * cz, cx * cy,
   ];
 }
 

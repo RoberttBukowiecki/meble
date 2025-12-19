@@ -247,8 +247,7 @@ describe('Debug: Rotated part snapping', () => {
         {
           distance: 20,
           showGuides: true,
-          magneticPull: false,
-          strengthCurve: 'linear',
+          debug: false,
           edgeSnap: true,
           faceSnap: true,
           tJointSnap: true,

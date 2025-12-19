@@ -13,12 +13,121 @@ import {
 } from '@meble/ui';
 import { useStore } from '@/lib/store';
 import { useShallow } from 'zustand/react/shallow';
-import { Copy, Check, CheckCheck } from 'lucide-react';
+import { Copy, Check } from 'lucide-react';
 import type { Part } from '@/types';
+import { lastSnapV3Debug, type SnapV3DebugInfo, type SnapV3Candidate } from '@/lib/snapping-v3';
+import type { OBBFace, OrientedBoundingBox } from '@/lib/obb';
 
 interface CopySceneDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+}
+
+/**
+ * Format OBB for debug output
+ */
+function formatOBB(obb: OrientedBoundingBox) {
+  return {
+    center: { x: obb.center[0], y: obb.center[1], z: obb.center[2] },
+    halfExtents: { x: obb.halfExtents[0], y: obb.halfExtents[1], z: obb.halfExtents[2] },
+    rotation: {
+      x: Math.round(obb.rotation[0] * (180 / Math.PI) * 100) / 100,
+      y: Math.round(obb.rotation[1] * (180 / Math.PI) * 100) / 100,
+      z: Math.round(obb.rotation[2] * (180 / Math.PI) * 100) / 100,
+    },
+    axes: obb.axes.map((axis, i) => ({
+      [`axis${i}`]: { x: axis[0].toFixed(3), y: axis[1].toFixed(3), z: axis[2].toFixed(3) },
+    })),
+  };
+}
+
+/**
+ * Format Face for debug output
+ */
+function formatFace(face: OBBFace, index: number) {
+  const faceNames = ['+X (right)', '-X (left)', '+Y (top)', '-Y (bottom)', '+Z (front)', '-Z (back)'];
+  return {
+    faceIndex: index,
+    faceName: faceNames[index] || `face-${index}`,
+    center: { x: face.center[0].toFixed(1), y: face.center[1].toFixed(1), z: face.center[2].toFixed(1) },
+    normal: { x: face.normal[0].toFixed(3), y: face.normal[1].toFixed(3), z: face.normal[2].toFixed(3) },
+    axisIndex: face.axisIndex,
+    sign: face.sign,
+    corners: face.corners.map((c, i) => ({
+      [`corner${i}`]: { x: c[0].toFixed(1), y: c[1].toFixed(1), z: c[2].toFixed(1) },
+    })),
+  };
+}
+
+/**
+ * Format candidate for debug output
+ */
+function formatCandidate(c: SnapV3Candidate, movingFaces: OBBFace[]) {
+  return {
+    type: c.type,
+    targetPartId: c.targetPartId,
+    snapOffset: c.snapOffset.toFixed(2),
+    distance: c.distance.toFixed(2),
+    movingFace: formatFace(c.movingFace, movingFaces.indexOf(c.movingFace)),
+    targetFace: formatFace(c.targetFace, 0),
+  };
+}
+
+/**
+ * Generate V3 snap debug data
+ */
+function generateSnapV3DebugData(debug: SnapV3DebugInfo) {
+  return {
+    dragAxis: debug.dragAxis,
+    movementDirection: debug.movementDirection > 0 ? 'positive' : 'negative',
+    currentOffset: {
+      x: debug.currentOffset[0].toFixed(1),
+      y: debug.currentOffset[1].toFixed(1),
+      z: debug.currentOffset[2].toFixed(1),
+    },
+    hysteresisActive: debug.hysteresisActive,
+    crossAxisEnabled: debug.crossAxisEnabled,
+    movingPart: {
+      id: debug.movingPartId,
+      obb: formatOBB(debug.movingOBB),
+      allFaces: debug.movingFaces.map((f: OBBFace, i: number) => formatFace(f, i)),
+      relevantFaces: debug.relevantFaces.map((f: OBBFace, i: number) => ({
+        ...formatFace(f, debug.movingFaces.indexOf(f)),
+        reason: 'aligned with drag axis',
+      })),
+      leadingFaces: debug.leadingFaces.map((f: OBBFace, i: number) => ({
+        ...formatFace(f, debug.movingFaces.indexOf(f)),
+        reason: 'facing movement direction',
+      })),
+    },
+    targetParts: debug.targetParts.map((tp) => ({
+      id: tp.partId,
+      obb: formatOBB(tp.obb),
+      faces: tp.faces.map((f: OBBFace, i: number) => formatFace(f, i)),
+    })),
+    candidatesByType: {
+      connection: debug.connectionCandidates.map((c: SnapV3Candidate) => formatCandidate(c, debug.movingFaces)),
+      alignment: debug.alignmentCandidates.map((c: SnapV3Candidate) => formatCandidate(c, debug.movingFaces)),
+      tjoint: debug.tjointCandidates.map((c: SnapV3Candidate) => formatCandidate(c, debug.movingFaces)),
+    },
+    selectedCandidate: debug.selectedCandidate
+      ? {
+          type: debug.selectedCandidate.type,
+          targetPartId: debug.selectedCandidate.targetPartId,
+          snapOffset: debug.selectedCandidate.snapOffset.toFixed(2),
+          movingFaceNormal: {
+            x: debug.selectedCandidate.movingFace.normal[0].toFixed(3),
+            y: debug.selectedCandidate.movingFace.normal[1].toFixed(3),
+            z: debug.selectedCandidate.movingFace.normal[2].toFixed(3),
+          },
+          targetFaceNormal: {
+            x: debug.selectedCandidate.targetFace.normal[0].toFixed(3),
+            y: debug.selectedCandidate.targetFace.normal[1].toFixed(3),
+            z: debug.selectedCandidate.targetFace.normal[2].toFixed(3),
+          },
+        }
+      : null,
+  };
 }
 
 /**
@@ -36,10 +145,11 @@ function getPartSceneData(part: Part) {
       y: part.position[1],
       z: part.position[2],
     },
+    // Rotation in degrees (converted from radians)
     rotation: {
-      x: part.rotation[0],
-      y: part.rotation[1],
-      z: part.rotation[2],
+      x: Math.round(part.rotation[0] * (180 / Math.PI) * 100) / 100,
+      y: Math.round(part.rotation[1] * (180 / Math.PI) * 100) / 100,
+      z: Math.round(part.rotation[2] * (180 / Math.PI) * 100) / 100,
     },
     shapeType: part.shapeType,
   };
@@ -48,17 +158,32 @@ function getPartSceneData(part: Part) {
 /**
  * Generate scene data for multiple parts
  */
-function generateSceneData(parts: Part[]) {
-  return {
+function generateSceneData(parts: Part[], includeSnapDebug: boolean) {
+  const baseData = {
     exportedAt: new Date().toISOString(),
     partsCount: parts.length,
     parts: parts.map(getPartSceneData),
   };
+
+  if (includeSnapDebug && lastSnapV3Debug) {
+    return {
+      ...baseData,
+      snapV3Debug: generateSnapV3DebugData(lastSnapV3Debug),
+    };
+  }
+
+  return baseData;
 }
 
 export function CopySceneDialog({ open, onOpenChange }: CopySceneDialogProps) {
   const t = useTranslations('CopySceneDialog');
-  const parts = useStore(useShallow((state) => state.parts));
+  const { parts, snapSettings } = useStore(
+    useShallow((state) => ({
+      parts: state.parts,
+      snapSettings: state.snapSettings,
+    }))
+  );
+  const includeSnapDebug = snapSettings?.debug;
   const [selectedPartIds, setSelectedPartIds] = useState<Set<string>>(
     () => new Set(parts.map((p) => p.id))
   );
@@ -103,7 +228,7 @@ export function CopySceneDialog({ open, onOpenChange }: CopySceneDialogProps) {
   };
 
   const handleCopy = async () => {
-    const sceneData = generateSceneData(selectedParts);
+    const sceneData = generateSceneData(selectedParts, includeSnapDebug ?? false);
     const jsonString = JSON.stringify(sceneData, null, 2);
 
     try {
@@ -172,6 +297,18 @@ export function CopySceneDialog({ open, onOpenChange }: CopySceneDialogProps) {
           <div className="text-sm text-muted-foreground text-center">
             {t('selectedCount', { count: selectedParts.length })}
           </div>
+
+          {/* Snap debug indicator */}
+          {includeSnapDebug && lastSnapV3Debug && (
+            <div className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-950 dark:text-amber-400 rounded-md p-2 text-center">
+              <strong>Debug V3:</strong> Dane OBB i faces zostaną dołączone do eksportu
+              {lastSnapV3Debug.selectedCandidate && (
+                <div className="mt-1">
+                  Snap: {lastSnapV3Debug.selectedCandidate.type} → {lastSnapV3Debug.selectedCandidate.targetPartId}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <DialogFooter className="gap-2">
@@ -204,8 +341,11 @@ export function CopySceneDialog({ open, onOpenChange }: CopySceneDialogProps) {
 /**
  * Copy scene data directly to clipboard (for small scenes)
  */
-export async function copySceneToClipboard(parts: Part[]): Promise<boolean> {
-  const sceneData = generateSceneData(parts);
+export async function copySceneToClipboard(
+  parts: Part[],
+  includeSnapDebug = false
+): Promise<boolean> {
+  const sceneData = generateSceneData(parts, includeSnapDebug);
   const jsonString = JSON.stringify(sceneData, null, 2);
 
   try {

@@ -29,6 +29,7 @@ import { PartResizeControls } from './PartResizeControls';
 import { MultiSelectTransformControls } from './MultiSelectTransformControls';
 import { MultiSelectResizeControls } from './MultiSelectResizeControls';
 import { SnapGuidesRenderer } from './SnapGuidesRenderer';
+import { SnapDebugRenderer } from './SnapDebugRenderer';
 import { DimensionRenderer } from './DimensionRenderer';
 import { SnapProvider } from '@/lib/snap-context';
 import { DimensionProvider } from '@/lib/dimension-context';
@@ -61,6 +62,7 @@ export function Scene({ onOpenMobileSidebar, isMobile }: SceneProps) {
     selectCabinet,
     clearSelection,
     snapEnabled,
+    snapSettings,
     dimensionSettings,
     showGrid,
     graphicsSettings,
@@ -83,6 +85,7 @@ export function Scene({ onOpenMobileSidebar, isMobile }: SceneProps) {
         selectCabinet: state.selectCabinet,
         clearSelection: state.clearSelection,
         snapEnabled: state.snapEnabled,
+        snapSettings: state.snapSettings,
         dimensionSettings: state.dimensionSettings,
         showGrid: state.showGrid,
         graphicsSettings: state.graphicsSettings,
@@ -346,6 +349,11 @@ export function Scene({ onOpenMobileSidebar, isMobile }: SceneProps) {
 
           {/* Snap guides (rendered based on snap context) */}
           {snapEnabled && <SnapGuidesRenderer />}
+
+          {/* Snap Debug visualization (OBBs, faces, normals) */}
+          {snapEnabled && snapSettings?.debug && (
+            <SnapDebugRenderer enabled />
+          )}
 
           {/* Dimension lines (rendered based on dimension context) */}
           {dimensionSettings?.enabled && <DimensionRenderer />}

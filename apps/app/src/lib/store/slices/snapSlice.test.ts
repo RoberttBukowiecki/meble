@@ -16,8 +16,7 @@ describe('snapSlice', () => {
     expect(state.snapSettings).toEqual({
       distance: 20,
       showGuides: true,
-      magneticPull: false,
-      strengthCurve: 'linear',
+      debug: false,
       edgeSnap: true,
       faceSnap: true,
       tJointSnap: true,
@@ -49,13 +48,12 @@ describe('snapSlice', () => {
   it('merges partial snap settings updates', () => {
     const store = createSnapStore();
 
-    store.getState().updateSnapSettings({ distance: 35, magneticPull: true });
+    store.getState().updateSnapSettings({ distance: 35, debug: true });
 
     expect(store.getState().snapSettings).toEqual({
       distance: 35,
       showGuides: true,
-      magneticPull: true,
-      strengthCurve: 'linear',
+      debug: true,
       edgeSnap: true,
       faceSnap: true,
       tJointSnap: true,
@@ -64,17 +62,9 @@ describe('snapSlice', () => {
     });
   });
 
-  it('sets snap version to v1', () => {
-    const store = createSnapStore();
-
-    store.getState().setSnapVersion('v1');
-    expect(store.getState().snapSettings.version).toBe('v1');
-  });
-
   it('sets snap version to v2', () => {
     const store = createSnapStore();
 
-    store.getState().setSnapVersion('v1');
     store.getState().setSnapVersion('v2');
     expect(store.getState().snapSettings.version).toBe('v2');
   });
@@ -82,7 +72,7 @@ describe('snapSlice', () => {
   it('sets snap version to v3', () => {
     const store = createSnapStore();
 
-    store.getState().setSnapVersion('v1');
+    store.getState().setSnapVersion('v2');
     store.getState().setSnapVersion('v3');
     expect(store.getState().snapSettings.version).toBe('v3');
   });
@@ -90,7 +80,7 @@ describe('snapSlice', () => {
   it('updates snap version via updateSnapSettings', () => {
     const store = createSnapStore();
 
-    store.getState().updateSnapSettings({ version: 'v1' });
-    expect(store.getState().snapSettings.version).toBe('v1');
+    store.getState().updateSnapSettings({ version: 'v2' });
+    expect(store.getState().snapSettings.version).toBe('v2');
   });
 });

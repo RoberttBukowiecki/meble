@@ -6,7 +6,7 @@
  * UI controls for snap settings in the toolbar.
  * Features:
  * - Main toggle button (snap on/off)
- * - Snap version toggle (V1 faces / V2 bounding boxes)
+ * - Snap version toggle (V3 parts / V2 cabinet groups)
  * - Expandable settings dropdown
  */
 
@@ -90,20 +90,41 @@ export function SnapControlPanel() {
               onValueChange={handleVersionChange}
             >
               <DropdownMenuRadioItem value="v3" className="text-sm">
-                V3 - Inteligentne przyciąganie
+                V3 - Przyciąganie części (zalecane)
               </DropdownMenuRadioItem>
               <DropdownMenuRadioItem value="v2" className="text-sm">
                 V2 - Obwiednia szafy
-              </DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="v1" className="text-sm">
-                V1 - Powierzchnie elementów
               </DropdownMenuRadioItem>
             </DropdownMenuRadioGroup>
           </div>
 
           <DropdownMenuSeparator />
 
-          {/* Show Guides */}
+          {/* Snap Types */}
+          <DropdownMenuCheckboxItem
+            checked={snapSettings.faceSnap}
+            onCheckedChange={(checked) => updateSnapSettings({ faceSnap: checked })}
+          >
+            Przyciąganie powierzchni (naprzeciwległe)
+          </DropdownMenuCheckboxItem>
+
+          <DropdownMenuCheckboxItem
+            checked={snapSettings.edgeSnap}
+            onCheckedChange={(checked) => updateSnapSettings({ edgeSnap: checked })}
+          >
+            Wyrównanie równoległe
+          </DropdownMenuCheckboxItem>
+
+          <DropdownMenuCheckboxItem
+            checked={snapSettings.tJointSnap}
+            onCheckedChange={(checked) => updateSnapSettings({ tJointSnap: checked })}
+          >
+            Przyciąganie T-joint (prostopadłe)
+          </DropdownMenuCheckboxItem>
+
+          <DropdownMenuSeparator />
+
+          {/* Visualization Options */}
           <DropdownMenuCheckboxItem
             checked={snapSettings.showGuides}
             onCheckedChange={(checked) => updateSnapSettings({ showGuides: checked })}
@@ -111,39 +132,12 @@ export function SnapControlPanel() {
             Pokaż linie przyciągania
           </DropdownMenuCheckboxItem>
 
-          {/* Magnetic Pull */}
           <DropdownMenuCheckboxItem
-            checked={snapSettings.magneticPull}
-            onCheckedChange={(checked) => updateSnapSettings({ magneticPull: checked })}
+            checked={snapSettings.debug ?? false}
+            onCheckedChange={(checked) => updateSnapSettings({ debug: checked })}
           >
-            Magnetyczne przyciąganie
+            Tryb debugowania (pokaż OBB)
           </DropdownMenuCheckboxItem>
-
-          {/* Edge Snap */}
-          <DropdownMenuCheckboxItem
-            checked={snapSettings.edgeSnap}
-            onCheckedChange={(checked) => updateSnapSettings({ edgeSnap: checked })}
-          >
-            Przyciąganie krawędzi
-          </DropdownMenuCheckboxItem>
-
-          {/* Face Snap */}
-          <DropdownMenuCheckboxItem
-            checked={snapSettings.faceSnap}
-            onCheckedChange={(checked) => updateSnapSettings({ faceSnap: checked })}
-          >
-            Przyciąganie powierzchni
-          </DropdownMenuCheckboxItem>
-
-          {/* T-Joint Snap (only visible for V3) */}
-          {snapSettings.version === 'v3' && (
-            <DropdownMenuCheckboxItem
-              checked={snapSettings.tJointSnap}
-              onCheckedChange={(checked) => updateSnapSettings({ tJointSnap: checked })}
-            >
-              Przyciąganie T-joint
-            </DropdownMenuCheckboxItem>
-          )}
 
           <DropdownMenuSeparator />
 

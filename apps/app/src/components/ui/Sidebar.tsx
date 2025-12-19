@@ -86,11 +86,11 @@ export function Sidebar() {
           y: part.position[1],
           z: part.position[2],
         },
-        // Rotation in radians
+        // Rotation in degrees (converted from radians)
         rotation: {
-          x: part.rotation[0],
-          y: part.rotation[1],
-          z: part.rotation[2],
+          x: Math.round(part.rotation[0] * (180 / Math.PI) * 100) / 100,
+          y: Math.round(part.rotation[1] * (180 / Math.PI) * 100) / 100,
+          z: Math.round(part.rotation[2] * (180 / Math.PI) * 100) / 100,
         },
         shapeType: part.shapeType,
       })),

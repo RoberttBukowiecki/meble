@@ -16,33 +16,41 @@ type Vec3 = [number, number, number];
 
 /**
  * Apply Euler rotation (XYZ order) to a point
+ *
+ * Three.js Euler 'XYZ' means rotation matrix is Rx * Ry * Rz
+ * For a point transform: v' = Rx * Ry * Rz * v
+ * Reading right to left: apply Z first, then Y, then X
  */
 function rotatePoint(point: Vec3, rotation: Vec3): Vec3 {
   const [rx, ry, rz] = rotation;
 
+  // Pre-compute sin/cos
   const cx = Math.cos(rx), sx = Math.sin(rx);
   const cy = Math.cos(ry), sy = Math.sin(ry);
   const cz = Math.cos(rz), sz = Math.sin(rz);
 
   let [x, y, z] = point;
 
-  // Rotate X
-  const y1 = y * cx - z * sx;
-  const z1 = y * sx + z * cx;
+  // Apply rotations in reverse order to match Three.js Euler 'XYZ'
+  // Three.js: Rx * Ry * Rz means apply Z first, then Y, then X
+
+  // Rotate Z first
+  const x1 = x * cz - y * sz;
+  const y1 = x * sz + y * cz;
+  x = x1;
   y = y1;
+
+  // Rotate Y second
+  const x2 = x * cy + z * sy;
+  const z1 = -x * sy + z * cy;
+  x = x2;
   z = z1;
 
-  // Rotate Y
-  const x1 = x * cy + z * sy;
-  const z2 = -x * sy + z * cy;
-  x = x1;
-  z = z2;
+  // Rotate X last
+  const y2 = y * cx - z * sx;
+  const z2 = y * sx + z * cx;
 
-  // Rotate Z
-  const x2 = x * cz - y * sz;
-  const y2 = x * sz + y * cz;
-
-  return [x2, y2, z];
+  return [x, y2, z2];
 }
 
 // ============================================================================

@@ -11,7 +11,15 @@ import type {
   SnapSettings,
   SnapPoint,
 } from '@/types';
-import { getPartFaces, calculateSnap } from './snapping';
+import { createOBBFromPart, getOBBFaces } from './obb';
+
+/**
+ * Get part faces in the format expected by resize operations
+ */
+function getPartFaces(part: Part) {
+  const obb = createOBBFromPart(part);
+  return getOBBFaces(obb);
+}
 
 // ============================================================================
 // Constants

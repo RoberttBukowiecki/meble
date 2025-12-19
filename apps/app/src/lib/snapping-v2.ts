@@ -321,11 +321,9 @@ function scoreSnapCandidate(
   const maxDistance = settings.distance;
 
   // Distance component (closer = higher score)
+  // Linear scoring: closer distance = higher score
   const normalizedDistance = Math.min(candidate.distance / maxDistance, 1);
-  const distanceScore =
-    settings.strengthCurve === 'quadratic'
-      ? Math.pow(1 - normalizedDistance, 2)
-      : 1 - normalizedDistance;
+  const distanceScore = 1 - normalizedDistance;
 
   // Alignment component (better aligned = higher score)
   const alignmentScore = candidate.alignment;

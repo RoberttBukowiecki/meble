@@ -17,7 +17,6 @@ import { Part } from '@/types';
 import { SCENE_CONFIG, PART_CONFIG, MATERIAL_CONFIG } from '@/lib/config';
 import { useSnapContext } from '@/lib/snap-context';
 import { useDimensionContext } from '@/lib/dimension-context';
-import { calculateCabinetBounds, calculateSnapSimple } from '@/lib/snapping';
 import { calculateCabinetSnapV2 } from '@/lib/snapping-v2';
 import { calculateDimensions } from '@/lib/dimension-calculator';
 import { getCabinetBoundingBoxWithOffset, getOtherBoundingBoxes } from '@/lib/bounding-box-utils';
@@ -172,43 +171,17 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
             groupTranslation.z,
           ];
 
-          // Use V2 snapping for bounding box based snapping, V1 for face-to-face
-          if (snapSettings.version === 'v2') {
-            // V2: Group bounding box based snapping
-            const cabinet = allCabinets.find((c) => c.id === cabinetId);
-            if (cabinet) {
-              snapResult = calculateCabinetSnapV2(
-                cabinet,
-                positionOffset,
-                allParts,
-                allCabinets,
-                snapSettings,
-                axis
-              );
-            }
-          } else {
-            // V1: Individual part face snapping using cabinet bounds
-            const cabinetBounds = calculateCabinetBounds(parts);
-            if (cabinetBounds) {
-              // Update bounds position based on group translation
-              cabinetBounds.position = [
-                cabinetBounds.position[0] + groupTranslation.x,
-                cabinetBounds.position[1] + groupTranslation.y,
-                cabinetBounds.position[2] + groupTranslation.z,
-              ];
-
-              const otherParts = allParts.filter(
-                (p) => p.cabinetMetadata?.cabinetId !== cabinetId
-              );
-
-              snapResult = calculateSnapSimple(
-                cabinetBounds,
-                cabinetBounds.position,
-                otherParts,
-                snapSettings,
-                axis
-              );
-            }
+          // Use V2 snapping for cabinet groups (bounding box based)
+          const cabinet = allCabinets.find((c) => c.id === cabinetId);
+          if (cabinet) {
+            snapResult = calculateCabinetSnapV2(
+              cabinet,
+              positionOffset,
+              allParts,
+              allCabinets,
+              snapSettings,
+              axis
+            );
           }
 
           if (snapResult?.snapped && snapResult.snapPoints.length > 0) {
