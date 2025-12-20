@@ -1286,6 +1286,674 @@ You don't have to choose just one option. You can **design a freestanding wardro
       },
     },
   },
+  {
+    slug: 'plyta-meblowa-laminowana-mdf-czy-drewno-co-wybrac',
+    publishedAt: '2024-12-15',
+    readingTime: 9,
+    category: 'materials',
+    image: {
+      src: '/img/blog/plyta-meblowa-laminowana-mdf-czy-drewno-co-wybrac.webp',
+      alt: {
+        pl: 'Rodzaje płyt meblowych - laminat, MDF i drewno',
+        en: 'Types of furniture boards - laminate, MDF and wood',
+      },
+    },
+    content: {
+      pl: {
+        title: 'Płyta meblowa, MDF czy drewno? Przewodnik po materiałach',
+        description: 'Nie wiesz jaki materiał wybrać na meble? Porównujemy płytę laminowaną, MDF i drewno. Poznaj wady, zalety i ceny najpopularniejszych materiałów meblowych.',
+        excerpt: 'Wybór materiału to kluczowa decyzja przy projektowaniu mebli. Laminat, MDF czy drewno? Sprawdzamy co najlepiej sprawdzi się w kuchni, a co w szafie.',
+        keywords: ['płyta meblowa', 'płyta laminowana', 'MDF', 'drewno', 'materiały na meble', 'rodzaje płyt meblowych'],
+        body: `
+## Wybór materiału - od tego zależy trwałość Twoich mebli
+
+Decyzja o wyborze materiału wpływa nie tylko na wygląd, ale przede wszystkim na trwałość, cenę i trudność wykonania mebla. Jeśli planujesz [samodzielne zamawianie mebli](/zamawianie-mebli-online/), musisz znać różnice.
+
+## 1. Płyta laminowana (Wiórowa)
+
+To najpopularniejszy materiał w meblarstwie. 90% szaf, biurek i komód jest wykonanych właśnie z niej.
+
+### Zalety:
+- ✅ **Cena** - najtańszy materiał na rynku
+- ✅ **Gotowa powierzchnia** - nie wymaga malowania ani lakierowania
+- ✅ **Olbrzymi wybór** - setki dekorów (drewnopodobne, betony, unikolory)
+- ✅ **Łatwa w obróbce** - wystarczy zamówić formatki z oklejonymi krawędziami
+
+### Wady:
+- ❌ Wrażliwa na długotrwały kontakt z wodą
+- ❌ Trudna do naprawy (rysy są trwałe)
+- ❌ Krawędzie muszą być oklejone
+
+**Idealna na:** Korpusy szaf, fronty szafek, biurka, regały.
+
+## 2. Płyta MDF (Medium Density Fibreboard)
+
+Materiał gęstszy i twardszy od płyty wiórowej. Najczęściej stosowany na fronty meblowe.
+
+### Zalety:
+- ✅ **Jednorodna struktura** - można w niej frezować wzory
+- ✅ **Idealna pod lakier** - gładka powierzchnia
+- ✅ **Odporniejsza na wilgoć** niż płyta wiórowa (szczególnie lakierowana)
+
+### Wady:
+- ❌ Droższa od płyty laminowanej
+- ❌ Cięższa
+- ❌ Wymaga wykończenia (lakierowania, foliowania lub fornirowania)
+
+**Idealna na:** Fronty kuchenne, meble łazienkowe, elementy dekoracyjne.
+
+## 3. Drewno lite i klejone
+
+Materiał szlachetny, naturalny i długowieczny, ale wymagający.
+
+### Zalety:
+- ✅ **Naturalność** - unikalny rysunek słoja
+- ✅ **Możliwość renowacji** - można szlifować i lakierować wielokrotnie
+- ✅ **Wytrzymałość** mechaniczna (zależy od gatunku)
+
+### Wady:
+- ❌ **Cena** - najdroższe rozwiązanie
+- ❌ **Praca materiału** - drewno "pracuje" (kurczy się i pęcznieje)
+- ❌ Wymaga zabezpieczenia (olej, lakier)
+
+**Idealne na:** Blaty stołów, nogi, ramy łóżek, meble rustykalne.
+
+## Porównanie cenowe (dla formatu 1m²)
+
+| Materiał | Cena orientacyjna |
+|----------|-------------------|
+| Płyta laminowana biała | 40-60 zł |
+| Płyta laminowana drewnopodobna | 60-100 zł |
+| MDF surowy (do lakierowania) | 50-80 zł |
+| MDF lakierowany (gotowy front) | 300-600 zł |
+| Drewno klejone (sosna) | 150-250 zł |
+| Drewno klejone (dąb) | 600-1000 zł |
+
+## Co wybrać do pierwszego projektu DIY?
+
+Jeśli zaczynasz swoją przygodę z [projektowaniem mebli online](/projektowanie-mebli-online/), zdecydowanie **polecamy płytę laminowaną**.
+
+Dlaczego?
+1. Zamawiasz gotowe, pocięte i oklejone elementy
+2. Nie musisz nic malować
+3. Montaż jest prosty (na konfirmaty lub mimośrody)
+4. Jeśli popełnisz błąd - materiał jest tani do odkupienia
+
+## Podsumowanie
+
+- **Szafa / Garderoba:** Korpus i fronty z płyty laminowanej.
+- **Kuchnia:** Korpusy z laminatu, fronty z MDF (dla trwałości).
+- **Stół:** Blat drewniany lub z grubej płyty laminowanej, nogi drewniane lub metalowe.
+
+Wybierz materiał mądrze, dopasowując go do budżetu i funkcji mebla. Pamiętaj, że w naszym konfiguratorze możesz łatwo sprawdzić, ile materiału będziesz potrzebować.
+
+[CTA: Sprawdź zużycie materiału w swoim projekcie]
+`,
+      },
+      en: {
+        title: 'Furniture Board, MDF or Wood? Materials Guide',
+        description: 'Not sure which material to choose for furniture? We compare laminated board, MDF, and wood. Learn the pros, cons, and prices of popular furniture materials.',
+        excerpt: 'Choosing material is a key decision when designing furniture. Laminate, MDF, or wood? We check what works best for a kitchen and what for a wardrobe.',
+        keywords: ['furniture board', 'laminated board', 'MDF', 'wood', 'furniture materials', 'types of furniture boards'],
+        body: `
+## Choosing Material - Your Furniture's Durability Depends on It
+
+The decision on material affects not only the look but primarily the durability, price, and difficulty of making the furniture. If you plan on [ordering furniture yourself](/zamawianie-mebli-online/), you need to know the differences.
+
+## 1. Laminated Board (Chipboard)
+
+The most popular material in furniture making. 90% of wardrobes, desks, and dressers are made from it.
+
+### Pros:
+- ✅ **Price** - cheapest material on the market
+- ✅ **Ready surface** - no painting or varnishing needed
+- ✅ **Huge selection** - hundreds of decors (woodgrains, concrete, unicolors)
+- ✅ **Easy to process** - just order panels with edge banding
+
+### Cons:
+- ❌ Sensitive to prolonged water contact
+- ❌ Hard to repair (scratches are permanent)
+- ❌ Edges must be banded
+
+**Ideal for:** Wardrobe bodies, cabinet fronts, desks, shelves.
+
+## 2. MDF (Medium Density Fibreboard)
+
+A material denser and harder than chipboard. Most commonly used for furniture fronts.
+
+### Pros:
+- ✅ **Homogeneous structure** - patterns can be milled into it
+- ✅ **Ideal for painting** - smooth surface
+- ✅ **More moisture resistant** than chipboard (especially when lacquered)
+
+### Cons:
+- ❌ More expensive than laminated board
+- ❌ Heavier
+- ❌ Requires finishing (painting, foiling, or veneering)
+
+**Ideal for:** Kitchen fronts, bathroom furniture, decorative elements.
+
+## 3. Solid and Glued Wood
+
+Noble, natural, and long-lasting material, but demanding.
+
+### Pros:
+- ✅ **Naturalness** - unique grain pattern
+- ✅ **Renovation possible** - can be sanded and varnished multiple times
+- ✅ **Mechanical strength** (depends on species)
+
+### Cons:
+- ❌ **Price** - most expensive solution
+- ❌ **Material movement** - wood "works" (shrinks and swells)
+- ❌ Requires protection (oil, varnish)
+
+**Ideal for:** Table tops, legs, bed frames, rustic furniture.
+
+## Price Comparison (per 1m²)
+
+| Material | Approximate Price |
+|----------|-------------------|
+| White laminated board | $10-15 |
+| Woodgrain laminated board | $15-25 |
+| Raw MDF (for painting) | $12-20 |
+| Lacquered MDF (ready front) | $75-150 |
+| Glued wood (pine) | $40-60 |
+| Glued wood (oak) | $150-250 |
+
+## What to Choose for First DIY Project?
+
+If you are starting your adventure with [designing furniture online](/projektowanie-mebli-online/), we definitely **recommend laminated board**.
+
+Why?
+1. You order ready, cut, and edge-banded elements
+2. No painting required
+3. Assembly is simple (using screws or cam locks)
+4. If you make a mistake - material is cheap to replace
+
+## Summary
+
+- **Wardrobe:** Body and fronts from laminated board.
+- **Kitchen:** Bodies from laminate, fronts from MDF (for durability).
+- **Table:** Wood top or thick laminated board, wooden or metal legs.
+
+Choose material wisely, matching it to budget and furniture function. Remember, our configurator lets you easily check how much material you'll need.
+
+[CTA: Check material usage in your project]
+`,
+      },
+    },
+  },
+  {
+    slug: 'jak-zaprojektowac-kuchnie-online-krok-po-kroku',
+    publishedAt: '2024-12-10',
+    readingTime: 15,
+    category: 'guides',
+    image: {
+      src: '/img/blog/jak-zaprojektowac-kuchnie-online-krok-po-kroku.webp',
+      alt: {
+        pl: 'Projektowanie kuchni online - wizualizacja 3D',
+        en: 'Online kitchen design - 3D visualization',
+      },
+    },
+    content: {
+      pl: {
+        title: 'Jak zaprojektować kuchnię online? Poradnik dla początkujących',
+        description: 'Marzysz o nowej kuchni? Zobacz jak samodzielnie zaprojektować meble kuchenne online. Zasady ergonomii, trójkąt roboczy i typowe błędy.',
+        excerpt: 'Projektowanie kuchni to wyzwanie, ale z naszym poradnikiem zrobisz to samodzielnie. Poznaj zasady trójkąta roboczego i stwórz funkcjonalną kuchnię.',
+        keywords: ['projektowanie kuchni', 'kuchnia online', 'meble kuchenne na wymiar', 'trójkąt roboczy', 'ergonomia w kuchni'],
+        body: `
+## Kuchnia - serce domu, które musisz dobrze zaplanować
+
+Kuchnia to najtrudniejsze pomieszczenie do zaprojektowania. Musi być nie tylko ładna, ale przede wszystkim funkcjonalna. Złe rozplanowanie szafek sprawi, że gotowanie stanie się męczarnią.
+
+## Zasada 1: Trójkąt roboczy
+
+To złota zasada ergonomii w kuchni. Główne sprzęty powinny tworzyć wierzchołki trójkąta:
+1. **Lodówka** (przechowywanie)
+2. **Zlew** (przygotowywanie/zmywanie)
+3. **Płyta grzewcza** (gotowanie)
+
+**Optymalne odległości:**
+- Lodówka ↔ Zlew: 120-210 cm
+- Zlew ↔ Kuchenka: 120-210 cm
+- Lodówka ↔ Kuchenka: 120-270 cm
+
+> **Wskazówka:** Unikaj stawiania lodówki bezpośrednio przy kuchence (chyba że są oddzielone wysoką szafką cargo).
+
+## Krok 1: Pomiary pomieszczenia
+
+Zanim uruchomisz [projektant mebli online](/projektowanie-mebli-online/), musisz dokładnie zmierzyć kuchnię.
+
+**Zwróć uwagę na:**
+- Przyłącza wodno-kanalizacyjne (to determinuje pozycję zlewu)
+- Gniazda siłowe (indukcja) i elektryczne
+- Kratkę wentylacyjną (okap)
+- Wysokość parapetu (czy nie koliduje z blatem)
+
+## Krok 2: Wybór układu zabudowy
+
+W zależności od kształtu pomieszczenia:
+- **Układ I (jednorzędowy):** Dla wąskich kuchni. Wszystko na jednej ścianie.
+- **Układ L:** Najpopularniejszy. Ergonomiczny i ustawny.
+- **Układ U:** Dużo blatu roboczego, idealny dla osób dużo gotujących.
+- **Wyspa:** Wymaga dużej przestrzeni (min. 15-20 m² kuchni).
+
+## Krok 3: Projektowanie szafek
+
+W programie 3D zacznij ustawianie od narożnika (jeśli masz układ L/U) lub od przyłączy (zlew).
+
+### Standardowe wymiary:
+- **Szafki dolne:** głębokość 60 cm (blat), wysokość 85-90 cm
+- **Szafki górne:** głębokość 30-35 cm, wieszane 55-60 cm nad blatem
+- **Słupki (szafy wysokie):** głębokość 60 cm
+
+### Typy szafek, które warto mieć:
+- **Szuflady** w szafkach dolnych (wygodniejsze niż półki)
+- **Cargo** (wysuwane kosze) na wąskie przestrzenie
+- **Szafka narożna** z systemem nerka lub magic corner (drogie, ale praktyczne)
+
+## Krok 4: Blat roboczy
+
+To na nim dzieje się magia. Pamiętaj o **głównym blacie roboczym** - odcinku minimum 80 cm (najlepiej między zlewem a płytą). To tam będziesz kroić i przygotowywać posiłki.
+
+## Krok 5: Zamawianie elementów
+
+Podobnie jak przy szafach, możesz zamówić elementy kuchni samodzielnie w hurtowni.
+
+1. Wygeneruj listę cięcia korpusów (płyta laminowana 18mm)
+2. Zamów fronty (MDF lakierowany lub akryl)
+3. Zamów blat (cięty na wymiar)
+4. Dokup akcesoria (szuflady, zawiasy, kosze cargo)
+
+To podejście pozwala zaoszczędzić **nawet 40-60% ceny** kuchni ze studia meblowego. [Sprawdź jak zamawiać meble online](/zamawianie-mebli-online/).
+
+## Częste błędy
+
+- ❌ **Zmywarka w rogu:** Blokuje dostęp do szafki obok po otwarciu.
+- ❌ **Brak blatu przy lodówce:** Nie masz gdzie odłożyć zakupów.
+- ❌ **Zbyt wysoki montaż mikrofali:** Niebezpieczne przy wyjmowaniu gorących dań.
+- ❌ **Słabe oświetlenie:** Zaplanuj LED pod szafkami górnymi.
+
+## Podsumowanie
+
+Zaprojektowanie kuchni wymaga czasu i przemyślenia, ale satysfakcja (i oszczędności) są ogromne. Zacznij od dobrego pomiaru, trzymaj się zasady trójkąta roboczego i nie bój się korzystać z gotowych modułów w programach 3D.
+
+[CTA: Zacznij projektować swoją kuchnię]
+`,
+      },
+      en: {
+        title: 'How to Design a Kitchen Online? Beginner\'s Guide',
+        description: 'Dreaming of a new kitchen? See how to design kitchen furniture online yourself. Ergonomics rules, work triangle, and common mistakes.',
+        excerpt: 'Designing a kitchen is a challenge, but with our guide, you can do it yourself. Learn the work triangle rules and create a functional kitchen.',
+        keywords: ['kitchen design', 'online kitchen', 'custom kitchen furniture', 'work triangle', 'kitchen ergonomics'],
+        body: `
+## Kitchen - The Heart of Home You Must Plan Well
+
+The kitchen is the hardest room to design. It must be not only beautiful but primarily functional. Poor cabinet layout will make cooking a torment.
+
+## Rule 1: The Work Triangle
+
+This is the golden rule of kitchen ergonomics. Main appliances should form triangle vertices:
+1. **Fridge** (storage)
+2. **Sink** (prep/cleaning)
+3. **Hob/Stove** (cooking)
+
+**Optimal Distances:**
+- Fridge ↔ Sink: 120-210 cm
+- Sink ↔ Stove: 120-210 cm
+- Fridge ↔ Stove: 120-270 cm
+
+> **Tip:** Avoid placing the fridge directly next to the stove (unless separated by a tall pantry unit).
+
+## Step 1: Room Measurements
+
+Before you launch the [online furniture designer](/projektowanie-mebli-online/), you must measure the kitchen exactly.
+
+**Pay attention to:**
+- Water/drainage connections (determines sink position)
+- Power outlets (induction) and sockets
+- Ventilation vent (hood)
+- Window sill height (does it collide with countertop)
+
+## Step 2: Choosing Layout
+
+Depending on room shape:
+- **I-Layout (Single wall):** For narrow kitchens. Everything on one wall.
+- **L-Layout:** Most popular. Ergonomic and adaptable.
+- **U-Layout:** Lots of countertop space, ideal for heavy cooking.
+- **Island:** Requires large space (min. 15-20 m² kitchen).
+
+## Step 3: Designing Cabinets
+
+In 3D software, start placing from the corner (if L/U layout) or connections (sink).
+
+### Standard Dimensions:
+- **Base cabinets:** depth 60 cm (countertop), height 85-90 cm
+- **Wall cabinets:** depth 30-35 cm, hung 55-60 cm above counter
+- **Tall units (pantries):** depth 60 cm
+
+### Cabinet Types Worth Having:
+- **Drawers** in base cabinets (more convenient than shelves)
+- **Cargo** (pull-out baskets) for narrow spaces
+- **Corner cabinet** with kidney or magic corner system (expensive but practical)
+
+## Step 4: Countertop
+
+This is where magic happens. Remember the **main workspace** - a section of minimum 80 cm (best between sink and stove). This is where you'll chop and prep meals.
+
+## Step 5: Ordering Components
+
+Just like with wardrobes, you can order kitchen components yourself from a wholesaler.
+
+1. Generate cut list for bodies (18mm laminated board)
+2. Order fronts (Lacquered MDF or acrylic)
+3. Order countertop (cut to size)
+4. Buy accessories (drawers, hinges, cargo baskets)
+
+This approach lets you save **up to 40-60% of the price** of a kitchen from a furniture studio. [Check how to order furniture online](/zamawianie-mebli-online/).
+
+## Common Mistakes
+
+- ❌ **Dishwasher in corner:** Blocks access to adjacent cabinet when open.
+- ❌ **No counter by fridge:** Nowhere to put groceries.
+- ❌ **Microwave too high:** Dangerous when removing hot dishes.
+- ❌ **Poor lighting:** Plan LED strips under wall cabinets.
+
+## Summary
+
+Designing a kitchen requires time and thought, but satisfaction (and savings) are huge. Start with good measurements, stick to the work triangle rule, and don't be afraid to use ready modules in 3D software.
+
+[CTA: Start designing your kitchen]
+`,
+      },
+    },
+  },
+  {
+    slug: 'jak-zrobic-regal-na-ksiazki-na-wymiar',
+    publishedAt: '2024-12-05',
+    readingTime: 10,
+    category: 'diy',
+    image: {
+      src: '/img/blog/jak-zrobic-regal-na-ksiazki-na-wymiar.webp',
+      alt: {
+        pl: 'Regał na książki na wymiar - projekt DIY',
+        en: 'Custom bookshelf - DIY project',
+      },
+    },
+    content: {
+      pl: {
+        title: 'Jak zrobić regał na książki na wymiar? Projekt i montaż',
+        description: 'Potrzebujesz miejsca na książki? Zobacz jak zaprojektować i zbudować solidny regał na wymiar. Poradnik DIY: grubości płyt, mocowanie półek i stabilność.',
+        excerpt: 'Domowa biblioteczka to marzenie wielu. Pokażemy Ci, jak samodzielnie zaprojektować i zmontować regał na książki, który utrzyma ciężar Twojej kolekcji.',
+        keywords: ['regał na książki', 'biblioteczka na wymiar', 'jak zrobić regał', 'półki na książki', 'regał DIY'],
+        body: `
+## Domowa biblioteczka na wymiar - zrób to sam
+
+Standardowe regały z sieciówek często nie pasują do naszych wnęk lub wyginają się pod ciężarem książek. Rozwiązaniem jest regał na wymiar, który zaprojektujesz i złożysz samodzielnie.
+
+## Krok 1: Planowanie obciążenia
+
+Książki są ciężkie. Metr bieżący książek może ważyć nawet **30-40 kg**.
+Dlatego przy projektowaniu musisz pamiętać o:
+
+1. **Grubość płyty:** Standardowa płyta 18mm może się wygiąć przy półce szerszej niż 60-70 cm.
+   - Do 60 cm: Płyta 18mm OK
+   - 60-90 cm: Płyta 25mm lub 36mm (pogrubiana)
+   - Powyżej 90 cm: Konieczne podparcie pionową przegrodą
+
+2. **Plecy regału:** To one nadają sztywność. Nie używaj cieniutkiej płyty HDF (3mm) przybijanej gwoździkami, jeśli regał jest wysoki. Lepiej wpuścić płytę 10-18mm w rowek lub przykręcić solidnie do boków.
+
+## Krok 2: Projektowanie w 3D
+
+Użyj [darmowego projektanta mebli](/projektowanie-mebli-online/), aby rozplanować półki.
+
+**Wskazówki projektowe:**
+- **Zmienne wysokości:** Nie wszystkie półki muszą być równe. Zaplanuj wyższe na albumy (35-40 cm) i niższe na beletrystykę (22-25 cm).
+- **Cokoły:** Nie stawiaj regału bezpośrednio na podłodze. Cokół 5-7 cm ułatwia sprzątanie i wygląda estetycznie.
+- **Mocowanie do ściany:** Wysoki regał MUSI być przykręcony do ściany (kątownikiem u góry). Inaczej może się przewrócić.
+
+## Krok 3: Wybór złączy
+
+Jak łączyć półki z bokami?
+
+1. **Konfirmaty:** Najtańsze i najmocniejsze, ale widoczne główki śrub na bokach.
+2. **Mimośrody:** Niewidoczne z zewnątrz, ale trudniejsze w montażu (wymagają precyzyjnych nawiertów).
+3. **Podpórki półek:** Pozwalają regulować wysokość, ale półka nie usztywnia wtedy regału.
+
+> **Rekomendacja:** Półki konstrukcyjne (góra, dół, jedna środkowa) zamontuj na stałe (mimośrody/konfirmaty). Pozostałe mogą być na podpórkach.
+
+## Krok 4: Montaż
+
+1. Rozłóż boki na podłodze
+2. Wkręć trzpienie mimośrodów lub przygotuj otwory pod konfirmaty
+3. Zamontuj półki konstrukcyjne
+4. Sprawdź przekątne (czy regał jest prosty)
+5. Przybij/przykręć plecy (kluczowy moment dla stabilności!)
+6. Postaw regał i przykręć do ściany
+
+## Ile to kosztuje?
+
+Regał 200x80x30 cm z płyty laminowanej 18mm:
+- Płyty z cięciem i okleinowaniem: ok. 400-600 zł
+- Akcesoria: 50 zł
+- **Razem: ok. 450-650 zł**
+
+Gotowy regał tej klasy u stolarza to koszt rzędu 1500-2000 zł.
+
+[CTA: Zaprojektuj swój wymarzony regał]
+`,
+      },
+      en: {
+        title: 'How to Build a Custom Bookshelf? Design and Assembly',
+        description: 'Need space for books? See how to design and build a sturdy custom bookshelf. DIY guide: board thickness, shelf mounting, and stability.',
+        excerpt: 'A home library is a dream for many. We\'ll show you how to design and assemble a bookshelf yourself that will hold the weight of your collection.',
+        keywords: ['bookshelf', 'custom library', 'how to make bookshelf', 'book shelves', 'DIY bookshelf'],
+        body: `
+## Custom Home Library - Do It Yourself
+
+Standard store-bought bookshelves often don't fit our alcoves or sag under the weight of books. The solution is a custom bookshelf you design and assemble yourself.
+
+## Step 1: Load Planning
+
+Books are heavy. A linear meter of books can weigh up to **30-40 kg (65-90 lbs)**.
+Therefore, when designing, remember:
+
+1. **Board Thickness:** Standard 18mm board may sag if shelf is wider than 60-70 cm.
+   - Up to 60 cm: 18mm board OK
+   - 60-90 cm: 25mm or 36mm board (thickened)
+   - Over 90 cm: Vertical support divider required
+
+2. **Back Panel:** This provides rigidity. Don't use thin HDF (3mm) nailed on if the bookshelf is tall. Better to groove in a 10-18mm board or screw it solidly to the sides.
+
+## Step 2: 3D Design
+
+Use the [free furniture designer](/projektowanie-mebli-online/) to layout your shelves.
+
+**Design Tips:**
+- **Variable Heights:** Not all shelves need to be equal. Plan taller ones for albums (35-40 cm) and shorter for fiction (22-25 cm).
+- **Plinths:** Don't place the bookshelf directly on the floor. A 5-7 cm plinth makes cleaning easier and looks better.
+- **Wall Mounting:** A tall bookshelf MUST be screwed to the wall (bracket at top). Otherwise, it may tip over.
+
+## Step 3: Choosing Joints
+
+How to connect shelves to sides?
+
+1. **Confirmat Screws:** Cheapest and strongest, but screw heads visible on sides.
+2. **Cam Locks:** Invisible from outside, but harder to install (requires precise drilling).
+3. **Shelf Pins:** Allow height adjustment, but the shelf doesn't stiffen the unit.
+
+> **Recommendation:** Mount structural shelves (top, bottom, one middle) permanently (cam locks/confirmats). The rest can be on pins.
+
+## Step 4: Assembly
+
+1. Lay sides on the floor
+2. Screw in cam pins or prep holes for confirmats
+3. Install structural shelves
+4. Check diagonals (is the unit square)
+5. Nail/screw the back (key moment for stability!)
+6. Stand up and screw to wall
+
+## How Much Does It Cost?
+
+Bookshelf 200x80x30 cm from 18mm laminated board:
+- Cut and banded boards: approx. $100-150
+- Accessories: $15
+- **Total: approx. $115-165**
+
+A ready-made bookshelf of this class from a carpenter costs around $400-600.
+
+[CTA: Design your dream bookshelf]
+`,
+      },
+    },
+  },
+  {
+    slug: 'akcesoria-meblowe-jakie-zawiasy-i-prowadnice-wybrac',
+    publishedAt: '2024-11-20',
+    readingTime: 8,
+    category: 'materials',
+    image: {
+      src: '/img/blog/akcesoria-meblowe-jakie-zawiasy-i-prowadnice-wybrac.webp',
+      alt: {
+        pl: 'Akcesoria meblowe - zawiasy i prowadnice szuflad',
+        en: 'Furniture hardware - hinges and drawer slides',
+      },
+    },
+    content: {
+      pl: {
+        title: 'Akcesoria meblowe: Jakie zawiasy i prowadnice wybrać?',
+        description: 'Blum, GTV czy chińskie zamienniki? Przewodnik po okuciach meblowych. Sprawdź, na czym warto oszczędzić, a gdzie lepiej dopłacić.',
+        excerpt: 'Trwałość mebli zależy od okuć. Prowadnice szuflad i zawiasy to elementy, które pracują najciężej. Doradzamy, jakie wybrać, by cieszyć się bezawaryjnością.',
+        keywords: ['akcesoria meblowe', 'zawiasy meblowe', 'prowadnice szuflad', 'cichy domyk', 'okucia meblowe'],
+        body: `
+## Serce mebla ukryte jest w środku
+
+Piękna płyta to nie wszystko. O komforcie użytkowania mebli decydują **okucia** - zawiasy, prowadnice i podnośniki. To one sprawiają, że szuflada chodzi płynnie, a drzwiczki nie trzaskają.
+
+Przy [zamawianiu mebli online](/zamawianie-mebli-online/) często masz wybór marki okuć. Co wybrać?
+
+## 1. Zawiasy puszskowe
+
+Standard w meblarstwie.
+
+### Rodzaje:
+- **Nakładane:** Standardowe drzwiczki zakrywające bok szafki.
+- **Wpuszczane:** Drzwiczki zlicowane z bokiem (wewnątrz korpusu).
+- **Równoległe/Kątowe:** Do szafek narożnych.
+
+### Funkcje dodatkowe:
+- **Cichy domyk (Soft Close):** Wbudowany hamulec. Drzwiczki zwalniają przed zamknięciem. **Must-have w kuchni.**
+- **Push to open:** Otwieranie na dotyk. Idealne do nowoczesnych mebli bez uchwytów.
+
+## 2. Prowadnice szuflad
+
+Tu różnice w jakości są najbardziej odczuwalne.
+
+### Typy prowadnic:
+1. **Rolkowe (zwykłe):** Najtańsze (10-15 zł). Głośne, szuflada wypada, mały udźwig. Unikaj, chyba że w garażu.
+2. **Kulkowe:** Lepsze (20-40 zł). Płynniejszy ruch, często pełny wysuw. Dobry stosunek ceny do jakości.
+3. **Dolnego montażu (Tandem/Modern Box):** Klasa premium (80-200 zł). Prowadnica ukryta pod szufladą, pełny wysuw, idealna płynność, cichy domyk.
+
+## 3. Marki - czy warto dopłacać?
+
+### BLUM (Premium)
+Austriacka jakość. Dożywotnia gwarancja. Płacisz za niezawodność.
+- **Kiedy wybrać:** Kuchnia, meble intensywnie używane, ciężkie szuflady.
+
+### GTV / SEVROLL (Średnia półka)
+Bardzo popularne w Polsce. Dobra jakość w rozsądnej cenie.
+- **Kiedy wybrać:** Szafy w sypialni, komody, meble biurowe.
+
+### "No-name" (Budżet)
+Najtańsze zamienniki.
+- **Kiedy wybrać:** Meble do piwnicy, garażu, rzadko otwierane schowki.
+
+## Ile to kosztuje w praktyce?
+
+Różnica w cenie całej szafy czy kuchni może być znacząca:
+
+**Komoda z 4 szufladami:**
+- Na prowadnicach rolkowych: 4 x 12 zł = 48 zł
+- Na GTV Modern Box: 4 x 90 zł = 360 zł
+- Na Blum Legrabox: 4 x 250 zł = 1000 zł
+
+## Podsumowanie
+
+Nie oszczędzaj na okuciach w kuchni i szufladach, z których korzystasz codziennie. W szafie w sypialni czy regale możesz wybrać średnią półkę.
+
+Pamiętaj, że wymiana prowadnic w gotowym meblu jest trudna i pracochłonna – lepiej wybrać dobrze od razu.
+
+[CTA: Dobierz akcesoria do swojego projektu]
+`,
+      },
+      en: {
+        title: 'Furniture Hardware: Which Hinges and Slides to Choose?',
+        description: 'Blum, GTV or generic? Guide to furniture fittings. Check where to save money and where it pays to invest more.',
+        excerpt: 'Furniture durability depends on fittings. Drawer slides and hinges work the hardest. We advise what to choose for trouble-free operation.',
+        keywords: ['furniture hardware', 'furniture hinges', 'drawer slides', 'soft close', 'furniture fittings'],
+        body: `
+## The Heart of Furniture is Hidden Inside
+
+A beautiful board isn't everything. User comfort is determined by **fittings** - hinges, slides, and lifts. They make drawers run smoothly and doors close silently.
+
+When [ordering furniture online](/zamawianie-mebli-online/), you often have a choice of hardware brands. What to pick?
+
+## 1. Concealed Hinges
+
+Standard in furniture making.
+
+### Types:
+- **Overlay:** Standard doors covering the cabinet side.
+- **Inset:** Doors flush with the side (inside the body).
+- **Parallel/Angled:** For corner cabinets.
+
+### Extra Features:
+- **Soft Close:** Built-in brake. Door slows down before closing. **Must-have in kitchen.**
+- **Push to open:** Touch opening. Ideal for modern handle-less furniture.
+
+## 2. Drawer Slides
+
+Here quality differences are most noticeable.
+
+### Slide Types:
+1. **Roller (Basic):** Cheapest ($3-5). Noisy, drawer falls out, low load capacity. Avoid, unless for garage.
+2. **Ball Bearing:** Better ($5-10). Smoother movement, often full extension. Good value for money.
+3. **Undermount (Tandem/Box systems):** Premium class ($20-50). Slide hidden under drawer, full extension, perfect smoothness, soft close.
+
+## 3. Brands - Is It Worth Paying More?
+
+### BLUM (Premium)
+Austrian quality. Lifetime warranty. You pay for reliability.
+- **When to choose:** Kitchen, heavily used furniture, heavy drawers.
+
+### GTV / Generic High Quality (Mid-range)
+Good quality at reasonable price.
+- **When to choose:** Bedroom wardrobes, dressers, office furniture.
+
+### "No-name" (Budget)
+Cheapest replacements.
+- **When to choose:** Basement furniture, garage, rarely opened storage.
+
+## What's the Real Cost?
+
+The price difference for a whole wardrobe or kitchen can be significant:
+
+**Dresser with 4 drawers:**
+- On roller slides: 4 x $4 = $16
+- On Mid-range Box system: 4 x $25 = $100
+- On Blum Legrabox: 4 x $65 = $260
+
+## Summary
+
+Don't skimp on fittings in the kitchen and drawers you use daily. For a bedroom wardrobe or bookshelf, you can choose mid-range.
+
+Remember, replacing slides in finished furniture is difficult and labor-intensive – better to choose right the first time.
+
+[CTA: Choose accessories for your project]
+`,
+      },
+    },
+  },
 ];
 
 // Helper functions

@@ -1,12 +1,34 @@
 #!/bin/bash
 
-# Simple script to trigger the blog image generation pipeline
-# Usage: ./trigger-image-gen.sh [optional-api-key]
+# Script to trigger SEO image generation pipeline
+# Supports: blog articles, pillar pages, or all
+#
+# Usage: ./trigger-image-gen.sh
+#
+# API Parameters:
+#   type=all|blog|pillar  - Which pages to process (default: all)
+#   limit=N|all           - How many images (default: 1)
+#   force=true|false      - Regenerate existing (default: false)
 
 PORT=3003 # Default port for landing app
 API_URL="http://localhost:$PORT/api/cron/generate-blog-images"
 
-echo "🍌 Triggering Blog Image Pipeline..."
+echo "🖼️  SEO Image Generation Pipeline"
+echo "=================================="
+
+# Ask for type
+echo ""
+echo "Page types:"
+echo "  1) all    - Blog articles + Pillar pages"
+echo "  2) blog   - Blog articles only"
+echo "  3) pillar - Pillar pages only"
+read -p "Select type [1/2/3] (default: 1): " TYPE_INPUT
+
+case "$TYPE_INPUT" in
+    2) TYPE="blog" ;;
+    3) TYPE="pillar" ;;
+    *) TYPE="all" ;;
+esac
 
 # Ask for limit
 read -p "How many images to generate? (default: 1, enter 'all' for everything): " LIMIT_INPUT
@@ -19,9 +41,13 @@ if [[ "$FORCE_INPUT" =~ ^[Yy]$ ]]; then
     FORCE="true"
 fi
 
-echo "Target URL: $API_URL"
-echo "Limit: $LIMIT_INPUT"
-echo "Force: $FORCE"
+echo ""
+echo "Configuration:"
+echo "  Type:  $TYPE"
+echo "  Limit: $LIMIT_INPUT"
+echo "  Force: $FORCE"
+echo "  URL:   $API_URL"
+echo ""
 
 # Check if server is running (simple check)
 if ! curl --output /dev/null --silent --head --fail "http://localhost:$PORT"; then
@@ -31,10 +57,14 @@ if ! curl --output /dev/null --silent --head --fail "http://localhost:$PORT"; th
 fi
 
 # Execute request
-# Pass limit and force parameters
-RESPONSE=$(curl -s -X GET "$API_URL?force=$FORCE&limit=$LIMIT_INPUT")
+echo "🚀 Sending request..."
+RESPONSE=$(curl -s -X GET "$API_URL?type=$TYPE&force=$FORCE&limit=$LIMIT_INPUT")
 
+echo ""
 echo "✅ Response received:"
 echo "$RESPONSE" | jq . 2>/dev/null || echo "$RESPONSE"
 
-echo "Done."
+echo ""
+echo "Done. Images saved to:"
+echo "  Blog:   public/img/blog/"
+echo "  Pillar: public/img/pillar/"

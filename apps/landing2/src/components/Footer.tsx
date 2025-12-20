@@ -16,6 +16,12 @@ export function Footer() {
     { key: "nav.blog", href: "/blog" },
   ];
 
+  // Pillar pages for SEO internal linking
+  const services = [
+    { key: "footer.services.design", href: "/projektowanie-mebli-online" },
+    { key: "footer.services.order", href: "/zamawianie-mebli-online" },
+  ];
+
   const legal = [
     { key: "footer.legal.terms", href: "/terms" },
     { key: "footer.legal.privacy", href: "/privacy" },
@@ -32,7 +38,7 @@ export function Footer() {
   return (
     <footer role="contentinfo" className="relative" itemScope itemType="https://schema.org/WPFooter">
       <Container>
-        <div className="grid max-w-screen-xl grid-cols-1 gap-10 pt-10 mx-auto mt-5 border-t border-gray-100 dark:border-trueGray-700 lg:grid-cols-5">
+        <div className="grid max-w-screen-xl grid-cols-1 gap-10 pt-10 mx-auto mt-5 border-t border-gray-100 dark:border-trueGray-700 sm:grid-cols-2 lg:grid-cols-6">
           {/* Brand section */}
           <div className="lg:col-span-2" itemScope itemType="https://schema.org/Organization">
             <Link
@@ -68,6 +74,25 @@ export function Footer() {
             </h3>
             <ul className="flex flex-wrap w-full -mt-2 -ml-3 lg:ml-0">
               {navigation.map((item) => (
+                <li key={item.key} className="w-full">
+                  <Link
+                    href={item.href}
+                    className="block px-4 py-2 text-gray-500 rounded-md dark:text-gray-300 hover:text-indigo-500 focus:text-indigo-500 focus:bg-indigo-100 focus:outline-none dark:focus:bg-trueGray-700"
+                  >
+                    {t(item.key)}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          {/* Services - Pillar Pages */}
+          <nav aria-label={t("footer.servicesLabel")}>
+            <h3 className="font-semibold text-gray-800 dark:text-white mb-3">
+              {t("footer.servicesTitle")}
+            </h3>
+            <ul className="flex flex-wrap w-full -mt-2 -ml-3 lg:ml-0">
+              {services.map((item) => (
                 <li key={item.key} className="w-full">
                   <Link
                     href={item.href}

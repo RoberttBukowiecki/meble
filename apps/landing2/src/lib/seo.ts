@@ -101,15 +101,20 @@ export const ORGANIZATION = {
 } as const;
 
 // SEO metadata by locale
+// Optimized for CTR - includes brand, USP, and specific numbers
 export const SEO_METADATA = {
   pl: {
-    title: `${APP_NAME} - Darmowy Projektant Mebli 3D Online | Oszczędź do 50%`,
-    titleTemplate: `%s | ${APP_NAME} - Projektowanie Mebli 3D`,
+    title: `${APP_NAME} | Zaprojektuj meble 3D za darmo → Oszczędź 50%`,
+    titleTemplate: `%s | ${APP_NAME}`,
     description:
-      'Zaprojektuj meble na wymiar w 3D za darmo. Generuj listy cięcia, zamawiaj bezpośrednio z hurtowni i oszczędź nawet 50% w porównaniu do stolarza. Szafy, komody, meble kuchenne.',
+      'Projektuj szafy, komody i regały w 3D za darmo. Generuj listę cięcia CSV, zamów płyty z hurtowni i zaoszczędź nawet 50%. Bez rejestracji, od razu w przeglądarce.',
     keywords: [
       ...SEO_KEYWORDS.pl.primary,
       ...SEO_KEYWORDS.pl.secondary,
+      // Additional keywords for pillar pages
+      'zaprojektuj meble',
+      'projektowanie mebli na wymiar',
+      'zamawianie mebli online',
     ].join(', '),
     openGraph: {
       siteName: APP_NAME,
@@ -118,13 +123,17 @@ export const SEO_METADATA = {
     },
   },
   en: {
-    title: `${APP_NAME} - Free 3D Furniture Designer Online | Save up to 50%`,
-    titleTemplate: `%s | ${APP_NAME} - 3D Furniture Design`,
+    title: `${APP_NAME} | Design furniture in 3D for free → Save 50%`,
+    titleTemplate: `%s | ${APP_NAME}`,
     description:
-      'Design custom furniture in 3D for free. Generate cut lists, order directly from warehouse and save up to 50% compared to a carpenter. Wardrobes, cabinets, kitchen furniture.',
+      'Design wardrobes, cabinets and shelves in 3D for free. Generate CSV cut lists, order boards from warehouse and save up to 50%. No registration, works in browser.',
     keywords: [
       ...SEO_KEYWORDS.en.primary,
       ...SEO_KEYWORDS.en.secondary,
+      // Additional keywords for pillar pages
+      'design furniture',
+      'custom furniture design',
+      'order furniture online',
     ].join(', '),
     openGraph: {
       siteName: APP_NAME,

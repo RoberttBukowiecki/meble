@@ -14,6 +14,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
   // Main pages with their priorities and change frequencies
   const pages = [
     { path: '', priority: 1.0, changeFrequency: 'weekly' as const },
+    { path: '/projektowanie-mebli-online', priority: 0.95, changeFrequency: 'weekly' as const },
+    { path: '/zamawianie-mebli-online', priority: 0.85, changeFrequency: 'monthly' as const },
     { path: '/blog', priority: 0.9, changeFrequency: 'daily' as const },
   ];
 

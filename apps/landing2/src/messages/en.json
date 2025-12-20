@@ -136,6 +136,12 @@
     "copyright": "All rights reserved.",
     "navigation": "Navigation",
     "navLabel": "Main navigation",
+    "servicesTitle": "Services",
+    "servicesLabel": "Service links",
+    "services": {
+      "design": "Design furniture online",
+      "order": "Order furniture online"
+    },
     "legalTitle": "Legal",
     "legalLabel": "Legal links",
     "legal": {
@@ -160,5 +166,160 @@
     "tags": "Tags",
     "relatedArticles": "Related Articles",
     "readMore": "Read more"
+  },
+  "pillarDesign": {
+    "breadcrumb": "Design furniture online",
+    "hero": {
+      "title": "Design furniture online – from idea to reality",
+      "description": "Design a wardrobe, cabinet or shelf in your browser. Free 3D designer with cut list export to warehouse. Save up to 50% compared to a carpenter.",
+      "cta": "Start designing",
+      "ctaSecondary": "How to order furniture?"
+    },
+    "howItWorks": {
+      "title": "How does the 3D furniture designer work?",
+      "steps": {
+        "1": {
+          "title": "Choose furniture type",
+          "description": "Wardrobe, cabinet, shelf or alcove unit? Choose from ready templates or start from scratch."
+        },
+        "2": {
+          "title": "Adjust dimensions",
+          "description": "Enter exact dimensions tailored to your space. Everything updates in real-time."
+        },
+        "3": {
+          "title": "Choose materials",
+          "description": "Board type, color, thickness, edge finish – you have full control over the look."
+        },
+        "4": {
+          "title": "Download cut list",
+          "description": "Generate a CSV file ready to send to the warehouse. Order pre-cut elements and assemble yourself."
+        }
+      }
+    },
+    "whatYouCanDesign": {
+      "title": "What can you design online?",
+      "description": "Our 3D designer supports various types of cabinet furniture – from simple shelves to elaborate built-in wardrobes.",
+      "types": {
+        "wardrobes": {
+          "title": "Built-in and freestanding wardrobes",
+          "description": "Design wardrobes with dividers, drawers and shelves. Perfect for bedroom and hallway."
+        },
+        "cabinets": {
+          "title": "Cabinets and shelves",
+          "description": "Furniture for living room, office and kids room. Any configuration of shelves and dividers."
+        },
+        "kitchen": {
+          "title": "Kitchen furniture",
+          "description": "Base and wall cabinets, cargo, drawers. Export dimensions to any warehouse."
+        }
+      }
+    },
+    "whyDesignYourself": {
+      "title": "Why design furniture yourself?",
+      "benefits": {
+        "savings": {
+          "title": "Save up to 50%",
+          "description": "Eliminate carpenter and middleman margins. You only pay for materials and cutting."
+        },
+        "control": {
+          "title": "Full control over the project",
+          "description": "You decide on every dimension, color and solution. No compromises."
+        },
+        "noMiddlemen": {
+          "title": "No middlemen",
+          "description": "Order boards directly from warehouse. Same quality as professionals use."
+        }
+      }
+    },
+    "faq": {
+      "title": "Frequently asked questions about online design",
+      "items": {
+        "1": {
+          "question": "Is online furniture design really free?",
+          "answer": "Yes, the 3D designer is completely free. You can create unlimited projects, export cut lists and save projects at no cost."
+        },
+        "2": {
+          "question": "How do I order boards for my project?",
+          "answer": "After designing furniture, you export the cut list in CSV format. You send this file to your chosen furniture board warehouse, which will prepare pre-cut elements for pickup or delivery."
+        },
+        "3": {
+          "question": "Do I need design experience?",
+          "answer": "No, the app is intuitive. We offer ready furniture templates that you can easily customize to your dimensions. 3D visualization shows the result in real-time."
+        },
+        "4": {
+          "question": "How long does it take to design furniture online?",
+          "answer": "A simple piece of furniture takes 5-10 minutes. A more elaborate built-in wardrobe with many dividers may take 30-60 minutes. You can save your project and continue later."
+        }
+      }
+    },
+    "relatedArticles": {
+      "title": "Related guides",
+      "description": "Learn more about designing and ordering custom furniture."
+    }
+  },
+  "pillarOrdering": {
+    "breadcrumb": "Order furniture online",
+    "hero": {
+      "title": "Order furniture online – how to buy custom furniture?",
+      "description": "From 3D design through quote to board delivery. Learn how to save on furniture without a carpenter by ordering materials directly from the warehouse.",
+      "cta": "Design furniture",
+      "ctaSecondary": "How does it work?"
+    },
+    "process": {
+      "title": "Online furniture ordering process",
+      "steps": {
+        "1": {
+          "title": "Create a design",
+          "description": "Design furniture in the free 3D designer. Customize dimensions and materials to your needs."
+        },
+        "2": {
+          "title": "Export cut list",
+          "description": "Download a CSV file with a list of all elements and their dimensions."
+        },
+        "3": {
+          "title": "Send to warehouse",
+          "description": "Send the list to your chosen furniture board warehouse. You'll receive a quote and delivery date."
+        },
+        "4": {
+          "title": "Pick up and assemble",
+          "description": "Pick up pre-cut elements and assemble furniture yourself or with a fitter."
+        }
+      }
+    },
+    "pricing": {
+      "title": "How much does online furniture ordering cost?",
+      "description": "Cost depends on chosen material, furniture size and warehouse. On average you save 40-60% compared to ordering from a carpenter.",
+      "example": {
+        "title": "Example: built-in wardrobe 200x250 cm",
+        "traditional": "Carpenter: ~$2000-3000",
+        "diy": "DIY: ~$900-1300",
+        "savings": "Savings: up to $1700"
+      }
+    },
+    "faq": {
+      "title": "Questions about furniture ordering",
+      "items": {
+        "1": {
+          "question": "Where can I order furniture boards?",
+          "answer": "You can send the cut list to any furniture board warehouse. Most accept CSV format and offer home delivery."
+        },
+        "2": {
+          "question": "Does the warehouse apply edge banding?",
+          "answer": "Yes, the app also generates an edge banding list. The warehouse will apply edge banding to specified edges according to your design."
+        },
+        "3": {
+          "question": "How long does order fulfillment take?",
+          "answer": "Typically 5-10 business days, depending on the warehouse and material availability. Some offer express 2-3 day fulfillment."
+        },
+        "4": {
+          "question": "Can I order with home delivery?",
+          "answer": "Yes, most warehouses offer delivery. Cost depends on distance and order weight. You can also pick up in person."
+        }
+      }
+    },
+    "relatedArticles": {
+      "title": "Related guides",
+      "description": "Practical tips for ordering custom furniture."
+    }
   }
 }

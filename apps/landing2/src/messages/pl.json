@@ -136,6 +136,12 @@
     "copyright": "Wszelkie prawa zastrzeżone.",
     "navigation": "Nawigacja",
     "navLabel": "Główna nawigacja",
+    "servicesTitle": "Usługi",
+    "servicesLabel": "Linki do usług",
+    "services": {
+      "design": "Projektowanie mebli online",
+      "order": "Zamawianie mebli online"
+    },
     "legalTitle": "Informacje prawne",
     "legalLabel": "Linki prawne",
     "legal": {
@@ -160,5 +166,160 @@
     "tags": "Tagi",
     "relatedArticles": "Podobne artykuły",
     "readMore": "Czytaj więcej"
+  },
+  "pillarDesign": {
+    "breadcrumb": "Projektowanie mebli online",
+    "hero": {
+      "title": "Projektowanie mebli online – od pomysłu do realizacji",
+      "description": "Zaprojektuj szafę, komodę lub regał w przeglądarce. Darmowy projektant 3D z eksportem listy cięcia do hurtowni. Oszczędź do 50% w porównaniu do stolarza.",
+      "cta": "Rozpocznij projektowanie",
+      "ctaSecondary": "Jak zamówić meble?"
+    },
+    "howItWorks": {
+      "title": "Jak działa projektant mebli 3D?",
+      "steps": {
+        "1": {
+          "title": "Wybierz typ mebla",
+          "description": "Szafa, komoda, regał czy zabudowa wnęki? Wybierz z gotowych szablonów lub zacznij od zera."
+        },
+        "2": {
+          "title": "Dostosuj wymiary",
+          "description": "Wprowadź dokładne wymiary dopasowane do Twojej przestrzeni. Wszystko aktualizuje się w czasie rzeczywistym."
+        },
+        "3": {
+          "title": "Wybierz materiały",
+          "description": "Płyta meblowa, kolor, grubość, wykończenie krawędzi – masz pełną kontrolę nad wyglądem."
+        },
+        "4": {
+          "title": "Pobierz listę cięcia",
+          "description": "Wygeneruj plik CSV gotowy do wysłania do hurtowni. Zamów pocięte elementy i złóż meble sam."
+        }
+      }
+    },
+    "whatYouCanDesign": {
+      "title": "Co możesz zaprojektować online?",
+      "description": "Nasz projektant 3D obsługuje różne typy mebli skrzyniowych – od prostych regałów po rozbudowane szafy wnękowe.",
+      "types": {
+        "wardrobes": {
+          "title": "Szafy wnękowe i wolnostojące",
+          "description": "Projektuj szafy z przegrodami, szufladami i półkami. Idealne do sypialni i przedpokoju."
+        },
+        "cabinets": {
+          "title": "Komody i regały",
+          "description": "Meble do salonu, biura i pokoju dziecięcego. Dowolna konfiguracja półek i przegród."
+        },
+        "kitchen": {
+          "title": "Meble kuchenne",
+          "description": "Szafki dolne i górne, cargo, szuflady. Eksportuj wymiary do dowolnej hurtowni."
+        }
+      }
+    },
+    "whyDesignYourself": {
+      "title": "Dlaczego warto projektować meble samodzielnie?",
+      "benefits": {
+        "savings": {
+          "title": "Oszczędność do 50%",
+          "description": "Eliminujesz marżę stolarza i pośredników. Płacisz tylko za materiały i cięcie."
+        },
+        "control": {
+          "title": "Pełna kontrola nad projektem",
+          "description": "Ty decydujesz o każdym wymiarze, kolorze i rozwiązaniu. Bez kompromisów."
+        },
+        "noMiddlemen": {
+          "title": "Bez pośredników",
+          "description": "Zamawiasz płyty bezpośrednio z hurtowni. Ta sama jakość co u profesjonalistów."
+        }
+      }
+    },
+    "faq": {
+      "title": "Często zadawane pytania o projektowanie online",
+      "items": {
+        "1": {
+          "question": "Czy projektowanie mebli online jest naprawdę darmowe?",
+          "answer": "Tak, projektant 3D jest całkowicie darmowy. Możesz tworzyć nieograniczoną liczbę projektów, eksportować listy cięcia i zapisywać projekty bez opłat."
+        },
+        "2": {
+          "question": "Jak zamówić płyty do mojego projektu?",
+          "answer": "Po zaprojektowaniu mebla eksportujesz listę cięcia w formacie CSV. Ten plik wysyłasz do wybranej hurtowni płyt meblowych, która przygotuje pocięte elementy do odbioru lub wysyłki."
+        },
+        "3": {
+          "question": "Czy potrzebuję doświadczenia w projektowaniu?",
+          "answer": "Nie, aplikacja jest intuicyjna. Oferujemy gotowe szablony mebli, które łatwo dostosujesz do swoich wymiarów. Wizualizacja 3D pokazuje efekt na bieżąco."
+        },
+        "4": {
+          "question": "Ile trwa projektowanie mebla online?",
+          "answer": "Prosty mebel zaprojektujesz w 5-10 minut. Bardziej rozbudowana szafa wnękowa z wieloma przegrodami może zająć 30-60 minut. Projekt możesz zapisać i kontynuować później."
+        }
+      }
+    },
+    "relatedArticles": {
+      "title": "Powiązane poradniki",
+      "description": "Dowiedz się więcej o projektowaniu i zamawianiu mebli na wymiar."
+    }
+  },
+  "pillarOrdering": {
+    "breadcrumb": "Zamawianie mebli online",
+    "hero": {
+      "title": "Zamawianie mebli online – jak kupić meble na wymiar?",
+      "description": "Od projektu 3D przez wycenę do dostawy płyt. Sprawdź jak zaoszczędzić na meblach bez stolarza, zamawiając materiały bezpośrednio z hurtowni.",
+      "cta": "Zaprojektuj meble",
+      "ctaSecondary": "Jak to działa?"
+    },
+    "process": {
+      "title": "Proces zamawiania mebli online",
+      "steps": {
+        "1": {
+          "title": "Stwórz projekt",
+          "description": "Zaprojektuj mebel w darmowym projektancie 3D. Dostosuj wymiary i materiały do swoich potrzeb."
+        },
+        "2": {
+          "title": "Eksportuj listę cięcia",
+          "description": "Pobierz plik CSV z listą wszystkich elementów i ich wymiarami."
+        },
+        "3": {
+          "title": "Wyślij do hurtowni",
+          "description": "Prześlij listę do wybranej hurtowni płyt meblowych. Otrzymasz wycenę i termin realizacji."
+        },
+        "4": {
+          "title": "Odbierz i złóż",
+          "description": "Odbierz pocięte elementy i złóż meble sam lub z pomocą montera."
+        }
+      }
+    },
+    "pricing": {
+      "title": "Ile kosztuje zamówienie mebli online?",
+      "description": "Koszt zależy od wybranego materiału, rozmiaru mebla i hurtowni. Średnio oszczędzasz 40-60% w porównaniu do zamówienia u stolarza.",
+      "example": {
+        "title": "Przykład: szafa wnękowa 200x250 cm",
+        "traditional": "Stolarz: ~8000-12000 zł",
+        "diy": "Samodzielnie: ~3500-5000 zł",
+        "savings": "Oszczędność: do 7000 zł"
+      }
+    },
+    "faq": {
+      "title": "Pytania o zamawianie mebli",
+      "items": {
+        "1": {
+          "question": "Gdzie zamówić płyty meblowe?",
+          "answer": "Listę cięcia możesz wysłać do dowolnej hurtowni płyt meblowych w Polsce: Kronopol, Egger, Pfleiderer i inne. Większość akceptuje format CSV."
+        },
+        "2": {
+          "question": "Czy hurtownia dolicza okleinę krawędzi?",
+          "answer": "Tak, aplikacja generuje również listę oklein. Hurtownia przyklei okleinę do wskazanych krawędzi zgodnie z projektem."
+        },
+        "3": {
+          "question": "Jak długo trwa realizacja zamówienia?",
+          "answer": "Standardowo 5-10 dni roboczych, w zależności od hurtowni i dostępności materiałów. Niektóre oferują ekspresową realizację w 2-3 dni."
+        },
+        "4": {
+          "question": "Czy mogę zamówić z dostawą do domu?",
+          "answer": "Tak, większość hurtowni oferuje dostawę. Koszt zależy od odległości i wagi zamówienia. Możesz też odebrać osobiście."
+        }
+      }
+    },
+    "relatedArticles": {
+      "title": "Powiązane poradniki",
+      "description": "Praktyczne wskazówki dotyczące zamawiania mebli na wymiar."
+    }
   }
 }
