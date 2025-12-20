@@ -9,6 +9,8 @@
     "lint": "next lint",
     "test": "jest --watchman=false",
     "test:watch": "jest --watch --watchman=false",
+    "test:ci": "jest --watchman=false --ci --coverage",
+    "type-check": "tsc --noEmit",
     "clean": "rm -rf .next .turbo node_modules"
   },
   "dependencies": {
