@@ -126,7 +126,7 @@ export interface EventProperties {
 
   // Monetization events
   [AnalyticsEvent.PURCHASE_MODAL_OPENED]: {
-    trigger: 'export' | 'badge' | 'manual' | 'limit_reached';
+    trigger: 'export' | 'badge' | 'manual' | 'limit_reached' | 'export_no_credits';
   };
   [AnalyticsEvent.PACKAGE_SELECTED]: {
     package_id: string;

@@ -75,20 +75,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Migrate guest credits after sign in
   const migrateGuestCredits = useCallback(async () => {
-    const guestSessionId = localStorage.getItem('meblarz_guest_session');
-    if (!guestSessionId) return;
+    // Key must match useGuestSession.ts STORAGE_KEY
+    const guestSessionData = localStorage.getItem('e_meble_guest_session');
+    if (!guestSessionData) return;
 
     try {
+      const parsed = JSON.parse(guestSessionData);
+      const sessionId = parsed.sessionId;
+
+      if (!sessionId) return;
+
       const response = await fetch('/api/auth/migrate-credits', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Session-ID': JSON.parse(guestSessionId).id,
+          'X-Session-ID': sessionId,
         },
       });
 
       if (response.ok) {
-        localStorage.removeItem('meblarz_guest_session');
+        // Clear guest session after successful migration
+        localStorage.removeItem('e_meble_guest_session');
+        localStorage.removeItem('e_meble_guest_email');
       }
     } catch (error) {
       console.error('Failed to migrate guest credits:', error);
