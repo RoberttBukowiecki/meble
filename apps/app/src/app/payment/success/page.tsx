@@ -7,11 +7,12 @@
 
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, Suspense, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Button } from '@meble/ui';
 import { CheckCircle, ArrowLeft, CreditCard, Loader2, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
+import { track, AnalyticsEvent } from '@meble/analytics';
 
 const PAYMENTS_API = process.env.NEXT_PUBLIC_PAYMENTS_API_URL || 'http://localhost:3002/api';
 
@@ -31,6 +32,7 @@ function PaymentSuccessContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [payment, setPayment] = useState<PaymentData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const hasTrackedPayment = useRef(false);
 
   useEffect(() => {
     async function fetchPaymentStatus() {
@@ -45,6 +47,17 @@ function PaymentSuccessContent() {
 
         if (data.success && data.data) {
           setPayment(data.data);
+
+          // Track successful payment (only once, and only if not pending)
+          if (!hasTrackedPayment.current && data.data.status !== 'pending') {
+            hasTrackedPayment.current = true;
+            track(AnalyticsEvent.PAYMENT_COMPLETED, {
+              package_id: data.data.metadata?.packageId || 'unknown',
+              amount: data.data.amount || 0,
+              provider: 'payu',
+              transaction_id: orderId,
+            });
+          }
         } else {
           setError('Nie udało się pobrać szczegółów płatności');
         }

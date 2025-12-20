@@ -6,17 +6,19 @@
 
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Button } from '@meble/ui';
 import { COMPANY_INFO } from '@meble/constants';
 import { XCircle, ArrowLeft, RefreshCw, Mail, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { track, AnalyticsEvent } from '@meble/analytics';
 
 function PaymentFailedContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get('orderId');
   const error = searchParams.get('error');
+  const hasTrackedFailure = useRef(false);
 
   const getErrorMessage = (errorCode: string | null): string => {
     switch (errorCode) {
@@ -32,6 +34,20 @@ function PaymentFailedContent() {
         return 'Wystąpił problem z przetworzeniem płatności.';
     }
   };
+
+  // Track payment failure
+  useEffect(() => {
+    if (!hasTrackedFailure.current) {
+      hasTrackedFailure.current = true;
+      track(AnalyticsEvent.PAYMENT_FAILED, {
+        package_id: 'unknown', // Not available on failed page
+        amount: 0,
+        provider: 'payu',
+        error_code: error || 'unknown',
+        error_message: getErrorMessage(error),
+      });
+    }
+  }, [error]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">

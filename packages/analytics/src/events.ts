@@ -23,10 +23,12 @@ export enum AnalyticsEvent {
   LANDING_MOBILE_MENU_TOGGLED = 'landing_mobile_menu_toggled',
 
   // ============================================
-  // APP - Session & Core Actions
+  // APP - Session & Authentication
   // ============================================
   APP_SESSION_STARTED = 'app_session_started',
   APP_PAGE_VIEW = 'app_page_view',
+  AUTH_SIGNUP_COMPLETED = 'auth_signup_completed',
+  AUTH_LOGIN_COMPLETED = 'auth_login_completed',
 
   // Design Actions
   PART_ADDED = 'part_added',
@@ -122,9 +124,20 @@ export interface EventProperties {
   // App session events
   [AnalyticsEvent.APP_SESSION_STARTED]: {
     entry_point?: 'direct' | 'landing' | 'article' | 'external';
+    is_authenticated?: boolean;
+    user_type?: 'guest' | 'authenticated';
   };
   [AnalyticsEvent.APP_PAGE_VIEW]: {
     page_path: string;
+  };
+
+  // Authentication events
+  [AnalyticsEvent.AUTH_SIGNUP_COMPLETED]: {
+    method: 'email' | 'google' | 'github';
+    has_referral?: boolean;
+  };
+  [AnalyticsEvent.AUTH_LOGIN_COMPLETED]: {
+    method: 'email' | 'google' | 'github';
   };
 
   // Design events
@@ -141,7 +154,7 @@ export interface EventProperties {
     category?: string;
   };
   [AnalyticsEvent.CONFIG_OPENED]: {
-    config_type: 'interior' | 'material' | 'dimensions' | 'edge_banding' | 'legs';
+    config_type: 'interior' | 'material' | 'dimensions' | 'edge_banding' | 'legs' | 'fronts' | 'side_fronts' | 'decorative_panels' | 'handles' | 'drawers';
   };
   [AnalyticsEvent.INTERIOR_CONFIGURED]: {
     zone_count: number;

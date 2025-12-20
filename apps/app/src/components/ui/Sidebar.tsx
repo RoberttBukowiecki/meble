@@ -4,6 +4,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useStore, useSelectedPart, useSelectedCabinet } from '@/lib/store';
 import { Button } from '@meble/ui';
 import { Plus, Download, Settings, List, Package, House, Database, Copy, Check } from 'lucide-react';
+import { track, AnalyticsEvent } from '@meble/analytics';
 import { useIsAdmin } from '@/hooks';
 import { APP_NAME } from '@meble/constants';
 import { PropertiesPanel } from './PropertiesPanel';
@@ -67,6 +68,7 @@ export function Sidebar() {
 
   const handleAddPart = () => {
     addPart(selectedFurnitureId);
+    track(AnalyticsEvent.PART_ADDED, { part_type: 'manual' });
   };
 
   const handleExportCSV = () => {

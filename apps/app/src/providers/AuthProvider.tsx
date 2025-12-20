@@ -11,6 +11,7 @@ import {
 } from 'react';
 import { User, Session, AuthError } from '@supabase/supabase-js';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { track, AnalyticsEvent } from '@meble/analytics';
 import type { Profile } from '@/types/auth';
 
 interface AuthContextValue {
@@ -109,6 +110,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     initialized.current = true;
 
     const initAuth = async () => {
+      let isUserAuthenticated = false;
+
       try {
         const { data: { user: validatedUser }, error: userError } =
           await supabase.auth.getUser();
@@ -120,6 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setProfile(null);
         } else {
           // Valid user found
+          isUserAuthenticated = true;
           const { data: { session: currentSession } } =
             await supabase.auth.getSession();
 
@@ -138,6 +142,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Always finish loading
         setIsLoading(false);
       }
+
+      // Track app session start (after auth check is complete)
+      const referrer = typeof document !== 'undefined' ? document.referrer : '';
+      let entryPoint: 'direct' | 'landing' | 'article' | 'external' = 'direct';
+
+      if (referrer.includes('e-meble.pl') || referrer.includes('localhost:3001')) {
+        entryPoint = referrer.includes('/blog/') ? 'article' : 'landing';
+      } else if (referrer && !referrer.includes(window.location.origin)) {
+        entryPoint = 'external';
+      }
+
+      track(AnalyticsEvent.APP_SESSION_STARTED, {
+        entry_point: entryPoint,
+        is_authenticated: isUserAuthenticated,
+        user_type: isUserAuthenticated ? 'authenticated' : 'guest',
+      });
     };
 
     initAuth();
@@ -156,6 +176,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (event === 'SIGNED_IN') {
           migrateGuestCredits();
+
+          // Track login - determine method from provider
+          const provider = newSession?.user?.app_metadata?.provider;
+          track(AnalyticsEvent.AUTH_LOGIN_COMPLETED, {
+            method: provider === 'google' ? 'google' : provider === 'github' ? 'github' : 'email',
+          });
         }
 
         if (event === 'SIGNED_OUT') {
