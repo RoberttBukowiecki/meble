@@ -126,6 +126,8 @@ export interface EventProperties {
     entry_point?: 'direct' | 'landing' | 'article' | 'external';
     is_authenticated?: boolean;
     user_type?: 'guest' | 'authenticated';
+    referrer_source?: string; // e.g., 'blog:article-slug', 'landing:home', 'external:google.com'
+    referrer_url?: string; // Full referrer URL for detailed analysis
   };
   [AnalyticsEvent.APP_PAGE_VIEW]: {
     page_path: string;
