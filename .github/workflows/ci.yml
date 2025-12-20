@@ -132,16 +132,24 @@ jobs:
     steps:
       - name: Check Results
         run: |
-          if [[ "${{ needs.test-app.result }}" == "failure" ]]; then
+          # Jobs can be: success, failure, cancelled, or skipped
+          # We pass if all jobs are either successful or skipped (no changes detected)
+          APP_RESULT="${{ needs.test-app.result }}"
+          LANDING2_RESULT="${{ needs.test-landing2.result }}"
+          PAYMENTS_RESULT="${{ needs.test-payments.result }}"
+
+          echo "Results: app=$APP_RESULT, landing2=$LANDING2_RESULT, payments=$PAYMENTS_RESULT"
+
+          if [[ "$APP_RESULT" == "failure" || "$APP_RESULT" == "cancelled" ]]; then
             echo "❌ App tests failed"
             exit 1
           fi
-          if [[ "${{ needs.test-landing2.result }}" == "failure" ]]; then
+          if [[ "$LANDING2_RESULT" == "failure" || "$LANDING2_RESULT" == "cancelled" ]]; then
             echo "❌ Landing2 tests failed"
             exit 1
           fi
-          if [[ "${{ needs.test-payments.result }}" == "failure" ]]; then
+          if [[ "$PAYMENTS_RESULT" == "failure" || "$PAYMENTS_RESULT" == "cancelled" ]]; then
             echo "❌ Payments tests failed"
             exit 1
           fi
-          echo "✅ All checks passed!"
+          echo "✅ All checks passed (success or skipped)!"

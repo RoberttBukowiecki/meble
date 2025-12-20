@@ -1,12 +1,12 @@
 import '@testing-library/jest-dom';
 
-// Polyfill crypto.randomUUID for test environment
+// Polyfill crypto.randomUUID for Node.js test environment (jsdom doesn't include Web Crypto API)
 if (typeof global.crypto === 'undefined') {
-  // @ts-ignore
+  // @ts-ignore - Intentionally assigning partial crypto object for test environment
   global.crypto = {};
 }
 if (typeof global.crypto.randomUUID !== 'function') {
-  // @ts-ignore
+  // @ts-ignore - Adding randomUUID polyfill that returns deterministic value for tests
   global.crypto.randomUUID = () => 'test-uuid';
 }
 

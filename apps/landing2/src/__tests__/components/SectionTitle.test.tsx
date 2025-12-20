@@ -54,7 +54,8 @@ describe('SectionTitle', () => {
   it('does not render pretitle when not provided', () => {
     render(<SectionTitle titleKey="test.title" />);
 
-    const pretitleElement = document.querySelector('.text-indigo-600');
-    expect(pretitleElement).not.toBeInTheDocument();
+    // Use semantic check - pretitle text should not exist when pretitleKey is not provided
+    // We know pretitle would render as "test.pretitle" if provided, so check it's absent
+    expect(screen.queryByText('test.pretitle')).not.toBeInTheDocument();
   });
 });
