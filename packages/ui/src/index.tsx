@@ -22,6 +22,7 @@ export * from "./components/ui/payu-logo";
 export * from "./components/ui/separator";
 export * from "./components/ui/popover"
 export * from "./components/ui/scroll-area"
+export * from "./components/ui/tabs"
 
 // Lib
 export * from "./lib/utils";

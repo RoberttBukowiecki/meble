@@ -26,6 +26,10 @@ import {
   AlertDescription,
   Separator,
   Badge,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
 } from '@meble/ui';
 import { track, AnalyticsEvent } from '@meble/analytics';
 import { useShallow } from 'zustand/react/shallow';
@@ -64,7 +68,7 @@ import { DecorativePanelsConfigDialog } from './DecorativePanelsConfigDialog';
 import { InteriorConfigDialog } from './InteriorConfigDialog';
 import { getDefaultMaterials, getDefaultBackMaterial } from '@/lib/store/utils';
 import { getSideFrontsSummary, hasSideFronts, hasDecorativePanels, getDecorativePanelsSummary, hasInteriorContent, getInteriorSummary } from '@/lib/cabinetGenerators';
-import { Settings2, PanelLeftDashed, AlertTriangle, RectangleHorizontal, Grip, Box, Warehouse, Library, Layers, PanelTop, LayoutGrid, CornerUpRight, Footprints, ArrowLeftRight, SquareStack, Scissors } from 'lucide-react';
+import { Settings2, PanelLeftDashed, AlertTriangle, RectangleHorizontal, Grip, Box, Warehouse, Library, Layers, PanelTop, LayoutGrid, CornerUpRight, Footprints, ArrowLeftRight, SquareStack, Scissors, ChefHat, Armchair } from 'lucide-react';
 import { FrontsConfigDialog } from './FrontsConfigDialog';
 import { HandlesConfigDialog } from './HandlesConfigDialog';
 import { LegsConfigDialog, getLegsSummary, hasLegs } from './LegsConfigDialog';
@@ -86,18 +90,36 @@ interface TemplateCardProps {
 }
 
 const TemplateCard = ({type, title, description, icon, onClick}: TemplateCardProps) => (
-    <Card 
-        onClick={onClick} 
-        className="cursor-pointer hover:bg-muted/50 hover:border-primary/50 transition-all duration-200 border-2 border-transparent hover:shadow-md"
+    <Card
+        onClick={onClick}
+        className={cn(
+            "cursor-pointer group relative overflow-hidden",
+            "border border-border/60 bg-gradient-to-br from-card to-card/80",
+            "hover:border-primary/60 hover:shadow-lg hover:shadow-primary/5",
+            "transition-all duration-300 ease-out",
+            "hover:-translate-y-0.5"
+        )}
     >
-        <CardHeader className="p-4">
-            <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 bg-primary/10 rounded-md text-primary">
+        {/* Subtle gradient overlay on hover */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/0 to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+        <CardHeader className="p-4 relative z-10">
+            <div className="flex items-start gap-3 mb-2">
+                <div className={cn(
+                    "p-2.5 rounded-lg",
+                    "bg-gradient-to-br from-primary/10 to-primary/5",
+                    "text-primary",
+                    "group-hover:from-primary/15 group-hover:to-primary/10",
+                    "group-hover:scale-105",
+                    "transition-all duration-300"
+                )}>
                     {icon}
                 </div>
-                <CardTitle className="text-base">{title}</CardTitle>
+                <div className="flex-1 min-w-0">
+                    <CardTitle className="text-sm font-semibold tracking-tight group-hover:text-primary transition-colors duration-200">{title}</CardTitle>
+                    <CardDescription className="text-xs mt-1 leading-relaxed text-muted-foreground/80">{description}</CardDescription>
+                </div>
             </div>
-            <CardDescription className="text-xs line-clamp-2">{description}</CardDescription>
         </CardHeader>
     </Card>
 )
@@ -1109,52 +1131,130 @@ export function CabinetTemplateDialog({ open, onOpenChange, furnitureId }: Cabin
 
         {/* Scrollable content area */}
         <div className="flex-1 overflow-y-auto px-6 py-6">
-          {/* Step 1: Template Selection */}
+          {/* Step 1: Template Selection with Categories */}
           {step === 'select' && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
-              <TemplateCard
-                type="KITCHEN"
-                title="Szafka kuchenna"
-                description="Uniwersalna szafka z możliwością konfiguracji drzwi, szuflad i półek."
-                icon={<Box className="w-6 h-6" />}
-                onClick={() => handleSelectType('KITCHEN')}
-              />
-              <TemplateCard
-                type="CORNER_INTERNAL"
-                title="Szafka narożna"
-                description="Szafka L-kształtna do wewnętrznych narożników kuchni."
-                icon={<CornerUpRight className="w-6 h-6" />}
-                onClick={() => handleSelectType('CORNER_INTERNAL')}
-              />
-              <TemplateCard
-                type="WARDROBE"
-                title="Szafa ubraniowa"
-                description="Wysoka szafa z drzwiami skrzydłowymi i półkami."
-                icon={<Warehouse className="w-6 h-6" />}
-                onClick={() => handleSelectType('WARDROBE')}
-              />
-              <TemplateCard
-                type="BOOKSHELF"
-                title="Regał"
-                description="Otwarty regał z konfigurowalną ilością półek."
-                icon={<Library className="w-6 h-6" />}
-                onClick={() => handleSelectType('BOOKSHELF')}
-              />
-              <TemplateCard
-                type="DRAWER"
-                title="Kontener szufladowy"
-                description="Szafka dedykowana wyłącznie pod szuflady."
-                icon={<Layers className="w-6 h-6" />}
-                onClick={() => handleSelectType('DRAWER')}
-              />
-              <TemplateCard
-                type="WALL"
-                title="Szafka wisząca"
-                description="Szafka ścienna z wycięciami na zawieszki, opcja frontu łamanego."
-                icon={<SquareStack className="w-6 h-6" />}
-                onClick={() => handleSelectType('WALL')}
-              />
-            </div>
+            <Tabs defaultValue="kitchen" className="w-full">
+              <TabsList className="w-full grid grid-cols-2 mb-6 h-12 p-1 bg-muted/50 rounded-xl">
+                <TabsTrigger
+                  value="kitchen"
+                  className={cn(
+                    "flex items-center gap-2 rounded-lg font-medium",
+                    "data-[state=active]:bg-background data-[state=active]:shadow-sm",
+                    "data-[state=active]:text-primary",
+                    "transition-all duration-200"
+                  )}
+                >
+                  <ChefHat className="w-4 h-4" />
+                  <span>Kuchnia</span>
+                  <Badge variant="secondary" className="ml-1 text-[10px] px-1.5 py-0 h-5 bg-primary/10 text-primary border-0">3</Badge>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="furniture"
+                  className={cn(
+                    "flex items-center gap-2 rounded-lg font-medium",
+                    "data-[state=active]:bg-background data-[state=active]:shadow-sm",
+                    "data-[state=active]:text-primary",
+                    "transition-all duration-200"
+                  )}
+                >
+                  <Armchair className="w-4 h-4" />
+                  <span>Meble</span>
+                  <Badge variant="secondary" className="ml-1 text-[10px] px-1.5 py-0 h-5 bg-muted-foreground/10 text-muted-foreground border-0">3</Badge>
+                </TabsTrigger>
+              </TabsList>
+
+              {/* Kitchen Category */}
+              <TabsContent value="kitchen" className="mt-0 space-y-6">
+                {/* Category description */}
+                <div className="flex items-center gap-3 px-1">
+                  <div className="h-px flex-1 bg-gradient-to-r from-border to-transparent" />
+                  <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Szafki kuchenne</span>
+                  <div className="h-px flex-1 bg-gradient-to-l from-border to-transparent" />
+                </div>
+
+                <div className="grid grid-cols-1 gap-3">
+                  {/* Kitchen Base Cabinet */}
+                  <TemplateCard
+                    type="KITCHEN"
+                    title="Szafka kuchenna dolna"
+                    description="Uniwersalna szafka stojąca z możliwością konfiguracji drzwi, szuflad i półek. Idealna jako podstawa zabudowy kuchennej."
+                    icon={<Box className="w-5 h-5" />}
+                    onClick={() => handleSelectType('KITCHEN')}
+                  />
+
+                  {/* Corner Cabinet */}
+                  <TemplateCard
+                    type="CORNER_INTERNAL"
+                    title="Szafka narożna"
+                    description="Szafka L-kształtna do wewnętrznych narożników. Maksymalne wykorzystanie przestrzeni w rogach kuchni."
+                    icon={<CornerUpRight className="w-5 h-5" />}
+                    onClick={() => handleSelectType('CORNER_INTERNAL')}
+                  />
+
+                  {/* Wall Cabinet */}
+                  <TemplateCard
+                    type="WALL"
+                    title="Szafka wisząca"
+                    description="Szafka ścienna z wycięciami na zawieszki. Opcja frontu łamanego do podnoszenia."
+                    icon={<SquareStack className="w-5 h-5" />}
+                    onClick={() => handleSelectType('WALL')}
+                  />
+                </div>
+
+                {/* Quick tip for kitchen */}
+                <div className="bg-muted/30 rounded-lg p-3 border border-dashed border-border/50">
+                  <p className="text-xs text-muted-foreground">
+                    <span className="font-medium text-foreground/70">Wskazówka:</span> Zacznij od szafek dolnych, następnie dodaj szafki wiszące. Szafki narożne pozwolą wykorzystać każdy centymetr przestrzeni.
+                  </p>
+                </div>
+              </TabsContent>
+
+              {/* Furniture Category */}
+              <TabsContent value="furniture" className="mt-0 space-y-6">
+                {/* Category description */}
+                <div className="flex items-center gap-3 px-1">
+                  <div className="h-px flex-1 bg-gradient-to-r from-border to-transparent" />
+                  <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Pozostałe meble</span>
+                  <div className="h-px flex-1 bg-gradient-to-l from-border to-transparent" />
+                </div>
+
+                <div className="grid grid-cols-1 gap-3">
+                  {/* Wardrobe */}
+                  <TemplateCard
+                    type="WARDROBE"
+                    title="Szafa ubraniowa"
+                    description="Wysoka szafa z drzwiami skrzydłowymi. Konfigurowalne półki i drążek na ubrania."
+                    icon={<Warehouse className="w-5 h-5" />}
+                    onClick={() => handleSelectType('WARDROBE')}
+                  />
+
+                  {/* Bookshelf */}
+                  <TemplateCard
+                    type="BOOKSHELF"
+                    title="Regał"
+                    description="Otwarty regał z dowolną liczbą półek. Idealny do salonu, biura lub pokoju dziecięcego."
+                    icon={<Library className="w-5 h-5" />}
+                    onClick={() => handleSelectType('BOOKSHELF')}
+                  />
+
+                  {/* Drawer Cabinet */}
+                  <TemplateCard
+                    type="DRAWER"
+                    title="Kontener szufladowy"
+                    description="Szafka dedykowana pod szuflady. Do biurka, garderoby lub jako komoda."
+                    icon={<Layers className="w-5 h-5" />}
+                    onClick={() => handleSelectType('DRAWER')}
+                  />
+                </div>
+
+                {/* Quick tip for furniture */}
+                <div className="bg-muted/30 rounded-lg p-3 border border-dashed border-border/50">
+                  <p className="text-xs text-muted-foreground">
+                    <span className="font-medium text-foreground/70">Wskazówka:</span> Każdy mebel można dostosować pod indywidualne wymiary i wyposażenie. Po utworzeniu skonfiguruj wnętrze według potrzeb.
+                  </p>
+                </div>
+              </TabsContent>
+            </Tabs>
           )}
 
           {/* Step 2: Parameter Configuration */}
