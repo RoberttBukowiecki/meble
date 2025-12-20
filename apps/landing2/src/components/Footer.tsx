@@ -5,6 +5,7 @@ import { Link } from "@/i18n/navigation";
 import { Logo } from "@meble/ui";
 import { COMPANY_INFO } from "@meble/constants";
 import { Container } from "./Container";
+import { track, AnalyticsEvent } from "@meble/analytics";
 
 export function Footer() {
   const t = useTranslations();
@@ -138,6 +139,10 @@ export function Footer() {
                     rel="noopener noreferrer"
                     aria-label={social.label}
                     className="hover:text-indigo-500 transition-colors"
+                    onClick={() => track(AnalyticsEvent.LANDING_SOCIAL_CLICKED, {
+                      platform: social.name.toLowerCase() as "twitter" | "facebook" | "instagram" | "linkedin",
+                      link_url: social.href,
+                    })}
                   >
                     <span className="sr-only">{social.name}</span>
                     <social.icon />

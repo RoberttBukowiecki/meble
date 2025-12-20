@@ -1,8 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { Disclosure, DisclosureButton, DisclosurePanel } from "@headlessui/react";
+import { track, AnalyticsEvent } from "@meble/analytics";
+
+// Component to track widget open state
+function OpenTracker({ open }: { open: boolean }) {
+  const hasTrackedOpen = useRef(false);
+
+  useEffect(() => {
+    if (open && !hasTrackedOpen.current) {
+      hasTrackedOpen.current = true;
+      track(AnalyticsEvent.POPUP_WIDGET_OPENED, {
+        widget_type: "contact",
+        trigger: "click",
+      });
+    }
+  }, [open]);
+
+  return null;
+}
 
 interface FormData {
   apikey: string;
@@ -43,6 +61,10 @@ export function PopupWidget() {
       if (json.success) {
         setIsSuccess(true);
         setMessage(json.message);
+        track(AnalyticsEvent.POPUP_WIDGET_SUBMITTED, {
+          widget_type: "contact",
+          submission_type: "contact",
+        });
         reset();
       } else {
         setIsSuccess(false);
@@ -60,6 +82,7 @@ export function PopupWidget() {
       <Disclosure>
         {({ open }) => (
           <>
+            <OpenTracker open={open} />
             <DisclosureButton className="fixed z-40 flex items-center justify-center transition duration-300 bg-indigo-500 rounded-full shadow-lg right-5 bottom-5 w-14 h-14 focus:outline-none hover:bg-indigo-600 focus:bg-indigo-600 ease">
               <span className="sr-only">Open Contact form Widget</span>
               <span

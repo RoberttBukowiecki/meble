@@ -11,6 +11,18 @@ export enum AnalyticsEvent {
   LANDING_ARTICLE_CTA_CLICKED = 'landing_article_cta_clicked',
 
   // ============================================
+  // LANDING - Engagement tracking
+  // ============================================
+  LANDING_BLOG_CARD_CLICKED = 'landing_blog_card_clicked',
+  LANDING_VIDEO_PLAYED = 'landing_video_played',
+  LANDING_FAQ_EXPANDED = 'landing_faq_expanded',
+  LANDING_SOCIAL_CLICKED = 'landing_social_clicked',
+  LANDING_COOKIE_ACCEPTED = 'landing_cookie_accepted',
+  LANDING_COOKIE_DECLINED = 'landing_cookie_declined',
+  LANDING_SCROLL_DEPTH = 'landing_scroll_depth',
+  LANDING_MOBILE_MENU_TOGGLED = 'landing_mobile_menu_toggled',
+
+  // ============================================
   // APP - Session & Core Actions
   // ============================================
   APP_SESSION_STARTED = 'app_session_started',
@@ -62,7 +74,7 @@ export interface EventProperties {
     locale?: string;
   };
   [AnalyticsEvent.LANDING_CTA_CLICKED]: {
-    location: 'hero' | 'pricing' | 'footer' | 'cta_section' | 'header' | 'feature';
+    location: 'hero' | 'pricing' | 'footer' | 'cta_section' | 'header' | 'feature' | 'pillar_design' | 'pillar_order';
     cta_text?: string;
   };
   [AnalyticsEvent.LANDING_ARTICLE_VIEW]: {
@@ -73,6 +85,38 @@ export interface EventProperties {
   [AnalyticsEvent.LANDING_ARTICLE_CTA_CLICKED]: {
     article_slug: string;
     cta_location: 'inline' | 'sidebar' | 'bottom';
+  };
+
+  // Landing engagement events
+  [AnalyticsEvent.LANDING_BLOG_CARD_CLICKED]: {
+    article_slug: string;
+    article_title: string;
+    category: string;
+    featured: boolean;
+    source: 'blog_listing' | 'related_articles' | 'homepage';
+  };
+  [AnalyticsEvent.LANDING_VIDEO_PLAYED]: {
+    video_id: string;
+    video_title?: string;
+    page_path: string;
+  };
+  [AnalyticsEvent.LANDING_FAQ_EXPANDED]: {
+    faq_item: string;
+    faq_question: string;
+    page_path: string;
+  };
+  [AnalyticsEvent.LANDING_SOCIAL_CLICKED]: {
+    platform: 'twitter' | 'facebook' | 'instagram' | 'linkedin';
+    link_url: string;
+  };
+  [AnalyticsEvent.LANDING_COOKIE_ACCEPTED]: Record<string, never>;
+  [AnalyticsEvent.LANDING_COOKIE_DECLINED]: Record<string, never>;
+  [AnalyticsEvent.LANDING_SCROLL_DEPTH]: {
+    depth: 25 | 50 | 75 | 100;
+    page_path: string;
+  };
+  [AnalyticsEvent.LANDING_MOBILE_MENU_TOGGLED]: {
+    action: 'open' | 'close';
   };
 
   // App session events
