@@ -16,6 +16,7 @@ import {
 } from '@/lib/seo';
 import '@/styles/globals.css';
 import { CookieConsentBanner } from '@/components/CookieConsentBanner';
+import { ScrollDepthTracker } from '@/components/ScrollDepthTracker';
 
 type Props = {
   children: React.ReactNode;
@@ -200,6 +201,7 @@ export default async function LocaleLayout({ children, params }: Props) {
       </head>
       <body className="antialiased">
         <AnalyticsProvider>
+          <ScrollDepthTracker />
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <NextIntlClientProvider messages={messages}>
               {children}

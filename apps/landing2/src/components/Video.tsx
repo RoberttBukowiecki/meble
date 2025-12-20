@@ -1,16 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
+import { usePathname } from "next/navigation";
 import { Container } from "./Container";
+import { track, AnalyticsEvent } from "@meble/analytics";
 
 export function Video() {
   const [playVideo, setPlayVideo] = useState(false);
+  const hasTrackedPlay = useRef(false);
+  const pathname = usePathname();
+
+  const handleClick = () => {
+    // Only track the first play
+    if (!playVideo && !hasTrackedPlay.current) {
+      hasTrackedPlay.current = true;
+      track(AnalyticsEvent.LANDING_VIDEO_PLAYED, {
+        video_id: "aOq49euWnIo",
+        video_title: "How it works",
+        page_path: pathname || "/",
+      });
+    }
+    setPlayVideo(!playVideo);
+  };
 
   return (
     <Container>
       <div className="w-full max-w-4xl mx-auto mb-20 overflow-hidden rounded-2xl">
         <div
-          onClick={() => setPlayVideo(!playVideo)}
+          onClick={handleClick}
           className="relative bg-indigo-300 cursor-pointer aspect-w-16 aspect-h-9 bg-gradient-to-tr from-purple-400 to-indigo-700"
         >
           {!playVideo && (

@@ -5,16 +5,28 @@ import { useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { BlogArticle, BLOG_CATEGORIES } from "@/lib/blog-data";
 import { CalendarIcon, ClockIcon } from "@heroicons/react/24/outline";
+import { track, AnalyticsEvent } from "@meble/analytics";
 
 interface BlogCardProps {
   article: BlogArticle;
   featured?: boolean;
+  source?: "blog_listing" | "related_articles" | "homepage";
 }
 
-export function BlogCard({ article, featured = false }: BlogCardProps) {
+export function BlogCard({ article, featured = false, source = "blog_listing" }: BlogCardProps) {
   const locale = useLocale() as "pl" | "en";
   const content = article.content[locale];
   const category = BLOG_CATEGORIES[article.category][locale];
+
+  const handleClick = () => {
+    track(AnalyticsEvent.LANDING_BLOG_CARD_CLICKED, {
+      article_slug: article.slug,
+      article_title: content.title,
+      category: article.category,
+      featured,
+      source,
+    });
+  };
 
   const formattedDate = new Date(article.publishedAt).toLocaleDateString(
     locale === "pl" ? "pl-PL" : "en-US",
@@ -28,7 +40,7 @@ export function BlogCard({ article, featured = false }: BlogCardProps) {
   if (featured) {
     return (
       <article className="group relative overflow-hidden rounded-2xl bg-white dark:bg-trueGray-800 shadow-lg hover:shadow-xl transition-all duration-300">
-        <Link href={`/blog/${article.slug}`} className="block">
+        <Link href={`/blog/${article.slug}`} className="block" onClick={handleClick}>
           <div className="relative aspect-[16/9] min-h-[16rem] md:min-h-[20rem] overflow-hidden bg-gray-100 dark:bg-trueGray-900">
             <div className="absolute inset-3 md:inset-4 bg-gradient-to-t from-black/60 via-black/20 to-transparent z-10 rounded-xl pointer-events-none" />
             <div className="absolute inset-3 md:inset-4">
@@ -71,7 +83,7 @@ export function BlogCard({ article, featured = false }: BlogCardProps) {
 
   return (
     <article className="group flex flex-col bg-white dark:bg-trueGray-800 rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300">
-      <Link href={`/blog/${article.slug}`} className="block">
+      <Link href={`/blog/${article.slug}`} className="block" onClick={handleClick}>
         <div className="relative aspect-[16/9] min-h-[12rem] overflow-hidden bg-gray-100 dark:bg-trueGray-900">
           <Image
             src={article.image.src}

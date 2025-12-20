@@ -1,11 +1,30 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { Disclosure, DisclosureButton, DisclosurePanel } from "@headlessui/react";
 import { APP_NAME, APP_URLS } from "@meble/constants";
 import { Logo } from "@meble/ui";
 import { ThemeChanger } from "./DarkSwitch";
+import { track, AnalyticsEvent } from "@meble/analytics";
+
+// Track mobile menu open/close
+function MobileMenuTracker({ open }: { open: boolean }) {
+  const prevOpen = useRef<boolean | null>(null);
+
+  useEffect(() => {
+    // Only track after initial render and when state changes
+    if (prevOpen.current !== null && prevOpen.current !== open) {
+      track(AnalyticsEvent.LANDING_MOBILE_MENU_TOGGLED, {
+        action: open ? "open" : "close",
+      });
+    }
+    prevOpen.current = open;
+  }, [open]);
+
+  return null;
+}
 
 export function Navbar() {
   const t = useTranslations("nav");
@@ -23,6 +42,7 @@ export function Navbar() {
         <Disclosure>
           {({ open }) => (
             <>
+              <MobileMenuTracker open={open} />
               <div className="flex flex-wrap items-center justify-between w-full lg:w-auto">
                 <Link href="/" className="flex items-center space-x-2 text-2xl font-medium text-indigo-500 dark:text-gray-100">
                   <Logo size={32} className="rounded-lg" />
@@ -67,6 +87,10 @@ export function Navbar() {
                     <a
                       href={APP_URLS.app}
                       className="w-full px-6 py-2 mt-3 text-center text-white bg-indigo-600 rounded-md lg:ml-5"
+                      onClick={() => track(AnalyticsEvent.LANDING_CTA_CLICKED, {
+                        location: "header",
+                        cta_text: t("getStarted"),
+                      })}
                     >
                       {t("getStarted")}
                     </a>
@@ -96,6 +120,10 @@ export function Navbar() {
           <a
             href={APP_URLS.app}
             className="px-6 py-2 text-white bg-indigo-600 rounded-md md:ml-5"
+            onClick={() => track(AnalyticsEvent.LANDING_CTA_CLICKED, {
+              location: "header",
+              cta_text: t("getStarted"),
+            })}
           >
             {t("getStarted")}
           </a>

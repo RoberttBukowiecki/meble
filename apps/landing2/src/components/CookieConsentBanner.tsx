@@ -2,6 +2,7 @@
 
 import CookieConsent from "react-cookie-consent";
 import { Link } from "@/i18n/navigation";
+import { track, AnalyticsEvent } from "@meble/analytics";
 
 export function CookieConsentBanner() {
   return (
@@ -46,6 +47,8 @@ export function CookieConsentBanner() {
       }}
       buttonWrapperClasses="flex flex-wrap gap-2 mt-3 sm:mt-0"
       onAccept={() => {
+        // Track cookie consent acceptance
+        track(AnalyticsEvent.LANDING_COOKIE_ACCEPTED, {});
         // Enable analytics when accepted
         if (typeof window !== "undefined" && (window as any).gtag) {
           (window as any).gtag("consent", "update", {
@@ -54,6 +57,8 @@ export function CookieConsentBanner() {
         }
       }}
       onDecline={() => {
+        // Track cookie consent decline
+        track(AnalyticsEvent.LANDING_COOKIE_DECLINED, {});
         // Keep analytics disabled
         if (typeof window !== "undefined" && (window as any).gtag) {
           (window as any).gtag("consent", "update", {

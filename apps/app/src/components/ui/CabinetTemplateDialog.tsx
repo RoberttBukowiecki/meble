@@ -844,7 +844,10 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
                                 description={doorSummary}
                                 icon={<RectangleHorizontal className="h-4 w-4" />}
                                 action={
-                                    <Button variant="outline" size="sm" onClick={() => setFrontsDialogOpen(true)}>
+                                    <Button variant="outline" size="sm" onClick={() => {
+                                        track(AnalyticsEvent.CONFIG_OPENED, { config_type: 'fronts' });
+                                        setFrontsDialogOpen(true);
+                                    }}>
                                         Konfiguruj
                                     </Button>
                                 }
@@ -854,7 +857,10 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
                                 description={handleSummary}
                                 icon={<Grip className="h-4 w-4" />}
                                 action={
-                                    <Button variant="outline" size="sm" onClick={() => setHandlesDialogOpen(true)}>
+                                    <Button variant="outline" size="sm" onClick={() => {
+                                        track(AnalyticsEvent.CONFIG_OPENED, { config_type: 'handles' });
+                                        setHandlesDialogOpen(true);
+                                    }}>
                                         Konfiguruj
                                     </Button>
                                 }
@@ -884,7 +890,10 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
                                 ) : null
                             }
                             action={
-                                <Button variant="outline" size="sm" onClick={() => setDrawerDialogOpen(true)}>
+                                <Button variant="outline" size="sm" onClick={() => {
+                                    track(AnalyticsEvent.CONFIG_OPENED, { config_type: 'drawers' });
+                                    setDrawerDialogOpen(true);
+                                }}>
                                     Konfiguruj
                                 </Button>
                             }
@@ -897,7 +906,10 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
                         description={hasSideFrontsConfig ? sideFrontsSummary : 'Brak (standardowe boki)'}
                         icon={<PanelLeftDashed className="h-4 w-4" />}
                         action={
-                            <Button variant="outline" size="sm" onClick={() => setSideFrontsDialogOpen(true)}>
+                            <Button variant="outline" size="sm" onClick={() => {
+                                track(AnalyticsEvent.CONFIG_OPENED, { config_type: 'side_fronts' });
+                                setSideFrontsDialogOpen(true);
+                            }}>
                                 Konfiguruj
                             </Button>
                         }
@@ -909,7 +921,10 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
                         description={hasDecorativePanelsConfig ? decorativePanelsSummary : 'Brak (standardowa konstrukcja)'}
                         icon={<PanelTop className="h-4 w-4" />}
                         action={
-                            <Button variant="outline" size="sm" onClick={() => setDecorativePanelsDialogOpen(true)}>
+                            <Button variant="outline" size="sm" onClick={() => {
+                                track(AnalyticsEvent.CONFIG_OPENED, { config_type: 'decorative_panels' });
+                                setDecorativePanelsDialogOpen(true);
+                            }}>
                                 Konfiguruj
                             </Button>
                         }
@@ -921,7 +936,10 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
                         description={hasInterior ? interiorSummary : 'Użyj konfiguracji półek/szuflad powyżej lub skonfiguruj zaawansowane sekcje'}
                         icon={<LayoutGrid className="h-4 w-4" />}
                         action={
-                            <Button variant="outline" size="sm" onClick={() => setInteriorDialogOpen(true)}>
+                            <Button variant="outline" size="sm" onClick={() => {
+                                track(AnalyticsEvent.CONFIG_OPENED, { config_type: 'interior' });
+                                setInteriorDialogOpen(true);
+                            }}>
                                 Konfiguruj
                             </Button>
                         }
@@ -934,7 +952,10 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
                             description={getLegsSummary(params.legs, params.width)}
                             icon={<Footprints className="h-4 w-4" />}
                             action={
-                                <Button variant="outline" size="sm" onClick={() => setLegsDialogOpen(true)}>
+                                <Button variant="outline" size="sm" onClick={() => {
+                                    track(AnalyticsEvent.CONFIG_OPENED, { config_type: 'legs' });
+                                    setLegsDialogOpen(true);
+                                }}>
                                     Konfiguruj
                                 </Button>
                             }

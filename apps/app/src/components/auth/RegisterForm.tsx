@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/providers/AuthProvider';
 import { Button, Input, Label, Checkbox } from '@meble/ui';
 import { Loader2, Mail, Lock, User, Chrome, CheckCircle } from 'lucide-react';
+import { track, AnalyticsEvent } from '@meble/analytics';
 
 interface RegisterFormProps {
   redirectTo?: string;
@@ -62,6 +63,12 @@ export function RegisterForm({ redirectTo }: RegisterFormProps) {
         }
         return;
       }
+
+      // Track successful registration
+      track(AnalyticsEvent.AUTH_SIGNUP_COMPLETED, {
+        method: 'email',
+        has_referral: false,
+      });
 
       setIsSuccess(true);
     } catch {

@@ -11,6 +11,7 @@ import {
 } from 'react';
 import { User, Session, AuthError } from '@supabase/supabase-js';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { track, AnalyticsEvent, identify, setUserProperties, resetUser } from '@meble/analytics';
 import type { Profile } from '@/types/auth';
 
 interface AuthContextValue {
@@ -109,6 +110,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     initialized.current = true;
 
     const initAuth = async () => {
+      let isUserAuthenticated = false;
+
       try {
         const { data: { user: validatedUser }, error: userError } =
           await supabase.auth.getUser();
@@ -120,11 +123,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setProfile(null);
         } else {
           // Valid user found
+          isUserAuthenticated = true;
           const { data: { session: currentSession } } =
             await supabase.auth.getSession();
 
           setUser(validatedUser);
           setSession(currentSession);
+
+          // Identify user in analytics (links anonymous to authenticated sessions)
+          identify(validatedUser.id, {
+            email: validatedUser.email,
+            auth_provider: validatedUser.app_metadata?.provider || 'email',
+            created_at: validatedUser.created_at,
+          });
+
+          // Set user properties for segmentation
+          setUserProperties({
+            user_type: 'authenticated',
+            signup_method: validatedUser.app_metadata?.provider || 'email',
+            email_verified: validatedUser.email_confirmed_at ? true : false,
+          });
 
           // Fetch profile in background, don't block loading
           fetchProfile(validatedUser.id);
@@ -138,6 +156,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Always finish loading
         setIsLoading(false);
       }
+
+      // Track app session start (after auth check is complete)
+      const referrer = typeof document !== 'undefined' ? document.referrer : '';
+      let entryPoint: 'direct' | 'landing' | 'article' | 'external' = 'direct';
+      let referrerSource: string | undefined;
+
+      if (referrer.includes('e-meble.pl') || referrer.includes('localhost:3001')) {
+        entryPoint = referrer.includes('/blog/') ? 'article' : 'landing';
+        // Extract article slug if from blog
+        if (referrer.includes('/blog/')) {
+          const match = referrer.match(/\/blog\/([^/?]+)/);
+          referrerSource = match ? `blog:${match[1]}` : 'blog:unknown';
+        } else {
+          referrerSource = 'landing:home';
+        }
+      } else if (referrer && !referrer.includes(window.location.origin)) {
+        entryPoint = 'external';
+        // Extract domain from external referrer
+        try {
+          const url = new URL(referrer);
+          referrerSource = `external:${url.hostname}`;
+        } catch {
+          referrerSource = 'external:unknown';
+        }
+      }
+
+      track(AnalyticsEvent.APP_SESSION_STARTED, {
+        entry_point: entryPoint,
+        is_authenticated: isUserAuthenticated,
+        user_type: isUserAuthenticated ? 'authenticated' : 'guest',
+        referrer_source: referrerSource,
+        referrer_url: referrer || undefined,
+      });
     };
 
     initAuth();
@@ -154,12 +205,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setProfile(null);
         }
 
-        if (event === 'SIGNED_IN') {
+        if (event === 'SIGNED_IN' && newSession?.user) {
           migrateGuestCredits();
+
+          // Identify user in analytics (links anonymous to authenticated sessions)
+          identify(newSession.user.id, {
+            email: newSession.user.email,
+            auth_provider: newSession.user.app_metadata?.provider || 'email',
+            created_at: newSession.user.created_at,
+          });
+
+          // Set user properties for segmentation
+          setUserProperties({
+            user_type: 'authenticated',
+            signup_method: newSession.user.app_metadata?.provider || 'email',
+            email_verified: newSession.user.email_confirmed_at ? true : false,
+          });
+
+          // Track login - determine method from provider
+          const provider = newSession.user.app_metadata?.provider;
+          track(AnalyticsEvent.AUTH_LOGIN_COMPLETED, {
+            method: provider === 'google' ? 'google' : provider === 'github' ? 'github' : 'email',
+          });
         }
 
         if (event === 'SIGNED_OUT') {
           setProfile(null);
+          // Reset analytics user on logout (creates new anonymous ID)
+          resetUser();
         }
       }
     );
