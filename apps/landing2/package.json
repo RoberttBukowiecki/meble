@@ -6,7 +6,7 @@
     "dev": "next dev -p 3003",
     "build": "next build",
     "start": "next start -p 3003",
-    "lint": "next lint",
+    "lint": "eslint .",
     "test": "jest --watchman=false",
     "test:watch": "jest --watch --watchman=false",
     "test:ci": "jest --watchman=false --ci --coverage",
