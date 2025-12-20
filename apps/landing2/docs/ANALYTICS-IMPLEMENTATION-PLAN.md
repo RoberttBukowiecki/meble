@@ -27,23 +27,38 @@
    - Benchmarkowania z branżą
    - Raportów marketingowych dla zespołu
 
-### Główny problem: Brakujące eventy!
+### Status implementacji - UKOŃCZONE ✅
 
-Mimo że PostHog jest wdrożony, **wiele kluczowych interakcji NIE jest trackowanych**:
+Wszystkie kluczowe eventy zostały zaimplementowane:
 
-| Komponent | Status | Eventy zdefiniowane | Eventy zaimplementowane |
-|-----------|--------|---------------------|-------------------------|
+| Komponent | Status | Eventy | Zaimplementowane |
+|-----------|--------|--------|------------------|
 | Hero CTA | ✅ | `LANDING_CTA_CLICKED` | TAK |
 | Article View | ✅ | `LANDING_ARTICLE_VIEW` | TAK |
 | Article CTA | ✅ | `LANDING_ARTICLE_CTA_CLICKED` | TAK |
-| **PopupWidget** | ❌ | `POPUP_WIDGET_OPENED`, `POPUP_WIDGET_SUBMITTED` | **NIE** |
-| **FAQ** | ❌ | Brak | **NIE** |
-| **Video** | ❌ | Brak | **NIE** |
-| **BlogCard** | ❌ | Brak | **NIE** |
-| **Navbar CTA** | ❌ | Brak | **NIE** |
-| **Footer links** | ❌ | Brak | **NIE** |
-| **Cookie consent** | ❌ | Brak | **NIE** |
-| **Scroll depth** | ❌ | Brak | **NIE** |
+| PopupWidget | ✅ | `POPUP_WIDGET_OPENED`, `POPUP_WIDGET_SUBMITTED` | TAK |
+| FAQ | ✅ | `LANDING_FAQ_EXPANDED` | TAK |
+| Video | ✅ | `LANDING_VIDEO_PLAYED` | TAK |
+| BlogCard | ✅ | `LANDING_BLOG_CARD_CLICKED` | TAK |
+| Navbar CTA | ✅ | `LANDING_CTA_CLICKED` (location: header) | TAK |
+| Mobile Menu | ✅ | `LANDING_MOBILE_MENU_TOGGLED` | TAK |
+| Footer links | ✅ | `LANDING_SOCIAL_CLICKED` | TAK |
+| Cookie consent | ✅ | `LANDING_COOKIE_ACCEPTED/DECLINED` | TAK |
+| Scroll depth | ✅ | `LANDING_SCROLL_DEPTH` | TAK |
+
+### Eventy apps/app - UKOŃCZONE ✅
+
+| Komponent | Status | Eventy |
+|-----------|--------|--------|
+| Part Adding | ✅ | `PART_ADDED` |
+| Cabinet Creation | ✅ | `CABINET_CREATED`, `TEMPLATE_SELECTED` |
+| Config Dialogs | ✅ | `CONFIG_OPENED` (7 typów) |
+| Export Flow | ✅ | `EXPORT_INITIATED/COMPLETED/FAILED` |
+| Payment Success | ✅ | `PAYMENT_COMPLETED` |
+| Payment Failed | ✅ | `PAYMENT_FAILED` |
+| Registration | ✅ | `AUTH_SIGNUP_COMPLETED` |
+| Login | ✅ | `AUTH_LOGIN_COMPLETED` |
+| Session Start | ✅ | `APP_SESSION_STARTED` |
 
 ---
 
