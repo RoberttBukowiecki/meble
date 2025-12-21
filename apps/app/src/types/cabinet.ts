@@ -9,6 +9,7 @@ import type { CabinetInteriorConfig } from './cabinetInterior';
 import type { SideFrontsConfig, DecorativePanelsConfig } from './decorative';
 import type { LegsConfig, LegData } from './legs';
 import type { CornerConfig, CornerPartRole } from './corner';
+import type { CabinetCountertopConfig } from './countertop';
 
 /**
  * Defines how the top and bottom panels are placed relative to the side panels.
@@ -88,6 +89,8 @@ export interface CabinetBaseParams {
   interiorConfig?: CabinetInteriorConfig; // Optional unified interior
   // Cabinet legs configuration
   legs?: LegsConfig; // Optional leg configuration
+  // Countertop configuration (for kitchen cabinets)
+  countertopConfig?: CabinetCountertopConfig;
 }
 
 /**
@@ -217,6 +220,8 @@ export interface Cabinet {
   updatedAt: Date;
   /** Visual-only: hide fronts (doors, drawer fronts) in 3D view */
   hideFronts?: boolean;
+  /** Visual-only: hide countertop in 3D view */
+  hideCountertops?: boolean;
   /**
    * World transform of the cabinet (source of truth for rotation)
    * Stored as Euler angles to avoid gimbal lock issues during editing

@@ -13,6 +13,7 @@ import { createSnapSlice } from './slices/snapSlice';
 import { createDimensionSlice } from './slices/dimensionSlice';
 import { createGraphicsSlice } from './slices/graphicsSlice';
 import { createMaterialPreferencesSlice } from './slices/materialPreferencesSlice';
+import { createCountertopSlice } from './slices/countertopSlice';
 import { HISTORY_MAX_LENGTH, HISTORY_MAX_MILESTONES } from './history/constants';
 import { MATERIAL_IDS, INITIAL_MATERIALS } from './constants';
 import { DEFAULT_BACK_OVERLAP_RATIO, DEFAULT_DOOR_CONFIG } from '../config';
@@ -34,6 +35,7 @@ export const useStore = create<StoreState>()(
       ...createDimensionSlice(...args),
       ...createGraphicsSlice(...args),
       ...createMaterialPreferencesSlice(...args),
+      ...createCountertopSlice(...args),
     }),
     {
       name: 'e-meble-storage',
@@ -206,6 +208,30 @@ export const useStore = create<StoreState>()(
           setLastUsedDrawerBoxMaterial,
           setLastUsedDrawerBottomMaterial,
           resetMaterialPreferences,
+          // Countertop functions (countertopGroups IS persisted)
+          selectCountertopGroup,
+          addCountertopGroup,
+          updateCountertopGroup,
+          removeCountertopGroup,
+          generateCountertopsForFurniture,
+          regenerateCountertopGroup,
+          updateSegment,
+          updateSegmentDimensions,
+          updateSegmentOverhang,
+          updateSegmentEdgeBanding,
+          updateSegmentGrain,
+          addCncOperation,
+          addCncOperationFromPreset,
+          updateCncOperation,
+          removeCncOperation,
+          updateCornerTreatment,
+          updateJointType,
+          exportCountertopGroupCsv,
+          getCountertopProductionData,
+          getCountertopGroupsForFurniture,
+          getCountertopGroupForCabinet,
+          // Countertop transient state (don't persist)
+          selectedCountertopGroupId,
           ...rest
         } = state as any;
         return rest;
@@ -283,4 +309,33 @@ export const useHiddenPartsCount = () => {
  */
 export const useInteriorMaterialPreferences = () => {
   return useStore((state) => state.interiorMaterialPreferences);
+};
+
+/**
+ * Get countertop groups for the current furniture
+ */
+export const useCountertopGroups = () => {
+  const countertopGroups = useStore((state) => state.countertopGroups);
+  const selectedFurnitureId = useStore((state) => state.selectedFurnitureId);
+  return countertopGroups.filter((g) => g.furnitureId === selectedFurnitureId);
+};
+
+/**
+ * Get selected countertop group
+ */
+export const useSelectedCountertopGroup = () => {
+  const countertopGroups = useStore((state) => state.countertopGroups);
+  const selectedCountertopGroupId = useStore((state) => state.selectedCountertopGroupId);
+  return countertopGroups.find((g) => g.id === selectedCountertopGroupId);
+};
+
+/**
+ * Get countertop group for a specific cabinet
+ */
+export const useCountertopGroupForCabinet = (cabinetId: string | undefined) => {
+  const countertopGroups = useStore((state) => state.countertopGroups);
+  if (!cabinetId) return undefined;
+  return countertopGroups.find((g) =>
+    g.segments.some((s) => s.cabinetIds.includes(cabinetId))
+  );
 };

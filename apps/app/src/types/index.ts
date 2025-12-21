@@ -169,6 +169,12 @@ export type {
   GroupRenameSnapshot,
   PartSnapshot,
   CabinetSnapshot,
+  CountertopGroupSnapshot,
+  CountertopSegmentSnapshot,
+  CncOperationSnapshot,
+  CountertopCornerSnapshot,
+  CountertopJointSnapshot,
+  BatchCountertopConfigSnapshot,
   HistoryEntry,
 } from './history';
 
@@ -215,3 +221,37 @@ export type {
 
 // State types
 export type { ProjectState, InteriorMaterialPreferences } from './state';
+
+// Countertop types
+export type {
+  CountertopLayoutType,
+  CountertopJointType,
+  JointHardwareType,
+  CornerTreatment,
+  CornerPosition,
+  EdgeBandingOption,
+  EdgeId,
+  CncOperationType,
+  CutoutPresetType,
+  CncOperation,
+  CountertopCornerConfig,
+  SegmentEdgeBanding,
+  CountertopOverhang,
+  CountertopSegment,
+  JointHardware,
+  CountertopJoint,
+  CountertopGroup,
+  CabinetCountertopConfig,
+  CutListEntry,
+  EdgeBandingEntry,
+  CountertopProductionData,
+  CountertopGroupOptions,
+  AdjacentCabinetGroup,
+} from './countertop';
+export {
+  generateCountertopGroupId,
+  generateSegmentId,
+  generateJointId,
+  generateCncOperationId,
+  generateCornerId,
+} from './countertop';

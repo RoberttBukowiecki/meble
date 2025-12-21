@@ -4,8 +4,9 @@ import type { UISlice } from './slices/uiSlice';
 import type { SnapSlice } from './slices/snapSlice';
 import type { DimensionSlice } from './slices/dimensionSlice';
 import type { MaterialPreferencesSlice } from './slices/materialPreferencesSlice';
+import type { CountertopSlice } from './slices/countertopSlice';
 
-export type StoreState = ProjectState & HistorySlice & UISlice & SnapSlice & DimensionSlice & GraphicsSlice & MaterialPreferencesSlice;
+export type StoreState = ProjectState & HistorySlice & UISlice & SnapSlice & DimensionSlice & GraphicsSlice & MaterialPreferencesSlice & CountertopSlice;
 export type StoreMutators = [['zustand/persist', unknown]];
 export type StoreSlice<T> = StateCreator<StoreState, StoreMutators, [], T>;
 

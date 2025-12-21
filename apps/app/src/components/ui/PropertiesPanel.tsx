@@ -25,7 +25,7 @@ import {
   SelectValue,
 } from '@meble/ui';
 import { Switch } from '@meble/ui';
-import { Trash2, Copy, AlertCircle, PanelLeftDashed } from 'lucide-react';
+import { Trash2, Copy, AlertCircle, PanelLeftDashed, Layers } from 'lucide-react';
 import type {
   ShapeParamsRect,
   EdgeBandingRect,
@@ -66,6 +66,8 @@ import { cn } from '@/lib/utils';
 import { getCabinetTransform } from '@/lib/store/utils';
 
 import { getCabinetTypeLabel } from '@/lib/cabinetHelpers';
+import { CountertopConfigDialog, getCountertopSummary } from './CountertopConfigDialog';
+import type { CabinetCountertopConfig } from '@/types';
 import { DimensionsConfig } from './DimensionsConfig';
 import { AssemblyConfig } from './AssemblyConfig';
 import { BackWallConfig } from './BackWallConfig';
@@ -237,6 +239,86 @@ const InteriorConfigSection = ({
           onShelfMaterialChange={setLastUsedShelfMaterial}
           onDrawerBoxMaterialChange={setLastUsedDrawerBoxMaterial}
           onDrawerBottomMaterialChange={setLastUsedDrawerBottomMaterial}
+        />
+      </AccordionContent>
+    </AccordionItem>
+  );
+};
+
+// ============================================================================
+// Countertop Config Section
+// ============================================================================
+
+interface CountertopConfigSectionProps {
+  cabinetId: string;
+  furnitureId: string;
+  params: CabinetParams;
+  onUpdateParams: (params: CabinetParams) => void;
+}
+
+const CountertopConfigSection = ({
+  cabinetId,
+  furnitureId,
+  params,
+  onUpdateParams,
+}: CountertopConfigSectionProps) => {
+  const [dialogOpen, setDialogOpen] = React.useState(false);
+
+  // Get store actions and state
+  const applyCountertopConfigToAllKitchenCabinets = useStore(
+    (state) => state.applyCountertopConfigToAllKitchenCabinets
+  );
+  const getOtherKitchenCabinetsCount = useStore(
+    (state) => state.getOtherKitchenCabinetsCount
+  );
+
+  const countertopConfig = (params as KitchenCabinetParams).countertopConfig;
+  const summary = getCountertopSummary(countertopConfig);
+  const otherCabinetsCount = getOtherKitchenCabinetsCount(furnitureId, cabinetId);
+
+  const handleConfigChange = (config: CabinetCountertopConfig) => {
+    onUpdateParams({ ...params, countertopConfig: config } as KitchenCabinetParams);
+  };
+
+  const handleApplyToAll = (config: CabinetCountertopConfig) => {
+    applyCountertopConfigToAllKitchenCabinets(furnitureId, config);
+  };
+
+  return (
+    <AccordionItem value="countertop" className="border-b-0">
+      <AccordionTrigger className="py-3 text-xs font-medium hover:no-underline">
+        <div className="flex items-center gap-2">
+          <Layers className="h-4 w-4 text-muted-foreground" />
+          Blat kuchenny
+          <Badge variant="secondary" className="text-xs px-1.5 py-0 h-5">
+            {summary}
+          </Badge>
+        </div>
+      </AccordionTrigger>
+      <AccordionContent className="pb-4 pt-0">
+        <div className="space-y-3 px-1">
+          <p className="text-xs text-muted-foreground">
+            {summary}
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full h-8 text-xs"
+            onClick={() => setDialogOpen(true)}
+          >
+            <Layers className="h-3.5 w-3.5 mr-2" />
+            Konfiguruj blat
+          </Button>
+        </div>
+
+        <CountertopConfigDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          config={countertopConfig}
+          onConfigChange={handleConfigChange}
+          isExistingCabinet={true}
+          onApplyToAll={handleApplyToAll}
+          otherKitchenCabinetsCount={otherCabinetsCount}
         />
       </AccordionContent>
     </AccordionItem>
@@ -420,6 +502,30 @@ function CabinetPropertiesPanel({
             )}
           </button>
         </div>
+
+        {/* Hide countertops toggle - only for KITCHEN cabinets */}
+        {selectedCabinet.type === 'KITCHEN' && (
+          <div className="flex items-center justify-between py-1">
+            <Label className="text-xs text-muted-foreground font-normal">Ukryj blat</Label>
+            <button
+              type="button"
+              onClick={() =>
+                updateCabinet(selectedCabinet.id, { hideCountertops: !(selectedCabinet.hideCountertops ?? false) })
+              }
+              className={cn(
+                'p-0.5 rounded hover:bg-muted/50 transition-colors',
+                (selectedCabinet.hideCountertops ?? false) ? 'text-muted-foreground/70' : 'text-muted-foreground'
+              )}
+              title={(selectedCabinet.hideCountertops ?? false) ? 'Pokaż blat' : 'Ukryj blat'}
+            >
+              {(selectedCabinet.hideCountertops ?? false) ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </button>
+          </div>
+        )}
       </div>
 
       <div className='flex-grow overflow-y-auto px-2 py-2'>
@@ -550,6 +656,18 @@ function CabinetPropertiesPanel({
               bodyMaterialId={selectedCabinet.materials.bodyMaterialId}
             />
           </div>
+
+          {/* Countertop Config - only for KITCHEN cabinets */}
+          {selectedCabinet.type === 'KITCHEN' && (
+            <div className="border rounded-md px-2 bg-card">
+              <CountertopConfigSection
+                cabinetId={selectedCabinet.id}
+                furnitureId={selectedCabinet.furnitureId}
+                params={localParams}
+                onUpdateParams={updateLocalParams}
+              />
+            </div>
+          )}
 
           {/* Materials */}
           <AccordionItem value="materials" className="border rounded-md px-2 bg-card">

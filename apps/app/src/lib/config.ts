@@ -919,3 +919,179 @@ export const CABINET_PRESETS: Record<CabinetType, Partial<CabinetParams>> = {
     cornerConfig: DEFAULT_CORNER_CONFIG,
   },
 };
+
+// ============================================================================
+// Countertop Configuration
+// ============================================================================
+
+import type {
+  CountertopOverhang,
+  SegmentEdgeBanding,
+  EdgeBandingOption,
+  CountertopJointType,
+  JointHardware,
+  CornerTreatment,
+  CutoutPresetType,
+} from '@/types/countertop';
+
+/**
+ * Default countertop configuration values
+ */
+export const COUNTERTOP_DEFAULTS = {
+  /** Default thickness in mm (common: 28, 38, 40) */
+  THICKNESS: 38,
+  /** Default overhang values in mm */
+  OVERHANG: {
+    front: 30,    // Front overhang (typical 30-50mm)
+    back: 0,      // Back (against wall)
+    left: 0,      // Left side
+    right: 0,     // Right side
+  } as CountertopOverhang,
+  /** Default edge banding configuration */
+  EDGE_BANDING: {
+    a: 'NONE',      // Back edge (against wall)
+    b: 'NONE',      // Right edge
+    c: 'STANDARD',  // Front edge (visible)
+    d: 'NONE',      // Left edge
+  } as SegmentEdgeBanding,
+  /** Default grain direction (along length) */
+  GRAIN_ALONG_LENGTH: true,
+} as const;
+
+/**
+ * Countertop dimensional limits in mm
+ */
+export const COUNTERTOP_LIMITS = {
+  THICKNESS: { min: 18, max: 60 },
+  LENGTH: { min: 100, max: 4100 },      // Max standard panel length
+  WIDTH: { min: 100, max: 1200 },       // Max standard panel width
+  OVERHANG: { min: 0, max: 100 },
+} as const;
+
+/**
+ * CNC operation constraints
+ * Minimum distances to ensure structural integrity
+ */
+export const CNC_OPERATION_LIMITS = {
+  /** Minimum distance from countertop edge in mm */
+  MIN_EDGE_DISTANCE: 50,
+  /** Minimum distance from joint in mm */
+  MIN_JOINT_DISTANCE: 100,
+  /** Minimum spacing between CNC operations in mm */
+  MIN_OPERATION_SPACING: 50,
+  /** Maximum corner radius for rectangular cutouts */
+  MAX_CUTOUT_RADIUS: 50,
+} as const;
+
+/**
+ * Joint hardware presets per joint type
+ */
+export const JOINT_HARDWARE_PRESETS: Record<CountertopJointType, JointHardware> = {
+  MITER_45: { type: 'MITER_BOLT', count: 2 },
+  BUTT: { type: 'FLIP_BOLT', count: 3 },
+  EUROPEAN_MITER: { type: 'MITER_BOLT', count: 2 },
+  PUZZLE: { type: 'DOMINO', count: 4 },
+};
+
+/**
+ * Common cutout presets for sinks, cooktops, etc.
+ * Dimensions in mm
+ */
+export const CUTOUT_PRESETS: Record<CutoutPresetType, {
+  labelPl: string;
+  dimensions: { width?: number; height?: number; diameter?: number; radius?: number };
+}> = {
+  NONE: {
+    labelPl: 'Brak',
+    dimensions: {},
+  },
+  SINK_STANDARD: {
+    labelPl: 'Zlew standardowy (780×480)',
+    dimensions: { width: 780, height: 480, radius: 10 },
+  },
+  SINK_SMALL: {
+    labelPl: 'Zlew mały (580×430)',
+    dimensions: { width: 580, height: 430, radius: 10 },
+  },
+  SINK_ROUND: {
+    labelPl: 'Zlew okrągły (Ø450)',
+    dimensions: { diameter: 450 },
+  },
+  COOKTOP_60: {
+    labelPl: 'Płyta grzewcza 60cm (560×490)',
+    dimensions: { width: 560, height: 490, radius: 5 },
+  },
+  COOKTOP_80: {
+    labelPl: 'Płyta grzewcza 80cm (760×520)',
+    dimensions: { width: 760, height: 520, radius: 5 },
+  },
+  FAUCET_HOLE: {
+    labelPl: 'Otwór na baterię (Ø35)',
+    dimensions: { diameter: 35 },
+  },
+  SOAP_DISPENSER: {
+    labelPl: 'Dozownik mydła (Ø28)',
+    dimensions: { diameter: 28 },
+  },
+};
+
+/**
+ * Corner treatment options with labels
+ */
+export const CORNER_TREATMENT_OPTIONS: Array<{
+  value: CornerTreatment;
+  labelPl: string;
+  description: string;
+}> = [
+  { value: 'STRAIGHT', labelPl: 'Narożnik prosty', description: 'Standardowy kąt 90°' },
+  { value: 'CHAMFER', labelPl: 'Ścięcie pod kątem', description: 'Ścięcie 45° w narożniku' },
+  { value: 'RADIUS', labelPl: 'Zaokrąglenie', description: 'Zaokrąglony narożnik' },
+  { value: 'CLIP', labelPl: 'Ścięcie narożnika', description: 'Proste ścięcie narożnika' },
+];
+
+/**
+ * Edge banding options with labels
+ */
+export const EDGE_BANDING_OPTIONS: Array<{
+  value: EdgeBandingOption;
+  labelPl: string;
+}> = [
+  { value: 'NONE', labelPl: 'Brak' },
+  { value: 'STANDARD', labelPl: 'Standardowe' },
+  { value: 'ABS_2MM', labelPl: 'ABS 2mm' },
+  { value: 'ABS_1MM', labelPl: 'ABS 1mm' },
+  { value: 'PVC', labelPl: 'PVC' },
+  { value: 'CONTRAST', labelPl: 'Kontrastowe' },
+];
+
+/**
+ * Joint type options with labels
+ */
+export const JOINT_TYPE_OPTIONS: Array<{
+  value: CountertopJointType;
+  labelPl: string;
+  description: string;
+}> = [
+  { value: 'MITER_45', labelPl: 'Uciosowe 45°', description: 'Najczęstsze dla kształtu L' },
+  { value: 'BUTT', labelPl: 'Czołowe', description: 'Proste połączenie czołowe' },
+  { value: 'EUROPEAN_MITER', labelPl: 'Europejskie', description: 'Hybrydowe: zaczyna uciosowo, kończy czołowo' },
+  { value: 'PUZZLE', labelPl: 'Puzzle', description: 'Dekoracyjne połączenie puzzle (premium)' },
+];
+
+/**
+ * Thickness options for countertops
+ */
+export const COUNTERTOP_THICKNESS_OPTIONS: Array<{
+  value: number;
+  labelPl: string;
+}> = [
+  { value: 28, labelPl: '28 mm' },
+  { value: 38, labelPl: '38 mm (standard)' },
+  { value: 40, labelPl: '40 mm' },
+];
+
+/**
+ * Proximity threshold for detecting adjacent cabinets (mm)
+ * Cabinets closer than this are considered adjacent for countertop grouping
+ */
+export const CABINET_ADJACENCY_THRESHOLD = 50;

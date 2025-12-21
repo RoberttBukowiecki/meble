@@ -9,6 +9,18 @@ import type {
   GroupRenameSnapshot,
 } from '@/types';
 import type { StoreState } from '../types';
+import {
+  applyAddCountertopGroup,
+  applyRemoveCountertopGroup,
+  applyUpdateCountertopGroup,
+  applyUpdateCountertopSegment,
+  applyAddCncOperation,
+  applyRemoveCncOperation,
+  applyUpdateCncOperation,
+  applyUpdateCountertopCorner,
+  applyUpdateCountertopJoint,
+  applyBatchUpdateCountertopConfig,
+} from './applyCountertop';
 
 type PartTransformMap = Record<string, Pick<Part, 'position' | 'rotation'>>;
 
@@ -83,6 +95,47 @@ export function applyHistoryEntry(
 
     case 'DUPLICATE_MULTISELECT':
       applyDuplicateMultiselect(entry, direction, get, set, state);
+      break;
+
+    // Countertop operations
+    case 'ADD_COUNTERTOP_GROUP':
+      applyAddCountertopGroup(entry, direction, get, set, state);
+      break;
+
+    case 'REMOVE_COUNTERTOP_GROUP':
+      applyRemoveCountertopGroup(entry, direction, get, set, state);
+      break;
+
+    case 'UPDATE_COUNTERTOP_GROUP':
+      applyUpdateCountertopGroup(entry, direction, get, set, state);
+      break;
+
+    case 'UPDATE_COUNTERTOP_SEGMENT':
+      applyUpdateCountertopSegment(entry, direction, get, set, state);
+      break;
+
+    case 'ADD_CNC_OPERATION':
+      applyAddCncOperation(entry, direction, get, set, state);
+      break;
+
+    case 'REMOVE_CNC_OPERATION':
+      applyRemoveCncOperation(entry, direction, get, set, state);
+      break;
+
+    case 'UPDATE_CNC_OPERATION':
+      applyUpdateCncOperation(entry, direction, get, set, state);
+      break;
+
+    case 'UPDATE_COUNTERTOP_CORNER':
+      applyUpdateCountertopCorner(entry, direction, get, set, state);
+      break;
+
+    case 'UPDATE_COUNTERTOP_JOINT':
+      applyUpdateCountertopJoint(entry, direction, get, set, state);
+      break;
+
+    case 'BATCH_UPDATE_COUNTERTOP_CONFIG':
+      applyBatchUpdateCountertopConfig(entry, direction, get, set, state);
       break;
 
     default:
@@ -543,3 +596,4 @@ function applyDuplicateMultiselect(
     }));
   }
 }
+

@@ -41,6 +41,8 @@ export { LegsDomain } from './legs';
 
 export { CornerDomain, CORNER_DEFAULTS, CORNER_LIMITS } from './corner';
 
+export { CountertopDomain } from './countertop';
+
 // Shared types
 export type {
   ValidationResult,

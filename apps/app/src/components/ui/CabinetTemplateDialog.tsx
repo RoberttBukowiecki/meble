@@ -72,6 +72,8 @@ import { Settings2, PanelLeftDashed, AlertTriangle, RectangleHorizontal, Grip, B
 import { FrontsConfigDialog } from './FrontsConfigDialog';
 import { HandlesConfigDialog } from './HandlesConfigDialog';
 import { LegsConfigDialog, getLegsSummary, hasLegs } from './LegsConfigDialog';
+import { CountertopConfigDialog, getCountertopSummary } from './CountertopConfigDialog';
+import type { CabinetCountertopConfig } from '@/types';
 import { cn } from '@/lib/utils';
 
 interface CabinetTemplateDialogProps {
@@ -185,6 +187,7 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
     const [decorativePanelsDialogOpen, setDecorativePanelsDialogOpen] = useState(false);
     const [interiorDialogOpen, setInteriorDialogOpen] = useState(false);
     const [legsDialogOpen, setLegsDialogOpen] = useState(false);
+    const [countertopDialogOpen, setCountertopDialogOpen] = useState(false);
 
     // Get material preferences from store for interior config
     const interiorMaterialPreferences = useStore((state) => state.interiorMaterialPreferences);
@@ -301,6 +304,17 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
             foldingDoorConfig: { ...currentConfig, ...updates },
         } as any);
     };
+
+    // Countertop config accessor
+    const getCountertopConfig = (): CabinetCountertopConfig | undefined => {
+        if ('countertopConfig' in params) {
+            return (params as KitchenCabinetParams).countertopConfig;
+        }
+        return undefined;
+    };
+
+    const countertopConfig = getCountertopConfig();
+    const countertopSummary = getCountertopSummary(countertopConfig);
 
     // Check if drawer config has external fronts
     const drawerHasFronts = params.drawerConfig ? Drawer.hasExternalFronts(params.drawerConfig) : false;
@@ -961,6 +975,20 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
                             }
                         />
                     )}
+
+                    {/* Countertop Configuration - only for kitchen cabinets */}
+                    {type === 'KITCHEN' && (
+                        <ConfigRow
+                            title="Blat kuchenny"
+                            description={countertopSummary}
+                            icon={<Layers className="h-4 w-4" />}
+                            action={
+                                <Button variant="outline" size="sm" onClick={() => setCountertopDialogOpen(true)}>
+                                    Konfiguruj
+                                </Button>
+                            }
+                        />
+                    )}
                 </div>
             </div>
 
@@ -1031,6 +1059,15 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
                 onConfigChange={(config) => onChange({ ...params, legs: config } as any)}
                 cabinetWidth={params.width ?? 600}
             />
+            {type === 'KITCHEN' && (
+                <CountertopConfigDialog
+                    open={countertopDialogOpen}
+                    onOpenChange={setCountertopDialogOpen}
+                    config={countertopConfig}
+                    onConfigChange={(config) => onChange({ ...params, countertopConfig: config } as any)}
+                    isExistingCabinet={false}
+                />
+            )}
         </div>
     )
 }

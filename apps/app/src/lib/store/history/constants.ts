@@ -43,4 +43,15 @@ export const HISTORY_LABELS: Record<HistoryEntryType, string> = {
   TRANSFORM_MULTISELECT: 'Przesunięto zaznaczenie',
   DELETE_MULTISELECT: 'Usunięto zaznaczenie',
   DUPLICATE_MULTISELECT: 'Powielono zaznaczenie',
+  // Countertop operations
+  ADD_COUNTERTOP_GROUP: 'Dodano grupę blatów',
+  REMOVE_COUNTERTOP_GROUP: 'Usunięto grupę blatów',
+  UPDATE_COUNTERTOP_GROUP: 'Zaktualizowano grupę blatów',
+  UPDATE_COUNTERTOP_SEGMENT: 'Zaktualizowano segment blatu',
+  ADD_CNC_OPERATION: 'Dodano operację CNC',
+  REMOVE_CNC_OPERATION: 'Usunięto operację CNC',
+  UPDATE_CNC_OPERATION: 'Zaktualizowano operację CNC',
+  UPDATE_COUNTERTOP_CORNER: 'Zaktualizowano narożnik blatu',
+  UPDATE_COUNTERTOP_JOINT: 'Zaktualizowano złącze blatu',
+  BATCH_UPDATE_COUNTERTOP_CONFIG: 'Zaktualizowano konfigurację blatów',
 };

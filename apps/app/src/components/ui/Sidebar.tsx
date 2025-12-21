@@ -3,13 +3,14 @@ import { useTranslations } from 'next-intl';
 import { useShallow } from 'zustand/react/shallow';
 import { useStore, useSelectedPart, useSelectedCabinet } from '@/lib/store';
 import { Button } from '@meble/ui';
-import { Plus, Download, Settings, List, Package, House, Database, Copy, Check } from 'lucide-react';
+import { Plus, Download, Settings, List, Package, House, Database, Copy, Check, Layers } from 'lucide-react';
 import { track, AnalyticsEvent } from '@meble/analytics';
 import { useIsAdmin } from '@/hooks';
 import { APP_NAME } from '@meble/constants';
 import { PropertiesPanel } from './PropertiesPanel';
 import { PartsTable } from './PartsTable';
 import { RoomPanel } from './RoomPanel';
+import { CountertopPanel } from '@/components/panels';
 import { validateParts } from '@/lib/csv';
 import { CabinetTemplateDialog } from './CabinetTemplateDialog';
 import { HistoryButtons } from './HistoryButtons';
@@ -26,7 +27,7 @@ import {
   DialogDescription,
 } from '@meble/ui';
 
-type TabType = 'properties' | 'list' | 'room';
+type TabType = 'properties' | 'list' | 'room' | 'countertops';
 
 export function Sidebar() {
   const t = useTranslations('Sidebar');
@@ -257,6 +258,17 @@ export function Sidebar() {
             <span className="hidden sm:inline">{tRoom('roomTab')}</span>
           </button>
         )}
+        <button
+          onClick={() => setActiveTab('countertops')}
+          className={`flex flex-1 items-center justify-center gap-1 md:gap-2 px-2 md:px-4 py-3 md:py-3 text-xs md:text-sm font-medium transition-colors ${
+            activeTab === 'countertops'
+              ? 'border-b-2 border-primary bg-muted text-foreground'
+              : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+          }`}
+        >
+          <Layers className="h-4 w-4" />
+          <span className="hidden sm:inline">Blaty</span>
+        </button>
       </div>
 
       {/* Content */}
@@ -273,8 +285,10 @@ export function Sidebar() {
           <div className="p-4">
             <PartsTable />
           </div>
-        ) : (
+        ) : activeTab === 'room' ? (
           <RoomPanel />
+        ) : (
+          <CountertopPanel />
         )}
       </div>
 

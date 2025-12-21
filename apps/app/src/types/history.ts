@@ -4,6 +4,14 @@
 
 import type { Part } from './part';
 import type { Cabinet } from './cabinet';
+import type {
+  CountertopGroup,
+  CountertopSegment,
+  CncOperation,
+  CountertopCornerConfig,
+  CountertopJoint,
+  CabinetCountertopConfig,
+} from './countertop';
 
 /**
  * History entry types for undo/redo operations
@@ -26,7 +34,18 @@ export type HistoryEntryType =
   // Multiselect operations
   | 'TRANSFORM_MULTISELECT'
   | 'DELETE_MULTISELECT'
-  | 'DUPLICATE_MULTISELECT';
+  | 'DUPLICATE_MULTISELECT'
+  // Countertop operations
+  | 'ADD_COUNTERTOP_GROUP'
+  | 'REMOVE_COUNTERTOP_GROUP'
+  | 'UPDATE_COUNTERTOP_GROUP'
+  | 'UPDATE_COUNTERTOP_SEGMENT'
+  | 'ADD_CNC_OPERATION'
+  | 'REMOVE_CNC_OPERATION'
+  | 'UPDATE_CNC_OPERATION'
+  | 'UPDATE_COUNTERTOP_CORNER'
+  | 'UPDATE_COUNTERTOP_JOINT'
+  | 'BATCH_UPDATE_COUNTERTOP_CONFIG';
 
 /**
  * Category of history entry for UI grouping
@@ -35,6 +54,7 @@ export type HistoryEntryKind =
   | 'geometry'
   | 'material'
   | 'cabinet'
+  | 'countertop'
   | 'selection'
   | 'misc';
 
@@ -95,6 +115,57 @@ export interface CabinetSnapshot {
 }
 
 /**
+ * Countertop group snapshot for add/remove operations
+ */
+export interface CountertopGroupSnapshot {
+  group: CountertopGroup & { _index?: number }; // Group with optional index
+}
+
+/**
+ * Countertop segment snapshot for update operations
+ */
+export interface CountertopSegmentSnapshot {
+  groupId: string;
+  segment: CountertopSegment;
+}
+
+/**
+ * CNC operation snapshot for add/remove/update operations
+ */
+export interface CncOperationSnapshot {
+  groupId: string;
+  segmentId: string;
+  operation: CncOperation;
+}
+
+/**
+ * Countertop corner snapshot for update operations
+ */
+export interface CountertopCornerSnapshot {
+  groupId: string;
+  corner: CountertopCornerConfig;
+}
+
+/**
+ * Countertop joint snapshot for update operations
+ */
+export interface CountertopJointSnapshot {
+  groupId: string;
+  joint: CountertopJoint;
+}
+
+/**
+ * Batch countertop config snapshot for apply-to-all operations
+ */
+export interface BatchCountertopConfigSnapshot {
+  furnitureId: string;
+  cabinetConfigs: Array<{
+    cabinetId: string;
+    config: CabinetCountertopConfig | undefined;
+  }>;
+}
+
+/**
  * History entry representing a single undoable/redoable operation
  */
 export interface HistoryEntry {
@@ -103,7 +174,7 @@ export interface HistoryEntry {
   targetIds?: string[];
   furnitureId?: string;
   cabinetId?: string;
-  before?: PartSnapshot | TransformSnapshot | CabinetRegenerationSnapshot | GroupRenameSnapshot | Partial<Cabinet> | unknown;
-  after?: PartSnapshot | TransformSnapshot | CabinetRegenerationSnapshot | GroupRenameSnapshot | Partial<Cabinet> | unknown;
+  before?: PartSnapshot | TransformSnapshot | CabinetRegenerationSnapshot | GroupRenameSnapshot | Partial<Cabinet> | CountertopGroupSnapshot | CountertopSegmentSnapshot | CncOperationSnapshot | CountertopCornerSnapshot | CountertopJointSnapshot | BatchCountertopConfigSnapshot | unknown;
+  after?: PartSnapshot | TransformSnapshot | CabinetRegenerationSnapshot | GroupRenameSnapshot | Partial<Cabinet> | CountertopGroupSnapshot | CountertopSegmentSnapshot | CncOperationSnapshot | CountertopCornerSnapshot | CountertopJointSnapshot | BatchCountertopConfigSnapshot | unknown;
   meta: HistoryEntryMeta;
 }
