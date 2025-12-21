@@ -11,7 +11,10 @@
     "dev": "turbo dev",
     "lint": "turbo lint",
     "test": "turbo test",
+    "test:ci": "turbo test:ci",
+    "type-check": "turbo type-check",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,md}\"",
     "clean": "turbo clean && rm -rf node_modules"
   },
   "devDependencies": {

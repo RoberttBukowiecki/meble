@@ -1,0 +1,184 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Detect which apps have changes
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      app: ${{ steps.filter.outputs.app }}
+      landing2: ${{ steps.filter.outputs.landing2 }}
+      payments: ${{ steps.filter.outputs.payments }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            app:
+              - 'apps/app/**'
+              - 'packages/**'
+            landing2:
+              - 'apps/landing2/**'
+              - 'packages/**'
+            payments:
+              - 'apps/payments/**'
+              - 'packages/**'
+
+  # ==================== APP ====================
+  test-app:
+    name: Test App
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 8.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm --filter @meble/app lint
+
+      - name: Type Check
+        run: pnpm --filter @meble/app type-check
+
+      - name: Test
+        run: pnpm --filter @meble/app test:ci
+
+  # Vercel will wait for this check before deploying app
+  app-ci:
+    name: App CI
+    runs-on: ubuntu-latest
+    needs: [changes, test-app]
+    if: always()
+    steps:
+      - name: Check Result
+        run: |
+          if [[ "${{ needs.changes.outputs.app }}" != "true" ]]; then
+            echo "✅ No changes in app - skipping"
+            exit 0
+          fi
+          if [[ "${{ needs.test-app.result }}" == "success" ]]; then
+            echo "✅ App CI passed"
+            exit 0
+          fi
+          echo "❌ App CI failed"
+          exit 1
+
+  # ==================== LANDING2 ====================
+  test-landing2:
+    name: Test Landing2
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.landing2 == 'true'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 8.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm --filter @meble/landing2 lint
+
+      - name: Type Check
+        run: pnpm --filter @meble/landing2 type-check
+
+      - name: Test
+        run: pnpm --filter @meble/landing2 test:ci
+
+  # Vercel will wait for this check before deploying landing2
+  landing2-ci:
+    name: Landing2 CI
+    runs-on: ubuntu-latest
+    needs: [changes, test-landing2]
+    if: always()
+    steps:
+      - name: Check Result
+        run: |
+          if [[ "${{ needs.changes.outputs.landing2 }}" != "true" ]]; then
+            echo "✅ No changes in landing2 - skipping"
+            exit 0
+          fi
+          if [[ "${{ needs.test-landing2.result }}" == "success" ]]; then
+            echo "✅ Landing2 CI passed"
+            exit 0
+          fi
+          echo "❌ Landing2 CI failed"
+          exit 1
+
+  # ==================== PAYMENTS ====================
+  test-payments:
+    name: Test Payments
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.payments == 'true'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 8.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm --filter @meble/payments lint
+
+      - name: Type Check
+        run: pnpm --filter @meble/payments type-check
+
+      - name: Test
+        run: pnpm --filter @meble/payments test:ci
+
+  # Vercel will wait for this check before deploying payments
+  payments-ci:
+    name: Payments CI
+    runs-on: ubuntu-latest
+    needs: [changes, test-payments]
+    if: always()
+    steps:
+      - name: Check Result
+        run: |
+          if [[ "${{ needs.changes.outputs.payments }}" != "true" ]]; then
+            echo "✅ No changes in payments - skipping"
+            exit 0
+          fi
+          if [[ "${{ needs.test-payments.result }}" == "success" ]]; then
+            echo "✅ Payments CI passed"
+            exit 0
+          fi
+          echo "❌ Payments CI failed"
+          exit 1

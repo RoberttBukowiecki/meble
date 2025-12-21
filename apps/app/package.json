@@ -6,9 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "test": "jest --watchman=false",
     "test:watch": "jest --watch --watchman=false",
+    "test:ci": "jest --watchman=false --ci --coverage",
+    "type-check": "tsc --noEmit",
     "clean": "rm -rf .next .turbo node_modules"
   },
   "dependencies": {

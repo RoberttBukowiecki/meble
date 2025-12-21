@@ -13,6 +13,14 @@
       "dependsOn": ["^test"],
       "outputs": []
     },
+    "test:ci": {
+      "dependsOn": ["^test:ci"],
+      "outputs": ["coverage/**"]
+    },
+    "type-check": {
+      "dependsOn": ["^type-check"],
+      "outputs": []
+    },
     "dev": {
       "cache": false,
       "persistent": true
