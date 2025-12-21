@@ -19,6 +19,7 @@ Pakiet `@meble/analytics` jest już zaimplementowany z:
 | Funkcja | Opis | Priorytet |
 |---------|------|-----------|
 | Session Replay | Nagrywanie sesji użytkowników | 🔴 Wysoki |
+| **Error Tracking** | Automatyczne przechwytywanie błędów JS | 🔴 Wysoki |
 | Web Analytics | Dashboard GA-like z metrykami ruchu | 🟢 Automatyczne |
 | Console Log Recording | Przechwytywanie logów konsoli | 🟡 Średni |
 | Network Recording | Nagrywanie requestów sieciowych | 🟡 Średni |
@@ -221,6 +222,181 @@ session_recording: {
 
 ---
 
+## Feature 5: Error Tracking
+
+### Opis
+Error Tracking automatycznie przechwytuje błędy JavaScript i wyjątki w aplikacji. Funkcje:
+- Automatyczne przechwytywanie `window.onerror` i `unhandledrejection`
+- Stack traces z source maps (czytelne nazwy funkcji zamiast minified kodu)
+- Korelacja błędów z Session Replay (zobacz co użytkownik robił przed błędem)
+- Grupowanie podobnych błędów
+- Alerty i notyfikacje
+- Integracja z issue trackerami
+
+### Wymagania
+- PostHog SDK v1.207.8+ (obecnie używamy v1.194.4 - **wymaga aktualizacji**)
+- Source maps upload dla czytelnych stack traces
+
+### Konfiguracja SDK
+
+#### 1. Aktualizacja SDK w `packages/analytics/package.json`:
+
+```json
+{
+  "dependencies": {
+    "posthog-js": "^1.210.0",
+    "posthog-node": "^4.3.3"
+  }
+}
+```
+
+#### 2. Włączenie Exception Autocapture w `client.ts`:
+
+```typescript
+posthog.init(POSTHOG_KEY, {
+  api_host: POSTHOG_HOST,
+  // ... existing config
+
+  // === ERROR TRACKING ===
+  autocapture: {
+    capture_copied_text: false,
+  },
+
+  // Exception autocapture - włączone przez PostHog Dashboard
+  // Alternatywnie można włączyć programowo:
+  capture_exceptions: true,
+});
+```
+
+#### 3. Ręczne przechwytywanie błędów (opcjonalne):
+
+```typescript
+// Dla błędów w try-catch które chcemy śledzić
+import { posthog } from '@meble/analytics';
+
+try {
+  // risky operation
+} catch (error) {
+  posthog.captureException(error, {
+    extra: {
+      component: 'ExportDialog',
+      action: 'export_pdf',
+    },
+  });
+}
+```
+
+### Source Maps dla Next.js
+
+Aby stack traces były czytelne, należy uploadować source maps podczas builda.
+
+#### 1. Instalacja pakietu:
+
+```bash
+pnpm add -D @posthog/nextjs-config
+```
+
+#### 2. Konfiguracja `next.config.ts` w apps/app:
+
+```typescript
+import { withPostHogConfig } from '@posthog/nextjs-config';
+
+const nextConfig = {
+  // existing config...
+};
+
+export default withPostHogConfig(nextConfig, {
+  personalApiKey: process.env.POSTHOG_PERSONAL_API_KEY!,
+  envId: process.env.POSTHOG_ENV_ID!,
+  host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
+  sourcemaps: {
+    enabled: process.env.NODE_ENV === 'production',
+    project: 'meble-app',
+    deleteAfterUpload: true, // Nie publikuj source maps
+  },
+});
+```
+
+#### 3. Zmienne środowiskowe:
+
+```env
+# .env.local
+POSTHOG_PERSONAL_API_KEY=phx_xxx  # Personal API Key z PostHog Settings
+POSTHOG_ENV_ID=env_xxx            # Environment ID z PostHog Project Settings
+```
+
+### React Error Boundary
+
+Dla lepszego przechwytywania błędów React, dodaj Error Boundary:
+
+```typescript
+// packages/analytics/src/error-boundary.tsx
+'use client';
+
+import { Component, ReactNode } from 'react';
+import { posthog } from './client';
+
+interface Props {
+  children: ReactNode;
+  fallback?: ReactNode;
+}
+
+interface State {
+  hasError: boolean;
+}
+
+export class AnalyticsErrorBoundary extends Component<Props, State> {
+  constructor(props: Props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(): State {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    posthog.captureException(error, {
+      extra: {
+        componentStack: errorInfo.componentStack,
+      },
+    });
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback || <div>Something went wrong.</div>;
+    }
+    return this.props.children;
+  }
+}
+```
+
+### Włączenie w PostHog Dashboard
+
+1. Przejdź do **Project Settings → Error Tracking**
+2. Włącz **Enable exception autocapture**
+3. Opcjonalnie skonfiguruj:
+   - Suppression rules (ignoruj określone błędy)
+   - Alert rules (powiadomienia o nowych błędach)
+   - Issue linking (GitHub/Linear integration)
+
+### Gdzie implementować?
+
+| App | Rekomendacja | Uzasadnienie |
+|-----|--------------|--------------|
+| **apps/app** | ✅ TAK + Source Maps | Kluczowe - debugowanie błędów produkcyjnych |
+| **apps/landing2** | ✅ TAK (bez source maps) | Podstawowe error tracking |
+| **apps/landing** | ❌ NIE | Starszy landing |
+
+### Koszty (Free Tier)
+
+| Zasób | Limit Free Tier |
+|-------|-----------------|
+| Exceptions | 100,000/miesiąc |
+
+---
+
 ## Implementation Plan
 
 ### Phase 1: Session Replay (Podstawowe)
@@ -237,13 +413,24 @@ session_recording: {
    - PopupWidget (formularz kontaktowy)
    - Newsletter signup
 
-### Phase 2: Enhanced Features
+### Phase 2: Error Tracking
+
+**Pliki do modyfikacji:**
+
+1. `packages/analytics/package.json` - aktualizacja posthog-js do v1.210.0+
+2. `packages/analytics/src/client.ts` - dodanie `capture_exceptions: true`
+3. `packages/analytics/src/error-boundary.tsx` - NOWY plik React Error Boundary
+4. `packages/analytics/src/index.ts` - eksport Error Boundary
+5. `apps/app/next.config.ts` - konfiguracja source maps upload
+6. `apps/app/.env.local` - dodanie POSTHOG_PERSONAL_API_KEY i POSTHOG_ENV_ID
+
+### Phase 3: Enhanced Features
 
 1. **Console recording** - włączenie w config
 2. **Network recording** - włączenie bez body/headers
 3. **Web Vitals** - włączenie capture_performance
 
-### Phase 3: Dashboard Setup (PostHog UI)
+### Phase 4: Dashboard Setup (PostHog UI)
 
 1. Ustawienie sampling dla landing2 (50%)
 2. Konfiguracja retention period
@@ -367,6 +554,7 @@ export function initAnalytics() {
 |-------|-----------------|-------|
 | Session recordings | 5,000/miesiąc | Wystarczy z 50% sampling |
 | Events | 1,000,000/miesiąc | ✅ W limicie |
+| **Exceptions** | 100,000/miesiąc | ✅ Error tracking |
 | Web Analytics | Unlimited | ✅ Bez limitu |
 
 ### Rekomendacje dla optymalizacji:
@@ -386,16 +574,27 @@ export function initAnalytics() {
 - [ ] Przetestować nagrania w development
 - [ ] Zweryfikować maskowanie wrażliwych danych
 
-### Phase 2 - Enhanced Features
+### Phase 2 - Error Tracking
+- [ ] Zaktualizować `posthog-js` do v1.210.0+ w packages/analytics
+- [ ] Dodać `capture_exceptions: true` do client.ts
+- [ ] Stworzyć `AnalyticsErrorBoundary` component
+- [ ] Zainstalować `@posthog/nextjs-config` w apps/app
+- [ ] Skonfigurować source maps upload w next.config.ts
+- [ ] Dodać POSTHOG_PERSONAL_API_KEY do env
+- [ ] Włączyć Exception autocapture w PostHog Dashboard
+- [ ] Przetestować error tracking
+
+### Phase 3 - Enhanced Features
 - [ ] Włączyć Console recording
 - [ ] Włączyć Network recording (bez headers/body)
 - [ ] Włączyć Web Vitals tracking
 - [ ] Ustawić sampling w PostHog Dashboard
 
-### Phase 3 - Verification
+### Phase 4 - Verification
 - [ ] Sprawdzić nagrania w PostHog Dashboard
+- [ ] Sprawdzić Error Tracking w PostHog Dashboard
 - [ ] Zweryfikować privacy controls
-- [ ] Przetestować korelację nagrań z eventami
+- [ ] Przetestować korelację nagrań z eventami i błędami
 - [ ] Dokumentacja wewnętrzna
 
 ---
@@ -407,6 +606,10 @@ export function initAnalytics() {
 - [How to Control Which Sessions You Record](https://posthog.com/docs/session-replay/how-to-control-which-sessions-you-record)
 - [Web Analytics](https://posthog.com/docs/web-analytics)
 - [PostHog Cloud EU](https://posthog.com/blog/posthog-cloud-eu)
+- [Error Tracking Overview](https://posthog.com/docs/error-tracking)
+- [Exception Capture](https://posthog.com/docs/error-tracking/capture)
+- [Next.js Error Tracking Installation](https://posthog.com/docs/error-tracking/installation/nextjs)
+- [Source Maps Upload for Next.js](https://posthog.com/docs/error-tracking/upload-source-maps/nextjs)
 
 ---
 
@@ -415,12 +618,13 @@ export function initAnalytics() {
 | Funkcja | apps/app | apps/landing2 | apps/landing |
 |---------|----------|---------------|--------------|
 | Session Replay | ✅ 100% | ✅ 50% sampling | ❌ |
+| **Error Tracking** | ✅ + Source Maps | ✅ (basic) | ❌ |
 | Console Recording | ✅ | ❌ | ❌ |
 | Network Recording | ✅ (bez body) | ❌ | ❌ |
 | Web Analytics | ✅ Auto | ✅ Auto | ✅ Auto |
 | Web Vitals | ✅ | ✅ | ❌ |
 
 **Uzasadnienie:**
-- **apps/app**: Główna aplikacja, wszystkie funkcje debugowania potrzebne
-- **apps/landing2**: Session replay dla analizy konwersji, reszta niepotrzebna
+- **apps/app**: Główna aplikacja, wszystkie funkcje debugowania potrzebne + source maps dla czytelnych stack traces
+- **apps/landing2**: Session replay dla analizy konwersji + basic error tracking
 - **apps/landing**: Starszy landing, tylko podstawowe analytics
