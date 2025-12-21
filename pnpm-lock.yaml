@@ -424,7 +424,7 @@ importers:
         specifier: ^14.0.0 || ^15.0.0
         version: 15.5.9(react-dom@19.2.1)(react@19.2.1)
       posthog-js:
-        specifier: ^1.194.4
+        specifier: ^1.210.0
         version: 1.306.1
       posthog-node:
         specifier: ^4.3.3
