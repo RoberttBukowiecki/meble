@@ -18,11 +18,11 @@ Pakiet `@meble/analytics` jest już zaimplementowany z:
 
 | Funkcja | Opis | Priorytet |
 |---------|------|-----------|
-| Session Replay | Nagrywanie sesji użytkowników | 🔴 Wysoki |
-| **Error Tracking** | Automatyczne przechwytywanie błędów JS | 🔴 Wysoki |
-| Web Analytics | Dashboard GA-like z metrykami ruchu | 🟢 Automatyczne |
-| Console Log Recording | Przechwytywanie logów konsoli | 🟡 Średni |
-| Network Recording | Nagrywanie requestów sieciowych | 🟡 Średni |
+| Session Replay | Nagrywanie sesji użytkowników | **HIGH** |
+| **Error Tracking** | Automatyczne przechwytywanie błędów JS | **HIGH** |
+| Web Analytics | Dashboard GA-like z metrykami ruchu | **AUTO** |
+| Console Log Recording | Przechwytywanie logów konsoli | **MEDIUM** |
+| Network Recording | Nagrywanie requestów sieciowych | **MEDIUM** |
 
 ---
 
@@ -46,27 +46,20 @@ posthog.init(POSTHOG_KEY, {
   capture_pageleave: true,
   persistence: 'localStorage+cookie',
 
-  // Session Replay - NOWE
-  disable_session_recording: false, // domyślnie włączone
+  // Session Replay - NEW
+  disable_session_recording: false, // enabled by default
   session_recording: {
     // Privacy controls
-    maskAllInputs: true,           // Maskuj wszystkie inputy (hasła, emaile)
-    maskTextSelector: '.ph-mask',  // Maskuj elementy z tą klasą CSS
-    blockSelector: '.ph-no-capture', // Nie nagrywaj elementów z tą klasą
+    maskAllInputs: true,           // Mask all inputs (passwords, emails)
+    maskTextSelector: '.ph-mask',  // Mask elements with this CSS class
+    blockSelector: '.ph-no-capture', // Don't record elements with this class
 
     // Performance
     recordCrossOriginIframes: false,
-
-    // Console & Network (opcjonalne)
-    recordConsole: true,           // Nagrywaj console.log/error
-    recordNetwork: {
-      recordHeaders: false,        // Nie nagrywaj headerów (bezpieczeństwo)
-      recordBody: false,           // Nie nagrywaj body requestów
-    },
   },
 
   loaded: (ph) => {
-    // Istniejący kod super properties...
+    // Existing super properties code...
   },
 });
 ```
@@ -76,10 +69,10 @@ posthog.init(POSTHOG_KEY, {
 Dla wrażliwych elementów dodaj klasy CSS:
 
 ```html
-<!-- Całkowicie ukryj element w nagraniu -->
-<div class="ph-no-capture">Wrażliwe dane</div>
+<!-- Completely hide element in recording -->
+<div class="ph-no-capture">Sensitive data</div>
 
-<!-- Zamaskuj tekst -->
+<!-- Mask text content -->
 <span class="ph-mask">email@example.com</span>
 ```
 
@@ -167,11 +160,13 @@ Przydatne do:
 
 ### Konfiguracja
 
+> **Status:** Planned - not yet implemented due to SDK type limitations.
+
 ```typescript
 session_recording: {
   recordConsole: true,
   consoleLogRecordingConfig: {
-    level: ['log', 'warn', 'error'], // Które poziomy nagrywać
+    level: ['log', 'warn', 'error'], // Which levels to record
   },
 }
 ```
@@ -180,8 +175,8 @@ session_recording: {
 
 | App | Rekomendacja |
 |-----|--------------|
-| apps/app | ✅ TAK - dla debugowania |
-| apps/landing2 | ⚠️ Opcjonalnie |
+| apps/app | Planned |
+| apps/landing2 | No |
 
 ---
 
@@ -195,30 +190,32 @@ Nagrywanie requestów HTTP/fetch podczas sesji. Pozwala:
 
 ### Konfiguracja
 
+> **Status:** Planned - not yet implemented due to SDK type limitations.
+
 ```typescript
 session_recording: {
   recordNetwork: {
-    recordHeaders: false,  // NIE nagrywaj headerów (tokeny!)
-    recordBody: false,     // NIE nagrywaj body (dane wrażliwe!)
-    recordInitiator: true, // Skąd request został wywołany
+    recordHeaders: false,  // Don't record headers (tokens!)
+    recordBody: false,     // Don't record body (sensitive data!)
+    recordInitiator: true, // Where request was initiated from
   },
 }
 ```
 
 ### Security considerations
 
-**⚠️ WAŻNE:** Nigdy nie nagrywaj:
+**IMPORTANT:** Never record:
 - Authorization headers
 - Cookie values
-- Request/response body z danymi osobowymi
+- Request/response body with personal data
 - API keys
 
 ### Gdzie implementować?
 
 | App | Rekomendacja |
 |-----|--------------|
-| apps/app | ✅ TAK (bez body/headers) |
-| apps/landing2 | ❌ NIE - brak potrzeby |
+| apps/app | Planned (without body/headers) |
+| apps/landing2 | No |
 
 ---
 
@@ -618,14 +615,16 @@ export function initAnalytics() {
 
 | Funkcja | apps/app | apps/landing2 | apps/landing |
 |---------|----------|---------------|--------------|
-| Session Replay | ✅ 100% | ✅ 50% sampling | ❌ |
-| **Error Tracking** | ✅ + Source Maps | ✅ (basic) | ❌ |
-| Console Recording | ✅ | ❌ | ❌ |
-| Network Recording | ✅ (bez body) | ❌ | ❌ |
-| Web Analytics | ✅ Auto | ✅ Auto | ✅ Auto |
-| Web Vitals | ✅ | ✅ | ❌ |
+| Session Replay | Done (100%) | Done (50% sampling) | No |
+| **Error Tracking** | Done + Source Maps | Done (basic) | No |
+| Console Recording | Planned | No | No |
+| Network Recording | Planned | No | No |
+| Web Analytics | Auto | Auto | Auto |
+| Web Vitals | Done | Done | No |
 
 **Uzasadnienie:**
 - **apps/app**: Główna aplikacja, wszystkie funkcje debugowania potrzebne + source maps dla czytelnych stack traces
 - **apps/landing2**: Session replay dla analizy konwersji + basic error tracking
 - **apps/landing**: Starszy landing, tylko podstawowe analytics
+
+> **Note:** Console Recording and Network Recording are planned but not yet implemented due to SDK type limitations.

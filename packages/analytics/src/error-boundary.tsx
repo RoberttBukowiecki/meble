@@ -1,17 +1,16 @@
 'use client';
 
-import { Component, ReactNode } from 'react';
+import { Component, ErrorInfo, ReactNode } from 'react';
 import { posthog } from './client';
 
 interface AnalyticsErrorBoundaryProps {
   children: ReactNode;
   fallback?: ReactNode;
-  onError?: (error: Error, errorInfo: React.ErrorInfo) => void;
+  onError?: (error: Error, errorInfo: ErrorInfo) => void;
 }
 
 interface AnalyticsErrorBoundaryState {
   hasError: boolean;
-  error: Error | null;
 }
 
 /**
@@ -31,14 +30,14 @@ export class AnalyticsErrorBoundary extends Component<
 > {
   constructor(props: AnalyticsErrorBoundaryProps) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError(error: Error): AnalyticsErrorBoundaryState {
-    return { hasError: true, error };
+  static getDerivedStateFromError(): AnalyticsErrorBoundaryState {
+    return { hasError: true };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // Capture exception to PostHog with component stack
     if (typeof posthog?.captureException === 'function') {
       posthog.captureException(error, {
