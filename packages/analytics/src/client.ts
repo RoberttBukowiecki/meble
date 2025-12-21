@@ -212,7 +212,16 @@ export function initAnalytics() {
 
       // Performance
       recordCrossOriginIframes: false,
-    },
+
+      // Console recording
+      consoleLogRecordingEnabled: true,
+
+      // Network recording
+      networkPayloadCapture: {
+        recordHeaders: false,
+        recordBody: false,
+      },
+    } as Record<string, unknown>,
 
     // === ERROR TRACKING ===
     capture_exceptions: true,

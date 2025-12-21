@@ -575,18 +575,17 @@ export function initAnalytics() {
 - [x] Zaktualizować `posthog-js` do v1.210.0+ w packages/analytics
 - [x] Dodać `capture_exceptions: true` do client.ts
 - [x] Stworzyć `AnalyticsErrorBoundary` component
-- [ ] Zainstalować `@posthog/nextjs-config` w apps/app (opcjonalne - source maps)
-- [ ] Skonfigurować source maps upload w next.config.ts (opcjonalne)
-- [ ] Dodać POSTHOG_PERSONAL_API_KEY do env (opcjonalne - source maps)
+- [x] Zainstalować `@posthog/nextjs-config` w apps/app
+- [x] Skonfigurować source maps upload w next.config.js
+- [x] Dodać POSTHOG_PERSONAL_API_KEY do .env.local.example
 - [ ] Włączyć Exception autocapture w PostHog Dashboard
 - [ ] Przetestować error tracking
 
 ### Phase 3 - Enhanced Features
 - [x] Włączyć Web Vitals tracking (`capture_performance: true`)
+- [x] Włączyć Console recording (`consoleLogRecordingEnabled: true`)
+- [x] Włączyć Network recording (`networkPayloadCapture`)
 - [ ] Ustawić sampling w PostHog Dashboard
-
-> **Uwaga:** Console recording i Network recording zostały usunięte z implementacji
-> ze względu na brak wsparcia w typach SDK. Mogą być włączone w przyszłych wersjach.
 
 ### Phase 4 - Verification
 - [ ] Sprawdzić nagrania w PostHog Dashboard
@@ -617,8 +616,8 @@ export function initAnalytics() {
 |---------|----------|---------------|--------------|
 | Session Replay | Done (100%) | Done (50% sampling) | No |
 | **Error Tracking** | Done + Source Maps | Done (basic) | No |
-| Console Recording | Planned | No | No |
-| Network Recording | Planned | No | No |
+| Console Recording | Done | Done | No |
+| Network Recording | Done (no body/headers) | Done | No |
 | Web Analytics | Auto | Auto | Auto |
 | Web Vitals | Done | Done | No |
 
@@ -626,5 +625,3 @@ export function initAnalytics() {
 - **apps/app**: Główna aplikacja, wszystkie funkcje debugowania potrzebne + source maps dla czytelnych stack traces
 - **apps/landing2**: Session replay dla analizy konwersji + basic error tracking
 - **apps/landing**: Starszy landing, tylko podstawowe analytics
-
-> **Note:** Console Recording and Network Recording are planned but not yet implemented due to SDK type limitations.
