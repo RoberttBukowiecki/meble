@@ -87,7 +87,6 @@ export async function GET(request: NextRequest) {
     }
 
     // Format response based on requested metric
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const formattedData = ((analytics || []) as any[]).map(day => ({
       date: day.date,
       revenue: {

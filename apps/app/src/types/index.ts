@@ -16,7 +16,7 @@ export type {
 } from './shape';
 
 // Material types
-export type { MaterialCategory, Material } from './material';
+export type { MaterialCategory, Material, MaterialTexture } from './material';
 
 // Edge banding types
 export type {

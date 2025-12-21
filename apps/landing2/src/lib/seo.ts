@@ -203,8 +203,8 @@ export function generateSoftwareApplicationSchema(locale: SupportedLocale) {
     },
     description: SEO_METADATA[locale].description,
     url: SITE_URL,
-    image: `${SITE_URL}/img/hero.png`,
-    screenshot: `${SITE_URL}/img/benefit-one.png`,
+    image: `${SITE_URL}/img/hero.webp`,
+    screenshot: `${SITE_URL}/img/benefit-one.webp`,
     featureList: isPolish
       ? [
           'Projektowanie mebli w 3D',

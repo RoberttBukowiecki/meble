@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
     if (userId) {
       cartQuery = cartQuery.eq('user_id', userId);
     } else {
-      cartQuery = cartQuery.eq('guest_session_id', guestSessionId);
+      cartQuery = cartQuery.eq('guest_session_id', guestSessionId!);
     }
 
     const { data: cartItems, error: cartError } = await cartQuery;
@@ -131,7 +131,8 @@ export async function POST(request: NextRequest) {
       }
 
       // Check stock
-      if (product.track_inventory && product.stock_quantity < item.quantity) {
+      const stockQty = product.stock_quantity ?? 0;
+      if (product.track_inventory && stockQty < item.quantity) {
         return NextResponse.json(
           {
             success: false,
@@ -263,7 +264,7 @@ export async function POST(request: NextRequest) {
     // Clear cart
     if (userId) {
       await supabase.from('cart_items').delete().eq('user_id', userId);
-    } else {
+    } else if (guestSessionId) {
       await supabase.from('cart_items').delete().eq('guest_session_id', guestSessionId);
     }
 

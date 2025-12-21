@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import Link from "next/link";
 import { setRequestLocale } from "next-intl/server";
 import { APP_NAME, COMPANY_INFO } from "@meble/constants";
 import { LegalLayout } from "@/components/LegalLayout";
@@ -198,9 +199,9 @@ export default async function TermsPage({ params }: Props) {
         <p className="text-gray-600 dark:text-gray-300">
           Administratorem danych osobowych jest {COMPANY_INFO.legalName}. Szczegółowe informacje
           dotyczące przetwarzania danych osobowych znajdują się w{" "}
-          <a href="/privacy" className="text-indigo-600 dark:text-indigo-400 hover:underline">
+          <Link href="/privacy" className="text-indigo-600 dark:text-indigo-400 hover:underline">
             Polityce Prywatności
-          </a>.
+          </Link>.
         </p>
       </section>
 

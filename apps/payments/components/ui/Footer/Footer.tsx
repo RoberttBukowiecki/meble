@@ -99,6 +99,7 @@ export default function Footer() {
         <div className="flex items-center">
           <span className="text-white">Crafted by</span>
           <a href="https://vercel.com" aria-label="Vercel.com Link">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/vercel.svg"
               alt="Vercel.com Logo"

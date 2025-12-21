@@ -1033,6 +1033,10 @@ export const CUTOUT_PRESETS: Record<CutoutPresetType, {
     labelPl: 'Dozownik mydła (Ø28)',
     dimensions: { diameter: 28 },
   },
+  CUSTOM: {
+    labelPl: 'Wymiar własny',
+    dimensions: { width: 600, height: 400, radius: 10 }, // Default values, overridden by customCutout
+  },
 };
 
 /**

@@ -6,6 +6,7 @@
  */
 
 import { useRef, useCallback, useEffect } from 'react';
+import * as THREE from 'three';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Grid, SoftShadows } from '@react-three/drei';
 import { useSelectedFurnitureParts, useStore, useSelectedPart, useIsMultiSelectActive } from '@/lib/store';
@@ -14,7 +15,7 @@ import { Room3D } from './Room3D';
 import { RoomLighting } from './RoomLighting';
 import { FloorCeiling3D } from './FloorCeiling3D';
 import { CabinetLegs } from './Leg3D';
-import { getCabinetTransform } from '@/lib/store/utils';
+import { getCabinetBodyTransform } from '@/lib/store/utils';
 import { Button } from '@meble/ui';
 import { Camera, Move, RotateCw, Maximize2, PanelRight } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
@@ -28,6 +29,7 @@ import { PartTransformControls } from './PartTransformControls';
 import { PartResizeControls } from './PartResizeControls';
 import { MultiSelectTransformControls } from './MultiSelectTransformControls';
 import { MultiSelectResizeControls } from './MultiSelectResizeControls';
+import { CountertopPart3D } from './CountertopPart3D';
 import { SnapGuidesRenderer } from './SnapGuidesRenderer';
 import { SnapDebugRenderer } from './SnapDebugRenderer';
 import { DimensionRenderer } from './DimensionRenderer';
@@ -68,6 +70,9 @@ export function Scene({ onOpenMobileSidebar, isMobile }: SceneProps) {
     graphicsSettings,
     rooms,
     cabinets,
+    countertopGroups,
+    selectedFurnitureId,
+    transformingCabinetId,
   } = useStore(
       useShallow((state) => ({
         isTransforming: state.isTransforming,
@@ -91,6 +96,9 @@ export function Scene({ onOpenMobileSidebar, isMobile }: SceneProps) {
         graphicsSettings: state.graphicsSettings,
         rooms: state.rooms,
         cabinets: state.cabinets,
+        countertopGroups: state.countertopGroups,
+        selectedFurnitureId: state.selectedFurnitureId,
+        transformingCabinetId: state.transformingCabinetId,
       }))
     );
   const controlsRef = useRef<OrbitControlsType>(null);
@@ -286,16 +294,33 @@ export function Scene({ onOpenMobileSidebar, isMobile }: SceneProps) {
           ))}
 
           {/* Cabinet legs (rendered separately, not as Part) */}
-          {cabinets.filter(c => c.legs && c.legs.length > 0).map(cabinet => {
-            const cabinetParts = parts.filter(p => cabinet.partIds.includes(p.id));
-            if (cabinetParts.length === 0) return null;
-            const { center } = getCabinetTransform(cabinetParts);
-            return (
-              <group key={`legs-${cabinet.id}`} position={center.toArray()}>
-                <CabinetLegs legs={cabinet.legs!} />
-              </group>
-            );
-          })}
+          {/* Hide legs when cabinet is being transformed (preview shown instead) */}
+          {cabinets
+            .filter(c => c.legs && c.legs.length > 0 && c.id !== transformingCabinetId)
+            .map(cabinet => {
+              const cabinetParts = parts.filter(p => cabinet.partIds.includes(p.id));
+              if (cabinetParts.length === 0) return null;
+
+              const { center, rotation } = getCabinetBodyTransform(cabinetParts);
+              const euler = new THREE.Euler().setFromQuaternion(rotation, 'XYZ');
+
+              return (
+                <group
+                  key={`legs-${cabinet.id}`}
+                  position={[center.x, 0, center.z]}
+                  rotation={[euler.x, euler.y, euler.z]}
+                >
+                  <CabinetLegs legs={cabinet.legs!} />
+                </group>
+              );
+            })}
+
+          {/* Countertops for selected furniture */}
+          {countertopGroups
+            .filter(group => group.furnitureId === selectedFurnitureId)
+            .map(group => (
+              <CountertopPart3D key={group.id} group={group} />
+            ))}
 
           {/* Transform controls for cabinet groups (translate/rotate) */}
           {selectedCabinetId && (transformMode === 'translate' || transformMode === 'rotate') && (

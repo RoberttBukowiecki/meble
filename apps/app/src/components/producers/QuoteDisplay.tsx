@@ -6,6 +6,7 @@
 
 'use client';
 
+import { useMemo } from 'react';
 import { Button, Badge } from '@meble/ui';
 import {
   Clock,
@@ -58,12 +59,18 @@ export function QuoteDisplay({ quote, onAccept, onReject, isAccepting }: QuoteDi
     return `${(price / 100).toFixed(2)} zł`;
   };
 
-  const validUntilDate = new Date(quote.validUntil);
-  const isExpired = validUntilDate < new Date();
-  const hoursRemaining = Math.max(
-    0,
-    Math.floor((validUntilDate.getTime() - Date.now()) / (1000 * 60 * 60))
-  );
+  const { validUntilDate, isExpired, hoursRemaining } = useMemo(() => {
+    const validUntil = new Date(quote.validUntil);
+    const now = new Date();
+    return {
+      validUntilDate: validUntil,
+      isExpired: validUntil < now,
+      hoursRemaining: Math.max(
+        0,
+        Math.floor((validUntil.getTime() - now.getTime()) / (1000 * 60 * 60))
+      ),
+    };
+  }, [quote.validUntil]);
 
   return (
     <div className="rounded-lg border bg-card overflow-hidden">

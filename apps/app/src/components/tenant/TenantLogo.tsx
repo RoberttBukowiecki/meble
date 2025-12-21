@@ -33,6 +33,7 @@ export function TenantLogo({
   // If we have a logo, show it
   if (logoUrl) {
     return (
+      // eslint-disable-next-line @next/next/no-img-element
       <img
         src={logoUrl}
         alt={tenant?.name || 'Logo'}

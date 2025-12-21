@@ -111,13 +111,14 @@ export async function PATCH(
 
     // Check stock
     const product = cartItem.product;
-    if (product?.track_inventory && product.stock_quantity < quantity) {
+    const stockQty = product?.stock_quantity ?? 0;
+    if (product?.track_inventory && stockQty < quantity) {
       return NextResponse.json(
         {
           success: false,
           error: {
             code: 'OUT_OF_STOCK',
-            message: `Only ${product.stock_quantity} available`,
+            message: `Only ${stockQty} available`,
           },
         },
         { status: 400 }

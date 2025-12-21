@@ -13,6 +13,7 @@ import { ThreeEvent } from '@react-three/fiber';
 import { Edges } from '@react-three/drei';
 import { useShallow } from 'zustand/react/shallow';
 import { useMaterial, useStore, useIsPartHidden } from '@/lib/store';
+import { useMaterialTexture } from '@/hooks';
 import { PART_CONFIG, MATERIAL_CONFIG } from '@/lib/config';
 import type { Part, ShapeParamsLShape, ShapeParamsTrapezoid, ShapeParamsPolygon } from '@/types';
 import { isPartColliding, isGroupColliding, getGroupId } from '@/lib/collisionDetection';
@@ -167,6 +168,7 @@ export function Part3D({ part }: Part3DProps) {
   );
 
   const material = useMaterial(part.materialId);
+  const { diffuseMap, normalMap, roughness, metalness } = useMaterialTexture(material);
 
   // PERFORMANCE: Use optimized selector - only re-renders when THIS part's hidden status changes
   const isManuallyHidden = useIsPartHidden(part.id);
@@ -339,6 +341,10 @@ export function Part3D({ part }: Part3DProps) {
         {geometry}
         <meshStandardMaterial
           color={color}
+          map={diffuseMap}
+          normalMap={normalMap}
+          roughness={roughness}
+          metalness={metalness}
           emissive={getEmissiveColor()}
           emissiveIntensity={getEmissiveIntensity()}
         />

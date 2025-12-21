@@ -41,14 +41,19 @@ export const updateUserProfile = async (
     full_name?: string;
     display_name?: string;
     avatar_url?: string;
-    billing_address?: Record<string, unknown>;
+    billing_address?: string | object | null;
     preferred_locale?: string;
     newsletter_subscribed?: boolean;
   }
 ) => {
   const { data, error } = await supabaseAdmin
     .from('profiles')
-    .update(updates)
+    .update({
+      ...updates,
+      billing_address: updates.billing_address
+        ? JSON.stringify(updates.billing_address)
+        : undefined,
+    })
     .eq('id', userId)
     .select()
     .single();
@@ -252,40 +257,3 @@ export const removeUserAdmin = async (userId: string) => {
   return data;
 };
 
-// ============================================================================
-// DEPRECATED STRIPE FUNCTIONS (stubs for backwards compatibility)
-// ============================================================================
-
-/** @deprecated Stripe is not used - this function will throw */
-export const upsertProductRecord = async (_product: unknown) => {
-  throw new Error('Stripe integration has been removed. upsertProductRecord is deprecated.');
-};
-
-/** @deprecated Stripe is not used - this function will throw */
-export const upsertPriceRecord = async (_price: unknown) => {
-  throw new Error('Stripe integration has been removed. upsertPriceRecord is deprecated.');
-};
-
-/** @deprecated Stripe is not used - this function will throw */
-export const deleteProductRecord = async (_product: unknown) => {
-  throw new Error('Stripe integration has been removed. deleteProductRecord is deprecated.');
-};
-
-/** @deprecated Stripe is not used - this function will throw */
-export const deletePriceRecord = async (_price: unknown) => {
-  throw new Error('Stripe integration has been removed. deletePriceRecord is deprecated.');
-};
-
-/** @deprecated Stripe is not used - this function will throw */
-export const createOrRetrieveCustomer = async (_params: { email: string; uuid: string }) => {
-  throw new Error('Stripe integration has been removed. createOrRetrieveCustomer is deprecated.');
-};
-
-/** @deprecated Stripe is not used - this function will throw */
-export const manageSubscriptionStatusChange = async (
-  _subscriptionId: string,
-  _customerId: string,
-  _createAction?: boolean
-) => {
-  throw new Error('Stripe integration has been removed. manageSubscriptionStatusChange is deprecated.');
-};

@@ -99,6 +99,7 @@ export async function GET(request: NextRequest) {
       { total: number; used: number }
     >();
     credits?.forEach((c) => {
+      if (!c.user_id) return;
       const existing = creditsMap.get(c.user_id) || { total: 0, used: 0 };
       creditsMap.set(c.user_id, {
         total: existing.total + c.credits_total,
@@ -108,6 +109,7 @@ export async function GET(request: NextRequest) {
 
     const paymentsMap = new Map<string, number>();
     paymentCounts?.forEach((p) => {
+      if (!p.user_id) return;
       paymentsMap.set(p.user_id, (paymentsMap.get(p.user_id) || 0) + 1);
     });
 

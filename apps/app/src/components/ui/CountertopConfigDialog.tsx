@@ -12,7 +12,7 @@
  * - "Apply to all" functionality for batch updates
  */
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -36,6 +36,7 @@ import {
 import { Layers, AlertTriangle, Check } from 'lucide-react';
 import type { CabinetCountertopConfig, CutoutPresetType } from '@/types';
 import { COUNTERTOP_DEFAULTS, COUNTERTOP_LIMITS } from '@/lib/config';
+import { useCountertopMaterials } from './CountertopMaterialSelect';
 
 // ============================================================================
 // Cutout Preset Options
@@ -43,18 +44,24 @@ import { COUNTERTOP_DEFAULTS, COUNTERTOP_LIMITS } from '@/lib/config';
 
 const CUTOUT_PRESET_OPTIONS: { value: CutoutPresetType | 'NONE'; label: string; description?: string }[] = [
   { value: 'NONE', label: 'Brak', description: 'Bez wycięcia' },
-  { value: 'SINK_STANDARD', label: 'Zlewozmywak standardowy', description: '780 × 480 mm' },
-  { value: 'SINK_SMALL', label: 'Zlewozmywak mały', description: '580 × 430 mm' },
+  { value: 'SINK_STANDARD', label: 'Zlewozmywak standardowy', description: '780 × 480 mm, R10' },
+  { value: 'SINK_SMALL', label: 'Zlewozmywak mały', description: '580 × 430 mm, R10' },
   { value: 'SINK_ROUND', label: 'Zlewozmywak okrągły', description: 'Ø 450 mm' },
-  { value: 'COOKTOP_60', label: 'Płyta grzewcza 60cm', description: '560 × 490 mm' },
-  { value: 'COOKTOP_80', label: 'Płyta grzewcza 80cm', description: '750 × 490 mm' },
+  { value: 'COOKTOP_60', label: 'Płyta grzewcza 60cm', description: '560 × 490 mm, R5' },
+  { value: 'COOKTOP_80', label: 'Płyta grzewcza 80cm', description: '760 × 520 mm, R5' },
+  { value: 'CUSTOM', label: 'Wymiar własny', description: 'Podaj wymiary i promień' },
 ];
 
-const THICKNESS_OPTIONS = [
-  { value: 28, label: '28 mm' },
-  { value: 38, label: '38 mm (standard)' },
-  { value: 40, label: '40 mm' },
+// Standard corner radii for CNC cutouts (based on industry standards)
+const CORNER_RADIUS_OPTIONS = [
+  { value: 5, label: '5 mm (płyty grzewcze)' },
+  { value: 8, label: '8 mm' },
+  { value: 10, label: '10 mm (standard zlewy)' },
+  { value: 15, label: '15 mm' },
+  { value: 20, label: '20 mm' },
+  { value: 25, label: '25 mm (duże zlewy)' },
 ];
+
 
 // ============================================================================
 // Props
@@ -71,6 +78,10 @@ interface CountertopConfigDialogProps {
   onApplyToAll?: (config: CabinetCountertopConfig) => void;
   /** Number of other kitchen cabinets that would be affected */
   otherKitchenCabinetsCount?: number;
+  /** Available countertop materials */
+  countertopMaterials?: Array<{ id: string; name: string; thickness: number }>;
+  /** Default countertop material ID */
+  defaultMaterialId?: string;
 }
 
 // ============================================================================
@@ -85,16 +96,30 @@ export function CountertopConfigDialog({
   isExistingCabinet = false,
   onApplyToAll,
   otherKitchenCabinetsCount = 0,
+  countertopMaterials: propMaterials = [],
+  defaultMaterialId: propDefaultMaterialId,
 }: CountertopConfigDialogProps) {
   const [showApplyAllConfirm, setShowApplyAllConfirm] = useState(false);
+
+  // Get countertop materials from store (fallback if not passed via props)
+  const { countertopMaterials: hookMaterials, defaultMaterialId: hookDefaultMaterialId } = useCountertopMaterials();
+
+  // Use props if provided, otherwise use hook data
+  const countertopMaterials = useMemo(() => {
+    if (propMaterials.length > 0) return propMaterials;
+    return hookMaterials.map(m => ({ id: m.id, name: m.name, thickness: m.thickness }));
+  }, [propMaterials, hookMaterials]);
+
+  const defaultMaterialId = propDefaultMaterialId || hookDefaultMaterialId;
 
   // Local state for editing
   const [localConfig, setLocalConfig] = useState<CabinetCountertopConfig>(() => ({
     hasCountertop: config?.hasCountertop ?? true,
+    materialId: config?.materialId ?? defaultMaterialId,
     overhangOverride: config?.overhangOverride,
     excludeFromGroup: config?.excludeFromGroup ?? false,
     cutoutPreset: config?.cutoutPreset,
-    thicknessOverride: config?.thicknessOverride,
+    customCutout: config?.customCutout ?? { width: 600, height: 400, radius: 10 },
   }));
 
   // Reset local state when dialog opens
@@ -102,10 +127,11 @@ export function CountertopConfigDialog({
     if (newOpen) {
       setLocalConfig({
         hasCountertop: config?.hasCountertop ?? true,
+        materialId: config?.materialId ?? defaultMaterialId,
         overhangOverride: config?.overhangOverride,
         excludeFromGroup: config?.excludeFromGroup ?? false,
         cutoutPreset: config?.cutoutPreset,
-        thicknessOverride: config?.thicknessOverride,
+        customCutout: config?.customCutout ?? { width: 600, height: 400, radius: 10 },
       });
       setShowApplyAllConfirm(false);
     }
@@ -175,31 +201,29 @@ export function CountertopConfigDialog({
             <>
               <Separator />
 
-              {/* Thickness Override */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Grubość blatu</Label>
-                <Select
-                  value={localConfig.thicknessOverride?.toString() || 'default'}
-                  onValueChange={(val) =>
-                    setLocalConfig(prev => ({
-                      ...prev,
-                      thicknessOverride: val === 'default' ? undefined : parseInt(val),
-                    }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Domyślna (z grupy)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="default">Domyślna (z grupy)</SelectItem>
-                    {THICKNESS_OPTIONS.map(opt => (
-                      <SelectItem key={opt.value} value={opt.value.toString()}>
-                        {opt.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* Material Selection */}
+              {countertopMaterials.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Materiał blatu</Label>
+                  <Select
+                    value={localConfig.materialId || defaultMaterialId || ''}
+                    onValueChange={(val) =>
+                      setLocalConfig(prev => ({ ...prev, materialId: val }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Wybierz materiał" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {countertopMaterials.map(mat => (
+                        <SelectItem key={mat.id} value={mat.id}>
+                          {mat.name} ({mat.thickness}mm)
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               {/* Cutout Preset */}
               <div className="space-y-2">
@@ -230,6 +254,86 @@ export function CountertopConfigDialog({
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Custom Cutout Dimensions - only show when CUSTOM preset selected */}
+              {localConfig.cutoutPreset === 'CUSTOM' && (
+                <div className="space-y-3 p-3 rounded-lg border bg-muted/30">
+                  <Label className="text-xs text-muted-foreground">Wymiary wycięcia (mm)</Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Szerokość</Label>
+                      <NumberInput
+                        value={localConfig.customCutout?.width ?? 600}
+                        onChange={(val) =>
+                          setLocalConfig(prev => ({
+                            ...prev,
+                            customCutout: {
+                              ...prev.customCutout,
+                              width: val,
+                              height: prev.customCutout?.height ?? 400,
+                              radius: prev.customCutout?.radius ?? 10,
+                            },
+                          }))
+                        }
+                        min={100}
+                        max={2000}
+                        className="h-8"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Głębokość</Label>
+                      <NumberInput
+                        value={localConfig.customCutout?.height ?? 400}
+                        onChange={(val) =>
+                          setLocalConfig(prev => ({
+                            ...prev,
+                            customCutout: {
+                              ...prev.customCutout,
+                              width: prev.customCutout?.width ?? 600,
+                              height: val,
+                              radius: prev.customCutout?.radius ?? 10,
+                            },
+                          }))
+                        }
+                        min={100}
+                        max={1000}
+                        className="h-8"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Promień R</Label>
+                      <Select
+                        value={String(localConfig.customCutout?.radius ?? 10)}
+                        onValueChange={(val) =>
+                          setLocalConfig(prev => ({
+                            ...prev,
+                            customCutout: {
+                              ...prev.customCutout,
+                              width: prev.customCutout?.width ?? 600,
+                              height: prev.customCutout?.height ?? 400,
+                              radius: parseInt(val),
+                            },
+                          }))
+                        }
+                      >
+                        <SelectTrigger className="h-8">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {CORNER_RADIUS_OPTIONS.map(opt => (
+                            <SelectItem key={opt.value} value={String(opt.value)}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">
+                    Promień naroży: 5-10mm dla płyt grzewczych, 10-25mm dla zlewów
+                  </p>
+                </div>
+              )}
 
               {/* Overhang Override */}
               <div className="space-y-3">
@@ -378,11 +482,7 @@ export function getCountertopSummary(config?: CabinetCountertopConfig): string {
 
   const parts: string[] = [];
 
-  if (config.thicknessOverride) {
-    parts.push(`${config.thicknessOverride}mm`);
-  }
-
-  if (config.cutoutPreset) {
+  if (config.cutoutPreset && config.cutoutPreset !== 'NONE') {
     const preset = CUTOUT_PRESET_OPTIONS.find(p => p.value === config.cutoutPreset);
     if (preset) {
       parts.push(preset.label);

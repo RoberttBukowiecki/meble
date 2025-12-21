@@ -15,20 +15,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@meble/ui';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@meble/ui';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@meble/ui';
 import type { CountertopSegment, EdgeBandingOption, EdgeId } from '@/types';
 import { EDGE_BANDING_OPTIONS } from './constants';
 
@@ -59,69 +45,72 @@ export function SegmentTable({ segments, groupId }: SegmentTableProps) {
   }
 
   return (
-    <div className="overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow className="hover:bg-transparent">
-            <TableHead className="text-xs font-medium h-8 px-2">Element</TableHead>
-            <TableHead className="text-xs font-medium h-8 px-2 text-right w-20">Długość</TableHead>
-            <TableHead className="text-xs font-medium h-8 px-2 text-right w-20">Szerokość</TableHead>
-            <TableHead className="text-xs font-medium h-8 px-2 text-center w-16">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger className="cursor-help">Usł.</TooltipTrigger>
-                  <TooltipContent>
-                    <p>Usłojenie wzdłuż długości</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </TableHead>
-            <TableHead className="text-xs font-medium h-8 px-2 text-center" colSpan={4}>
-              Obrzeża (a/b/c/d)
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {segments.map((segment) => (
-            <TableRow key={segment.id} className="hover:bg-muted/30">
-              <TableCell className="py-1.5 px-2">
-                <span className="text-sm font-medium">{segment.name}</span>
-              </TableCell>
-              <TableCell className="py-1.5 px-2">
-                <NumberInput
-                  value={segment.length}
-                  onChange={(val) =>
-                    updateSegmentDimensions(groupId, segment.id, { length: val })
-                  }
-                  min={100}
-                  max={4100}
-                  step={1}
-                  className="h-7 w-20 text-xs text-right"
-                />
-              </TableCell>
-              <TableCell className="py-1.5 px-2">
-                <NumberInput
-                  value={segment.width}
-                  onChange={(val) =>
-                    updateSegmentDimensions(groupId, segment.id, { width: val })
-                  }
-                  min={100}
-                  max={1200}
-                  step={1}
-                  className="h-7 w-20 text-xs text-right"
-                />
-              </TableCell>
-              <TableCell className="py-1.5 px-2 text-center">
-                <Checkbox
-                  checked={segment.grainAlongLength}
-                  onCheckedChange={(checked) =>
-                    updateSegmentGrain(groupId, segment.id, !!checked)
-                  }
-                  className="h-4 w-4"
-                />
-              </TableCell>
+    <div className="space-y-3">
+      {segments.map((segment) => (
+        <div
+          key={segment.id}
+          className="border rounded-lg p-3 space-y-3 bg-muted/20"
+        >
+          {/* Segment name */}
+          <div className="text-sm font-medium">{segment.name}</div>
+
+          {/* Dimensions row */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <label className="text-[10px] text-muted-foreground">Długość (mm)</label>
+              <NumberInput
+                value={segment.length}
+                onChange={(val) =>
+                  updateSegmentDimensions(groupId, segment.id, { length: val })
+                }
+                min={100}
+                max={4100}
+                step={1}
+                className="h-7 text-xs"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] text-muted-foreground">Szerokość (mm)</label>
+              <NumberInput
+                value={segment.width}
+                onChange={(val) =>
+                  updateSegmentDimensions(groupId, segment.id, { width: val })
+                }
+                min={100}
+                max={1200}
+                step={1}
+                className="h-7 text-xs"
+              />
+            </div>
+          </div>
+
+          {/* Grain checkbox */}
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id={`grain-${segment.id}`}
+              checked={segment.grainAlongLength}
+              onCheckedChange={(checked) =>
+                updateSegmentGrain(groupId, segment.id, !!checked)
+              }
+              className="h-4 w-4"
+            />
+            <label
+              htmlFor={`grain-${segment.id}`}
+              className="text-xs text-muted-foreground cursor-pointer"
+            >
+              Usłojenie wzdłuż długości
+            </label>
+          </div>
+
+          {/* Edge banding row */}
+          <div className="space-y-1">
+            <label className="text-[10px] text-muted-foreground">Obrzeża</label>
+            <div className="grid grid-cols-4 gap-1">
               {(['a', 'b', 'c', 'd'] as EdgeId[]).map((edge) => (
-                <TableCell key={edge} className="py-1.5 px-0.5">
+                <div key={edge} className="space-y-0.5">
+                  <span className="text-[9px] text-muted-foreground uppercase block text-center">
+                    {edge}
+                  </span>
                   <Select
                     value={segment.edgeBanding[edge]}
                     onValueChange={(val) =>
@@ -133,7 +122,7 @@ export function SegmentTable({ segments, groupId }: SegmentTableProps) {
                       )
                     }
                   >
-                    <SelectTrigger className="h-7 w-16 text-[10px] px-1">
+                    <SelectTrigger className="h-6 text-[10px] px-1">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -144,12 +133,12 @@ export function SegmentTable({ segments, groupId }: SegmentTableProps) {
                       ))}
                     </SelectContent>
                   </Select>
-                </TableCell>
+                </div>
               ))}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+            </div>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

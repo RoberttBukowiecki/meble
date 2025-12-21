@@ -358,8 +358,11 @@ export function InteriorConfigDialog({
     normalizeConfig(config)
   );
 
-  // Get the top-level children zones (for preview display)
-  const zones = localConfig.rootZone.children ?? [];
+  // Get the top-level children zones (for preview display) - memoized to maintain stable reference
+  const zones = useMemo(
+    () => localConfig.rootZone.children ?? [],
+    [localConfig.rootZone.children]
+  );
 
   const [selectedZoneId, setSelectedZoneId] = useState<string | null>(
     zones[0]?.id ?? null

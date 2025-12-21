@@ -69,6 +69,7 @@ export function ProducerCard({ producer, onSelect, selected }: ProducerCardProps
           {/* Logo */}
           <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center flex-shrink-0 overflow-hidden">
             {producer.logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={producer.logoUrl}
                 alt={producer.name}

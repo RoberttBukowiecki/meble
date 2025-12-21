@@ -3,7 +3,7 @@ import { useTranslations } from 'next-intl';
 import { useShallow } from 'zustand/react/shallow';
 import { useStore, useSelectedPart, useSelectedCabinet } from '@/lib/store';
 import { Button } from '@meble/ui';
-import { Plus, Download, Settings, List, Package, House, Database, Copy, Check, Layers } from 'lucide-react';
+import { Plus, Download, Settings, List, Package, House, Database, Copy, Check, Layers, Trash2 } from 'lucide-react';
 import { track, AnalyticsEvent } from '@meble/analytics';
 import { useIsAdmin } from '@/hooks';
 import { APP_NAME } from '@meble/constants';
@@ -53,6 +53,7 @@ export function Sidebar() {
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [copyDialogOpen, setCopyDialogOpen] = useState(false);
   const [justCopied, setJustCopied] = useState(false);
+  const [clearDataDialogOpen, setClearDataDialogOpen] = useState(false);
 
   // Check if we should reopen export dialog after returning from payment
   useEffect(() => {
@@ -139,6 +140,28 @@ export function Sidebar() {
     }
   };
 
+  const handleClearAllData = () => {
+    // Clear all localStorage keys related to the app
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (
+        key.startsWith('e-meble') ||
+        key.startsWith('e_meble') ||
+        key === 'partsTable.openGroups'
+      )) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+
+    // Clear all sessionStorage
+    sessionStorage.clear();
+
+    // Reload page to reset Zustand store
+    window.location.reload();
+  };
+
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
@@ -215,6 +238,19 @@ export function Sidebar() {
                   Copy Scene (Admin)
                 </>
               )}
+            </Button>
+          )}
+
+          {/* Admin-only: Clear all data */}
+          {isAdmin && (
+            <Button
+              onClick={() => setClearDataDialogOpen(true)}
+              variant="outline"
+              className="w-full h-11 md:h-8 border-dashed border-red-500 text-red-600 hover:bg-red-50"
+              size="sm"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Clear All Data (Admin)
             </Button>
           )}
         </div>
@@ -329,6 +365,35 @@ export function Sidebar() {
                 {error}
               </div>
             ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Clear All Data Confirmation Dialog (Admin) */}
+      <Dialog open={clearDataDialogOpen} onOpenChange={setClearDataDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-red-600">Wyczyść wszystkie dane</DialogTitle>
+            <DialogDescription>
+              Ta akcja usunie wszystkie dane aplikacji z localStorage i sessionStorage, w tym:
+              zapisane projekty, ustawienia, historię i sesję gościa.
+              Strona zostanie odświeżona.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setClearDataDialogOpen(false)}
+            >
+              Anuluj
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleClearAllData}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Wyczyść dane
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

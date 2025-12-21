@@ -14,9 +14,8 @@ import { createDimensionSlice } from './slices/dimensionSlice';
 import { createGraphicsSlice } from './slices/graphicsSlice';
 import { createMaterialPreferencesSlice } from './slices/materialPreferencesSlice';
 import { createCountertopSlice } from './slices/countertopSlice';
+import { createCabinetPreferencesSlice } from './slices/cabinetPreferencesSlice';
 import { HISTORY_MAX_LENGTH, HISTORY_MAX_MILESTONES } from './history/constants';
-import { MATERIAL_IDS, INITIAL_MATERIALS } from './constants';
-import { DEFAULT_BACK_OVERLAP_RATIO, DEFAULT_DOOR_CONFIG } from '../config';
 import type { StoreState } from './types';
 
 export const useStore = create<StoreState>()(
@@ -36,96 +35,13 @@ export const useStore = create<StoreState>()(
       ...createGraphicsSlice(...args),
       ...createMaterialPreferencesSlice(...args),
       ...createCountertopSlice(...args),
+      ...createCabinetPreferencesSlice(...args),
     }),
     {
       name: 'e-meble-storage',
-      version: 5,
-      migrate: (persistedState: any, version: number) => {
-        // Migrate from version 1 to 2
-        if (version === 1) {
-          persistedState = {
-            ...persistedState,
-            cabinets: [],
-            selectedCabinetId: null,
-            collisions: [],
-          };
-        }
-
-        // Migrate from version 2 to 3 (add history)
-        if (version < 3) {
-          persistedState = {
-            ...persistedState,
-            collisions: persistedState.collisions || [],
-            // Initialize history fields
-            undoStack: [],
-            redoStack: [],
-            milestoneStack: [],
-            inFlightBatch: null,
-            limit: HISTORY_MAX_LENGTH,
-            milestoneLimit: HISTORY_MAX_MILESTONES,
-            approxByteSize: 0,
-            timelineCursor: null,
-          };
-        }
-
-        // Migrate from version 3 to 4 (add HDF material and back panel params)
-        if (version < 4) {
-          // Add HDF material if it doesn't exist
-          const materials = persistedState.materials || [];
-          const hasHdf = materials.some((m: any) => m.category === 'hdf' || m.id === MATERIAL_IDS.HDF_BIALY);
-
-          if (!hasHdf) {
-            const hdfMaterial = INITIAL_MATERIALS.find((m) => m.id === MATERIAL_IDS.HDF_BIALY);
-            if (hdfMaterial) {
-              materials.push({ ...hdfMaterial });
-            }
-          }
-
-          // Add category to existing materials if not present
-          persistedState.materials = materials.map((m: any) => ({
-            ...m,
-            category: m.category || 'board',
-          }));
-
-          // Update existing cabinets with back panel params
-          if (persistedState.cabinets) {
-            persistedState.cabinets = persistedState.cabinets.map((cabinet: any) => ({
-              ...cabinet,
-              params: {
-                ...cabinet.params,
-                hasBack: cabinet.params.hasBack ?? true,
-                backOverlapRatio: cabinet.params.backOverlapRatio ?? DEFAULT_BACK_OVERLAP_RATIO,
-                backMountType: cabinet.params.backMountType ?? 'overlap',
-              },
-              materials: {
-                ...cabinet.materials,
-                backMaterialId: cabinet.materials.backMaterialId ?? MATERIAL_IDS.HDF_BIALY,
-              },
-            }));
-          }
-        }
-
-        // Migrate from version 4 to 5 (add door configuration)
-        if (version < 5) {
-          // Add default doorConfig to existing kitchen cabinets with doors
-          if (persistedState.cabinets) {
-            persistedState.cabinets = persistedState.cabinets.map((cabinet: any) => {
-              if (cabinet.params?.type === 'KITCHEN' && cabinet.params?.hasDoors && !cabinet.params.doorConfig) {
-                return {
-                  ...cabinet,
-                  params: {
-                    ...cabinet.params,
-                    doorConfig: DEFAULT_DOOR_CONFIG,
-                  },
-                };
-              }
-              return cabinet;
-            });
-          }
-        }
-
-        return persistedState;
-      },
+      version: 1,
+      // No migrations needed - app is not in production yet
+      // If localStorage has old data, just clear it and start fresh
       partialize: (state) => {
         // Remove functions but keep history stacks
         const {
@@ -232,6 +148,12 @@ export const useStore = create<StoreState>()(
           getCountertopGroupForCabinet,
           // Countertop transient state (don't persist)
           selectedCountertopGroupId,
+          // Cabinet preferences functions (cabinetPreferences IS persisted)
+          getCabinetPreferences,
+          setCabinetPreferences,
+          saveCabinetPreferencesFromParams,
+          clearCabinetPreferences,
+          resetAllCabinetPreferences,
           ...rest
         } = state as any;
         return rest;
@@ -338,4 +260,11 @@ export const useCountertopGroupForCabinet = (cabinetId: string | undefined) => {
   return countertopGroups.find((g) =>
     g.segments.some((s) => s.cabinetIds.includes(cabinetId))
   );
+};
+
+/**
+ * Get cabinet preferences for all types
+ */
+export const useCabinetPreferences = () => {
+  return useStore((state) => state.cabinetPreferences);
 };

@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import Link from "next/link";
 import { setRequestLocale } from "next-intl/server";
 import { APP_NAME, COMPANY_INFO } from "@meble/constants";
 import { LegalLayout } from "@/components/LegalLayout";
@@ -197,9 +198,9 @@ export default async function PrivacyPage({ params }: Props) {
         </h2>
         <p className="text-gray-600 dark:text-gray-300 mb-4">
           Nasza strona wykorzystuje pliki cookies. Szczegółowe informacje znajdziesz w{" "}
-          <a href="/cookies" className="text-indigo-600 dark:text-indigo-400 hover:underline">
+          <Link href="/cookies" className="text-indigo-600 dark:text-indigo-400 hover:underline">
             Polityce Cookies
-          </a>.
+          </Link>.
         </p>
       </section>
 

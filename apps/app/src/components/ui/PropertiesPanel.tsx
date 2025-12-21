@@ -23,6 +23,12 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from '@meble/ui';
 import { Switch } from '@meble/ui';
 import { Trash2, Copy, AlertCircle, PanelLeftDashed, Layers } from 'lucide-react';
@@ -67,6 +73,7 @@ import { getCabinetTransform } from '@/lib/store/utils';
 
 import { getCabinetTypeLabel } from '@/lib/cabinetHelpers';
 import { CountertopConfigDialog, getCountertopSummary } from './CountertopConfigDialog';
+import { useCountertopMaterials } from './CountertopMaterialSelect';
 import type { CabinetCountertopConfig } from '@/types';
 import { DimensionsConfig } from './DimensionsConfig';
 import { AssemblyConfig } from './AssemblyConfig';
@@ -263,26 +270,115 @@ const CountertopConfigSection = ({
   onUpdateParams,
 }: CountertopConfigSectionProps) => {
   const [dialogOpen, setDialogOpen] = React.useState(false);
+  const [materialChangeDialogOpen, setMaterialChangeDialogOpen] = React.useState(false);
+  const [pendingConfig, setPendingConfig] = React.useState<CabinetCountertopConfig | null>(null);
 
-  // Get store actions and state
-  const applyCountertopConfigToAllKitchenCabinets = useStore(
-    (state) => state.applyCountertopConfigToAllKitchenCabinets
+  // Get store actions - use useShallow for better performance
+  const {
+    applyCountertopConfigToAllKitchenCabinets,
+    getOtherKitchenCabinetsCount,
+    getCountertopGroupForCabinet,
+    updateCountertopGroupMaterial,
+    separateCabinetFromGroup,
+    updateSegmentOverhang,
+  } = useStore(
+    useShallow((state) => ({
+      applyCountertopConfigToAllKitchenCabinets: state.applyCountertopConfigToAllKitchenCabinets,
+      getOtherKitchenCabinetsCount: state.getOtherKitchenCabinetsCount,
+      getCountertopGroupForCabinet: state.getCountertopGroupForCabinet,
+      updateCountertopGroupMaterial: state.updateCountertopGroupMaterial,
+      separateCabinetFromGroup: state.separateCabinetFromGroup,
+      updateSegmentOverhang: state.updateSegmentOverhang,
+    }))
   );
-  const getOtherKitchenCabinetsCount = useStore(
-    (state) => state.getOtherKitchenCabinetsCount
-  );
+
+  // Get countertop materials for the dialog
+  const { countertopMaterials, defaultMaterialId } = useCountertopMaterials();
 
   const countertopConfig = (params as KitchenCabinetParams).countertopConfig;
   const summary = getCountertopSummary(countertopConfig);
   const otherCabinetsCount = getOtherKitchenCabinetsCount(furnitureId, cabinetId);
 
+  // Get the countertop group this cabinet belongs to
+  const countertopGroup = getCountertopGroupForCabinet(cabinetId);
+  const groupCabinetCount = countertopGroup
+    ? countertopGroup.segments.reduce((sum, s) => sum + s.cabinetIds.length, 0)
+    : 0;
+  const isPartOfGroup = groupCabinetCount > 1;
+
+  // Find the segment containing this cabinet
+  const cabinetSegment = countertopGroup?.segments.find(s => s.cabinetIds.includes(cabinetId));
+
   const handleConfigChange = (config: CabinetCountertopConfig) => {
-    onUpdateParams({ ...params, countertopConfig: config } as KitchenCabinetParams);
+    // Check if material is changing and cabinet is part of a group
+    const materialChanging = config.materialId !== countertopConfig?.materialId;
+
+    if (materialChanging && isPartOfGroup && countertopGroup) {
+      // Store the pending config and show the choice dialog
+      setPendingConfig(config);
+      setMaterialChangeDialogOpen(true);
+      setDialogOpen(false);
+    } else {
+      // No conflict, apply directly to cabinet params
+      onUpdateParams({ ...params, countertopConfig: config } as KitchenCabinetParams);
+
+      // Also update countertop group material if it changed
+      // (for single cabinet or when material matches)
+      if (materialChanging && countertopGroup && config.materialId) {
+        updateCountertopGroupMaterial(countertopGroup.id, config.materialId);
+      }
+
+      // Sync overhang to countertop segment if it changed
+      if (countertopGroup && cabinetSegment && config.overhangOverride) {
+        updateSegmentOverhang(countertopGroup.id, cabinetSegment.id, config.overhangOverride);
+      }
+    }
+  };
+
+  const handleUpdateEntireGroup = () => {
+    if (!pendingConfig || !countertopGroup) return;
+
+    // Update the entire countertop group material
+    if (pendingConfig.materialId) {
+      updateCountertopGroupMaterial(countertopGroup.id, pendingConfig.materialId);
+    }
+
+    // Also sync overhang to segment if changed
+    if (cabinetSegment && pendingConfig.overhangOverride) {
+      updateSegmentOverhang(countertopGroup.id, cabinetSegment.id, pendingConfig.overhangOverride);
+    }
+
+    setMaterialChangeDialogOpen(false);
+    setPendingConfig(null);
+  };
+
+  const handleSeparateCabinet = () => {
+    if (!pendingConfig) return;
+
+    // First update the cabinet config with new material
+    onUpdateParams({
+      ...params,
+      countertopConfig: {
+        ...pendingConfig,
+        excludeFromGroup: true,
+      },
+    } as KitchenCabinetParams);
+
+    // Then separate from group (regenerates countertops)
+    separateCabinetFromGroup(cabinetId);
+
+    setMaterialChangeDialogOpen(false);
+    setPendingConfig(null);
   };
 
   const handleApplyToAll = (config: CabinetCountertopConfig) => {
     applyCountertopConfigToAllKitchenCabinets(furnitureId, config);
   };
+
+  // Get material name for display
+  const currentMaterialName = countertopMaterials.find(
+    m => m.id === countertopConfig?.materialId
+  )?.name || 'Nie wybrano';
 
   return (
     <AccordionItem value="countertop" className="border-b-0">
@@ -297,9 +393,14 @@ const CountertopConfigSection = ({
       </AccordionTrigger>
       <AccordionContent className="pb-4 pt-0">
         <div className="space-y-3 px-1">
-          <p className="text-xs text-muted-foreground">
-            {summary}
-          </p>
+          <div className="text-xs text-muted-foreground space-y-1">
+            <p>Materiał: <span className="text-foreground">{currentMaterialName}</span></p>
+            {isPartOfGroup && (
+              <p className="text-amber-600">
+                Blat wspólny z {groupCabinetCount - 1} innymi szafkami
+              </p>
+            )}
+          </div>
           <Button
             variant="outline"
             size="sm"
@@ -319,7 +420,59 @@ const CountertopConfigSection = ({
           isExistingCabinet={true}
           onApplyToAll={handleApplyToAll}
           otherKitchenCabinetsCount={otherCabinetsCount}
+          countertopMaterials={countertopMaterials}
+          defaultMaterialId={defaultMaterialId}
         />
+
+        {/* Material change dialog - asks whether to update group or separate */}
+        <Dialog open={materialChangeDialogOpen} onOpenChange={setMaterialChangeDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Layers className="h-5 w-5 text-amber-500" />
+                Zmiana materiału blatu
+              </DialogTitle>
+              <DialogDescription>
+                Ta szafka jest częścią wspólnego blatu z {groupCabinetCount - 1} innymi szafkami.
+                Jak chcesz zmienić materiał?
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 py-4">
+              <Button
+                variant="outline"
+                className="w-full justify-start h-auto py-3"
+                onClick={handleUpdateEntireGroup}
+              >
+                <div className="text-left">
+                  <div className="font-medium">Zmień dla całego blatu</div>
+                  <div className="text-xs text-muted-foreground">
+                    Zaktualizuj materiał dla wszystkich {groupCabinetCount} szafek
+                  </div>
+                </div>
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full justify-start h-auto py-3"
+                onClick={handleSeparateCabinet}
+              >
+                <div className="text-left">
+                  <div className="font-medium">Oddziel tę szafkę</div>
+                  <div className="text-xs text-muted-foreground">
+                    Utwórz osobny blat tylko dla tej szafki
+                  </div>
+                </div>
+              </Button>
+            </div>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => {
+                setMaterialChangeDialogOpen(false);
+                setPendingConfig(null);
+              }}>
+                Anuluj
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </AccordionContent>
     </AccordionItem>
   );
@@ -355,6 +508,12 @@ function CabinetPropertiesPanel({
   // Now hooks are always called at the top of this component
   const [localParams, setLocalParams] = React.useState(selectedCabinet.params);
   const [hasChanges, setHasChanges] = React.useState(false);
+
+  // Filter materials for body and front selection (only board materials, not HDF or countertop)
+  const boardMaterials = React.useMemo(
+    () => materials.filter((m) => m.category !== 'hdf' && m.category !== 'countertop'),
+    [materials]
+  );
 
   React.useEffect(() => {
     setLocalParams(selectedCabinet.params);
@@ -693,7 +852,7 @@ function CabinetPropertiesPanel({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {materials.map((m) => (
+                      {boardMaterials.map((m) => (
                         <SelectItem key={m.id} value={m.id}>
                           {m.name} ({m.thickness}mm)
                         </SelectItem>
@@ -715,7 +874,7 @@ function CabinetPropertiesPanel({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {materials.map((m) => (
+                      {boardMaterials.map((m) => (
                         <SelectItem key={m.id} value={m.id}>
                           {m.name} ({m.thickness}mm)
                         </SelectItem>

@@ -71,7 +71,7 @@ export function RoomLighting() {
     });
 
     return lightsElements;
-  }, [rooms, walls, openings]);
+  }, [rooms, walls, openings, isSimulation]);
 
   // Artificial Lights
   const artificialLights = useMemo(() => {

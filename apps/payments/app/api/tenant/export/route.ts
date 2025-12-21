@@ -45,8 +45,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Check export limit (enterprise has unlimited)
+    const currentExports = tenant.current_month_exports ?? 0;
+    const maxExports = tenant.max_exports_per_month ?? 0;
     if (tenant.plan !== 'enterprise') {
-      if (tenant.current_month_exports >= tenant.max_exports_per_month) {
+      if (currentExports >= maxExports) {
         return NextResponse.json(
           {
             success: false,
@@ -54,8 +56,8 @@ export async function POST(request: NextRequest) {
               code: 'LIMIT_EXCEEDED',
               message: 'Monthly export limit reached',
               details: {
-                limit: tenant.max_exports_per_month,
-                used: tenant.current_month_exports,
+                limit: maxExports,
+                used: currentExports,
               },
             },
           },
@@ -79,12 +81,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        used: updated?.current_month_exports || tenant.current_month_exports + 1,
-        limit: tenant.max_exports_per_month,
+        used: updated?.current_month_exports ?? currentExports + 1,
+        limit: maxExports,
         remaining:
           tenant.plan === 'enterprise'
             ? null
-            : Math.max(0, tenant.max_exports_per_month - (updated?.current_month_exports || 0)),
+            : Math.max(0, maxExports - (updated?.current_month_exports ?? 0)),
         unlimited: tenant.plan === 'enterprise',
       },
     });
@@ -142,15 +144,17 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const used = tenant.current_month_exports ?? 0;
+    const limit = tenant.max_exports_per_month ?? 0;
     return NextResponse.json({
       success: true,
       data: {
-        used: tenant.current_month_exports,
-        limit: tenant.max_exports_per_month,
+        used,
+        limit,
         remaining:
           tenant.plan === 'enterprise'
             ? null
-            : Math.max(0, tenant.max_exports_per_month - tenant.current_month_exports),
+            : Math.max(0, limit - used),
         unlimited: tenant.plan === 'enterprise',
       },
     });

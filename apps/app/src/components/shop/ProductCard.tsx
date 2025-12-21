@@ -79,6 +79,7 @@ export function ProductCard({
     <div className="group relative flex flex-col rounded-lg border bg-card overflow-hidden hover:shadow-md transition-shadow">
       {/* Image */}
       <div className="relative aspect-[4/3] overflow-hidden bg-muted">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={imageUrl}
           alt={name}

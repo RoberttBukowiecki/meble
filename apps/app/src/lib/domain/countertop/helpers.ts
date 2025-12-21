@@ -4,6 +4,7 @@
  * Private utility functions for countertop calculations
  */
 
+import { Euler, Quaternion, Vector3 } from 'three';
 import type { Cabinet, Part } from '@/types';
 
 /**
@@ -36,15 +37,22 @@ export interface CabinetBounds {
 
 /**
  * Get cabinet bounding box from its parts
+ * Uses part rotation quaternion to properly calculate world-space bounds
  */
 export const getCabinetBounds = (cabinet: Cabinet, parts: Part[]): CabinetBounds => {
   const cabinetParts = parts.filter(p => cabinet.partIds.includes(p.id));
 
   if (cabinetParts.length === 0) {
+    // Fallback to cabinet worldTransform and params if no parts
+    const pos = cabinet.worldTransform?.position || [0, 0, 0];
+    const params = cabinet.params as { width?: number; height?: number; depth?: number };
+    const w = (params.width || 600) / 2;
+    const h = (params.height || 720) / 2;
+    const d = (params.depth || 560) / 2;
     return {
-      min: [0, 0, 0],
-      max: [0, 0, 0],
-      center: [0, 0, 0],
+      min: [pos[0] - w, pos[1] - h, pos[2] - d],
+      max: [pos[0] + w, pos[1] + h, pos[2] + d],
+      center: pos as [number, number, number],
     };
   }
 
@@ -53,19 +61,34 @@ export const getCabinetBounds = (cabinet: Cabinet, parts: Part[]): CabinetBounds
 
   for (const part of cabinetParts) {
     const [px, py, pz] = part.position;
-    const { width, height, depth } = part;
+    const { width, height, depth, rotation } = part;
 
-    // Approximate bounds (simplified - doesn't account for rotation)
+    // Create rotation quaternion from part's Euler rotation
+    const rotationQuat = new Quaternion().setFromEuler(
+      new Euler(rotation[0], rotation[1], rotation[2])
+    );
+
+    // Half dimensions in local space
     const halfW = width / 2;
     const halfH = height / 2;
     const halfD = depth / 2;
 
-    minX = Math.min(minX, px - halfW);
-    minY = Math.min(minY, py - halfH);
-    minZ = Math.min(minZ, pz - halfD);
-    maxX = Math.max(maxX, px + halfW);
-    maxY = Math.max(maxY, py + halfH);
-    maxZ = Math.max(maxZ, pz + halfD);
+    // Transform extent vectors by part's rotation to get world-space extents
+    const extentX = new Vector3(halfW, 0, 0).applyQuaternion(rotationQuat);
+    const extentY = new Vector3(0, halfH, 0).applyQuaternion(rotationQuat);
+    const extentZ = new Vector3(0, 0, halfD).applyQuaternion(rotationQuat);
+
+    // Calculate world-space half dimensions (max extent in each axis)
+    const worldHalfW = Math.abs(extentX.x) + Math.abs(extentY.x) + Math.abs(extentZ.x);
+    const worldHalfH = Math.abs(extentX.y) + Math.abs(extentY.y) + Math.abs(extentZ.y);
+    const worldHalfD = Math.abs(extentX.z) + Math.abs(extentY.z) + Math.abs(extentZ.z);
+
+    minX = Math.min(minX, px - worldHalfW);
+    minY = Math.min(minY, py - worldHalfH);
+    minZ = Math.min(minZ, pz - worldHalfD);
+    maxX = Math.max(maxX, px + worldHalfW);
+    maxY = Math.max(maxY, py + worldHalfH);
+    maxZ = Math.max(maxZ, pz + worldHalfD);
   }
 
   return {

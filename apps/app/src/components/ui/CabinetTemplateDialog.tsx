@@ -61,6 +61,10 @@ import {
   HANGER_CUTOUT_LIMITS,
   FOLDING_DOOR_LIMITS,
 } from '@/lib/config';
+import {
+  getInitialCabinetParams,
+  mergeWithPreferences,
+} from '@/lib/cabinetDefaults';
 import { Drawer, CornerDomain } from '@/lib/domain';
 import { DrawerConfigDialog } from './DrawerConfigDialog';
 import { SideFrontsConfigDialog } from './SideFrontsConfigDialog';
@@ -1066,6 +1070,8 @@ const ParameterForm = ({type, params, onChange, materials, defaultFrontMaterialI
                     config={countertopConfig}
                     onConfigChange={(config) => onChange({ ...params, countertopConfig: config } as any)}
                     isExistingCabinet={false}
+                    countertopMaterials={materials.filter(m => m.category === 'countertop')}
+                    defaultMaterialId={materials.find(m => m.category === 'countertop')?.id}
                 />
             )}
         </div>
@@ -1084,10 +1090,17 @@ export function CabinetTemplateDialog({ open, onOpenChange, furnitureId }: Cabin
   const [materials, setMaterials] = useState<Partial<CabinetMaterials>>({});
 
   // PERFORMANCE: Use useShallow to prevent re-renders during 3D transforms
-  const { addCabinet, materials: availableMaterials } = useStore(
+  const {
+    addCabinet,
+    materials: availableMaterials,
+    cabinetPreferences,
+    saveCabinetPreferencesFromParams,
+  } = useStore(
     useShallow((state) => ({
       addCabinet: state.addCabinet,
       materials: state.materials,
+      cabinetPreferences: state.cabinetPreferences,
+      saveCabinetPreferencesFromParams: state.saveCabinetPreferencesFromParams,
     }))
   );
   const { default_material, default_front_material } = useMemo(
@@ -1106,9 +1119,14 @@ export function CabinetTemplateDialog({ open, onOpenChange, furnitureId }: Cabin
     [availableMaterials]
   );
   const boardMaterials = useMemo(
-    () => availableMaterials.filter((m) => m.category !== 'hdf'),
+    () => availableMaterials.filter((m) => m.category !== 'hdf' && m.category !== 'countertop'),
     [availableMaterials]
   );
+  const countertopMaterials = useMemo(
+    () => availableMaterials.filter((m) => m.category === 'countertop'),
+    [availableMaterials]
+  );
+  const defaultCountertopMaterialId = countertopMaterials[0]?.id;
 
   useEffect(() => {
     if (!open) return;
@@ -1143,6 +1161,9 @@ export function CabinetTemplateDialog({ open, onOpenChange, furnitureId }: Cabin
 
     addCabinet(furnitureId, selectedType, finalParams, materials as CabinetMaterials);
 
+    // Save preferences for this cabinet type (for next time)
+    saveCabinetPreferencesFromParams(selectedType, finalParams);
+
     // Track cabinet creation
     track(AnalyticsEvent.CABINET_CREATED, {
       template_type: selectedType,
@@ -1159,8 +1180,15 @@ export function CabinetTemplateDialog({ open, onOpenChange, furnitureId }: Cabin
 
   const handleSelectType = (type: CabinetType) => {
     setSelectedType(type);
-    // Load default parameters from the presets config
-    setParams(CABINET_PRESETS[type]);
+
+    // Get initial params with type-specific defaults (legs, countertop, etc.)
+    const initialParams = getInitialCabinetParams(type);
+
+    // Merge with user's last-used preferences for this cabinet type
+    const typePreferences = cabinetPreferences[type];
+    const mergedParams = mergeWithPreferences(initialParams, typePreferences, type);
+
+    setParams(mergedParams);
     setStep('configure');
 
     // Track template selection
@@ -1392,6 +1420,35 @@ export function CabinetTemplateDialog({ open, onOpenChange, furnitureId }: Cabin
                             </SelectItem>
                           ))
                         )}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Countertop material - only for kitchen cabinets with countertop enabled */}
+              {selectedType === 'KITCHEN' && (params as KitchenCabinetParams).countertopConfig?.hasCountertop && countertopMaterials.length > 0 && (
+                <div className="space-y-3">
+                  <Label className="text-base font-medium">Blat kuchenny</Label>
+                  <Select
+                    value={(params as KitchenCabinetParams).countertopConfig?.materialId || defaultCountertopMaterialId || ''}
+                    onValueChange={(id) => setParams(prev => ({
+                      ...prev,
+                      countertopConfig: {
+                        ...(prev as KitchenCabinetParams).countertopConfig,
+                        hasCountertop: true,
+                        materialId: id,
+                      },
+                    }))}
+                  >
+                    <SelectTrigger className="h-10">
+                        <SelectValue placeholder="Wybierz materiał blatu" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {countertopMaterials.map(m => (
+                          <SelectItem key={m.id} value={m.id}>
+                              {m.name} ({m.thickness}mm)
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>

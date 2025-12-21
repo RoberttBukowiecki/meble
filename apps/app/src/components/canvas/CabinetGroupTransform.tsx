@@ -13,8 +13,11 @@ import { TransformControls } from '@react-three/drei';
 import { useStore, useMaterial } from '@/lib/store';
 import { useShallow } from 'zustand/react/shallow';
 import * as THREE from 'three';
-import { Part } from '@/types';
-import { SCENE_CONFIG, PART_CONFIG, MATERIAL_CONFIG } from '@/lib/config';
+import { Part, KitchenCabinetParams } from '@/types';
+import type { LegData } from '@/types';
+import type { CountertopSegment, CountertopGroup } from '@/types/countertop';
+import { isBodyPartRole } from '@/types/cabinet';
+import { SCENE_CONFIG, PART_CONFIG, MATERIAL_CONFIG, COUNTERTOP_DEFAULTS } from '@/lib/config';
 import { useSnapContext } from '@/lib/snap-context';
 import { useDimensionContext } from '@/lib/dimension-context';
 import { calculateCabinetSnapV2 } from '@/lib/snapping-v2';
@@ -56,6 +59,287 @@ function PreviewPartMesh({ part, previewPosition, previewRotation }: PreviewPart
 }
 
 // ============================================================================
+// Preview Countertop Mesh Component
+// ============================================================================
+
+interface PreviewCountertopMeshProps {
+  position: [number, number, number];
+  rotation: [number, number, number];
+  dimensions: { width: number; height: number; depth: number };
+  color: string;
+}
+
+function PreviewCountertopMesh({ position, rotation, dimensions, color }: PreviewCountertopMeshProps) {
+  return (
+    <mesh
+      position={position}
+      rotation={rotation}
+      castShadow
+      receiveShadow
+    >
+      <boxGeometry args={[dimensions.width, dimensions.height, dimensions.depth]} />
+      <meshStandardMaterial
+        color={color}
+        emissive={PART_CONFIG.CABINET_SELECTION_EMISSIVE_COLOR}
+        emissiveIntensity={PART_CONFIG.CABINET_SELECTION_EMISSIVE_INTENSITY}
+      />
+    </mesh>
+  );
+}
+
+// ============================================================================
+// Preview Leg Mesh Component
+// ============================================================================
+
+interface PreviewLegMeshProps {
+  leg: LegData;
+  groupPosition: [number, number, number];
+  groupRotation: THREE.Euler;
+}
+
+/**
+ * Single leg preview mesh - transforms leg position based on group transform
+ */
+function PreviewLegMesh({ leg, groupPosition, groupRotation }: PreviewLegMeshProps) {
+  const { position, shape, color, height, diameter } = leg;
+
+  const worldPos = useMemo(() => {
+    const legCenterY = height / 2;
+    const rotationQuat = new THREE.Quaternion().setFromEuler(groupRotation);
+    const localPos = new THREE.Vector3(position.x, legCenterY, position.z);
+    localPos.applyQuaternion(rotationQuat);
+
+    return [
+      groupPosition[0] + localPos.x,
+      groupPosition[1] + localPos.y,
+      groupPosition[2] + localPos.z,
+    ] as [number, number, number];
+  }, [position.x, position.z, height, groupPosition, groupRotation]);
+
+  const rotation: [number, number, number] = useMemo(() =>
+    [groupRotation.x, groupRotation.y, groupRotation.z],
+    [groupRotation.x, groupRotation.y, groupRotation.z]
+  );
+
+  const radius = diameter / 2;
+
+  return (
+    <mesh position={worldPos} rotation={rotation}>
+      {shape === 'ROUND' ? (
+        <cylinderGeometry args={[radius, radius, height, 16]} />
+      ) : (
+        <boxGeometry args={[diameter, height, diameter]} />
+      )}
+      <meshStandardMaterial
+        color={color}
+        metalness={shape === 'ROUND' ? 0.3 : 0.1}
+        roughness={0.7}
+        emissive={PART_CONFIG.CABINET_SELECTION_EMISSIVE_COLOR}
+        emissiveIntensity={PART_CONFIG.CABINET_SELECTION_EMISSIVE_INTENSITY}
+      />
+    </mesh>
+  );
+}
+
+// ============================================================================
+// Preview Legs Group Component
+// ============================================================================
+
+interface PreviewLegsProps {
+  legs: LegData[];
+  parts: Part[];
+  previewTransforms: Map<string, { position: [number, number, number]; rotation: [number, number, number] }>;
+  groupRotation: THREE.Euler;
+}
+
+/**
+ * Renders all legs preview during cabinet transformation.
+ * Calculates center from body parts only (excludes doors/fronts).
+ */
+function PreviewLegs({ legs, parts, previewTransforms, groupRotation }: PreviewLegsProps) {
+  const legsPosition = useMemo(() => {
+    let sumX = 0, sumZ = 0, count = 0;
+
+    previewTransforms.forEach((transform, partId) => {
+      const part = parts.find(p => p.id === partId);
+      if (isBodyPartRole(part?.cabinetMetadata?.role)) {
+        sumX += transform.position[0];
+        sumZ += transform.position[2];
+        count++;
+      }
+    });
+
+    // Fallback to all parts if no body parts found
+    if (count === 0) {
+      previewTransforms.forEach((transform) => {
+        sumX += transform.position[0];
+        sumZ += transform.position[2];
+        count++;
+      });
+    }
+
+    return [sumX / (count || 1), 0, sumZ / (count || 1)] as [number, number, number];
+  }, [parts, previewTransforms]);
+
+  return (
+    <>
+      {legs.map((leg) => (
+        <PreviewLegMesh
+          key={`preview-leg-${leg.index}`}
+          leg={leg}
+          groupPosition={legsPosition}
+          groupRotation={groupRotation}
+        />
+      ))}
+    </>
+  );
+}
+
+// ============================================================================
+// Countertop Preview Calculation
+// ============================================================================
+
+interface CountertopPreviewData {
+  position: [number, number, number];
+  rotation: [number, number, number];
+  dimensions: { width: number; height: number; depth: number };
+  color: string;
+}
+
+/**
+ * Calculate countertop preview data based on preview part transforms
+ */
+function calculateCountertopPreview(
+  segment: CountertopSegment,
+  group: CountertopGroup,
+  previewTransforms: Map<string, { position: [number, number, number]; rotation: [number, number, number] }>,
+  parts: Part[],
+  cabinets: { id: string; params: KitchenCabinetParams }[],
+  materials: { id: string; color: string }[],
+  groupRotation: THREE.Euler
+): CountertopPreviewData | null {
+  // Get cabinets for this segment
+  const segmentCabinets = cabinets.filter(c => segment.cabinetIds.includes(c.id));
+  if (segmentCabinets.length === 0) return null;
+
+  // Get parts for this cabinet group (to find bounds from preview positions)
+  const segmentPartIds = new Set<string>();
+  for (const cab of segmentCabinets) {
+    for (const part of parts) {
+      if (part.cabinetMetadata?.cabinetId === cab.id) {
+        segmentPartIds.add(part.id);
+      }
+    }
+  }
+
+  // Calculate bounds from preview positions
+  let minX = Infinity, minZ = Infinity;
+  let maxX = -Infinity, maxZ = -Infinity;
+  let maxY = -Infinity;
+
+  // Create rotation quaternion for transforming dimensions
+  const rotationQuat = new THREE.Quaternion().setFromEuler(groupRotation);
+
+  for (const partId of Array.from(segmentPartIds)) {
+    const transform = previewTransforms.get(partId);
+    const part = parts.find(p => p.id === partId);
+    if (!transform || !part) continue;
+
+    const [px, py, pz] = transform.position;
+
+    // Use ORIGINAL part rotation to determine panel type (not preview rotation)
+    const [origRx, origRy] = part.rotation;
+
+    // Calculate half dimensions in original part's local space
+    let localHalfW = part.width / 2;
+    let localHalfH = part.height / 2;
+    let localHalfD = part.depth / 2;
+
+    // Check for horizontal panel rotation (around X axis by ~90°)
+    const isHorizontalPanel = Math.abs(Math.abs(origRx) - Math.PI / 2) < 0.01;
+    // Check for vertical side panel rotation (around Y axis by ~90°)
+    const isVerticalSidePanel = Math.abs(Math.abs(origRy) - Math.PI / 2) < 0.01;
+
+    if (isHorizontalPanel) {
+      localHalfW = part.width / 2;
+      localHalfH = part.depth / 2;
+      localHalfD = part.height / 2;
+    } else if (isVerticalSidePanel) {
+      localHalfW = part.depth / 2;
+      localHalfH = part.height / 2;
+      localHalfD = part.width / 2;
+    }
+
+    // Transform the extent vectors by the group rotation to get world-space extents
+    const extentX = new THREE.Vector3(localHalfW, 0, 0).applyQuaternion(rotationQuat);
+    const extentY = new THREE.Vector3(0, localHalfH, 0).applyQuaternion(rotationQuat);
+    const extentZ = new THREE.Vector3(0, 0, localHalfD).applyQuaternion(rotationQuat);
+
+    // Calculate world-space half dimensions (max extent in each axis)
+    const halfW = Math.abs(extentX.x) + Math.abs(extentY.x) + Math.abs(extentZ.x);
+    const halfH = Math.abs(extentX.y) + Math.abs(extentY.y) + Math.abs(extentZ.y);
+    const halfD = Math.abs(extentX.z) + Math.abs(extentY.z) + Math.abs(extentZ.z);
+
+    // The preview position already accounts for group rotation
+    minX = Math.min(minX, px - halfW);
+    maxX = Math.max(maxX, px + halfW);
+    minZ = Math.min(minZ, pz - halfD);
+    maxZ = Math.max(maxZ, pz + halfD);
+    maxY = Math.max(maxY, py + halfH);
+  }
+
+  // If no preview parts found, skip
+  if (minX === Infinity) return null;
+
+  // Get cabinet dimensions from first cabinet's params (LOCAL space)
+  const firstCabinet = segmentCabinets[0];
+  const cabinetDepth = firstCabinet.params.depth || 560;
+
+  // Calculate total width from all cabinets (LOCAL space)
+  let totalWidth = 0;
+  for (const cab of segmentCabinets) {
+    totalWidth += cab.params.width || 600;
+  }
+
+  // Get material for thickness and color
+  const material = materials.find(m => m.id === group.materialId);
+  const materialThickness = (material as any)?.thickness ?? segment.thickness;
+  const color = material?.color || MATERIAL_CONFIG.DEFAULT_MATERIAL_COLOR;
+
+  // Calculate countertop dimensions (LOCAL space)
+  const countertopWidth = totalWidth + segment.overhang.left + segment.overhang.right;
+  const countertopDepth = cabinetDepth + segment.overhang.front + segment.overhang.back;
+
+  // Calculate center position from bounds
+  const centerX = (minX + maxX) / 2;
+  const centerZ = (minZ + maxZ) / 2;
+  const topY = maxY + materialThickness / 2;
+
+  // Calculate overhang offset in LOCAL space
+  const localOffsetX = (segment.overhang.right - segment.overhang.left) / 2;
+  const localOffsetZ = (segment.overhang.front - segment.overhang.back) / 2;
+
+  // Transform offset to world space using preview rotation (rotationQuat already created above)
+  const localOffset = new THREE.Vector3(localOffsetX, 0, localOffsetZ);
+  localOffset.applyQuaternion(rotationQuat);
+
+  return {
+    position: [
+      centerX + localOffset.x,
+      topY,
+      centerZ + localOffset.z,
+    ],
+    rotation: [groupRotation.x, groupRotation.y, groupRotation.z],
+    dimensions: {
+      width: countertopWidth,
+      height: materialThickness,
+      depth: countertopDepth,
+    },
+    color,
+  };
+}
+
+// ============================================================================
 // Main Component
 // ============================================================================
 
@@ -75,6 +359,23 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
 
   // Get all cabinets for dimension calculations
   const allCabinets = useStore((state) => state.cabinets);
+
+  // Get countertop groups that contain this cabinet
+  const countertopGroups = useStore(
+    useShallow((state) =>
+      state.countertopGroups.filter(g =>
+        g.segments.some(seg => seg.cabinetIds.includes(cabinetId))
+      )
+    )
+  );
+
+  // Get current cabinet for legs
+  const currentCabinet = useStore(
+    useShallow((state) => state.cabinets.find(c => c.id === cabinetId))
+  );
+
+  // Get materials for countertop color
+  const materials = useStore((state) => state.materials);
 
   const {
     updatePartsBatch,
@@ -119,6 +420,7 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
 
   // Preview state - stores calculated transforms without updating store
   const previewTransformsRef = useRef<Map<string, { position: [number, number, number]; rotation: [number, number, number] }>>(new Map());
+  const previewRotationRef = useRef<THREE.Euler>(new THREE.Euler());
   const [previewVersion, setPreviewVersion] = useState(0);
 
   // Calculate cabinet center
@@ -263,6 +565,17 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
 
     // Update preview ref and trigger re-render
     previewTransformsRef.current = newTransforms;
+
+    // Update preview rotation (cumulative rotation for countertop preview)
+    // Get current cabinet's rotation and apply delta
+    const currentCabinet = allCabinets.find((c) => c.id === cabinetId);
+    const existingRotation = currentCabinet?.worldTransform?.rotation ?? [0, 0, 0];
+    const existingQuat = new THREE.Quaternion().setFromEuler(
+      new THREE.Euler(existingRotation[0], existingRotation[1], existingRotation[2], 'XYZ')
+    );
+    const newRotQuat = deltaQuat.clone().multiply(existingQuat);
+    previewRotationRef.current.setFromQuaternion(newRotQuat, 'XYZ');
+
     setPreviewVersion(v => v + 1);
   }, [parts, target, transformMode, snapEnabled, snapSettings, dimensionSettings, allParts, allCabinets, cabinetId, setSnapPoints, clearSnapPoints, setDimensionLines, setActiveAxis, getDragAxis]);
 
@@ -305,6 +618,11 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
     });
     previewTransformsRef.current = initialTransforms;
 
+    // Initialize preview rotation from cabinet's current worldTransform
+    const currentCabinet = allCabinets.find((c) => c.id === cabinetId);
+    const existingRotation = currentCabinet?.worldTransform?.rotation ?? [0, 0, 0];
+    previewRotationRef.current.set(existingRotation[0], existingRotation[1], existingRotation[2], 'XYZ');
+
     setIsTransforming(true);
     setTransformingCabinetId(cabinetId); // Hide original parts, show preview
 
@@ -318,7 +636,7 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
     });
 
     setPreviewVersion(v => v + 1);
-  }, [setIsTransforming, setTransformingCabinetId, parts, beginBatch, cabinetId, cabinetCenter, target]);
+  }, [setIsTransforming, setTransformingCabinetId, parts, beginBatch, cabinetId, cabinetCenter, target, allCabinets]);
 
   const handleTransformEnd = useCallback(() => {
     isDraggingRef.current = false;
@@ -422,6 +740,48 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
           />
         );
       })}
+
+      {/* Preview countertop meshes during drag */}
+      {isShowingPreview && countertopGroups.map(group =>
+        group.segments.map(segment => {
+          // Get cabinets for this segment
+          const segmentCabinets = allCabinets
+            .filter(c => segment.cabinetIds.includes(c.id))
+            .map(c => ({ id: c.id, params: c.params as KitchenCabinetParams }));
+
+          const previewData = calculateCountertopPreview(
+            segment,
+            group,
+            previewTransformsRef.current,
+            allParts,
+            segmentCabinets,
+            materials,
+            previewRotationRef.current
+          );
+
+          if (!previewData) return null;
+
+          return (
+            <PreviewCountertopMesh
+              key={`preview-countertop-${segment.id}`}
+              position={previewData.position}
+              rotation={previewData.rotation}
+              dimensions={previewData.dimensions}
+              color={previewData.color}
+            />
+          );
+        })
+      )}
+
+      {/* Preview leg meshes during drag */}
+      {isShowingPreview && currentCabinet?.legs && currentCabinet.legs.length > 0 && (
+        <PreviewLegs
+          legs={currentCabinet.legs}
+          parts={parts}
+          previewTransforms={previewTransformsRef.current}
+          groupRotation={previewRotationRef.current}
+        />
+      )}
 
       {/* Proxy group for controls */}
       <group ref={setTarget} position={cabinetCenter} />

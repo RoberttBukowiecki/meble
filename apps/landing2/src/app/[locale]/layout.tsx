@@ -108,7 +108,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
           type: 'image/png',
         },
         {
-          url: `${SITE_URL}/img/hero.png`,
+          url: `${SITE_URL}/img/hero.webp`,
           width: 616,
           height: 617,
           alt: `${APP_NAME} Preview`,

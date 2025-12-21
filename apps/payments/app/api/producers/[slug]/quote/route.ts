@@ -92,8 +92,9 @@ export async function POST(
     }
 
     // Check if producer supports requested services
+    const producerServices = producer.services || [];
     const unsupportedServices = body.services.filter(
-      (s) => !producer.services.includes(s)
+      (s) => !producerServices.includes(s)
     );
     if (unsupportedServices.length > 0) {
       return NextResponse.json(
@@ -133,14 +134,15 @@ export async function POST(
     const quote = calculateQuote(body.projectData, body.services, producer);
 
     // Check minimum order value
-    if (quote.subtotal < producer.minimum_order_value) {
+    const minOrderValue = producer.minimum_order_value ?? 0;
+    if (quote.subtotal < minOrderValue) {
       return NextResponse.json(
         {
           success: false,
           error: {
             code: 'BELOW_MINIMUM',
-            message: `Minimum order value is ${(producer.minimum_order_value / 100).toFixed(2)} zł`,
-            minimumValue: producer.minimum_order_value,
+            message: `Minimum order value is ${(minOrderValue / 100).toFixed(2)} zł`,
+            minimumValue: minOrderValue,
             currentValue: quote.subtotal,
           },
         },

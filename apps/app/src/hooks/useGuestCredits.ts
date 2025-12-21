@@ -66,10 +66,12 @@ export function useGuestCredits(): UseGuestCreditsReturn {
   }, [sessionId, email, sessionLoading, setGuestSession, fetchGuestCredits]);
 
   // Wrapper for useCredit that includes sessionId
+  // Note: useGuestCredit is a store action, not a React hook
   const useCredit = async (projectHash: string): Promise<UseCreditResult | null> => {
     if (!sessionId) {
       return null;
     }
+    // eslint-disable-next-line react-hooks/rules-of-hooks -- useGuestCredit is a store action, not a hook
     return useGuestCredit(sessionId, projectHash);
   };
 

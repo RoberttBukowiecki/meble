@@ -7,7 +7,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -59,13 +59,7 @@ export function PostExportRecommendations({
   const [isLoading, setIsLoading] = useState(true);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
 
-  useEffect(() => {
-    if (open) {
-      fetchRecommendations();
-    }
-  }, [open, projectTags]);
-
-  const fetchRecommendations = async () => {
+  const fetchRecommendations = useCallback(async () => {
     setIsLoading(true);
     try {
       const params = new URLSearchParams();
@@ -85,7 +79,13 @@ export function PostExportRecommendations({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [projectTags]);
+
+  useEffect(() => {
+    if (open) {
+      fetchRecommendations();
+    }
+  }, [open, fetchRecommendations]);
 
   const handleAddToCart = async (productId: string) => {
     if (!onAddToCart) return false;
@@ -180,11 +180,7 @@ export function RecommendationsBanner({
   const [isLoading, setIsLoading] = useState(true);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
 
-  useEffect(() => {
-    fetchRecommendations();
-  }, [projectTags]);
-
-  const fetchRecommendations = async () => {
+  const fetchRecommendations = useCallback(async () => {
     setIsLoading(true);
     try {
       const params = new URLSearchParams();
@@ -204,7 +200,11 @@ export function RecommendationsBanner({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [projectTags, maxProducts]);
+
+  useEffect(() => {
+    fetchRecommendations();
+  }, [fetchRecommendations]);
 
   const handleAddToCart = async (productId: string) => {
     if (!onAddToCart) return false;

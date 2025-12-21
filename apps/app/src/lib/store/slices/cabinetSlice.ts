@@ -7,6 +7,7 @@ import type {
   CabinetType,
   CabinetRegenerationSnapshot,
   LegData,
+  KitchenCabinetParams,
 } from '@/types';
 import { getGeneratorForType } from '../../cabinetGenerators';
 import { generateLegs } from '../../cabinetGenerators/legs';
@@ -98,6 +99,44 @@ export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
     }
 
     triggerDebouncedCollisionDetection(get);
+
+    // Auto-create/merge countertop for kitchen cabinets with hasCountertop enabled
+    if (type === 'KITCHEN') {
+      const kitchenParams = params as KitchenCabinetParams;
+      if (kitchenParams.countertopConfig?.hasCountertop) {
+        // Get countertop material - prefer specified, then default countertop, then board
+        let countertopMaterialId = kitchenParams.countertopConfig.materialId;
+        if (!countertopMaterialId) {
+          const countertopMaterials = get().materials.filter(m => m.category === 'countertop');
+          countertopMaterialId = countertopMaterials[0]?.id;
+        }
+        if (!countertopMaterialId) {
+          const boardMaterials = get().materials.filter(m => m.category === 'board' || !m.category);
+          countertopMaterialId = boardMaterials[0]?.id;
+        }
+
+        if (countertopMaterialId) {
+          // Check for existing adjacent countertop groups to merge with
+          const existingGroups = get().countertopGroups.filter(g => g.furnitureId === furnitureId);
+
+          // Find groups that have adjacent cabinets (we'll regenerate after adding)
+          // For now, if there are existing groups for this furniture, regenerate all
+          if (existingGroups.length > 0) {
+            // Regenerate countertops for this furniture - will auto-merge adjacent cabinets
+            get().generateCountertopsForFurniture(furnitureId, countertopMaterialId);
+          } else {
+            // Create new countertop group for this cabinet
+            get().addCountertopGroup(
+              furnitureId,
+              [cabinetId],
+              countertopMaterialId,
+              { thickness: kitchenParams.countertopConfig.thicknessOverride },
+              true // skipHistory
+            );
+          }
+        }
+      }
+    }
   },
 
   updateCabinet: (
@@ -436,10 +475,32 @@ export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
       const cabinet = state.cabinets.find((c) => c.id === id);
       if (!cabinet) return state;
 
+      // Remove countertop groups that contain this cabinet
+      const updatedCountertopGroups = state.countertopGroups
+        .map(group => {
+          // Remove this cabinet from all segments
+          const updatedSegments = group.segments
+            .map(seg => ({
+              ...seg,
+              cabinetIds: seg.cabinetIds.filter(cId => cId !== id),
+            }))
+            .filter(seg => seg.cabinetIds.length > 0); // Remove empty segments
+
+          if (updatedSegments.length === 0) {
+            return null; // Mark group for removal
+          }
+          return { ...group, segments: updatedSegments };
+        })
+        .filter((g): g is NonNullable<typeof g> => g !== null);
+
       return {
         cabinets: state.cabinets.filter((c) => c.id !== id),
         parts: state.parts.filter((p) => !cabinet.partIds.includes(p.id)),
         selectedCabinetId: state.selectedCabinetId === id ? null : state.selectedCabinetId,
+        countertopGroups: updatedCountertopGroups,
+        selectedCountertopGroupId: updatedCountertopGroups.some(g => g.id === state.selectedCountertopGroupId)
+          ? state.selectedCountertopGroupId
+          : null,
       };
     });
 

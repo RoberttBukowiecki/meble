@@ -274,3 +274,34 @@ export interface CabinetPartMetadata {
 
 // Re-export HingeSide for convenience
 export type { HingeSide };
+
+// ============================================================================
+// Cabinet Body Part Roles
+// ============================================================================
+
+/**
+ * Roles that belong to the cabinet body structure (not fronts/decorative).
+ * Used for calculating cabinet center position without front panel offset.
+ */
+export const CABINET_BODY_ROLES: readonly CabinetPartRole[] = [
+  'BOTTOM',
+  'TOP',
+  'LEFT_SIDE',
+  'RIGHT_SIDE',
+  'BACK',
+  'SHELF',
+  'PARTITION',
+  'DRAWER_SIDE_LEFT',
+  'DRAWER_SIDE_RIGHT',
+  'DRAWER_BACK',
+  'DRAWER_BOTTOM',
+  'DRAWER_BOX_FRONT',
+] as const;
+
+/**
+ * Check if a role is a cabinet body part (not front/decorative)
+ */
+export function isBodyPartRole(role: CabinetPartRole | undefined): boolean {
+  if (!role) return false;
+  return (CABINET_BODY_ROLES as readonly string[]).includes(role);
+}

@@ -102,7 +102,8 @@ export type CutoutPresetType =
   | 'COOKTOP_60'        // 60cm cooktop
   | 'COOKTOP_80'        // 80cm cooktop
   | 'FAUCET_HOLE'       // Standard faucet hole 35mm
-  | 'SOAP_DISPENSER';   // Soap dispenser hole 28mm
+  | 'SOAP_DISPENSER'    // Soap dispenser hole 28mm
+  | 'CUSTOM';           // Custom cutout with user-defined dimensions
 
 /**
  * Single CNC operation definition
@@ -293,12 +294,21 @@ export interface CountertopGroup {
 export interface CabinetCountertopConfig {
   /** Whether this cabinet should have a countertop */
   hasCountertop: boolean;
+  /** Material ID for the countertop */
+  materialId?: string;
   /** Overhang overrides for this specific cabinet */
   overhangOverride?: Partial<CountertopOverhang>;
   /** Exclude from automatic grouping with adjacent cabinets */
   excludeFromGroup?: boolean;
   /** Cutout preset for this cabinet (e.g., sink cabinet) */
   cutoutPreset?: CutoutPresetType;
+  /** Custom cutout dimensions (used when cutoutPreset is 'CUSTOM') */
+  customCutout?: {
+    width: number;
+    height: number;
+    /** Corner radius in mm (default: 10mm, standard range: 5-25mm) */
+    radius?: number;
+  };
   /** Custom thickness override */
   thicknessOverride?: number;
 }

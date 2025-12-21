@@ -58,10 +58,12 @@ export default async function Home({ params }: Props) {
       {/* Main content */}
       <main id="main-content" role="main">
         {/* Hero Section */}
-        <Hero />
+        <section id="product">
+          <Hero />
+        </section>
 
         {/* Benefits Section */}
-        <section aria-labelledby="benefits-heading">
+        <section id="features" aria-labelledby="benefits-heading">
           <SectionTitle
             pretitleKey="benefits.pretitle"
             titleKey="benefits.title"
@@ -106,7 +108,7 @@ export default async function Home({ params }: Props) {
         </section>
 
         {/* Call to Action */}
-        <section aria-label={locale === 'pl' ? 'Zacznij teraz' : 'Get started'}>
+        <section id="pricing" aria-label={locale === 'pl' ? 'Zacznij teraz' : 'Get started'}>
           <Cta />
         </section>
       </main>

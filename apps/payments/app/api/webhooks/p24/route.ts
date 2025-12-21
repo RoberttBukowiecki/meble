@@ -333,20 +333,27 @@ async function handleOrderPayment(payment: any) {
   }
 
   try {
+    // Get current order to update status history
+    const { data: currentOrder } = await supabase
+      .from('producer_orders')
+      .select('status_history')
+      .eq('id', orderId)
+      .single();
+
+    const currentHistory = (currentOrder?.status_history as unknown[]) || [];
+    const newHistoryEntry = {
+      status: 'confirmed',
+      timestamp: new Date().toISOString(),
+      note: 'Płatność otrzymana',
+    };
+
     // Update order status
     await supabase
       .from('producer_orders')
       .update({
         status: 'confirmed',
         paid_at: new Date().toISOString(),
-        status_history: supabase.sql`
-          COALESCE(status_history, '[]'::jsonb) ||
-          jsonb_build_array(jsonb_build_object(
-            'status', 'confirmed',
-            'timestamp', ${new Date().toISOString()},
-            'note', 'Płatność otrzymana'
-          ))
-        `,
+        status_history: [...currentHistory, newHistoryEntry],
       })
       .eq('id', orderId);
 

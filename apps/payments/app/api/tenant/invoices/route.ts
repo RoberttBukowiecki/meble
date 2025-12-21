@@ -4,6 +4,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
+import type { Database } from '@/types_db';
 
 export async function GET(request: NextRequest) {
   try {
@@ -43,7 +44,7 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false });
 
     if (status) {
-      query = query.eq('status', status);
+      query = query.eq('status', status as Database['public']['Enums']['invoice_status']);
     }
 
     query = query.range(offset, offset + limit - 1);

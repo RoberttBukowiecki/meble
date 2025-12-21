@@ -7,8 +7,8 @@ import {
   SunIcon,
 } from "@heroicons/react/24/outline";
 
-import benefitOneImg from "../../public/img/benefit-one.png";
-import benefitTwoImg from "../../public/img/benefit-two.png";
+import benefitOneImg from "../../public/img/benefit-one.webp";
+import benefitTwoImg from "../../public/img/benefit-two.webp";
 import { StaticImageData } from "next/image";
 import { ReactElement } from "react";
 

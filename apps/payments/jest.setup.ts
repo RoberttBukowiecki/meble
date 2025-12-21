@@ -54,11 +54,6 @@ jest.mock('next-intl', () => ({
   useLocale: () => 'pl',
 }));
 
-// Mock Stripe
-jest.mock('@stripe/stripe-js', () => ({
-  loadStripe: jest.fn(() => Promise.resolve(null)),
-}));
-
 // Mock Supabase
 jest.mock('@supabase/supabase-js', () => ({
   createClient: jest.fn(() => ({

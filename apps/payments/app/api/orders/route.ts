@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
+import type { Database } from '@/types_db';
 
 // GET - List orders
 export async function GET(request: NextRequest) {
@@ -44,7 +45,7 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false });
 
     if (status) {
-      query = query.eq('status', status);
+      query = query.eq('status', status as Database['public']['Enums']['producer_order_status']);
     }
 
     query = query.range(offset, offset + limit - 1);
@@ -218,8 +219,8 @@ export async function POST(request: NextRequest) {
     // Calculate commission
     const producer = quote.producer;
     const { data: commission } = await supabase.rpc('calculate_commission', {
-      p_order_value: quote.total,
-      p_producer_rate: producer.commission_rate,
+      p_order_value: quote.total ?? 0,
+      p_producer_rate: producer.commission_rate ?? undefined,
     });
 
     const commissionRate = commission?.[0]?.rate || 0.05;

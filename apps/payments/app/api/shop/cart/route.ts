@@ -155,7 +155,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Check stock if tracking inventory
-    if (product.track_inventory && product.stock_quantity < quantity) {
+    const stockQty = product.stock_quantity ?? 0;
+    if (product.track_inventory && stockQty < quantity) {
       return NextResponse.json(
         {
           success: false,

@@ -28,6 +28,7 @@ export function Benefits({ data, imgPos }: BenefitsProps) {
             height={482}
             alt="Benefits"
             placeholder="blur"
+            className="rounded-md"
           />
         </div>
       </div>

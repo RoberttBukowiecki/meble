@@ -117,11 +117,14 @@ export function useTenantMaterials(
     await fetchMaterials(true);
   }, [fetchMaterials]);
 
+  // Re-fetch when tenant or category changes - fetchMaterials is intentionally
+  // not in deps to avoid infinite loops since it depends on offset
   useEffect(() => {
     if (isTenantContext && tenant) {
       setOffset(0);
       fetchMaterials(true);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isTenantContext, tenant?.id, category]);
 
   return {

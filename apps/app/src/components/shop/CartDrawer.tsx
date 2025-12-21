@@ -141,6 +141,7 @@ function CartItemRow({ item, onUpdateQuantity, onRemove }: CartItemRowProps) {
     <div className="flex gap-3 pb-4 border-b last:border-b-0">
       {/* Image */}
       <div className="w-20 h-20 rounded-md overflow-hidden bg-muted flex-shrink-0">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={imageUrl}
           alt={productName}

@@ -1,3 +1,4 @@
+import { Euler } from 'three';
 import type {
   HistoryEntry,
   Part,
@@ -9,6 +10,8 @@ import type {
   GroupRenameSnapshot,
 } from '@/types';
 import type { StoreState } from '../types';
+import { getCabinetTransform } from '../utils';
+import { roundPosition, roundRotation } from '@/lib/utils';
 import {
   applyAddCountertopGroup,
   applyRemoveCountertopGroup,
@@ -145,15 +148,16 @@ export function applyHistoryEntry(
 
 /**
  * Apply TRANSFORM_CABINET history entry
+ * Also updates cabinet.worldTransform to keep countertops in sync
  */
 function applyTransformCabinet(
   entry: HistoryEntry,
   direction: 'undo' | 'redo',
-  get: () => StoreState,
+  _get: () => StoreState,
   set: (partial: Partial<StoreState> | ((state: StoreState) => Partial<StoreState>)) => void,
-  state: unknown
+  _state: unknown
 ): void {
-  // Get the correct state based on direction
+  // Get transforms from history entry (not from unused state param)
   const targetState = direction === 'undo' ? entry.before : entry.after;
   const transforms = targetState as PartTransformMap;
 
@@ -162,9 +166,45 @@ function applyTransformCabinet(
     return;
   }
 
-  // Apply transforms to all parts in the cabinet
-  Object.entries(transforms).forEach(([partId, transform]) => {
-    get().updatePart(partId, transform, true); // skipHistory=true to avoid recursion
+  const cabinetId = entry.targetId;
+  if (!cabinetId) {
+    console.warn('Missing targetId for TRANSFORM_CABINET');
+    return;
+  }
+
+  // Apply transforms to all parts and update cabinet worldTransform
+  const now = new Date();
+  const partIds = Object.keys(transforms);
+
+  set((s) => {
+    // Update parts with new transforms
+    const updatedParts = s.parts.map((part) => {
+      const transform = transforms[part.id];
+      if (!transform) return part;
+      return { ...part, ...transform, updatedAt: now };
+    });
+
+    // Get updated cabinet parts
+    const cabinetParts = updatedParts.filter((p) => partIds.includes(p.id));
+    if (cabinetParts.length === 0) {
+      return { parts: updatedParts };
+    }
+
+    // Recalculate worldTransform from updated parts
+    const { center, rotation } = getCabinetTransform(cabinetParts);
+    const rotationEuler = new Euler().setFromQuaternion(rotation);
+    const worldTransform = {
+      position: roundPosition(center.toArray() as [number, number, number]),
+      rotation: roundRotation([rotationEuler.x, rotationEuler.y, rotationEuler.z]),
+    };
+
+    // Update cabinet with new worldTransform
+    const updatedCabinets = s.cabinets.map((c) => {
+      if (c.id !== cabinetId) return c;
+      return { ...c, worldTransform, updatedAt: now };
+    });
+
+    return { parts: updatedParts, cabinets: updatedCabinets };
   });
 }
 

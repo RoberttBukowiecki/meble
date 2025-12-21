@@ -447,7 +447,6 @@ describe('DXF Export', () => {
       });
 
       // Re-require module with mocked DXF writer
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
       const { generatePartDXF: generate } = require('./dxf');
       generate(part);
       return calls;

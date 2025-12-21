@@ -1,5 +1,6 @@
 import { Euler, Quaternion, Vector3 } from 'three';
 import type { Material, Part, ProjectState } from '@/types';
+import { isBodyPartRole } from '@/types/cabinet';
 
 let collisionDetectionTimeout: NodeJS.Timeout | null = null;
 
@@ -61,6 +62,24 @@ export const getCabinetTransform = (parts: Part[]) => {
 
   return { center, rotation: cabinetRotation };
 };
+
+/**
+ * Filter parts to only include cabinet body parts (excludes doors, fronts, decorative).
+ * Returns original parts array if no body parts found.
+ */
+export function filterBodyParts(parts: Part[]): Part[] {
+  const bodyParts = parts.filter(p => isBodyPartRole(p.cabinetMetadata?.role));
+  return bodyParts.length > 0 ? bodyParts : parts;
+}
+
+/**
+ * Get cabinet transform using only body parts for center calculation.
+ * This prevents the center from being shifted by doors/fronts that stick out.
+ */
+export function getCabinetBodyTransform(allParts: Part[]) {
+  const bodyParts = filterBodyParts(allParts);
+  return getCabinetTransform(bodyParts);
+}
 
 export const applyCabinetTransform = <
   T extends Omit<Part, 'id' | 'createdAt' | 'updatedAt'>

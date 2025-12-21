@@ -39,12 +39,13 @@ export function RoomPanel() {
     setIsEditorOpen(true); // Auto open
   };
 
+  // Run once on mount - intentionally empty deps to auto-open editor only on initial render
   useEffect(() => {
-      // Auto-open on mount if room is selected
       if (activeRoomId) {
           setIsEditorOpen(true);
       }
-  }, []); // Run once on mount
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="space-y-4 p-4">

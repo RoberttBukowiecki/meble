@@ -197,7 +197,7 @@ export async function POST(request: NextRequest) {
         .insert({
           payment_type: 'credit_purchase',
           provider: body.provider,
-          external_order_id: result.externalOrderId,
+          external_order_id: result.externalOrderId!,
           user_id: userId || null,
           guest_session_id: userId ? null : guestSessionId,
           amount: pkg.price,

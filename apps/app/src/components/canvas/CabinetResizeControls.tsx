@@ -408,11 +408,7 @@ export function CabinetResizeControls({
     ? dragStateRef.current.previewOBB
     : obb;
 
-  if (!cabinet || cabinetParts.length === 0) {
-    return null;
-  }
-
-  // Get dimension info for active handle
+  // Get dimension info for active handle - must be before early return
   const activeDimensionInfo = useMemo(() => {
     if (!activeHandle || !dragStateRef.current.previewOBB) return null;
     const axis = getHandleAxisName(activeHandle);
@@ -426,6 +422,10 @@ export function CabinetResizeControls({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeHandle, previewVersion]);
+
+  if (!cabinet || cabinetParts.length === 0) {
+    return null;
+  }
 
   return (
     <group>

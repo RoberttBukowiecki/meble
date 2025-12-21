@@ -19,3 +19,6 @@ export * from './useCart';
 
 // Admin hooks
 export * from './useIsAdmin';
+
+// Material and texture hooks
+export * from './useMaterialTexture';

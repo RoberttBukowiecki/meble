@@ -475,4 +475,203 @@ describe('countertopSlice', () => {
       expect(count).toBe(0);
     });
   });
+
+  // ==========================================================================
+  // Material Sync Tests
+  // ==========================================================================
+
+  describe('updateCountertopGroupMaterial', () => {
+    it('should update countertop group material', () => {
+      const store = createCountertopStore({
+        materials: [
+          ...baseMaterials,
+          { id: 'countertop_1', name: 'Blat dębowy', color: '#C9A66B', thickness: 38, category: 'countertop' },
+          { id: 'countertop_2', name: 'Blat biały', color: '#FAFAFA', thickness: 38, category: 'countertop' },
+        ],
+      });
+
+      // Create a group with initial material
+      store.getState().addCountertopGroup('furniture_1', ['cab_1'], 'countertop_1');
+      const groupId = store.getState().countertopGroups[0].id;
+
+      // Update the group material
+      store.getState().updateCountertopGroupMaterial(groupId, 'countertop_2');
+
+      const updatedGroup = store.getState().countertopGroups[0];
+      expect(updatedGroup.materialId).toBe('countertop_2');
+    });
+
+    it('should sync material to all cabinets in the group', () => {
+      const cab1 = createMockCabinet('cab_1');
+      const cab2 = createMockCabinet('cab_2');
+      cab1.params = { ...cab1.params, countertopConfig: { hasCountertop: true, materialId: 'countertop_1' } };
+      cab2.params = { ...cab2.params, countertopConfig: { hasCountertop: true, materialId: 'countertop_1' } };
+
+      const store = createCountertopStore({
+        cabinets: [cab1, cab2],
+        parts: [createMockPart('part_cab_1'), createMockPart('part_cab_2')],
+        materials: [
+          ...baseMaterials,
+          { id: 'countertop_1', name: 'Blat dębowy', color: '#C9A66B', thickness: 38, category: 'countertop' },
+          { id: 'countertop_2', name: 'Blat biały', color: '#FAFAFA', thickness: 38, category: 'countertop' },
+        ],
+      });
+
+      // Create a group with both cabinets
+      store.getState().addCountertopGroup('furniture_1', ['cab_1', 'cab_2'], 'countertop_1');
+      const groupId = store.getState().countertopGroups[0].id;
+
+      // Update the group material
+      store.getState().updateCountertopGroupMaterial(groupId, 'countertop_2');
+
+      // Verify all cabinets have updated material
+      const cabinets = store.getState().cabinets;
+      expect(cabinets[0].params.countertopConfig?.materialId).toBe('countertop_2');
+      expect(cabinets[1].params.countertopConfig?.materialId).toBe('countertop_2');
+    });
+
+    it('should not update cabinets not in the group', () => {
+      const cab1 = createMockCabinet('cab_1');
+      const cab2 = createMockCabinet('cab_2');
+      const cab3 = createMockCabinet('cab_3');
+      cab1.params = { ...cab1.params, countertopConfig: { hasCountertop: true, materialId: 'countertop_1' } };
+      cab2.params = { ...cab2.params, countertopConfig: { hasCountertop: true, materialId: 'countertop_1' } };
+      cab3.params = { ...cab3.params, countertopConfig: { hasCountertop: true, materialId: 'countertop_1' } };
+
+      const store = createCountertopStore({
+        cabinets: [cab1, cab2, cab3],
+        parts: [createMockPart('part_cab_1'), createMockPart('part_cab_2'), createMockPart('part_cab_3')],
+        materials: [
+          ...baseMaterials,
+          { id: 'countertop_1', name: 'Blat dębowy', color: '#C9A66B', thickness: 38, category: 'countertop' },
+          { id: 'countertop_2', name: 'Blat biały', color: '#FAFAFA', thickness: 38, category: 'countertop' },
+        ],
+      });
+
+      // Create a group with only cab_1 and cab_2
+      store.getState().addCountertopGroup('furniture_1', ['cab_1', 'cab_2'], 'countertop_1');
+      const groupId = store.getState().countertopGroups[0].id;
+
+      // Update the group material
+      store.getState().updateCountertopGroupMaterial(groupId, 'countertop_2');
+
+      // cab_3 should NOT be updated
+      const cabinets = store.getState().cabinets;
+      const cab3Updated = cabinets.find(c => c.id === 'cab_3');
+      expect(cab3Updated?.params.countertopConfig?.materialId).toBe('countertop_1');
+    });
+
+    it('should do nothing for non-existent group', () => {
+      const store = createCountertopStore();
+
+      // Should not throw
+      expect(() => {
+        store.getState().updateCountertopGroupMaterial('non_existent', 'mat_1');
+      }).not.toThrow();
+    });
+  });
+
+  describe('separateCabinetFromGroup', () => {
+    it('should set excludeFromGroup on the cabinet', () => {
+      const cab1 = createMockCabinet('cab_1');
+      cab1.params = { ...cab1.params, countertopConfig: { hasCountertop: true, materialId: 'countertop_1' } };
+
+      const store = createCountertopStore({
+        cabinets: [cab1],
+        materials: [
+          ...baseMaterials,
+          { id: 'countertop_1', name: 'Blat dębowy', color: '#C9A66B', thickness: 38, category: 'countertop' },
+        ],
+      });
+
+      store.getState().separateCabinetFromGroup('cab_1');
+
+      const cabinet = store.getState().cabinets[0];
+      expect(cabinet.params.countertopConfig?.excludeFromGroup).toBe(true);
+    });
+
+    it('should do nothing for non-KITCHEN cabinet', () => {
+      const cab1 = createMockCabinet('cab_1');
+      (cab1 as any).type = 'WARDROBE';
+
+      const store = createCountertopStore({
+        cabinets: [cab1],
+      });
+
+      // Should not throw
+      expect(() => {
+        store.getState().separateCabinetFromGroup('cab_1');
+      }).not.toThrow();
+    });
+
+    it('should do nothing for non-existent cabinet', () => {
+      const store = createCountertopStore();
+
+      // Should not throw
+      expect(() => {
+        store.getState().separateCabinetFromGroup('non_existent');
+      }).not.toThrow();
+    });
+  });
+
+  // ==========================================================================
+  // Integration Tests - Material Sync Between Cabinet and Group
+  // ==========================================================================
+
+  describe('material sync integration', () => {
+    it('should keep cabinet config and group material in sync after updateCountertopGroupMaterial', () => {
+      const cab1 = createMockCabinet('cab_1');
+      const cab2 = createMockCabinet('cab_2');
+      cab1.params = { ...cab1.params, countertopConfig: { hasCountertop: true, materialId: 'countertop_1' } };
+      cab2.params = { ...cab2.params, countertopConfig: { hasCountertop: true, materialId: 'countertop_1' } };
+
+      const store = createCountertopStore({
+        cabinets: [cab1, cab2],
+        parts: [createMockPart('part_cab_1'), createMockPart('part_cab_2')],
+        materials: [
+          ...baseMaterials,
+          { id: 'countertop_1', name: 'Blat dębowy', color: '#C9A66B', thickness: 38, category: 'countertop' },
+          { id: 'countertop_2', name: 'Blat biały', color: '#FAFAFA', thickness: 38, category: 'countertop' },
+        ],
+      });
+
+      // Create group and update material
+      store.getState().addCountertopGroup('furniture_1', ['cab_1', 'cab_2'], 'countertop_1');
+      const groupId = store.getState().countertopGroups[0].id;
+      store.getState().updateCountertopGroupMaterial(groupId, 'countertop_2');
+
+      // Verify sync
+      const group = store.getState().countertopGroups[0];
+      const cabinets = store.getState().cabinets;
+
+      expect(group.materialId).toBe('countertop_2');
+      expect(cabinets[0].params.countertopConfig?.materialId).toBe('countertop_2');
+      expect(cabinets[1].params.countertopConfig?.materialId).toBe('countertop_2');
+    });
+
+    it('getCountertopGroupForCabinet should return correct group after material change', () => {
+      const cab1 = createMockCabinet('cab_1');
+      cab1.params = { ...cab1.params, countertopConfig: { hasCountertop: true, materialId: 'countertop_1' } };
+
+      const store = createCountertopStore({
+        cabinets: [cab1],
+        materials: [
+          ...baseMaterials,
+          { id: 'countertop_1', name: 'Blat dębowy', color: '#C9A66B', thickness: 38, category: 'countertop' },
+          { id: 'countertop_2', name: 'Blat biały', color: '#FAFAFA', thickness: 38, category: 'countertop' },
+        ],
+      });
+
+      store.getState().addCountertopGroup('furniture_1', ['cab_1'], 'countertop_1');
+      const groupId = store.getState().countertopGroups[0].id;
+
+      // Update material
+      store.getState().updateCountertopGroupMaterial(groupId, 'countertop_2');
+
+      // Query should still work
+      const group = store.getState().getCountertopGroupForCabinet('cab_1');
+      expect(group).toBeDefined();
+      expect(group?.materialId).toBe('countertop_2');
+    });
+  });
 });

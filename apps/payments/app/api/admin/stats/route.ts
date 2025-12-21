@@ -117,7 +117,7 @@ export async function GET(request: NextRequest) {
     // Calculate orders stats
     const ordersThisMonth = ordersResult.data || [];
     const completedOrders = ordersThisMonth.filter(o => o.status === 'delivered');
-    const pendingOrders = ordersThisMonth.filter(o => ['pending_payment', 'confirmed', 'processing', 'shipped'].includes(o.status));
+    const pendingOrders = ordersThisMonth.filter(o => o.status && ['pending_payment', 'confirmed', 'processing', 'shipped'].includes(o.status));
 
     // Calculate tenant stats
     const tenants = tenantsResult.data || [];

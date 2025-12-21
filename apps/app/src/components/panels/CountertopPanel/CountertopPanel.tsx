@@ -68,11 +68,16 @@ export function CountertopPanel() {
     }))
   );
 
-  // Get board materials only
-  const boardMaterials = materials.filter((m) => m.category === 'board' || !m.category);
+  // Get countertop materials (for material selection dropdown)
+  const countertopMaterials = materials.filter((m) => m.category === 'countertop');
+
+  // Fallback to board materials if no countertop materials exist
+  const materialOptions = countertopMaterials.length > 0
+    ? countertopMaterials
+    : materials.filter((m) => m.category === 'board' || !m.category);
 
   // Default material for auto-detect
-  const defaultMaterialId = boardMaterials[0]?.id || '';
+  const defaultMaterialId = countertopMaterials[0]?.id || materials[0]?.id || '';
 
   const handleAutoDetect = () => {
     if (!selectedFurnitureId || !defaultMaterialId) return;
@@ -141,7 +146,7 @@ export function CountertopPanel() {
                 Brak grup blatów
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                Użyj "Wykryj szafki" aby automatycznie utworzyć grupy blatów dla połączonych szafek kuchennych.
+                Użyj &quot;Wykryj szafki&quot; aby automatycznie utworzyć grupy blatów dla połączonych szafek kuchennych.
               </p>
             </div>
           ) : (
@@ -180,7 +185,7 @@ export function CountertopPanel() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {boardMaterials.map((mat) => (
+                          {materialOptions.map((mat) => (
                             <SelectItem key={mat.id} value={mat.id} className="text-xs">
                               {mat.name} ({mat.thickness}mm)
                             </SelectItem>

@@ -8,6 +8,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/utils/supabase/server';
+import type { Database } from '@/types_db';
 
 export async function GET(request: NextRequest) {
   try {
@@ -69,7 +70,7 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false });
 
     if (action) {
-      query = query.eq('action', action);
+      query = query.eq('action', action as Database['public']['Enums']['audit_action']);
     }
 
     if (resourceType) {
