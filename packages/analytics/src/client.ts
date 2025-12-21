@@ -201,6 +201,25 @@ export function initAnalytics() {
     capture_pageview: false, // We handle pageviews manually for SPA
     capture_pageleave: true,
     persistence: 'localStorage+cookie',
+
+    // === SESSION REPLAY CONFIG ===
+    disable_session_recording: false,
+    session_recording: {
+      // Privacy controls
+      maskAllInputs: true,
+      maskTextSelector: '.ph-mask',
+      blockSelector: '.ph-no-capture',
+
+      // Performance
+      recordCrossOriginIframes: false,
+    },
+
+    // === ERROR TRACKING ===
+    capture_exceptions: true,
+
+    // === WEB VITALS ===
+    capture_performance: true,
+
     bootstrap: {
       // Include attribution data in bootstrap for first event
       featureFlags: {},

@@ -568,27 +568,28 @@ export function initAnalytics() {
 ## Checklist implementacji
 
 ### Phase 1 - Session Replay Basic
-- [ ] Zaktualizować `packages/analytics/src/client.ts` z session recording config
+- [x] Zaktualizować `packages/analytics/src/client.ts` z session recording config
 - [ ] Dodać klasy `ph-no-capture` do wrażliwych elementów w apps/app
 - [ ] Dodać klasy `ph-no-capture` do formularzy w apps/landing2
 - [ ] Przetestować nagrania w development
 - [ ] Zweryfikować maskowanie wrażliwych danych
 
 ### Phase 2 - Error Tracking
-- [ ] Zaktualizować `posthog-js` do v1.210.0+ w packages/analytics
-- [ ] Dodać `capture_exceptions: true` do client.ts
-- [ ] Stworzyć `AnalyticsErrorBoundary` component
-- [ ] Zainstalować `@posthog/nextjs-config` w apps/app
-- [ ] Skonfigurować source maps upload w next.config.ts
-- [ ] Dodać POSTHOG_PERSONAL_API_KEY do env
+- [x] Zaktualizować `posthog-js` do v1.210.0+ w packages/analytics
+- [x] Dodać `capture_exceptions: true` do client.ts
+- [x] Stworzyć `AnalyticsErrorBoundary` component
+- [ ] Zainstalować `@posthog/nextjs-config` w apps/app (opcjonalne - source maps)
+- [ ] Skonfigurować source maps upload w next.config.ts (opcjonalne)
+- [ ] Dodać POSTHOG_PERSONAL_API_KEY do env (opcjonalne - source maps)
 - [ ] Włączyć Exception autocapture w PostHog Dashboard
 - [ ] Przetestować error tracking
 
 ### Phase 3 - Enhanced Features
-- [ ] Włączyć Console recording
-- [ ] Włączyć Network recording (bez headers/body)
-- [ ] Włączyć Web Vitals tracking
+- [x] Włączyć Web Vitals tracking (`capture_performance: true`)
 - [ ] Ustawić sampling w PostHog Dashboard
+
+> **Uwaga:** Console recording i Network recording zostały usunięte z implementacji
+> ze względu na brak wsparcia w typach SDK. Mogą być włączone w przyszłych wersjach.
 
 ### Phase 4 - Verification
 - [ ] Sprawdzić nagrania w PostHog Dashboard

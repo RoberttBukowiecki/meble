@@ -19,7 +19,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "posthog-js": "^1.194.4",
+    "posthog-js": "^1.210.0",
     "posthog-node": "^4.3.3"
   },
   "devDependencies": {
