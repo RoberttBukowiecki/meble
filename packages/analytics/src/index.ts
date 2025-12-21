@@ -30,3 +30,6 @@ export {
 
 // Provider
 export { AnalyticsProvider } from './provider';
+
+// Error Boundary
+export { AnalyticsErrorBoundary, captureException } from './error-boundary';
