@@ -9,34 +9,24 @@ import { EffectComposer, SSAO } from '@react-three/postprocessing';
 import { BlendFunction } from 'postprocessing';
 import { useStore } from '@/lib/store';
 import { useShallow } from 'zustand/react/shallow';
-import { useMemo } from 'react';
 import * as THREE from 'three';
-import { QUALITY_PRESETS } from '@/lib/config';
-
-interface SceneEffectsProps {
-  enabled?: boolean;
-}
+import { useQualityPreset } from '@/hooks/useQualityPreset';
 
 // Black color for AO (memoized to prevent recreation)
 const AO_COLOR = new THREE.Color(0x000000);
 
-export function SceneEffects({ enabled = true }: SceneEffectsProps) {
+export function SceneEffects() {
   const { graphicsSettings } = useStore(
     useShallow((state) => ({
       graphicsSettings: state.graphicsSettings,
     }))
   );
 
-  // Get quality preset for AO settings
-  const qualityPreset = useMemo(() => {
-    const quality = graphicsSettings?.quality || 'high';
-    return QUALITY_PRESETS[quality as keyof typeof QUALITY_PRESETS] || QUALITY_PRESETS.high;
-  }, [graphicsSettings?.quality]);
+  // Get quality preset for AO settings (centralized hook)
+  const qualityPreset = useQualityPreset();
 
   // Only render effects if AO is enabled
-  const aoEnabled = graphicsSettings?.ambientOcclusion && enabled;
-
-  if (!aoEnabled) {
+  if (!graphicsSettings?.ambientOcclusion) {
     return null;
   }
 

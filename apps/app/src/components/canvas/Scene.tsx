@@ -5,7 +5,7 @@
  * Renders the furniture parts in 3D space with controls and lighting
  */
 
-import { useRef, useCallback, useEffect, useMemo } from 'react';
+import { useRef, useCallback, useEffect } from 'react';
 import * as THREE from 'three';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Grid, SoftShadows } from '@react-three/drei';
@@ -21,7 +21,8 @@ import { Camera, Move, RotateCw, Maximize2, PanelRight } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { KeyboardShortcutsHelp } from '@/components/ui/KeyboardShortcutsHelp';
 import { CollisionWarning } from '@/components/ui/CollisionWarning';
-import { SCENE_CONFIG, KEYBOARD_SHORTCUTS, formatShortcutLabel, QUALITY_PRESETS } from '@/lib/config';
+import { SCENE_CONFIG, KEYBOARD_SHORTCUTS, formatShortcutLabel } from '@/lib/config';
+import { useQualityPreset } from '@/hooks/useQualityPreset';
 import type { OrbitControls as OrbitControlsType } from 'three-stdlib';
 import { CabinetGroupTransform } from './CabinetGroupTransform';
 import { CabinetResizeControls } from './CabinetResizeControls';
@@ -104,11 +105,8 @@ export function Scene({ onOpenMobileSidebar, isMobile }: SceneProps) {
     );
   const controlsRef = useRef<OrbitControlsType>(null);
 
-  // Get quality preset based on current graphics settings
-  const qualityPreset = useMemo(() => {
-    const quality = graphicsSettings?.quality || 'high';
-    return QUALITY_PRESETS[quality as keyof typeof QUALITY_PRESETS] || QUALITY_PRESETS.high;
-  }, [graphicsSettings?.quality]);
+  // Get quality preset based on current graphics settings (centralized hook)
+  const qualityPreset = useQualityPreset();
 
   const handleResetCamera = () => {
     if (controlsRef.current) {
