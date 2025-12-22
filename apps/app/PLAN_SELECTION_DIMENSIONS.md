@@ -199,7 +199,9 @@ import type {
 } from '@/types/transform';
 import {
   getPartBoundingBox,
-  getCabinetBoundingBox
+  getCabinetBoundingBox,
+  getMultiselectBoundingBox,
+  calculateCountertopBoundingBox,
 } from './bounding-box-utils';
 
 /**
@@ -482,6 +484,40 @@ export function calculateAllObjectDimensions(
   return objects.map(obj =>
     calculateObjectDimensions(obj.objectId, obj.objectType, obj.boundingBox, cameraPosition)
   );
+}
+```
+
+#### 2.2 Helper: `calculateCountertopBoundingBox` (do dodania w `bounding-box-utils.ts`)
+
+```typescript
+/**
+ * Oblicza bounding box dla grupy blatów
+ */
+export function calculateCountertopBoundingBox(
+  group: CountertopGroup
+): { min: [number, number, number]; max: [number, number, number] } | null {
+  if (!group.segments || group.segments.length === 0) return null;
+
+  let minX = Infinity, minY = Infinity, minZ = Infinity;
+  let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+
+  for (const segment of group.segments) {
+    const { position, dimensions } = segment;
+    const halfW = dimensions.width / 2;
+    const halfH = dimensions.thickness / 2;
+    const halfD = dimensions.depth / 2;
+
+    // Uwzględnij rotację segmentu jeśli istnieje
+    // Dla uproszczenia: AABB bez rotacji
+    minX = Math.min(minX, position[0] - halfW);
+    maxX = Math.max(maxX, position[0] + halfW);
+    minY = Math.min(minY, position[1] - halfH);
+    maxY = Math.max(maxY, position[1] + halfH);
+    minZ = Math.min(minZ, position[2] - halfD);
+    maxZ = Math.max(maxZ, position[2] + halfD);
+  }
+
+  return { min: [minX, minY, minZ], max: [maxX, maxY, maxZ] };
 }
 ```
 
@@ -912,19 +948,20 @@ import { ObjectDimensionControlPanel } from '@/components/layout/ObjectDimension
 ### Sprint 2: Logika
 4. [ ] Stworzyć `object-dimensions-calculator.ts`
 5. [ ] Funkcje dla różnych trybów i granularności
+6. [ ] Dodać `calculateCountertopBoundingBox` do `bounding-box-utils.ts`
 
 ### Sprint 3: Rendering
-6. [ ] Stworzyć `ObjectDimensionRenderer.tsx`
-7. [ ] Wyodrębnić wspólne komponenty do reużycia
+7. [ ] Stworzyć `ObjectDimensionRenderer.tsx`
+8. [ ] Wyodrębnić wspólne komponenty do reużycia
 
 ### Sprint 4: UI
-8. [ ] Stworzyć `ObjectDimensionControlPanel.tsx`
-9. [ ] Dodać obsługę skrótu w `GlobalKeyboardListener.tsx`
+9. [ ] Stworzyć `ObjectDimensionControlPanel.tsx`
+10. [ ] Dodać obsługę skrótu w `GlobalKeyboardListener.tsx`
 
 ### Sprint 5: Integracja i testy
-10. [ ] Zintegrować w `Scene.tsx`
-11. [ ] Testy: różne kombinacje trybów
-12. [ ] Optymalizacja wydajności (tryb "all" z wieloma obiektami)
+11. [ ] Zintegrować w `Scene.tsx`
+12. [ ] Testy: różne kombinacje trybów
+13. [ ] Optymalizacja wydajności (tryb "all" z wieloma obiektami)
 
 ---
 
