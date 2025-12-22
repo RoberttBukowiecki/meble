@@ -183,7 +183,7 @@ export type QualityPreset = keyof typeof QUALITY_PRESETS;
 // ============================================================================
 
 export const UI_FEATURES = {
-  HIDE_GRAPHICS_SETTINGS: false,  // Enabled - graphics settings now functional
+  HIDE_GRAPHICS_SETTINGS: true,   // Hidden by default, can be enabled in settings
   HIDE_ROOMS_TAB: true,
 } as const;
 
