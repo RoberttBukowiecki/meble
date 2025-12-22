@@ -38,6 +38,8 @@ import { DimensionProvider } from '@/lib/dimension-context';
 import { SnapControlPanel } from '@/components/layout/SnapControlPanel';
 import { GraphicsSettingsPanel } from '@/components/layout/GraphicsSettingsPanel';
 import { DimensionControlPanel } from '@/components/layout/DimensionControlPanel';
+import { ObjectDimensionControlPanel } from '@/components/layout/ObjectDimensionControlPanel';
+import { ObjectDimensionRenderer } from './ObjectDimensionRenderer';
 
 interface SceneProps {
   onOpenMobileSidebar?: () => void;
@@ -66,6 +68,7 @@ export function Scene({ onOpenMobileSidebar, isMobile }: SceneProps) {
     snapEnabled,
     snapSettings,
     dimensionSettings,
+    objectDimensionSettings,
     showGrid,
     graphicsSettings,
     rooms,
@@ -92,6 +95,7 @@ export function Scene({ onOpenMobileSidebar, isMobile }: SceneProps) {
         snapEnabled: state.snapEnabled,
         snapSettings: state.snapSettings,
         dimensionSettings: state.dimensionSettings,
+        objectDimensionSettings: state.objectDimensionSettings,
         showGrid: state.showGrid,
         graphicsSettings: state.graphicsSettings,
         rooms: state.rooms,
@@ -195,7 +199,11 @@ export function Scene({ onOpenMobileSidebar, isMobile }: SceneProps) {
         {/* Snap Control Panel */}
         <SnapControlPanel />
 
+        {/* Distance Dimensions (during drag) */}
         <DimensionControlPanel />
+
+        {/* Object Dimensions (W/H/D) */}
+        <ObjectDimensionControlPanel />
 
         {/* Graphics Settings - hidden on mobile */}
         <div className="hidden md:block">
@@ -380,8 +388,11 @@ export function Scene({ onOpenMobileSidebar, isMobile }: SceneProps) {
             <SnapDebugRenderer enabled />
           )}
 
-          {/* Dimension lines (rendered based on dimension context) */}
+          {/* Distance dimension lines (rendered during drag) */}
           {dimensionSettings?.enabled && <DimensionRenderer />}
+
+          {/* Object dimension lines (W/H/D of selected/all objects) */}
+          {objectDimensionSettings?.enabled && <ObjectDimensionRenderer />}
           </Canvas>
         </SnapProvider>
       </DimensionProvider>

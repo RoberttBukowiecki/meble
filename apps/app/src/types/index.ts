@@ -203,6 +203,12 @@ export type {
   DimensionSettings,
   GraphicsSettings,
   FeatureFlags,
+  // Object dimensions (W/H/D)
+  ObjectDimensionMode,
+  ObjectDimensionGranularity,
+  ObjectDimension,
+  ObjectDimensionSet,
+  ObjectDimensionSettings,
 } from './transform';
 
 // Room types

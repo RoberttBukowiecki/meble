@@ -166,6 +166,13 @@ export function GlobalKeyboardListener() {
         return;
       }
 
+      // B = Toggle object dimensions (W/H/D)
+      if (matchesShortcut(KEYBOARD_SHORTCUTS.TOGGLE_OBJECT_DIMENSIONS, key)) {
+        event.preventDefault();
+        useStore.getState().toggleObjectDimensions();
+        return;
+      }
+
       // ============================================================================
       // Visibility shortcuts (H, Ctrl+H)
       // ============================================================================
