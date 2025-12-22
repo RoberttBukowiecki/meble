@@ -13,7 +13,7 @@
  * - Stable keys to prevent unnecessary remounts
  */
 
-import { useRef, useState, memo, useCallback } from 'react';
+import { useRef, useState, memo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Html, Line } from '@react-three/drei';
 import { useStore } from '@/lib/store';

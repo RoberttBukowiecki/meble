@@ -131,8 +131,6 @@ export interface ObjectDimensionSettings {
   showLabels: boolean;
   /** Kolory według osi */
   showAxisColors: boolean;
-  /** Pokaż tylko gdy zaznaczono (dla mode='selection') */
-  hideWhenNoSelection: boolean;
 }
 ```
 
@@ -157,8 +155,6 @@ export interface DimensionSlice {
   objectDimensionSettings: ObjectDimensionSettings;
   updateObjectDimensionSettings: (settings: Partial<ObjectDimensionSettings>) => void;
   toggleObjectDimensions: () => void;
-  setObjectDimensionMode: (mode: ObjectDimensionMode) => void;
-  setObjectDimensionGranularity: (granularity: ObjectDimensionGranularity) => void;
 }
 
 // Default settings
@@ -168,7 +164,6 @@ const DEFAULT_OBJECT_DIMENSION_SETTINGS: ObjectDimensionSettings = {
   granularity: 'group',        // Domyślnie szafki/grupy
   showLabels: true,
   showAxisColors: false,
-  hideWhenNoSelection: true,
 };
 ```
 

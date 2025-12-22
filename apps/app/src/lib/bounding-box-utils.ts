@@ -484,7 +484,7 @@ export function calculateCountertopBoundingBox(
     if (segmentCabinets.length === 0) continue;
 
     // Calculate cabinet bounds using parts
-    let cabMinX = Infinity, cabMinZ = Infinity;
+    let cabMinX = Infinity, cabMinY = Infinity, cabMinZ = Infinity;
     let cabMaxX = -Infinity, cabMaxY = -Infinity, cabMaxZ = -Infinity;
 
     for (const cabinet of segmentCabinets) {
@@ -494,6 +494,7 @@ export function calculateCountertopBoundingBox(
         for (const corner of corners) {
           cabMinX = Math.min(cabMinX, corner[0]);
           cabMaxX = Math.max(cabMaxX, corner[0]);
+          cabMinY = Math.min(cabMinY, corner[1]);
           cabMaxY = Math.max(cabMaxY, corner[1]);
           cabMinZ = Math.min(cabMinZ, corner[2]);
           cabMaxZ = Math.max(cabMaxZ, corner[2]);
