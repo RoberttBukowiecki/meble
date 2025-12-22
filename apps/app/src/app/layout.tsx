@@ -14,8 +14,6 @@ const OG_DESCRIPTION_PL = 'Darmowy konfigurator mebli 3D online. Projektuj szafy
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   viewportFit: 'cover',
 };
 
