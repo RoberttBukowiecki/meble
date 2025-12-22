@@ -61,11 +61,11 @@ type Vec3 = [number, number, number];
 function getPerpendicularDirection(axis: 'X' | 'Y' | 'Z'): Vec3 {
   switch (axis) {
     case 'X':
-      return [0, 1, 0];
+      return [0, 1, 0]; // Width: extension lines go up (Y)
     case 'Y':
-      return [1, 0, 0];
+      return [1, 0, 0]; // Height: extension lines go right (X)
     case 'Z':
-      return [0, 1, 0];
+      return [1, 0, 0]; // Depth: extension lines go right (X)
   }
 }
 
