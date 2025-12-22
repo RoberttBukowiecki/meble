@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
 import { APP_NAME, APP_URLS, SOCIAL_HANDLES } from '@meble/constants';
@@ -10,6 +10,12 @@ import "../styles/globals.css";
 
 const SITE_URL = APP_URLS.app;
 const OG_DESCRIPTION_PL = 'Darmowy konfigurator mebli 3D online. Projektuj szafy, regały i meble kuchenne na wymiar. Eksportuj listy cięć do CSV.';
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+};
 
 export const metadata: Metadata = {
   title: {

@@ -70,7 +70,17 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
+    overscroll-behavior: none;
+  }
+
+  /* Canvas touch handling - prevents scroll interference with Three.js */
+  canvas {
+    touch-action: none;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
   }
 }
