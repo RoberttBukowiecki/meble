@@ -5,7 +5,7 @@
  * Renders the furniture parts in 3D space with controls and lighting
  */
 
-import { useRef, useCallback, useEffect } from 'react';
+import { useRef, useCallback, useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Grid, SoftShadows } from '@react-three/drei';
@@ -21,7 +21,7 @@ import { Camera, Move, RotateCw, Maximize2, PanelRight } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { KeyboardShortcutsHelp } from '@/components/ui/KeyboardShortcutsHelp';
 import { CollisionWarning } from '@/components/ui/CollisionWarning';
-import { SCENE_CONFIG, KEYBOARD_SHORTCUTS, formatShortcutLabel } from '@/lib/config';
+import { SCENE_CONFIG, KEYBOARD_SHORTCUTS, formatShortcutLabel, QUALITY_PRESETS } from '@/lib/config';
 import type { OrbitControls as OrbitControlsType } from 'three-stdlib';
 import { CabinetGroupTransform } from './CabinetGroupTransform';
 import { CabinetResizeControls } from './CabinetResizeControls';
@@ -38,6 +38,7 @@ import { DimensionProvider } from '@/lib/dimension-context';
 import { SnapControlPanel } from '@/components/layout/SnapControlPanel';
 import { GraphicsSettingsPanel } from '@/components/layout/GraphicsSettingsPanel';
 import { DimensionControlPanel } from '@/components/layout/DimensionControlPanel';
+import { SceneEffects } from './SceneEffects';
 
 interface SceneProps {
   onOpenMobileSidebar?: () => void;
@@ -102,6 +103,12 @@ export function Scene({ onOpenMobileSidebar, isMobile }: SceneProps) {
       }))
     );
   const controlsRef = useRef<OrbitControlsType>(null);
+
+  // Get quality preset based on current graphics settings
+  const qualityPreset = useMemo(() => {
+    const quality = graphicsSettings?.quality || 'high';
+    return QUALITY_PRESETS[quality as keyof typeof QUALITY_PRESETS] || QUALITY_PRESETS.high;
+  }, [graphicsSettings?.quality]);
 
   const handleResetCamera = () => {
     if (controlsRef.current) {
@@ -243,6 +250,7 @@ export function Scene({ onOpenMobileSidebar, isMobile }: SceneProps) {
               far: 100000,
             }}
             shadows
+            dpr={[1, qualityPreset.pixelRatio]}
             onPointerMissed={handlePointerMissed}
           >
           {/* Controls */}
@@ -254,7 +262,13 @@ export function Scene({ onOpenMobileSidebar, isMobile }: SceneProps) {
             enabled={!isTransforming}
           />
 
-          {graphicsSettings?.shadows && <SoftShadows size={15} samples={10} focus={0.5} />}
+          {graphicsSettings?.shadows && (
+            <SoftShadows
+              size={qualityPreset.softShadowSize}
+              samples={qualityPreset.softShadowSamples}
+              focus={0.5}
+            />
+          )}
 
           {/* Lighting */}
           <RoomLighting />
@@ -263,8 +277,13 @@ export function Scene({ onOpenMobileSidebar, isMobile }: SceneProps) {
             position={[300, 400, 200]}
             intensity={SCENE_CONFIG.DIRECTIONAL_LIGHT_INTENSITY}
             castShadow
-            shadow-mapSize-width={2048}
-            shadow-mapSize-height={2048}
+            shadow-mapSize-width={qualityPreset.shadowMapSize}
+            shadow-mapSize-height={qualityPreset.shadowMapSize}
+            shadow-camera-far={5000}
+            shadow-camera-left={-2000}
+            shadow-camera-right={2000}
+            shadow-camera-top={2000}
+            shadow-camera-bottom={-2000}
           />
 
           {/* Grid */}
@@ -382,6 +401,9 @@ export function Scene({ onOpenMobileSidebar, isMobile }: SceneProps) {
 
           {/* Dimension lines (rendered based on dimension context) */}
           {dimensionSettings?.enabled && <DimensionRenderer />}
+
+          {/* Post-processing effects (SSAO for ambient occlusion) */}
+          <SceneEffects />
           </Canvas>
         </SnapProvider>
       </DimensionProvider>
