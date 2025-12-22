@@ -158,9 +158,9 @@ export function Scene({ onOpenMobileSidebar, isMobile }: SceneProps) {
   }, []);
 
   return (
-    <div className="relative h-full w-full">
+    <div className="relative h-full w-full touch-none select-none">
       {/* Top-right controls */}
-      <div className="absolute right-2 top-2 md:right-4 md:top-4 z-10 flex flex-wrap gap-1 md:gap-2 max-w-[calc(100%-1rem)]">
+      <div className="absolute right-2 top-2 md:right-4 md:top-4 z-10 flex flex-wrap gap-1 md:gap-2 max-w-[calc(100%-1rem)] touch-auto select-auto">
         {/* Transform Mode Toggle */}
         <div className="flex gap-1 rounded-md bg-background/80 p-1 backdrop-blur-sm">
           <Button
