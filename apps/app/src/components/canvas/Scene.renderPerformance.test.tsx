@@ -2002,3 +2002,380 @@ describe('Cabinet Component Isolation', () => {
     expect(afterCab2Renders - initialCab2Renders).toBeLessThanOrEqual(2);
   });
 });
+
+// ============================================================================
+// Object Dimensions Performance Tests
+// ============================================================================
+
+describe('Object Dimensions Performance', () => {
+  beforeEach(() => {
+    resetStore();
+  });
+
+  it('should not re-render parts when object dimension settings change', () => {
+    const renderCounters = new Map<string, number>();
+
+    const parts = Array.from({ length: 5 }, (_, i) =>
+      createTestPart(`part-${i}`, `Part ${i}`)
+    );
+
+    act(() => {
+      useStore.setState({ parts });
+    });
+
+    render(<MockScene renderCounters={renderCounters} />);
+
+    const initialPartRenders = new Map<string, number>();
+    for (let i = 0; i < 5; i++) {
+      initialPartRenders.set(`part-${i}`, renderCounters.get(`part-part-${i}`) || 0);
+    }
+
+    // Toggle object dimensions
+    act(() => {
+      useStore.getState().toggleObjectDimensions();
+    });
+
+    // Parts should not re-render (object dimensions is not in Part3D selector)
+    for (let i = 0; i < 5; i++) {
+      const initial = initialPartRenders.get(`part-${i}`) || 0;
+      const after = renderCounters.get(`part-part-${i}`) || 0;
+      // Parts get re-mounted when scene re-renders but should be bounded
+      expect(after - initial).toBeLessThanOrEqual(2);
+    }
+  });
+
+  it('should toggle object dimensions efficiently', () => {
+    const renderCounters = new Map<string, number>();
+
+    act(() => {
+      useStore.setState({
+        parts: [createTestPart('part-1', 'Part 1')],
+      });
+    });
+
+    render(<MockScene renderCounters={renderCounters} />);
+
+    const initialSceneRenders = renderCounters.get('scene') || 0;
+
+    // Toggle object dimensions multiple times
+    act(() => {
+      useStore.getState().toggleObjectDimensions();
+    });
+    act(() => {
+      useStore.getState().toggleObjectDimensions();
+    });
+    act(() => {
+      useStore.getState().toggleObjectDimensions();
+    });
+
+    const afterToggleRenders = renderCounters.get('scene') || 0;
+
+    // 3 toggles should cause at most 6 re-renders
+    expect(afterToggleRenders - initialSceneRenders).toBeLessThanOrEqual(6);
+  });
+
+  it('should update object dimension settings efficiently', () => {
+    const renderCounters = new Map<string, number>();
+
+    act(() => {
+      useStore.setState({
+        parts: [createTestPart('part-1', 'Part 1')],
+      });
+    });
+
+    render(<MockScene renderCounters={renderCounters} />);
+
+    const initialSceneRenders = renderCounters.get('scene') || 0;
+
+    // Update multiple settings
+    act(() => {
+      useStore.getState().updateObjectDimensionSettings({ mode: 'all' });
+    });
+    act(() => {
+      useStore.getState().updateObjectDimensionSettings({ granularity: 'part' });
+    });
+    act(() => {
+      useStore.getState().updateObjectDimensionSettings({ showLabels: true });
+    });
+    act(() => {
+      useStore.getState().updateObjectDimensionSettings({ showAxisColors: true });
+    });
+
+    const afterSettingsRenders = renderCounters.get('scene') || 0;
+
+    // 4 setting changes should cause at most 8 re-renders
+    expect(afterSettingsRenders - initialSceneRenders).toBeLessThanOrEqual(8);
+  });
+
+  it('should not re-render Scene when object dimensions are disabled and selection changes', () => {
+    const renderCounters = new Map<string, number>();
+
+    const parts = Array.from({ length: 5 }, (_, i) =>
+      createTestPart(`part-${i}`, `Part ${i}`)
+    );
+
+    act(() => {
+      useStore.setState({
+        parts,
+        objectDimensionSettings: {
+          enabled: false,
+          mode: 'selection',
+          granularity: 'group',
+          showLabels: true,
+          showAxisColors: false,
+        },
+      });
+    });
+
+    render(<MockScene renderCounters={renderCounters} />);
+
+    const initialSceneRenders = renderCounters.get('scene') || 0;
+
+    // Select a part
+    act(() => {
+      useStore.getState().selectPart('part-1');
+    });
+
+    // Scene re-renders for selection change
+    const afterSelectRenders = renderCounters.get('scene') || 0;
+
+    // Should be minimal re-renders (selection changes are handled)
+    expect(afterSelectRenders - initialSceneRenders).toBeLessThanOrEqual(2);
+  });
+
+  it('should batch object dimension mode and granularity changes', () => {
+    const renderCounters = new Map<string, number>();
+
+    act(() => {
+      useStore.setState({
+        parts: [createTestPart('part-1', 'Part 1')],
+      });
+    });
+
+    render(<MockScene renderCounters={renderCounters} />);
+
+    const initialSceneRenders = renderCounters.get('scene') || 0;
+
+    // Batch multiple setting changes
+    act(() => {
+      useStore.getState().updateObjectDimensionSettings({
+        mode: 'all',
+        granularity: 'part',
+        showLabels: true,
+        showAxisColors: true,
+      });
+    });
+
+    const afterBatchRenders = renderCounters.get('scene') || 0;
+
+    // Single batch update should cause at most 2 re-renders
+    expect(afterBatchRenders - initialSceneRenders).toBeLessThanOrEqual(2);
+  });
+});
+
+// ============================================================================
+// Object Dimensions Calculator Performance Tests
+// ============================================================================
+
+describe('Object Dimensions Calculator Performance', () => {
+  beforeEach(() => {
+    resetStore();
+  });
+
+  it('should handle 50 parts without performance degradation', () => {
+    const PART_COUNT = 50;
+
+    const parts = Array.from({ length: PART_COUNT }, (_, i) =>
+      createTestPart(`part-${i}`, `Part ${i}`)
+    );
+
+    act(() => {
+      useStore.setState({
+        parts,
+        selectedPartIds: new Set(['part-0']),
+        selectedPartId: 'part-0',
+      });
+    });
+
+    // Import and test the calculator directly
+    const { calculateAllObjectDimensions } = require('@/lib/object-dimensions-calculator');
+
+    const startTime = performance.now();
+
+    // Calculate dimensions multiple times
+    for (let i = 0; i < 100; i++) {
+      calculateAllObjectDimensions(
+        'selection',
+        'group',
+        parts,
+        [],
+        [],
+        'part-0',
+        null,
+        new Set(['part-0']),
+        null,
+        DEFAULT_FURNITURE_ID,
+        new Set(),
+        1000,
+        1000,
+        1000
+      );
+    }
+
+    const endTime = performance.now();
+    const avgTime = (endTime - startTime) / 100;
+
+    // Average calculation should be under 5ms
+    expect(avgTime).toBeLessThan(5);
+  });
+
+  it('should handle 20 cabinets without performance degradation', () => {
+    const CABINET_COUNT = 20;
+    const PARTS_PER_CABINET = 6;
+
+    const parts: Part[] = [];
+    const cabinets: Cabinet[] = [];
+
+    for (let c = 0; c < CABINET_COUNT; c++) {
+      const cabinetParts = Array.from({ length: PARTS_PER_CABINET }, (_, i) => ({
+        ...createTestPart(`cab${c}-part-${i}`, `Cabinet ${c} Part ${i}`),
+        cabinetMetadata: { cabinetId: `cabinet-${c}`, role: 'SIDE' as const },
+      }));
+
+      parts.push(...cabinetParts);
+
+      cabinets.push({
+        id: `cabinet-${c}`,
+        name: `Cabinet ${c}`,
+        furnitureId: DEFAULT_FURNITURE_ID,
+        type: 'base' as CabinetType,
+        params: { width: 600, height: 720, depth: 560 },
+        materials: { bodyMaterialId: 'mat-1', frontMaterialId: 'mat-1' },
+        partIds: cabinetParts.map((p) => p.id),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+    }
+
+    act(() => {
+      useStore.setState({
+        parts,
+        cabinets,
+        selectedCabinetId: 'cabinet-0',
+      });
+    });
+
+    const { calculateAllObjectDimensions } = require('@/lib/object-dimensions-calculator');
+
+    const startTime = performance.now();
+
+    // Calculate dimensions in 'all' mode with 'group' granularity
+    for (let i = 0; i < 50; i++) {
+      calculateAllObjectDimensions(
+        'all',
+        'group',
+        parts,
+        cabinets,
+        [],
+        null,
+        'cabinet-0',
+        new Set(),
+        null,
+        DEFAULT_FURNITURE_ID,
+        new Set(),
+        1000,
+        1000,
+        1000
+      );
+    }
+
+    const endTime = performance.now();
+    const avgTime = (endTime - startTime) / 50;
+
+    // Average calculation should be under 10ms for 20 cabinets
+    expect(avgTime).toBeLessThan(10);
+  });
+
+  it('should handle granularity switch efficiently', () => {
+    const CABINET_COUNT = 10;
+
+    const parts: Part[] = [];
+    const cabinets: Cabinet[] = [];
+
+    for (let c = 0; c < CABINET_COUNT; c++) {
+      const cabinetParts = Array.from({ length: 5 }, (_, i) => ({
+        ...createTestPart(`cab${c}-part-${i}`, `Cabinet ${c} Part ${i}`),
+        cabinetMetadata: { cabinetId: `cabinet-${c}`, role: 'SIDE' as const },
+      }));
+
+      parts.push(...cabinetParts);
+
+      cabinets.push({
+        id: `cabinet-${c}`,
+        name: `Cabinet ${c}`,
+        furnitureId: DEFAULT_FURNITURE_ID,
+        type: 'base' as CabinetType,
+        params: {},
+        materials: {},
+        partIds: cabinetParts.map((p) => p.id),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+    }
+
+    const { calculateAllObjectDimensions } = require('@/lib/object-dimensions-calculator');
+
+    // Test 'group' granularity
+    const groupStartTime = performance.now();
+    for (let i = 0; i < 100; i++) {
+      calculateAllObjectDimensions(
+        'all',
+        'group',
+        parts,
+        cabinets,
+        [],
+        null,
+        null,
+        new Set(),
+        null,
+        DEFAULT_FURNITURE_ID,
+        new Set(),
+        1000,
+        1000,
+        1000
+      );
+    }
+    const groupEndTime = performance.now();
+    const groupAvgTime = (groupEndTime - groupStartTime) / 100;
+
+    // Test 'part' granularity
+    const partStartTime = performance.now();
+    for (let i = 0; i < 100; i++) {
+      calculateAllObjectDimensions(
+        'all',
+        'part',
+        parts,
+        cabinets,
+        [],
+        null,
+        null,
+        new Set(),
+        null,
+        DEFAULT_FURNITURE_ID,
+        new Set(),
+        1000,
+        1000,
+        1000
+      );
+    }
+    const partEndTime = performance.now();
+    const partAvgTime = (partEndTime - partStartTime) / 100;
+
+    // Both should be under 10ms
+    expect(groupAvgTime).toBeLessThan(10);
+    expect(partAvgTime).toBeLessThan(10);
+
+    // Part granularity may be slower but should be within 3x
+    expect(partAvgTime).toBeLessThan(groupAvgTime * 3);
+  });
+});
