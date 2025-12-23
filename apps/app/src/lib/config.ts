@@ -142,12 +142,48 @@ export const DEFAULT_GRAPHICS_SETTINGS = {
   lightingMode: 'standard',
 } as const;
 
+/**
+ * Quality presets for graphics settings
+ * Maps quality levels to specific rendering parameters
+ */
+export const QUALITY_PRESETS = {
+  low: {
+    shadowMapSize: 512,
+    softShadowSamples: 5,
+    softShadowSize: 10,
+    pixelRatio: 1,
+    aoSamples: 8,
+    aoRadius: 5,
+    aoIntensity: 1,
+  },
+  medium: {
+    shadowMapSize: 1024,
+    softShadowSamples: 10,
+    softShadowSize: 15,
+    pixelRatio: 1.5,
+    aoSamples: 16,
+    aoRadius: 5,
+    aoIntensity: 1.5,
+  },
+  high: {
+    shadowMapSize: 2048,
+    softShadowSamples: 17,
+    softShadowSize: 25,
+    pixelRatio: 2,
+    aoSamples: 32,
+    aoRadius: 5,
+    aoIntensity: 2,
+  },
+} as const;
+
+export type QualityPreset = keyof typeof QUALITY_PRESETS;
+
 // ============================================================================
 // UI Feature Toggles
 // ============================================================================
 
 export const UI_FEATURES = {
-  HIDE_GRAPHICS_SETTINGS: true,
+  HIDE_GRAPHICS_SETTINGS: true,   // Hidden by default, can be enabled in settings
   HIDE_ROOMS_TAB: true,
 } as const;
 
