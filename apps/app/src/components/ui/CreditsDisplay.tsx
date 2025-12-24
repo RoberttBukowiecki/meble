@@ -7,7 +7,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Button, Badge, Tooltip, TooltipContent, TooltipTrigger } from '@meble/ui';
+import { Button, Badge, Tooltip, TooltipContent, TooltipTrigger, AnimatedCredits } from '@meble/ui';
 import { CreditCard, Plus, Sparkles, RefreshCw, Clock } from 'lucide-react';
 import { CreditsPurchaseModal } from './CreditsPurchaseModal';
 import type { CreditBalance } from '@/hooks/useCredits';
@@ -56,24 +56,25 @@ export function CreditsDisplay({
   if (compact) {
     return (
       <>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="gap-1.5"
-              onClick={() => setShowPurchaseModal(true)}
-            >
-              {hasUnlimited ? (
-                <Sparkles className="h-4 w-4 text-amber-500" />
-              ) : (
-                <CreditCard className="h-4 w-4" />
-              )}
-              <span className="font-medium">
-                {hasUnlimited ? 'Pro' : availableCredits}
-              </span>
-            </Button>
-          </TooltipTrigger>
+        <AnimatedCredits currentCredits={availableCredits}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-1.5"
+                onClick={() => setShowPurchaseModal(true)}
+              >
+                {hasUnlimited ? (
+                  <Sparkles className="h-4 w-4 text-amber-500" />
+                ) : (
+                  <CreditCard className="h-4 w-4" />
+                )}
+                <span className="font-medium">
+                  {hasUnlimited ? 'Pro' : availableCredits}
+                </span>
+              </Button>
+            </TooltipTrigger>
           <TooltipContent>
             {hasUnlimited ? (
               <>
@@ -94,6 +95,7 @@ export function CreditsDisplay({
             )}
           </TooltipContent>
         </Tooltip>
+        </AnimatedCredits>
 
         <CreditsPurchaseModal
           open={showPurchaseModal}
@@ -110,28 +112,30 @@ export function CreditsDisplay({
     <>
       <div className="flex items-center gap-3 p-3 rounded-lg border bg-card">
         <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            {hasUnlimited ? (
-              <>
-                <Sparkles className="h-5 w-5 text-amber-500" />
-                <span className="font-semibold">Pro (Unlimited)</span>
-                <Badge variant="secondary" className="text-xs">
-                  Aktywny
-                </Badge>
-              </>
-            ) : (
-              <>
-                <CreditCard className="h-5 w-5 text-primary" />
-                <span className="font-semibold">
-                  {availableCredits} kredyt{availableCredits === 1 ? '' : availableCredits < 5 ? 'y' : 'ów'}
-                </span>
-              </>
-            )}
+          <AnimatedCredits currentCredits={availableCredits}>
+            <div className="flex items-center gap-2 mb-1">
+              {hasUnlimited ? (
+                <>
+                  <Sparkles className="h-5 w-5 text-amber-500" />
+                  <span className="font-semibold">Pro (Unlimited)</span>
+                  <Badge variant="secondary" className="text-xs">
+                    Aktywny
+                  </Badge>
+                </>
+              ) : (
+                <>
+                  <CreditCard className="h-5 w-5 text-primary" />
+                  <span className="font-semibold">
+                    {availableCredits} kredyt{availableCredits === 1 ? '' : availableCredits < 5 ? 'y' : 'ów'}
+                  </span>
+                </>
+              )}
 
-            {isLoading && (
-              <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
-            )}
-          </div>
+              {isLoading && (
+                <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
+              )}
+            </div>
+          </AnimatedCredits>
 
           {/* Expiry info */}
           {(unlimitedExpiresAt || guestExpiresAt) && (

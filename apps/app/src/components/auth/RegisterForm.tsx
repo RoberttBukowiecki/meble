@@ -3,9 +3,10 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/providers/AuthProvider';
-import { Button, Input, Label, Checkbox } from '@meble/ui';
-import { Loader2, Mail, Lock, User, Chrome, CheckCircle } from 'lucide-react';
+import { Button, Input, Label, Checkbox, PasswordInput, PasswordStrength } from '@meble/ui';
+import { Loader2, Mail, User, Chrome, CheckCircle, Gift, Check } from 'lucide-react';
 import { track, AnalyticsEvent } from '@meble/analytics';
+import { validatePassword, passwordsMatch } from '@/lib/auth/passwordValidation';
 
 interface RegisterFormProps {
   redirectTo?: string;
@@ -30,13 +31,14 @@ export function RegisterForm({ redirectTo }: RegisterFormProps) {
     setError(null);
 
     // Validation
-    if (password !== confirmPassword) {
+    if (!passwordsMatch(password, confirmPassword)) {
       setError('Hasla nie sa identyczne');
       return;
     }
 
-    if (password.length < 8) {
-      setError('Haslo musi miec minimum 8 znakow');
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      setError(passwordValidation.errors[0]);
       return;
     }
 
@@ -154,37 +156,31 @@ export function RegisterForm({ redirectTo }: RegisterFormProps) {
 
         <div className="space-y-2">
           <Label htmlFor="password">Haslo *</Label>
-          <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              id="password"
-              type="password"
-              placeholder="Minimum 8 znakow"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="pl-10"
-              required
-              autoComplete="new-password"
-              minLength={8}
-            />
-          </div>
+          <PasswordInput
+            id="password"
+            placeholder="Minimum 8 znakow"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            autoComplete="new-password"
+            minLength={8}
+          />
+          <PasswordStrength password={password} />
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="confirmPassword">Potwierdz haslo *</Label>
-          <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              id="confirmPassword"
-              type="password"
-              placeholder="Powtorz haslo"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="pl-10"
-              required
-              autoComplete="new-password"
-            />
-          </div>
+          <PasswordInput
+            id="confirmPassword"
+            placeholder="Powtorz haslo"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+            autoComplete="new-password"
+          />
+          {confirmPassword && password !== confirmPassword && (
+            <p className="text-xs text-destructive">Hasla nie sa identyczne</p>
+          )}
         </div>
 
         <div className="space-y-3">
@@ -271,13 +267,36 @@ export function RegisterForm({ redirectTo }: RegisterFormProps) {
         Google
       </Button>
 
+      {/* Free credits highlight */}
+      <div className="flex items-center gap-3 p-3 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900">
+        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center">
+          <Gift className="h-5 w-5 text-green-600 dark:text-green-400" />
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-green-700 dark:text-green-300">
+            +2 darmowe kredyty na start
+          </p>
+          <p className="text-xs text-green-600/80 dark:text-green-400/80">
+            Otrzymasz je automatycznie po rejestracji
+          </p>
+        </div>
+      </div>
+
       <div className="bg-muted/50 p-4 rounded-lg">
         <p className="text-sm font-medium mb-2">Korzysci z konta:</p>
-        <ul className="text-sm text-muted-foreground space-y-1">
-          <li>- Kredyty eksportu nigdy nie wygasaja</li>
-          <li>- Historia projektow i eksportow</li>
-          <li>- +2 darmowe kredyty na start</li>
-          <li>- Dostep z kazdego urzadzenia</li>
+        <ul className="text-sm text-muted-foreground space-y-1.5">
+          <li className="flex items-center gap-2">
+            <Check className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
+            Kredyty eksportu nigdy nie wygasaja
+          </li>
+          <li className="flex items-center gap-2">
+            <Check className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
+            Historia projektow i eksportow
+          </li>
+          <li className="flex items-center gap-2">
+            <Check className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
+            Dostep z kazdego urzadzenia
+          </li>
         </ul>
       </div>
     </div>

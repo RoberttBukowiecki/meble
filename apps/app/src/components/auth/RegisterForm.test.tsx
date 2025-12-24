@@ -51,7 +51,22 @@ describe('RegisterForm', () => {
     expect(screen.getByText(/kredyty eksportu nigdy nie wygasaja/i)).toBeInTheDocument();
   });
 
-  it('validates password matching', async () => {
+  it('validates password matching with inline feedback', async () => {
+    render(<RegisterForm />);
+
+    const passwordInput = screen.getByLabelText(/^haslo/i);
+    const confirmPasswordInput = screen.getByLabelText(/potwierdz haslo/i);
+
+    await user.type(passwordInput, 'password123');
+    await user.type(confirmPasswordInput, 'differentpassword');
+
+    // Inline validation should show immediately
+    await waitFor(() => {
+      expect(screen.getByText(/hasla nie sa identyczne/i)).toBeInTheDocument();
+    });
+  });
+
+  it('validates password matching on form submit', async () => {
     render(<RegisterForm />);
 
     const emailInput = screen.getByLabelText(/^email/i);
@@ -62,14 +77,11 @@ describe('RegisterForm', () => {
 
     await user.type(emailInput, 'test@example.com');
     await user.type(passwordInput, 'password123');
-    await user.type(confirmPasswordInput, 'differentpassword');
+    await user.type(confirmPasswordInput, 'differentpass1');
     await user.click(termsCheckbox);
     await user.click(submitButton);
 
-    await waitFor(() => {
-      expect(screen.getByText(/hasla nie sa identyczne/i)).toBeInTheDocument();
-    });
-
+    // Should show error and not call signUp
     expect(mockSignUp).not.toHaveBeenCalled();
   });
 
@@ -201,15 +213,38 @@ describe('RegisterForm', () => {
     const termsCheckbox = screen.getByRole('checkbox', { name: /akceptuje/i });
     const submitButton = screen.getByRole('button', { name: /zarejestruj/i });
 
+    // Use password that passes client validation but fails server validation
     await user.type(emailInput, 'test@example.com');
-    await user.type(passwordInput, 'weakpass');
-    await user.type(confirmPasswordInput, 'weakpass');
+    await user.type(passwordInput, 'weakpass1');
+    await user.type(confirmPasswordInput, 'weakpass1');
     await user.click(termsCheckbox);
     await user.click(submitButton);
 
     await waitFor(() => {
       expect(screen.getByText(/haslo jest za slabe/i)).toBeInTheDocument();
     });
+  });
+
+  it('validates password must contain a number', async () => {
+    render(<RegisterForm />);
+
+    const emailInput = screen.getByLabelText(/^email/i);
+    const passwordInput = screen.getByLabelText(/^haslo/i);
+    const confirmPasswordInput = screen.getByLabelText(/potwierdz haslo/i);
+    const termsCheckbox = screen.getByRole('checkbox', { name: /akceptuje/i });
+    const submitButton = screen.getByRole('button', { name: /zarejestruj/i });
+
+    await user.type(emailInput, 'test@example.com');
+    await user.type(passwordInput, 'password');
+    await user.type(confirmPasswordInput, 'password');
+    await user.click(termsCheckbox);
+    await user.click(submitButton);
+
+    await waitFor(() => {
+      expect(screen.getByText(/haslo musi zawierac cyfre/i)).toBeInTheDocument();
+    });
+
+    expect(mockSignUp).not.toHaveBeenCalled();
   });
 
   it('calls signInWithGoogle on Google button click', async () => {

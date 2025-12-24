@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { useAuth } from '@/providers/AuthProvider';
 import { Button, Input, Label } from '@meble/ui';
-import { Loader2, Mail, CheckCircle } from 'lucide-react';
+import { Loader2, Mail, CheckCircle, ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
 
 export function ForgotPasswordForm() {
   const { resetPassword } = useAuth();
@@ -86,6 +87,16 @@ export function ForgotPasswordForm() {
           )}
         </Button>
       </form>
+
+      <div className="text-center">
+        <Link
+          href="/login"
+          className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Powrot do logowania
+        </Link>
+      </div>
     </div>
   );
 }

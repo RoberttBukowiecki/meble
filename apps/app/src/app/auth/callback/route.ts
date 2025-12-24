@@ -7,10 +7,66 @@ import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
+/**
+ * Validates that the redirect URL is safe (internal path only).
+ * Prevents open redirect attacks by ensuring the URL starts with /
+ * and doesn't contain protocol or external hosts.
+ */
+function getSafeRedirectUrl(next: string | null): string {
+  if (!next) return '/';
+
+  // Must start with / (relative path)
+  if (!next.startsWith('/')) return '/';
+
+  // Prevent protocol-relative URLs (//example.com)
+  if (next.startsWith('//')) return '/';
+
+  // Prevent backslash-based attacks (/\evil.com)
+  if (next.includes('\\')) return '/';
+
+  // Prevent javascript: or other protocols
+  if (next.includes(':')) return '/';
+
+  // Prevent null bytes and other control characters
+  if (/[\x00-\x1f\x7f]/.test(next)) return '/';
+
+  // Prevent encoded characters that could bypass checks
+  if (next.includes('%')) {
+    try {
+      // Recursively decode to catch double/triple encoding
+      let decoded = next;
+      let prevDecoded = '';
+      let iterations = 0;
+      const maxIterations = 5;
+
+      while (decoded !== prevDecoded && iterations < maxIterations) {
+        prevDecoded = decoded;
+        decoded = decodeURIComponent(decoded);
+        iterations++;
+      }
+
+      // Check decoded value for dangerous patterns
+      if (
+        decoded.includes('//') ||
+        decoded.includes(':') ||
+        decoded.includes('\\') ||
+        /[\x00-\x1f\x7f]/.test(decoded)
+      ) {
+        return '/';
+      }
+    } catch {
+      // Invalid encoding - reject
+      return '/';
+    }
+  }
+
+  return next;
+}
+
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
-  const next = requestUrl.searchParams.get('next') || '/';
+  const next = getSafeRedirectUrl(requestUrl.searchParams.get('next'));
   const origin = requestUrl.origin;
 
   if (code) {
