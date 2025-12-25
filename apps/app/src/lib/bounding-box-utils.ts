@@ -6,7 +6,7 @@
  * Used for dimension display during transform operations.
  */
 
-import type { Part, Cabinet, DimensionBoundingBox } from '@/types';
+import type { Part, Cabinet, DimensionBoundingBox, CountertopGroup } from '@/types';
 
 // ============================================================================
 // Vector Math (inline for performance)
@@ -458,3 +458,74 @@ export function getAxisDistance(
     direction: a.center[axisIndex] < b.center[axisIndex] ? 1 : -1,
   };
 }
+
+// ============================================================================
+// Countertop Bounding Box
+// ============================================================================
+
+/**
+ * Calculate AABB for a countertop group
+ * Countertop position is derived from cabinet positions + overhangs
+ * Returns null if the group has no segments or no valid cabinets
+ */
+export function calculateCountertopBoundingBox(
+  group: CountertopGroup,
+  cabinets: Cabinet[],
+  parts: Part[]
+): { min: Vec3; max: Vec3 } | null {
+  if (!group.segments || group.segments.length === 0) return null;
+
+  const min: Vec3 = [Infinity, Infinity, Infinity];
+  const max: Vec3 = [-Infinity, -Infinity, -Infinity];
+
+  for (const segment of group.segments) {
+    // Get cabinets for this segment
+    const segmentCabinets = cabinets.filter(c => segment.cabinetIds.includes(c.id));
+    if (segmentCabinets.length === 0) continue;
+
+    // Calculate cabinet bounds using parts
+    let cabMinX = Infinity, cabMinY = Infinity, cabMinZ = Infinity;
+    let cabMaxX = -Infinity, cabMaxY = -Infinity, cabMaxZ = -Infinity;
+
+    for (const cabinet of segmentCabinets) {
+      const cabinetParts = parts.filter(p => cabinet.partIds.includes(p.id));
+      for (const part of cabinetParts) {
+        const corners = getPartCorners(part);
+        for (const corner of corners) {
+          cabMinX = Math.min(cabMinX, corner[0]);
+          cabMaxX = Math.max(cabMaxX, corner[0]);
+          cabMinY = Math.min(cabMinY, corner[1]);
+          cabMaxY = Math.max(cabMaxY, corner[1]);
+          cabMinZ = Math.min(cabMinZ, corner[2]);
+          cabMaxZ = Math.max(cabMaxZ, corner[2]);
+        }
+      }
+    }
+
+    if (cabMinX === Infinity) continue;
+
+    // Countertop sits on top of cabinets with overhangs
+    const thickness = segment.thickness;
+    const overhang = segment.overhang;
+
+    // Calculate countertop bounds including overhangs
+    const ctMinX = cabMinX - overhang.left;
+    const ctMaxX = cabMaxX + overhang.right;
+    const ctMinY = cabMaxY; // Bottom of countertop is top of cabinet
+    const ctMaxY = cabMaxY + thickness;
+    const ctMinZ = cabMinZ - overhang.back;
+    const ctMaxZ = cabMaxZ + overhang.front;
+
+    min[0] = Math.min(min[0], ctMinX);
+    min[1] = Math.min(min[1], ctMinY);
+    min[2] = Math.min(min[2], ctMinZ);
+    max[0] = Math.max(max[0], ctMaxX);
+    max[1] = Math.max(max[1], ctMaxY);
+    max[2] = Math.max(max[2], ctMaxZ);
+  }
+
+  if (min[0] === Infinity) return null;
+
+  return { min, max };
+}
+

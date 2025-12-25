@@ -35,6 +35,7 @@ export const KEYBOARD_SHORTCUTS = {
 
   // View options
   TOGGLE_GRID: 'g',
+  TOGGLE_OBJECT_DIMENSIONS: 'b', // Object dimensions (W/H/D)
 
   // Selection shortcuts (Cmd/Ctrl modifier required)
   SELECT_ALL: 'a',

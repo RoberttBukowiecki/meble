@@ -262,3 +262,62 @@ export interface FeatureFlags {
   HIDE_GRAPHICS_SETTINGS: boolean;
   HIDE_ROOMS_TAB: boolean;
 }
+
+// ============================================================================
+// Object Dimensions Display (W/H/D of selected/all objects)
+// ============================================================================
+
+/**
+ * Display mode for object dimensions
+ */
+export type ObjectDimensionMode =
+  | 'selection'  // Only selected objects
+  | 'all';       // All objects in furniture
+
+/**
+ * Granularity of dimension display
+ */
+export type ObjectDimensionGranularity =
+  | 'group'      // Cabinet/group bounding box
+  | 'part';      // Individual parts
+
+/**
+ * Single dimension line for an object
+ */
+export interface ObjectDimension {
+  id: string;
+  objectId: string;
+  objectType: 'part' | 'cabinet' | 'countertop' | 'multiselect';
+  axis: 'X' | 'Y' | 'Z';
+  label: 'W' | 'H' | 'D';
+  startPoint: [number, number, number];
+  endPoint: [number, number, number];
+  length: number;
+  labelPosition: [number, number, number];
+}
+
+/**
+ * Complete dimension set for an object
+ */
+export interface ObjectDimensionSet {
+  objectId: string;
+  objectType: 'part' | 'cabinet' | 'countertop' | 'multiselect';
+  boundingBox: {
+    min: [number, number, number];
+    max: [number, number, number];
+    center: [number, number, number];
+    size: [number, number, number];
+  };
+  dimensions: ObjectDimension[];
+}
+
+/**
+ * Settings for object dimension display
+ */
+export interface ObjectDimensionSettings {
+  enabled: boolean;
+  mode: ObjectDimensionMode;
+  granularity: ObjectDimensionGranularity;
+  showLabels: boolean;
+  showAxisColors: boolean;
+}
