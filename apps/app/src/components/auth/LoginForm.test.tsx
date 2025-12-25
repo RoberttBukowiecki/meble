@@ -37,7 +37,7 @@ describe('LoginForm', () => {
     render(<LoginForm />);
 
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/haslo/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('********')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /zaloguj/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /google/i })).toBeInTheDocument();
     expect(screen.getByText(/zapomnialesz hasla/i)).toBeInTheDocument();
@@ -47,7 +47,7 @@ describe('LoginForm', () => {
     render(<LoginForm />);
 
     const emailInput = screen.getByLabelText(/email/i);
-    const passwordInput = screen.getByLabelText(/haslo/i);
+    const passwordInput = screen.getByPlaceholderText('********');
 
     await user.type(emailInput, 'test@example.com');
     await user.type(passwordInput, 'password123');
@@ -60,7 +60,7 @@ describe('LoginForm', () => {
     render(<LoginForm />);
 
     const emailInput = screen.getByLabelText(/email/i);
-    const passwordInput = screen.getByLabelText(/haslo/i);
+    const passwordInput = screen.getByPlaceholderText('********');
     const submitButton = screen.getByRole('button', { name: /zaloguj/i });
 
     await user.type(emailInput, 'test@example.com');
@@ -76,7 +76,7 @@ describe('LoginForm', () => {
     render(<LoginForm redirectTo="/dashboard" />);
 
     const emailInput = screen.getByLabelText(/email/i);
-    const passwordInput = screen.getByLabelText(/haslo/i);
+    const passwordInput = screen.getByPlaceholderText('********');
     const submitButton = screen.getByRole('button', { name: /zaloguj/i });
 
     await user.type(emailInput, 'test@example.com');
@@ -93,7 +93,7 @@ describe('LoginForm', () => {
     render(<LoginForm />);
 
     const emailInput = screen.getByLabelText(/email/i);
-    const passwordInput = screen.getByLabelText(/haslo/i);
+    const passwordInput = screen.getByPlaceholderText('********');
     const submitButton = screen.getByRole('button', { name: /zaloguj/i });
 
     await user.type(emailInput, 'test@example.com');
@@ -113,7 +113,7 @@ describe('LoginForm', () => {
     render(<LoginForm />);
 
     const emailInput = screen.getByLabelText(/email/i);
-    const passwordInput = screen.getByLabelText(/haslo/i);
+    const passwordInput = screen.getByPlaceholderText('********');
     const submitButton = screen.getByRole('button', { name: /zaloguj/i });
 
     await user.type(emailInput, 'wrong@example.com');
@@ -133,7 +133,7 @@ describe('LoginForm', () => {
     render(<LoginForm />);
 
     const emailInput = screen.getByLabelText(/email/i);
-    const passwordInput = screen.getByLabelText(/haslo/i);
+    const passwordInput = screen.getByPlaceholderText('********');
     const submitButton = screen.getByRole('button', { name: /zaloguj/i });
 
     await user.type(emailInput, 'test@example.com');
@@ -182,7 +182,7 @@ describe('LoginForm', () => {
     render(<LoginForm />);
 
     const emailInput = screen.getByLabelText(/email/i);
-    const passwordInput = screen.getByLabelText(/haslo/i);
+    const passwordInput = screen.getByPlaceholderText('********');
     const submitButton = screen.getByRole('button', { name: /zaloguj/i });
 
     await user.type(emailInput, 'test@example.com');

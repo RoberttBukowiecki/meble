@@ -61,11 +61,29 @@ const config: Config = {
   				to: {
   					height: '0'
   				}
+  			},
+  			'credits-pop': {
+  				'0%': {
+  					opacity: '0',
+  					transform: 'scale(0.5) translateY(10px)'
+  				},
+  				'20%': {
+  					opacity: '1',
+  					transform: 'scale(1.2) translateY(-5px)'
+  				},
+  				'40%': {
+  					transform: 'scale(1) translateY(-10px)'
+  				},
+  				'100%': {
+  					opacity: '1',
+  					transform: 'scale(1) translateY(-15px)'
+  				}
   			}
   		},
   		animation: {
   			'accordion-down': 'accordion-down 0.2s ease-out',
-  			'accordion-up': 'accordion-up 0.2s ease-out'
+  			'accordion-up': 'accordion-up 0.2s ease-out',
+  			'credits-pop': 'credits-pop 0.6s ease-out forwards'
   		}
   	}
   },

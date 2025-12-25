@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/providers/AuthProvider';
-import { Button, Input, Label } from '@meble/ui';
-import { Loader2, Mail, Lock, Chrome } from 'lucide-react';
+import { Button, Input, Label, PasswordInput } from '@meble/ui';
+import { Loader2, Mail, Chrome } from 'lucide-react';
 
 interface LoginFormProps {
   redirectTo?: string;
@@ -93,20 +93,15 @@ export function LoginForm({ redirectTo, errorMessage }: LoginFormProps) {
               Zapomnialesz hasla?
             </a>
           </div>
-          <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              id="password"
-              type="password"
-              placeholder="********"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="pl-10"
-              required
-              autoComplete="current-password"
-              minLength={8}
-            />
-          </div>
+          <PasswordInput
+            id="password"
+            placeholder="********"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            autoComplete="current-password"
+            minLength={8}
+          />
         </div>
 
         <Button

@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/providers/AuthProvider';
-import { Button, Input, Label } from '@meble/ui';
-import { Loader2, Lock, CheckCircle } from 'lucide-react';
+import { Button, Label, PasswordInput, PasswordStrength } from '@meble/ui';
+import { Loader2, CheckCircle } from 'lucide-react';
+import { validatePassword, passwordsMatch } from '@/lib/auth/passwordValidation';
 
 export function ResetPasswordForm() {
   const router = useRouter();
@@ -20,13 +21,14 @@ export function ResetPasswordForm() {
     e.preventDefault();
     setError(null);
 
-    if (password !== confirmPassword) {
+    if (!passwordsMatch(password, confirmPassword)) {
       setError('Hasla nie sa identyczne');
       return;
     }
 
-    if (password.length < 8) {
-      setError('Haslo musi miec minimum 8 znakow');
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      setError(passwordValidation.errors[0]);
       return;
     }
 
@@ -77,37 +79,31 @@ export function ResetPasswordForm() {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="password">Nowe haslo</Label>
-          <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              id="password"
-              type="password"
-              placeholder="Minimum 8 znakow"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="pl-10"
-              required
-              autoComplete="new-password"
-              minLength={8}
-            />
-          </div>
+          <PasswordInput
+            id="password"
+            placeholder="Minimum 8 znakow"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            autoComplete="new-password"
+            minLength={8}
+          />
+          <PasswordStrength password={password} />
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="confirmPassword">Potwierdz haslo</Label>
-          <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              id="confirmPassword"
-              type="password"
-              placeholder="Powtorz haslo"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="pl-10"
-              required
-              autoComplete="new-password"
-            />
-          </div>
+          <PasswordInput
+            id="confirmPassword"
+            placeholder="Powtorz haslo"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+            autoComplete="new-password"
+          />
+          {confirmPassword && password !== confirmPassword && (
+            <p className="text-xs text-destructive">Hasla nie sa identyczne</p>
+          )}
         </div>
 
         <Button type="submit" className="w-full" disabled={isLoading}>
