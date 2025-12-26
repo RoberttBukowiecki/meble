@@ -2,40 +2,40 @@
  * Cabinet type definitions
  */
 
-import type { DoorConfig, DoorMetadata, HingeSide, FoldingDoorConfig } from './door';
-import type { HandleConfig, HandleMetadata } from './handle';
-import type { DrawerSlideType, DrawerConfiguration } from './drawer';
-import type { CabinetInteriorConfig } from './cabinetInterior';
-import type { SideFrontsConfig, DecorativePanelsConfig } from './decorative';
-import type { LegsConfig, LegData } from './legs';
-import type { CornerConfig, CornerPartRole } from './corner';
-import type { CabinetCountertopConfig } from './countertop';
+import type { DoorConfig, DoorMetadata, HingeSide, FoldingDoorConfig } from "./door";
+import type { HandleConfig, HandleMetadata } from "./handle";
+import type { DrawerSlideType, DrawerConfiguration } from "./drawer";
+import type { CabinetInteriorConfig } from "./cabinetInterior";
+import type { SideFrontsConfig, DecorativePanelsConfig } from "./decorative";
+import type { LegsConfig, LegData } from "./legs";
+import type { CornerConfig, CornerPartRole } from "./corner";
+import type { CabinetCountertopConfig } from "./countertop";
 
 /**
  * Defines how the top and bottom panels are placed relative to the side panels.
  * 'inset': Placed between the side panels.
  * 'overlay': Placed on top of (overlaying) the side panels.
  */
-export type TopBottomPlacement = 'inset' | 'overlay';
+export type TopBottomPlacement = "inset" | "overlay";
 
 /**
  * Defines how the back panel is mounted to the cabinet body.
  * 'overlap': Back panel overlaps onto edges (sits in rabbet/dado)
  * 'dado': Back panel sits in a groove/dado (future implementation)
  */
-export type BackMountType = 'overlap' | 'dado';
+export type BackMountType = "overlap" | "dado";
 
 /**
  * Available cabinet template types
  */
 export type CabinetType =
-  | 'KITCHEN'
-  | 'WARDROBE'
-  | 'BOOKSHELF'
-  | 'DRAWER'
-  | 'WALL'              // Wall-mounted cabinet
-  | 'CORNER_INTERNAL'   // Internal corner cabinet (Phase 1)
-  | 'CORNER_EXTERNAL';  // External corner cabinet (Phase 2)
+  | "KITCHEN"
+  | "WARDROBE"
+  | "BOOKSHELF"
+  | "DRAWER"
+  | "WALL" // Wall-mounted cabinet
+  | "CORNER_INTERNAL" // Internal corner cabinet (Phase 1)
+  | "CORNER_EXTERNAL"; // External corner cabinet (Phase 2)
 
 /**
  * Mounting hanger cutout configuration
@@ -58,21 +58,21 @@ export interface HangerCutoutConfig {
  * Cabinets use three materials: body (structure), front (visible surfaces), and back (rear panel)
  */
 export interface CabinetMaterials {
-  bodyMaterialId: string;   // For sides, bottom, top, shelves
-  frontMaterialId: string;  // For doors, drawer fronts
-  backMaterialId?: string;  // For back panel (optional, defaults to HDF)
+  bodyMaterialId: string; // For sides, bottom, top, shelves
+  frontMaterialId: string; // For doors, drawer fronts
+  backMaterialId?: string; // For back panel (optional, defaults to HDF)
 }
 
 /**
  * Base parameters shared by all cabinets
  */
 export interface CabinetBaseParams {
-  width: number;   // Overall width (mm)
-  height: number;  // Overall height (mm)
-  depth: number;   // Overall depth (mm)
+  width: number; // Overall width (mm)
+  height: number; // Overall height (mm)
+  depth: number; // Overall depth (mm)
   topBottomPlacement: TopBottomPlacement; // How top/bottom panels are attached
-  hasBack: boolean;           // Whether to add back panel
-  backOverlapRatio: number;   // How much back panel overlaps onto body edges (0-1, default 2/3)
+  hasBack: boolean; // Whether to add back panel
+  backOverlapRatio: number; // How much back panel overlaps onto body edges (0-1, default 2/3)
   backMountType: BackMountType; // How back panel is mounted (default 'overlap')
   // Zone-based drawer configuration (new system)
   drawerConfig?: DrawerConfiguration;
@@ -97,9 +97,9 @@ export interface CabinetBaseParams {
  * Kitchen cabinet specific parameters
  */
 export interface KitchenCabinetParams extends CabinetBaseParams {
-  type: 'KITCHEN';
-  shelfCount: number;  // Number of internal shelves (0-5)
-  hasDoors: boolean;   // Whether to add doors
+  type: "KITCHEN";
+  shelfCount: number; // Number of internal shelves (0-5)
+  hasDoors: boolean; // Whether to add doors
   // Door configuration
   doorConfig?: DoorConfig; // Optional for backward compatibility
   handleConfig?: HandleConfig; // Handle configuration for doors
@@ -109,17 +109,17 @@ export interface KitchenCabinetParams extends CabinetBaseParams {
  * Wardrobe cabinet specific parameters
  */
 export interface WardrobeCabinetParams extends CabinetBaseParams {
-  type: 'WARDROBE';
-  shelfCount: number;  // Number of internal shelves (0-10)
-  doorCount: number;   // Number of doors (1-4)
+  type: "WARDROBE";
+  shelfCount: number; // Number of internal shelves (0-10)
+  doorCount: number; // Number of doors (1-4)
 }
 
 /**
  * Bookshelf cabinet specific parameters
  */
 export interface BookshelfCabinetParams extends CabinetBaseParams {
-  type: 'BOOKSHELF';
-  shelfCount: number;  // Number of shelves (1-10)
+  type: "BOOKSHELF";
+  shelfCount: number; // Number of shelves (1-10)
   // hasBack is inherited from CabinetBaseParams
 }
 
@@ -127,7 +127,7 @@ export interface BookshelfCabinetParams extends CabinetBaseParams {
  * Drawer cabinet specific parameters
  */
 export interface DrawerCabinetParams extends CabinetBaseParams {
-  type: 'DRAWER';
+  type: "DRAWER";
   drawerCount: number; // Number of drawers (1-8) - legacy, use drawerConfig instead
   drawerSlideType: DrawerSlideType; // Type of drawer slides - legacy
   hasInternalDrawers: boolean; // If true, no drawer fronts - legacy
@@ -142,7 +142,7 @@ export interface DrawerCabinetParams extends CabinetBaseParams {
  * No legs - mounted directly to wall
  */
 export interface WallCabinetParams extends CabinetBaseParams {
-  type: 'WALL';
+  type: "WALL";
   /** Number of internal shelves (0-5) */
   shelfCount: number;
   /** Whether to add doors */
@@ -162,7 +162,7 @@ export interface WallCabinetParams extends CabinetBaseParams {
  * For cabinets that fit into internal corners where two walls meet
  */
 export interface CornerInternalCabinetParams extends CabinetBaseParams {
-  type: 'CORNER_INTERNAL';
+  type: "CORNER_INTERNAL";
   /** Corner-specific configuration */
   cornerConfig: CornerConfig;
   /** Optional interior configuration (zone-based) */
@@ -178,7 +178,7 @@ export interface CornerInternalCabinetParams extends CabinetBaseParams {
  * For cabinets on external corners like islands or peninsulas
  */
 export interface CornerExternalCabinetParams extends CabinetBaseParams {
-  type: 'CORNER_EXTERNAL';
+  type: "CORNER_EXTERNAL";
   /** Corner-specific configuration */
   cornerConfig: CornerConfig;
   /** Optional interior configuration */
@@ -213,7 +213,7 @@ export interface Cabinet {
   params: CabinetParams;
   materials: CabinetMaterials;
   topBottomPlacement: TopBottomPlacement;
-  partIds: string[];  // Array of part IDs that belong to this cabinet
+  partIds: string[]; // Array of part IDs that belong to this cabinet
   /** Cabinet legs data (for 3D rendering, not cut parts) */
   legs?: LegData[];
   createdAt: Date;
@@ -237,25 +237,25 @@ export interface Cabinet {
  * Used to identify what each part represents for material assignment
  */
 export type CabinetPartRole =
-  | 'BOTTOM'
-  | 'TOP'
-  | 'LEFT_SIDE'
-  | 'RIGHT_SIDE'
-  | 'BACK'
-  | 'SHELF'
-  | 'DOOR'
-  | 'DRAWER_FRONT'
-  | 'DRAWER_BOX_FRONT' // Front wall of drawer box (body material) - for internal drawers
-  | 'DRAWER_SIDE'
-  | 'DRAWER_SIDE_LEFT'
-  | 'DRAWER_SIDE_RIGHT'
-  | 'DRAWER_BACK'
-  | 'DRAWER_BOTTOM'
-  | 'SIDE_FRONT_LEFT'   // Decorative side panel on left
-  | 'SIDE_FRONT_RIGHT'  // Decorative side panel on right
-  | 'DECORATIVE_TOP'    // Top decorative panel (blenda, trim, full panel)
-  | 'DECORATIVE_BOTTOM' // Bottom decorative panel (plinth, trim, full panel)
-  | 'PARTITION'         // Vertical divider between columns in interior
+  | "BOTTOM"
+  | "TOP"
+  | "LEFT_SIDE"
+  | "RIGHT_SIDE"
+  | "BACK"
+  | "SHELF"
+  | "DOOR"
+  | "DRAWER_FRONT"
+  | "DRAWER_BOX_FRONT" // Front wall of drawer box (body material) - for internal drawers
+  | "DRAWER_SIDE"
+  | "DRAWER_SIDE_LEFT"
+  | "DRAWER_SIDE_RIGHT"
+  | "DRAWER_BACK"
+  | "DRAWER_BOTTOM"
+  | "SIDE_FRONT_LEFT" // Decorative side panel on left
+  | "SIDE_FRONT_RIGHT" // Decorative side panel on right
+  | "DECORATIVE_TOP" // Top decorative panel (blenda, trim, full panel)
+  | "DECORATIVE_BOTTOM" // Bottom decorative panel (plinth, trim, full panel)
+  | "PARTITION" // Vertical divider between columns in interior
   // Corner cabinet specific roles
   | CornerPartRole;
 
@@ -284,18 +284,26 @@ export type { HingeSide };
  * Used for calculating cabinet center position without front panel offset.
  */
 export const CABINET_BODY_ROLES: readonly CabinetPartRole[] = [
-  'BOTTOM',
-  'TOP',
-  'LEFT_SIDE',
-  'RIGHT_SIDE',
-  'BACK',
-  'SHELF',
-  'PARTITION',
-  'DRAWER_SIDE_LEFT',
-  'DRAWER_SIDE_RIGHT',
-  'DRAWER_BACK',
-  'DRAWER_BOTTOM',
-  'DRAWER_BOX_FRONT',
+  "BOTTOM",
+  "TOP",
+  "LEFT_SIDE",
+  "RIGHT_SIDE",
+  "BACK",
+  "SHELF",
+  "PARTITION",
+  "DRAWER_SIDE_LEFT",
+  "DRAWER_SIDE_RIGHT",
+  "DRAWER_BACK",
+  "DRAWER_BOTTOM",
+  "DRAWER_BOX_FRONT",
+  // Corner cabinet body roles
+  "CORNER_BOTTOM",
+  "CORNER_TOP",
+  "CORNER_SIDE_INTERNAL",
+  "CORNER_SIDE_EXTERNAL",
+  "CORNER_BACK",
+  "CORNER_FRONT_PANEL",
+  "CORNER_SHELF",
 ] as const;
 
 /**

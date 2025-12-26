@@ -1688,7 +1688,7 @@ exports[`VIS-005: ZoneEditor DRAWERS controls renders DRAWERS zone editor with a
             <div
               class="text-xs font-mono font-semibold"
             >
-              NaN
+              538
                mm
             </div>
           </div>
@@ -2361,7 +2361,7 @@ exports[`VIS-005: ZoneEditor DRAWERS controls renders DRAWERS zone editor with a
       <span
         class="font-mono"
       >
-        NaN
+        538
          mm szer.
       </span>
     </div>

@@ -5,19 +5,29 @@
  * Handles both authenticated and guest user purchases.
  */
 
-import { renderHook, act, waitFor } from '@testing-library/react';
-import { usePayment } from './usePayment';
+import { renderHook, act, waitFor } from "@testing-library/react";
+import { usePayment } from "./usePayment";
 
 // Mock fetch globally
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
 
+// Mock Supabase client - the hook uses this to get auth session
+const mockGetSession = jest.fn();
+jest.mock("@/lib/supabase/client", () => ({
+  createClient: () => ({
+    auth: {
+      getSession: mockGetSession,
+    },
+  }),
+}));
+
 // Mock window.location
 const mockLocation = {
-  origin: 'http://localhost:3000',
+  origin: "http://localhost:3000",
 };
 
-Object.defineProperty(window, 'location', {
+Object.defineProperty(window, "location", {
   value: mockLocation,
   writable: true,
 });
@@ -31,21 +41,29 @@ afterAll(() => {
   console.error = originalConsoleError;
 });
 
-describe('usePayment', () => {
+describe("usePayment", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockFetch.mockReset();
+    // Default: authenticated user with access token
+    mockGetSession.mockResolvedValue({
+      data: {
+        session: {
+          access_token: "test-access-token",
+        },
+      },
+    });
   });
 
-  describe('createPayment', () => {
-    it('creates payment for authenticated user', async () => {
+  describe("createPayment", () => {
+    it("creates payment for authenticated user", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           success: true,
           data: {
-            redirectUrl: 'https://payu.com/pay/123',
-            paymentId: 'payment-123',
+            redirectUrl: "https://payu.com/pay/123",
+            paymentId: "payment-123",
           },
         }),
       });
@@ -55,26 +73,26 @@ describe('usePayment', () => {
       let paymentResult;
       await act(async () => {
         paymentResult = await result.current.createPayment({
-          packageType: 'standard',
-          provider: 'payu',
-          email: 'user@example.com',
+          packageType: "standard",
+          provider: "payu",
+          email: "user@example.com",
         });
       });
 
       expect(paymentResult).toEqual({
         success: true,
-        redirectUrl: 'https://payu.com/pay/123',
-        paymentId: 'payment-123',
+        redirectUrl: "https://payu.com/pay/123",
+        paymentId: "payment-123",
       });
 
       // Verify fetch was called with correct params
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/payments/create'),
+        expect.stringContaining("/payments/create"),
         expect.objectContaining({
-          method: 'POST',
-          credentials: 'include',
+          method: "POST",
           headers: expect.objectContaining({
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
+            Authorization: "Bearer test-access-token",
           }),
           body: expect.stringContaining('"packageId":"standard"'),
         })
@@ -82,17 +100,17 @@ describe('usePayment', () => {
 
       // Verify no x-session-id header for authenticated user
       const callArgs = mockFetch.mock.calls[0][1];
-      expect(callArgs.headers['x-session-id']).toBeUndefined();
+      expect(callArgs.headers["x-session-id"]).toBeUndefined();
     });
 
-    it('creates payment for guest with x-session-id header', async () => {
+    it("creates payment for guest with x-session-id header", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           success: true,
           data: {
-            redirectUrl: 'https://payu.com/pay/456',
-            paymentId: 'payment-456',
+            redirectUrl: "https://payu.com/pay/456",
+            paymentId: "payment-456",
           },
         }),
       });
@@ -102,32 +120,32 @@ describe('usePayment', () => {
       let paymentResult;
       await act(async () => {
         paymentResult = await result.current.createPayment({
-          packageType: 'single',
-          provider: 'payu',
-          email: 'guest@example.com',
-          sessionId: 'guest_abc123_xyz789',
+          packageType: "single",
+          provider: "payu",
+          email: "guest@example.com",
+          sessionId: "guest_abc123_xyz789",
         });
       });
 
       expect(paymentResult).toEqual({
         success: true,
-        redirectUrl: 'https://payu.com/pay/456',
-        paymentId: 'payment-456',
+        redirectUrl: "https://payu.com/pay/456",
+        paymentId: "payment-456",
       });
 
       // Verify x-session-id header was included
       const callArgs = mockFetch.mock.calls[0][1];
-      expect(callArgs.headers['x-session-id']).toBe('guest_abc123_xyz789');
+      expect(callArgs.headers["x-session-id"]).toBe("guest_abc123_xyz789");
     });
 
-    it('returns redirect URL and payment ID on success', async () => {
+    it("returns redirect URL and payment ID on success", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           success: true,
           data: {
-            redirectUrl: 'https://payu.com/checkout/abc',
-            paymentId: 'pay_xyz',
+            redirectUrl: "https://payu.com/checkout/abc",
+            paymentId: "pay_xyz",
           },
         }),
       });
@@ -137,24 +155,24 @@ describe('usePayment', () => {
       let paymentResult;
       await act(async () => {
         paymentResult = await result.current.createPayment({
-          packageType: 'pro',
-          provider: 'payu',
-          email: 'pro@example.com',
+          packageType: "pro",
+          provider: "payu",
+          email: "pro@example.com",
         });
       });
 
       expect(paymentResult?.success).toBe(true);
-      expect(paymentResult?.redirectUrl).toBe('https://payu.com/checkout/abc');
-      expect(paymentResult?.paymentId).toBe('pay_xyz');
+      expect(paymentResult?.redirectUrl).toBe("https://payu.com/checkout/abc");
+      expect(paymentResult?.paymentId).toBe("pay_xyz");
     });
 
-    it('handles API error response', async () => {
+    it("handles API error response", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
         json: async () => ({
           success: false,
           error: {
-            message: 'Invalid package type',
+            message: "Invalid package type",
           },
         }),
       });
@@ -164,22 +182,22 @@ describe('usePayment', () => {
       let paymentResult;
       await act(async () => {
         paymentResult = await result.current.createPayment({
-          packageType: 'invalid' as any,
-          provider: 'payu',
-          email: 'test@example.com',
+          packageType: "invalid" as any,
+          provider: "payu",
+          email: "test@example.com",
         });
       });
 
       expect(paymentResult).toEqual({
         success: false,
-        error: 'Invalid package type',
+        error: "Invalid package type",
       });
 
       // Error should be set in hook state
-      expect(result.current.error).toBe('Invalid package type');
+      expect(result.current.error).toBe("Invalid package type");
     });
 
-    it('handles API error with default message when no message provided', async () => {
+    it("handles API error with default message when no message provided", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
         json: async () => ({
@@ -193,57 +211,57 @@ describe('usePayment', () => {
       let paymentResult;
       await act(async () => {
         paymentResult = await result.current.createPayment({
-          packageType: 'standard',
-          provider: 'payu',
-          email: 'test@example.com',
+          packageType: "standard",
+          provider: "payu",
+          email: "test@example.com",
         });
       });
 
       expect(paymentResult?.success).toBe(false);
-      expect(paymentResult?.error).toBe('Blad tworzenia platnosci');
+      expect(paymentResult?.error).toBe("Blad tworzenia platnosci");
     });
 
-    it('handles network error', async () => {
-      mockFetch.mockRejectedValueOnce(new Error('Network unavailable'));
+    it("handles network error", async () => {
+      mockFetch.mockRejectedValueOnce(new Error("Network unavailable"));
 
       const { result } = renderHook(() => usePayment());
 
       let paymentResult;
       await act(async () => {
         paymentResult = await result.current.createPayment({
-          packageType: 'starter',
-          provider: 'payu',
-          email: 'test@example.com',
+          packageType: "starter",
+          provider: "payu",
+          email: "test@example.com",
         });
       });
 
       expect(paymentResult).toEqual({
         success: false,
-        error: 'Network unavailable',
+        error: "Network unavailable",
       });
 
-      expect(result.current.error).toBe('Network unavailable');
+      expect(result.current.error).toBe("Network unavailable");
     });
 
-    it('handles non-Error thrown exceptions', async () => {
-      mockFetch.mockRejectedValueOnce('String error');
+    it("handles non-Error thrown exceptions", async () => {
+      mockFetch.mockRejectedValueOnce("String error");
 
       const { result } = renderHook(() => usePayment());
 
       let paymentResult;
       await act(async () => {
         paymentResult = await result.current.createPayment({
-          packageType: 'starter',
-          provider: 'payu',
-          email: 'test@example.com',
+          packageType: "starter",
+          provider: "payu",
+          email: "test@example.com",
         });
       });
 
       expect(paymentResult?.success).toBe(false);
-      expect(paymentResult?.error).toBe('Nieznany blad');
+      expect(paymentResult?.error).toBe("Nieznany blad");
     });
 
-    it('sets isCreating to true during request', async () => {
+    it("sets isCreating to true during request", async () => {
       let resolvePromise: (value: unknown) => void;
       const pendingPromise = new Promise((resolve) => {
         resolvePromise = resolve;
@@ -257,9 +275,9 @@ describe('usePayment', () => {
       let paymentPromise: Promise<any>;
       act(() => {
         paymentPromise = result.current.createPayment({
-          packageType: 'standard',
-          provider: 'payu',
-          email: 'test@example.com',
+          packageType: "standard",
+          provider: "payu",
+          email: "test@example.com",
         });
       });
 
@@ -272,7 +290,7 @@ describe('usePayment', () => {
           ok: true,
           json: async () => ({
             success: true,
-            data: { redirectUrl: 'https://payu.com', paymentId: '123' },
+            data: { redirectUrl: "https://payu.com", paymentId: "123" },
           }),
         });
         await paymentPromise;
@@ -282,12 +300,12 @@ describe('usePayment', () => {
       expect(result.current.isCreating).toBe(false);
     });
 
-    it('sets isCreating to false after request completes', async () => {
+    it("sets isCreating to false after request completes", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           success: true,
-          data: { redirectUrl: 'https://payu.com', paymentId: '123' },
+          data: { redirectUrl: "https://payu.com", paymentId: "123" },
         }),
       });
 
@@ -295,37 +313,37 @@ describe('usePayment', () => {
 
       await act(async () => {
         await result.current.createPayment({
-          packageType: 'standard',
-          provider: 'payu',
-          email: 'test@example.com',
+          packageType: "standard",
+          provider: "payu",
+          email: "test@example.com",
         });
       });
 
       expect(result.current.isCreating).toBe(false);
     });
 
-    it('sets isCreating to false after error', async () => {
-      mockFetch.mockRejectedValueOnce(new Error('Failed'));
+    it("sets isCreating to false after error", async () => {
+      mockFetch.mockRejectedValueOnce(new Error("Failed"));
 
       const { result } = renderHook(() => usePayment());
 
       await act(async () => {
         await result.current.createPayment({
-          packageType: 'standard',
-          provider: 'payu',
-          email: 'test@example.com',
+          packageType: "standard",
+          provider: "payu",
+          email: "test@example.com",
         });
       });
 
       expect(result.current.isCreating).toBe(false);
     });
 
-    it('sets error state on failure', async () => {
+    it("sets error state on failure", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
         json: async () => ({
           success: false,
-          error: { message: 'Payment failed' },
+          error: { message: "Payment failed" },
         }),
       });
 
@@ -335,22 +353,22 @@ describe('usePayment', () => {
 
       await act(async () => {
         await result.current.createPayment({
-          packageType: 'standard',
-          provider: 'payu',
-          email: 'test@example.com',
+          packageType: "standard",
+          provider: "payu",
+          email: "test@example.com",
         });
       });
 
-      expect(result.current.error).toBe('Payment failed');
+      expect(result.current.error).toBe("Payment failed");
     });
 
-    it('clears error state on new request', async () => {
+    it("clears error state on new request", async () => {
       // First request fails
       mockFetch.mockResolvedValueOnce({
         ok: false,
         json: async () => ({
           success: false,
-          error: { message: 'First error' },
+          error: { message: "First error" },
         }),
       });
 
@@ -358,28 +376,28 @@ describe('usePayment', () => {
 
       await act(async () => {
         await result.current.createPayment({
-          packageType: 'standard',
-          provider: 'payu',
-          email: 'test@example.com',
+          packageType: "standard",
+          provider: "payu",
+          email: "test@example.com",
         });
       });
 
-      expect(result.current.error).toBe('First error');
+      expect(result.current.error).toBe("First error");
 
       // Second request succeeds
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           success: true,
-          data: { redirectUrl: 'https://payu.com', paymentId: '123' },
+          data: { redirectUrl: "https://payu.com", paymentId: "123" },
         }),
       });
 
       await act(async () => {
         await result.current.createPayment({
-          packageType: 'standard',
-          provider: 'payu',
-          email: 'test@example.com',
+          packageType: "standard",
+          provider: "payu",
+          email: "test@example.com",
         });
       });
 
@@ -387,12 +405,12 @@ describe('usePayment', () => {
       expect(result.current.error).toBeNull();
     });
 
-    it('builds correct return URL from window.location', async () => {
+    it("builds correct return URL from window.location", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           success: true,
-          data: { redirectUrl: 'https://payu.com', paymentId: '123' },
+          data: { redirectUrl: "https://payu.com", paymentId: "123" },
         }),
       });
 
@@ -400,9 +418,9 @@ describe('usePayment', () => {
 
       await act(async () => {
         await result.current.createPayment({
-          packageType: 'standard',
-          provider: 'payu',
-          email: 'test@example.com',
+          packageType: "standard",
+          provider: "payu",
+          email: "test@example.com",
         });
       });
 
@@ -410,15 +428,15 @@ describe('usePayment', () => {
       const callArgs = mockFetch.mock.calls[0][1];
       const body = JSON.parse(callArgs.body);
 
-      expect(body.returnUrl).toBe('http://localhost:3000/payment/success');
+      expect(body.returnUrl).toBe("http://localhost:3000/payment/success");
     });
 
-    it('sends correct package type in request body', async () => {
+    it("sends correct package type in request body", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           success: true,
-          data: { redirectUrl: 'https://payu.com', paymentId: '123' },
+          data: { redirectUrl: "https://payu.com", paymentId: "123" },
         }),
       });
 
@@ -426,27 +444,27 @@ describe('usePayment', () => {
 
       await act(async () => {
         await result.current.createPayment({
-          packageType: 'pro',
-          provider: 'payu',
-          email: 'pro@example.com',
+          packageType: "pro",
+          provider: "payu",
+          email: "pro@example.com",
         });
       });
 
       const callArgs = mockFetch.mock.calls[0][1];
       const body = JSON.parse(callArgs.body);
 
-      expect(body.packageId).toBe('pro');
-      expect(body.type).toBe('credit_purchase');
-      expect(body.provider).toBe('payu');
-      expect(body.email).toBe('pro@example.com');
+      expect(body.packageId).toBe("pro");
+      expect(body.type).toBe("credit_purchase");
+      expect(body.provider).toBe("payu");
+      expect(body.email).toBe("pro@example.com");
     });
 
-    it('sends credentials include for authenticated requests', async () => {
+    it("sends Authorization header for authenticated requests", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           success: true,
-          data: { redirectUrl: 'https://payu.com', paymentId: '123' },
+          data: { redirectUrl: "https://payu.com", paymentId: "123" },
         }),
       });
 
@@ -454,31 +472,31 @@ describe('usePayment', () => {
 
       await act(async () => {
         await result.current.createPayment({
-          packageType: 'standard',
-          provider: 'payu',
-          email: 'test@example.com',
+          packageType: "standard",
+          provider: "payu",
+          email: "test@example.com",
         });
       });
 
       const callArgs = mockFetch.mock.calls[0][1];
-      expect(callArgs.credentials).toBe('include');
+      expect(callArgs.headers["Authorization"]).toBe("Bearer test-access-token");
     });
   });
 
-  describe('initial state', () => {
-    it('starts with isCreating false', () => {
+  describe("initial state", () => {
+    it("starts with isCreating false", () => {
       const { result } = renderHook(() => usePayment());
 
       expect(result.current.isCreating).toBe(false);
     });
 
-    it('starts with error null', () => {
+    it("starts with error null", () => {
       const { result } = renderHook(() => usePayment());
 
       expect(result.current.error).toBeNull();
     });
 
-    it('createPayment is a stable function reference', () => {
+    it("createPayment is a stable function reference", () => {
       const { result, rerender } = renderHook(() => usePayment());
 
       const createPayment1 = result.current.createPayment;
@@ -491,8 +509,8 @@ describe('usePayment', () => {
     });
   });
 
-  describe('all package types', () => {
-    const packageTypes = ['single', 'starter', 'standard', 'pro'] as const;
+  describe("all package types", () => {
+    const packageTypes = ["single", "starter", "standard", "pro"] as const;
 
     packageTypes.forEach((packageType) => {
       it(`handles ${packageType} package type`, async () => {
@@ -513,8 +531,8 @@ describe('usePayment', () => {
         await act(async () => {
           paymentResult = await result.current.createPayment({
             packageType,
-            provider: 'payu',
-            email: 'test@example.com',
+            provider: "payu",
+            email: "test@example.com",
           });
         });
 
@@ -524,8 +542,8 @@ describe('usePayment', () => {
     });
   });
 
-  describe('concurrent requests', () => {
-    it('handles multiple sequential requests', async () => {
+  describe("concurrent requests", () => {
+    it("handles multiple sequential requests", async () => {
       const { result } = renderHook(() => usePayment());
 
       // First request
@@ -533,40 +551,40 @@ describe('usePayment', () => {
         ok: true,
         json: async () => ({
           success: true,
-          data: { redirectUrl: 'https://payu.com/1', paymentId: '1' },
+          data: { redirectUrl: "https://payu.com/1", paymentId: "1" },
         }),
       });
 
       let result1;
       await act(async () => {
         result1 = await result.current.createPayment({
-          packageType: 'starter',
-          provider: 'payu',
-          email: 'test1@example.com',
+          packageType: "starter",
+          provider: "payu",
+          email: "test1@example.com",
         });
       });
 
-      expect(result1?.paymentId).toBe('1');
+      expect(result1?.paymentId).toBe("1");
 
       // Second request
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           success: true,
-          data: { redirectUrl: 'https://payu.com/2', paymentId: '2' },
+          data: { redirectUrl: "https://payu.com/2", paymentId: "2" },
         }),
       });
 
       let result2;
       await act(async () => {
         result2 = await result.current.createPayment({
-          packageType: 'standard',
-          provider: 'payu',
-          email: 'test2@example.com',
+          packageType: "standard",
+          provider: "payu",
+          email: "test2@example.com",
         });
       });
 
-      expect(result2?.paymentId).toBe('2');
+      expect(result2?.paymentId).toBe("2");
 
       // Both requests should have been made
       expect(mockFetch).toHaveBeenCalledTimes(2);

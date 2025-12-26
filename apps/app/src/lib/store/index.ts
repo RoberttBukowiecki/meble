@@ -1,22 +1,24 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { createSelectionSlice } from './slices/selectionSlice';
-import { createMaterialsSlice } from './slices/materialsSlice';
-import { createFurnitureSlice } from './slices/furnitureSlice';
-import { createPartsSlice } from './slices/partsSlice';
-import { createCabinetSlice } from './slices/cabinetSlice';
-import { createCollisionSlice } from './slices/collisionSlice';
-import { createRoomSlice } from './slices/roomSlice';
-import { createHistorySlice } from './slices/historySlice';
-import { createUISlice } from './slices/uiSlice';
-import { createSnapSlice } from './slices/snapSlice';
-import { createDimensionSlice } from './slices/dimensionSlice';
-import { createGraphicsSlice } from './slices/graphicsSlice';
-import { createMaterialPreferencesSlice } from './slices/materialPreferencesSlice';
-import { createCountertopSlice } from './slices/countertopSlice';
-import { createCabinetPreferencesSlice } from './slices/cabinetPreferencesSlice';
-import { HISTORY_MAX_LENGTH, HISTORY_MAX_MILESTONES } from './history/constants';
-import type { StoreState } from './types';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { createSelectionSlice } from "./slices/selectionSlice";
+import { createMaterialsSlice } from "./slices/materialsSlice";
+import { createFurnitureSlice } from "./slices/furnitureSlice";
+import { createPartsSlice } from "./slices/partsSlice";
+import { createCabinetSlice } from "./slices/cabinetSlice";
+import { createCollisionSlice } from "./slices/collisionSlice";
+import { createRoomSlice } from "./slices/roomSlice";
+import { createHistorySlice } from "./slices/historySlice";
+import { createUISlice } from "./slices/uiSlice";
+import { createSnapSlice } from "./slices/snapSlice";
+import { createDimensionSlice } from "./slices/dimensionSlice";
+import { createGraphicsSlice } from "./slices/graphicsSlice";
+import { createMaterialPreferencesSlice } from "./slices/materialPreferencesSlice";
+import { createCountertopSlice } from "./slices/countertopSlice";
+import { createCabinetPreferencesSlice } from "./slices/cabinetPreferencesSlice";
+import { createViewSlice } from "./slices/viewSlice";
+import { createProjectSlice } from "./slices/projectSlice";
+import { HISTORY_MAX_LENGTH, HISTORY_MAX_MILESTONES } from "./history/constants";
+import type { StoreState } from "./types";
 
 export const useStore = create<StoreState>()(
   persist(
@@ -36,9 +38,11 @@ export const useStore = create<StoreState>()(
       ...createMaterialPreferencesSlice(...args),
       ...createCountertopSlice(...args),
       ...createCabinetPreferencesSlice(...args),
+      ...createViewSlice(...args),
+      ...createProjectSlice(...args),
     }),
     {
-      name: 'e-meble-storage',
+      name: "e-meble-storage",
       version: 1,
       // No migrations needed - app is not in production yet
       // If localStorage has old data, just clear it and start fresh
@@ -64,6 +68,9 @@ export const useStore = create<StoreState>()(
           addMaterial,
           updateMaterial,
           removeMaterial,
+          // Materials - don't persist, always use INITIAL_MATERIALS from constants
+          // This ensures materials are never empty after hydration
+          materials,
           addCabinet,
           updateCabinet,
           renameCabinet,
@@ -154,6 +161,36 @@ export const useStore = create<StoreState>()(
           saveCabinetPreferencesFromParams,
           clearCabinetPreferences,
           resetAllCabinetPreferences,
+          // View functions (view state IS persisted)
+          setCameraMode,
+          setOrthographicView,
+          setOrthographicZoom,
+          setOrthographicTarget,
+          toggleCameraMode,
+          switchToOrthographicView,
+          switchToPerspective,
+          // Project functions (don't persist)
+          setCurrentProject,
+          markAsDirty,
+          markAsSaved,
+          setSyncStatus,
+          setProjectName,
+          loadProject,
+          saveProject,
+          saveProjectAs,
+          createNewProject,
+          updateProjectName,
+          resolveConflict,
+          clearConflict,
+          getProjectData,
+          setProjectData,
+          resetProjectState,
+          // Project transient state (don't persist - sync state is ephemeral)
+          // Note: currentProjectId and currentProjectName ARE persisted
+          // so we can restore the project after page reload
+          currentProjectRevision,
+          syncState,
+          isProjectLoading,
           ...rest
         } = state as any;
         return rest;
@@ -179,9 +216,7 @@ export const useMaterial = (id: string | undefined) => {
 };
 
 export const useCabinetParts = (cabinetId: string) => {
-  return useStore((state) =>
-    state.parts.filter((p) => p.cabinetMetadata?.cabinetId === cabinetId)
-  );
+  return useStore((state) => state.parts.filter((p) => p.cabinetMetadata?.cabinetId === cabinetId));
 };
 
 export const useSelectedCabinet = () => {
@@ -257,9 +292,7 @@ export const useSelectedCountertopGroup = () => {
 export const useCountertopGroupForCabinet = (cabinetId: string | undefined) => {
   const countertopGroups = useStore((state) => state.countertopGroups);
   if (!cabinetId) return undefined;
-  return countertopGroups.find((g) =>
-    g.segments.some((s) => s.cabinetIds.includes(cabinetId))
-  );
+  return countertopGroups.find((g) => g.segments.some((s) => s.cabinetIds.includes(cabinetId)));
 };
 
 /**

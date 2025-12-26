@@ -16,13 +16,13 @@ import type {
   ObjectDimensionSet,
   ObjectDimensionMode,
   ObjectDimensionGranularity,
-} from '@/types';
+} from "@/types";
 import {
   getPartBoundingBox,
   getCabinetBoundingBox,
   getMultiselectBoundingBox,
   calculateCountertopBoundingBox,
-} from './bounding-box-utils';
+} from "./bounding-box-utils";
 
 // ============================================================================
 // Types
@@ -37,7 +37,14 @@ interface BoundingBox {
 
 interface ObjectInfo {
   objectId: string;
-  objectType: 'part' | 'cabinet' | 'countertop' | 'multiselect';
+  objectType: "part" | "cabinet" | "countertop" | "multiselect";
+  /** Local dimensions (W, H, D) - not rotated */
+  localSize: Vec3;
+  /** World position of object center */
+  worldCenter: Vec3;
+  /** Object rotation in radians */
+  rotation: Vec3;
+  /** AABB for compatibility (used for boundingBox field) */
   boundingBox: BoundingBox;
 }
 
@@ -55,99 +62,251 @@ const CONFIG = {
 } as const;
 
 // ============================================================================
+// Helper functions for ObjectInfo creation
+// ============================================================================
+
+/**
+ * Create ObjectInfo for a Part
+ * Uses part's local dimensions and rotation directly
+ */
+function getPartObjectInfo(part: Part): ObjectInfo {
+  const bbox = getPartBoundingBox(part);
+  return {
+    objectId: part.id,
+    objectType: "part",
+    localSize: [part.width, part.height, part.depth],
+    worldCenter: part.position,
+    rotation: part.rotation,
+    boundingBox: { min: bbox.min, max: bbox.max },
+  };
+}
+
+/**
+ * Create ObjectInfo for a Cabinet
+ * Uses cabinet's params for local size and worldTransform for rotation
+ */
+function getCabinetObjectInfo(cabinet: Cabinet, parts: Part[]): ObjectInfo | null {
+  const bbox = getCabinetBoundingBox(cabinet.id, parts);
+  if (!bbox) return null;
+
+  // Cabinet local size from params
+  const localSize: Vec3 = [cabinet.params.width, cabinet.params.height, cabinet.params.depth];
+
+  // World center and rotation from worldTransform or calculated from bbox
+  const worldCenter: Vec3 = cabinet.worldTransform?.position ?? bbox.center;
+  const rotation: Vec3 = cabinet.worldTransform?.rotation ?? [0, 0, 0];
+
+  return {
+    objectId: cabinet.id,
+    objectType: "cabinet",
+    localSize,
+    worldCenter,
+    rotation,
+    boundingBox: { min: bbox.min, max: bbox.max },
+  };
+}
+
+/**
+ * Create ObjectInfo for a Countertop group
+ * Countertops don't have rotation - use bbox size
+ */
+function getCountertopObjectInfo(
+  group: CountertopGroup,
+  cabinets: Cabinet[],
+  parts: Part[]
+): ObjectInfo | null {
+  const bbox = calculateCountertopBoundingBox(group, cabinets, parts);
+  if (!bbox) return null;
+
+  const size: Vec3 = [
+    bbox.max[0] - bbox.min[0],
+    bbox.max[1] - bbox.min[1],
+    bbox.max[2] - bbox.min[2],
+  ];
+  const center: Vec3 = [
+    (bbox.min[0] + bbox.max[0]) / 2,
+    (bbox.min[1] + bbox.max[1]) / 2,
+    (bbox.min[2] + bbox.max[2]) / 2,
+  ];
+
+  return {
+    objectId: group.id,
+    objectType: "countertop",
+    localSize: size,
+    worldCenter: center,
+    rotation: [0, 0, 0], // Countertops don't rotate independently
+    boundingBox: bbox,
+  };
+}
+
+/**
+ * Create ObjectInfo for a multiselect group
+ * Multiselect doesn't have unified rotation - use AABB
+ */
+function getMultiselectObjectInfo(partIds: Set<string>, parts: Part[]): ObjectInfo | null {
+  const bbox = getMultiselectBoundingBox(partIds, parts);
+  if (!bbox) return null;
+
+  const size: Vec3 = [
+    bbox.max[0] - bbox.min[0],
+    bbox.max[1] - bbox.min[1],
+    bbox.max[2] - bbox.min[2],
+  ];
+
+  return {
+    objectId: "multiselect",
+    objectType: "multiselect",
+    localSize: size,
+    worldCenter: bbox.center,
+    rotation: [0, 0, 0], // Multiselect uses world-aligned bbox
+    boundingBox: { min: bbox.min, max: bbox.max },
+  };
+}
+
+// ============================================================================
+// Vector Math (for inverse rotation)
+// ============================================================================
+
+/**
+ * Apply inverse Euler rotation (XYZ order) to a vector
+ * Used to transform camera direction to object's local space
+ */
+function applyInverseRotation(vec: Vec3, rotation: Vec3): Vec3 {
+  const [rx, ry, rz] = rotation;
+
+  // Inverse of XYZ Euler is applied in reverse order: -X, -Y, -Z
+  const cx = Math.cos(-rx),
+    sx = Math.sin(-rx);
+  const cy = Math.cos(-ry),
+    sy = Math.sin(-ry);
+  const cz = Math.cos(-rz),
+    sz = Math.sin(-rz);
+
+  let [x, y, z] = vec;
+
+  // Apply inverse X first (reverse of original order)
+  const y1 = y * cx - z * sx;
+  const z1 = y * sx + z * cx;
+  y = y1;
+  z = z1;
+
+  // Apply inverse Y
+  const x2 = x * cy + z * sy;
+  const z2 = -x * sy + z * cy;
+  x = x2;
+  z = z2;
+
+  // Apply inverse Z last
+  const x3 = x * cz - y * sz;
+  const y3 = x * sz + y * cz;
+
+  return [x3, y3, z];
+}
+
+// ============================================================================
 // Dimension Calculation
 // ============================================================================
 
 /**
- * Calculate dimension lines for a single object
- * Positions dimensions on the side closest to camera for visibility
+ * Calculate dimension lines for a single object in LOCAL space
+ * Dimensions are positioned relative to object center (0,0,0)
+ * They will be transformed by object rotation when rendered
  */
 export function calculateObjectDimensions(
   objectId: string,
-  objectType: 'part' | 'cabinet' | 'countertop' | 'multiselect',
-  boundingBox: BoundingBox,
+  objectType: "part" | "cabinet" | "countertop" | "multiselect",
+  objectInfo: ObjectInfo,
   cameraX: number,
   cameraY: number,
   cameraZ: number
 ): ObjectDimensionSet {
-  const { min, max } = boundingBox;
+  const { localSize, worldCenter, rotation, boundingBox } = objectInfo;
+  const [width, height, depth] = localSize;
+  const [centerX, centerY, centerZ] = worldCenter;
 
-  const width = max[0] - min[0];
-  const height = max[1] - min[1];
-  const depth = max[2] - min[2];
+  // Half dimensions for local space calculations
+  const halfW = width / 2;
+  const halfH = height / 2;
+  const halfD = depth / 2;
 
-  const centerX = (min[0] + max[0]) * 0.5;
-  const centerY = (min[1] + max[1]) * 0.5;
-  const centerZ = (min[2] + max[2]) * 0.5;
+  // Transform camera direction to object's local space
+  // This tells us which side of the object the camera is viewing
+  const camDirWorld: Vec3 = [cameraX - centerX, cameraY - centerY, cameraZ - centerZ];
+  const camDirLocal = applyInverseRotation(camDirWorld, rotation);
 
-  // Determine which side of box is closer to camera
-  const useMaxX = cameraX > centerX;
-  const useMaxY = cameraY > centerY;
-  const useMaxZ = cameraZ > centerZ;
+  // Determine which side of object is closer to camera (in local space)
+  const useMaxX = camDirLocal[0] > 0;
+  const useMaxY = camDirLocal[1] > 0;
+  const useMaxZ = camDirLocal[2] > 0;
 
   const offset = CONFIG.EDGE_OFFSET;
   const stackOffset = CONFIG.STACKING_OFFSET;
   const dimensions: ObjectDimension[] = [];
 
-  // WIDTH dimension (X-axis)
+  // All positions are in LOCAL space (relative to object center at 0,0,0)
+
+  // WIDTH dimension (local X-axis)
   if (width >= CONFIG.MIN_DIMENSION_SIZE) {
-    const widthY = useMaxY ? max[1] + offset : min[1] - offset;
-    const widthZ = useMaxZ ? max[2] + offset : min[2] - offset;
+    const widthY = useMaxY ? halfH + offset : -halfH - offset;
+    const widthZ = useMaxZ ? halfD + offset : -halfD - offset;
     dimensions.push({
       id: `${objectId}-W`,
       objectId,
       objectType,
-      axis: 'X',
-      label: 'W',
-      startPoint: [min[0], widthY, widthZ],
-      endPoint: [max[0], widthY, widthZ],
+      axis: "X",
+      label: "W",
+      startPoint: [-halfW, widthY, widthZ],
+      endPoint: [halfW, widthY, widthZ],
       length: width,
-      labelPosition: [centerX, widthY, widthZ],
+      labelPosition: [0, widthY, widthZ],
     });
   }
 
-  // HEIGHT dimension (Y-axis)
+  // HEIGHT dimension (local Y-axis)
   if (height >= CONFIG.MIN_DIMENSION_SIZE) {
-    const heightX = useMaxX ? max[0] + offset : min[0] - offset;
-    const heightZ = useMaxZ ? max[2] + offset + stackOffset : min[2] - offset - stackOffset;
+    const heightX = useMaxX ? halfW + offset : -halfW - offset;
+    const heightZ = useMaxZ ? halfD + offset + stackOffset : -halfD - offset - stackOffset;
     dimensions.push({
       id: `${objectId}-H`,
       objectId,
       objectType,
-      axis: 'Y',
-      label: 'H',
-      startPoint: [heightX, min[1], heightZ],
-      endPoint: [heightX, max[1], heightZ],
+      axis: "Y",
+      label: "H",
+      startPoint: [heightX, -halfH, heightZ],
+      endPoint: [heightX, halfH, heightZ],
       length: height,
-      labelPosition: [heightX, centerY, heightZ],
+      labelPosition: [heightX, 0, heightZ],
     });
   }
 
-  // DEPTH dimension (Z-axis)
+  // DEPTH dimension (local Z-axis)
   if (depth >= CONFIG.MIN_DIMENSION_SIZE) {
-    const depthX = useMaxX ? max[0] + offset + stackOffset : min[0] - offset - stackOffset;
-    const depthY = useMaxY ? max[1] + offset : min[1] - offset;
+    const depthX = useMaxX ? halfW + offset + stackOffset : -halfW - offset - stackOffset;
+    const depthY = useMaxY ? halfH + offset : -halfH - offset;
     dimensions.push({
       id: `${objectId}-D`,
       objectId,
       objectType,
-      axis: 'Z',
-      label: 'D',
-      startPoint: [depthX, depthY, min[2]],
-      endPoint: [depthX, depthY, max[2]],
+      axis: "Z",
+      label: "D",
+      startPoint: [depthX, depthY, -halfD],
+      endPoint: [depthX, depthY, halfD],
       length: depth,
-      labelPosition: [depthX, depthY, centerZ],
+      labelPosition: [depthX, depthY, 0],
     });
   }
 
   return {
     objectId,
     objectType,
+    worldCenter,
+    rotation,
+    localSize,
     boundingBox: {
-      min,
-      max,
-      center: [centerX, centerY, centerZ],
-      size: [width, height, depth],
+      min: boundingBox.min,
+      max: boundingBox.max,
+      center: worldCenter,
+      size: localSize,
     },
     dimensions,
   };
@@ -180,14 +339,12 @@ export function getObjectsForDimensioning(
   const furnitureParts = parts.filter(
     (p) => p.furnitureId === selectedFurnitureId && !hiddenPartIds.has(p.id)
   );
-  const furnitureCabinets = cabinets.filter(
-    (c) => c.furnitureId === selectedFurnitureId
-  );
+  const furnitureCabinets = cabinets.filter((c) => c.furnitureId === selectedFurnitureId);
   const furnitureCountertops = countertopGroups.filter(
     (ct) => ct.furnitureId === selectedFurnitureId
   );
 
-  if (mode === 'selection') {
+  if (mode === "selection") {
     collectSelectionObjects(
       results,
       granularity,
@@ -229,30 +386,21 @@ function collectSelectionObjects(
   selectedCountertopGroupId: string | null,
   allParts: Part[]
 ): void {
-  if (granularity === 'group') {
+  if (granularity === "group") {
     // Cabinet selection
     if (selectedCabinetId) {
-      const bbox = getCabinetBoundingBox(selectedCabinetId, parts);
-      if (bbox) {
-        results.push({
-          objectId: selectedCabinetId,
-          objectType: 'cabinet',
-          boundingBox: { min: bbox.min, max: bbox.max },
-        });
+      const cabinet = cabinets.find((c) => c.id === selectedCabinetId);
+      if (cabinet) {
+        const info = getCabinetObjectInfo(cabinet, allParts);
+        if (info) results.push(info);
       }
       return;
     }
 
     // Multiselect
     if (selectedPartIds.size > 1) {
-      const bbox = getMultiselectBoundingBox(selectedPartIds, parts);
-      if (bbox) {
-        results.push({
-          objectId: 'multiselect',
-          objectType: 'multiselect',
-          boundingBox: { min: bbox.min, max: bbox.max },
-        });
-      }
+      const info = getMultiselectObjectInfo(selectedPartIds, parts);
+      if (info) results.push(info);
       return;
     }
 
@@ -260,14 +408,8 @@ function collectSelectionObjects(
     if (selectedCountertopGroupId) {
       const group = countertopGroups.find((g) => g.id === selectedCountertopGroupId);
       if (group) {
-        const bbox = calculateCountertopBoundingBox(group, cabinets, allParts);
-        if (bbox) {
-          results.push({
-            objectId: selectedCountertopGroupId,
-            objectType: 'countertop',
-            boundingBox: bbox,
-          });
-        }
+        const info = getCountertopObjectInfo(group, cabinets, allParts);
+        if (info) results.push(info);
       }
       return;
     }
@@ -276,21 +418,13 @@ function collectSelectionObjects(
     if (selectedPartId) {
       const part = parts.find((p) => p.id === selectedPartId);
       if (part?.cabinetMetadata?.cabinetId) {
-        const bbox = getCabinetBoundingBox(part.cabinetMetadata.cabinetId, parts);
-        if (bbox) {
-          results.push({
-            objectId: part.cabinetMetadata.cabinetId,
-            objectType: 'cabinet',
-            boundingBox: { min: bbox.min, max: bbox.max },
-          });
+        const cabinet = cabinets.find((c) => c.id === part.cabinetMetadata!.cabinetId);
+        if (cabinet) {
+          const info = getCabinetObjectInfo(cabinet, allParts);
+          if (info) results.push(info);
         }
       } else if (part) {
-        const bbox = getPartBoundingBox(part);
-        results.push({
-          objectId: selectedPartId,
-          objectType: 'part',
-          boundingBox: { min: bbox.min, max: bbox.max },
-        });
+        results.push(getPartObjectInfo(part));
       }
     }
   } else {
@@ -301,12 +435,7 @@ function collectSelectionObjects(
         for (const partId of cabinet.partIds) {
           const part = parts.find((p) => p.id === partId);
           if (part) {
-            const bbox = getPartBoundingBox(part);
-            results.push({
-              objectId: partId,
-              objectType: 'part',
-              boundingBox: { min: bbox.min, max: bbox.max },
-            });
+            results.push(getPartObjectInfo(part));
           }
         }
       }
@@ -317,12 +446,7 @@ function collectSelectionObjects(
       for (const partId of Array.from(selectedPartIds)) {
         const part = parts.find((p) => p.id === partId);
         if (part) {
-          const bbox = getPartBoundingBox(part);
-          results.push({
-            objectId: partId,
-            objectType: 'part',
-            boundingBox: { min: bbox.min, max: bbox.max },
-          });
+          results.push(getPartObjectInfo(part));
         }
       }
       return;
@@ -331,12 +455,7 @@ function collectSelectionObjects(
     if (selectedPartId) {
       const part = parts.find((p) => p.id === selectedPartId);
       if (part) {
-        const bbox = getPartBoundingBox(part);
-        results.push({
-          objectId: selectedPartId,
-          objectType: 'part',
-          boundingBox: { min: bbox.min, max: bbox.max },
-        });
+        results.push(getPartObjectInfo(part));
       }
     }
 
@@ -344,14 +463,8 @@ function collectSelectionObjects(
     if (selectedCountertopGroupId) {
       const group = countertopGroups.find((g) => g.id === selectedCountertopGroupId);
       if (group) {
-        const bbox = calculateCountertopBoundingBox(group, cabinets, allParts);
-        if (bbox) {
-          results.push({
-            objectId: selectedCountertopGroupId,
-            objectType: 'countertop',
-            boundingBox: bbox,
-          });
-        }
+        const info = getCountertopObjectInfo(group, cabinets, allParts);
+        if (info) results.push(info);
       }
     }
   }
@@ -368,17 +481,11 @@ function collectAllObjects(
   furnitureCountertops: CountertopGroup[],
   allParts: Part[]
 ): void {
-  if (granularity === 'group') {
+  if (granularity === "group") {
     // All cabinets
     for (const cabinet of furnitureCabinets) {
-      const bbox = getCabinetBoundingBox(cabinet.id, allParts);
-      if (bbox) {
-        results.push({
-          objectId: cabinet.id,
-          objectType: 'cabinet',
-          boundingBox: { min: bbox.min, max: bbox.max },
-        });
-      }
+      const info = getCabinetObjectInfo(cabinet, allParts);
+      if (info) results.push(info);
     }
 
     // Parts without cabinet
@@ -391,47 +498,25 @@ function collectAllObjects(
 
     for (const part of furnitureParts) {
       if (!cabinetPartIds.has(part.id)) {
-        const bbox = getPartBoundingBox(part);
-        results.push({
-          objectId: part.id,
-          objectType: 'part',
-          boundingBox: { min: bbox.min, max: bbox.max },
-        });
+        results.push(getPartObjectInfo(part));
       }
     }
 
     // All countertops
     for (const group of furnitureCountertops) {
-      const bbox = calculateCountertopBoundingBox(group, furnitureCabinets, allParts);
-      if (bbox) {
-        results.push({
-          objectId: group.id,
-          objectType: 'countertop',
-          boundingBox: bbox,
-        });
-      }
+      const info = getCountertopObjectInfo(group, furnitureCabinets, allParts);
+      if (info) results.push(info);
     }
   } else {
     // All individual parts
     for (const part of furnitureParts) {
-      const bbox = getPartBoundingBox(part);
-      results.push({
-        objectId: part.id,
-        objectType: 'part',
-        boundingBox: { min: bbox.min, max: bbox.max },
-      });
+      results.push(getPartObjectInfo(part));
     }
 
     // All countertops
     for (const group of furnitureCountertops) {
-      const bbox = calculateCountertopBoundingBox(group, furnitureCabinets, allParts);
-      if (bbox) {
-        results.push({
-          objectId: group.id,
-          objectType: 'countertop',
-          boundingBox: bbox,
-        });
-      }
+      const info = getCountertopObjectInfo(group, furnitureCabinets, allParts);
+      if (info) results.push(info);
     }
   }
 }
@@ -479,13 +564,6 @@ export function calculateAllObjectDimensions(
 
   // Calculate dimensions for each object
   return objects.map((obj) =>
-    calculateObjectDimensions(
-      obj.objectId,
-      obj.objectType,
-      obj.boundingBox,
-      cameraX,
-      cameraY,
-      cameraZ
-    )
+    calculateObjectDimensions(obj.objectId, obj.objectType, obj, cameraX, cameraY, cameraZ)
   );
 }

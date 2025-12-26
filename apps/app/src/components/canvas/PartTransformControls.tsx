@@ -1,24 +1,26 @@
-'use client';
+"use client";
 
-import { useCallback, useState, useRef, useEffect } from 'react';
-import { TransformControls } from '@react-three/drei';
-import { useStore, useMaterial } from '@/lib/store';
-import { useShallow } from 'zustand/react/shallow';
-import * as THREE from 'three';
-import type { Part } from '@/types';
-import { pickTransform } from '@/lib/store/history/utils';
-import { SCENE_CONFIG, PART_CONFIG, MATERIAL_CONFIG } from '@/lib/config';
-import { useSnapContext } from '@/lib/snap-context';
-import { useDimensionContext } from '@/lib/dimension-context';
-import { calculatePartSnapV2 } from '@/lib/snapping-v2';
-import { calculatePartSnapV3 } from '@/lib/snapping-v3';
-import { calculateDimensions } from '@/lib/dimension-calculator';
-import { getPartBoundingBoxAtPosition, getOtherBoundingBoxes } from '@/lib/bounding-box-utils';
-import type { TransformControls as TransformControlsImpl } from 'three-stdlib';
+import { useCallback, useState, useRef, useEffect } from "react";
+import { TransformControls } from "@react-three/drei";
+import { useStore, useMaterial } from "@/lib/store";
+import { useShallow } from "zustand/react/shallow";
+import * as THREE from "three";
+import type { Part, TransformSpace } from "@/types";
+import { pickTransform } from "@/lib/store/history/utils";
+import { SCENE_CONFIG, PART_CONFIG, MATERIAL_CONFIG } from "@/lib/config";
+import { useSnapContext } from "@/lib/snap-context";
+import { useDimensionContext } from "@/lib/dimension-context";
+import { calculatePartSnapV2 } from "@/lib/snapping-v2";
+import { calculatePartSnapV3 } from "@/lib/snapping-v3";
+import { calculateDimensions } from "@/lib/dimension-calculator";
+import { getPartBoundingBoxAtPosition, getOtherBoundingBoxes } from "@/lib/bounding-box-utils";
+import { useTransformAxisConstraints } from "@/hooks/useOrthographicConstraints";
+import type { TransformControls as TransformControlsImpl } from "three-stdlib";
 
 interface PartTransformControlsProps {
   part: Part;
-  mode: 'translate' | 'rotate';
+  mode: "translate" | "rotate";
+  space?: TransformSpace;
   onTransformStart: () => void;
   onTransformEnd: () => void;
 }
@@ -29,7 +31,7 @@ interface PartTransformControlsProps {
 function detectMovementAxis(
   originalPos: [number, number, number],
   currentPos: [number, number, number]
-): 'X' | 'Y' | 'Z' | null {
+): "X" | "Y" | "Z" | null {
   const dx = Math.abs(currentPos[0] - originalPos[0]);
   const dy = Math.abs(currentPos[1] - originalPos[1]);
   const dz = Math.abs(currentPos[2] - originalPos[2]);
@@ -39,20 +41,24 @@ function detectMovementAxis(
   // Only detect if there's meaningful movement (> 1mm)
   if (maxDelta < 1) return null;
 
-  if (dx === maxDelta) return 'X';
-  if (dy === maxDelta) return 'Y';
-  return 'Z';
+  if (dx === maxDelta) return "X";
+  if (dy === maxDelta) return "Y";
+  return "Z";
 }
 
 export function PartTransformControls({
   part,
   mode,
+  space = "world",
   onTransformStart,
   onTransformEnd,
 }: PartTransformControlsProps) {
   const [target, setTarget] = useState<THREE.Group | null>(null);
   const { setSnapPoints, clearSnapPoints } = useSnapContext();
   const { setDimensionLines, clearDimensionLines, setActiveAxis } = useDimensionContext();
+
+  // Get axis constraints for orthographic view
+  const axisConstraints = useTransformAxisConstraints(mode);
 
   const {
     updatePart,
@@ -86,20 +92,35 @@ export function PartTransformControls({
   const material = useMaterial(part.materialId);
   const partColor = material?.color || MATERIAL_CONFIG.DEFAULT_MATERIAL_COLOR;
 
-  const initialTransformRef = useRef<{ position: [number, number, number]; rotation: [number, number, number] } | null>(null);
+  const initialTransformRef = useRef<{
+    position: [number, number, number];
+    rotation: [number, number, number];
+  } | null>(null);
   const controlsRef = useRef<TransformControlsImpl | null>(null);
   const isDraggingRef = useRef(false);
 
-  const rotationSnap = mode === 'rotate' && isShiftPressed
-    ? THREE.MathUtils.degToRad(SCENE_CONFIG.ROTATION_SNAP_DEGREES)
-    : undefined;
+  // Effective space for TransformControls
+  const effectiveSpace = mode === "translate" ? space : "local";
+
+  // Update TransformControls space directly on every render
+  // (drei's TransformControls doesn't properly react to space prop changes)
+  useEffect(() => {
+    if (controlsRef.current) {
+      controlsRef.current.setSpace(effectiveSpace);
+    }
+  });
+
+  const rotationSnap =
+    mode === "rotate" && isShiftPressed
+      ? THREE.MathUtils.degToRad(SCENE_CONFIG.ROTATION_SNAP_DEGREES)
+      : undefined;
 
   // Get current drag axis from TransformControls
-  const getDragAxis = useCallback((): 'X' | 'Y' | 'Z' | null => {
+  const getDragAxis = useCallback((): "X" | "Y" | "Z" | null => {
     const controls = controlsRef.current;
     if (!controls) return null;
     const axis = (controls as unknown as { axis: string | null }).axis;
-    if (axis === 'X' || axis === 'Y' || axis === 'Z') return axis;
+    if (axis === "X" || axis === "Y" || axis === "Z") return axis;
     return null;
   }, []);
 
@@ -112,12 +133,16 @@ export function PartTransformControls({
     const currentRotation = target.rotation.toArray().slice(0, 3) as [number, number, number];
 
     // Debug: Check if rotation is being preserved during drag (log only first few times)
-    if (Math.random() < 0.02) { // Log ~2% of frames to avoid spam
-      console.log('[Transform] During drag - target rotation:', currentRotation.map(r => (r * 180 / Math.PI).toFixed(1)));
+    if (Math.random() < 0.02) {
+      // Log ~2% of frames to avoid spam
+      console.log(
+        "[Transform] During drag - target rotation:",
+        currentRotation.map((r) => ((r * 180) / Math.PI).toFixed(1))
+      );
     }
 
     // Only process for translate mode
-    if (mode === 'translate') {
+    if (mode === "translate") {
       const axis = getDragAxis();
 
       // If no specific axis detected, try to determine from movement
@@ -130,7 +155,7 @@ export function PartTransformControls({
           let snapResult;
 
           // Select snap algorithm based on version
-          if (snapSettings.version === 'v2') {
+          if (snapSettings.version === "v2") {
             // V2: Group bounding box based snapping (for cabinet arrangement)
             snapResult = calculatePartSnapV2(
               part,
@@ -154,7 +179,7 @@ export function PartTransformControls({
 
           if (snapResult.snapped && snapResult.snapPoints.length > 0) {
             // Apply snap only on the drag axis to prevent unwanted position jumps
-            const axisIndex = effectiveAxis === 'X' ? 0 : effectiveAxis === 'Y' ? 1 : 2;
+            const axisIndex = effectiveAxis === "X" ? 0 : effectiveAxis === "Y" ? 1 : 2;
             position[axisIndex] = snapResult.position[axisIndex];
             target.position.set(position[0], position[1], position[2]);
             setSnapPoints(snapResult.snapPoints);
@@ -200,21 +225,38 @@ export function PartTransformControls({
 
     // PERFORMANCE: NO store update here - preview mesh follows target directly
     // Store will be updated on mouseUp
-  }, [target, part, mode, snapEnabled, snapSettings, dimensionSettings, parts, cabinets, setSnapPoints, clearSnapPoints, setDimensionLines, setActiveAxis, getDragAxis]);
+  }, [
+    target,
+    part,
+    mode,
+    snapEnabled,
+    snapSettings,
+    dimensionSettings,
+    parts,
+    cabinets,
+    setSnapPoints,
+    clearSnapPoints,
+    setDimensionLines,
+    setActiveAxis,
+    getDragAxis,
+  ]);
 
   const handleTransformStart = useCallback(() => {
     isDraggingRef.current = true;
     initialTransformRef.current = pickTransform(part);
 
     // Debug: log rotation being used
-    console.log('[Transform] Part rotation (radians):', part.rotation);
-    console.log('[Transform] Part rotation (degrees):', part.rotation.map(r => (r * 180 / Math.PI).toFixed(1)));
-    console.log('[Transform] Part dimensions:', [part.width, part.height, part.depth]);
+    console.log("[Transform] Part rotation (radians):", part.rotation);
+    console.log(
+      "[Transform] Part rotation (degrees):",
+      part.rotation.map((r) => ((r * 180) / Math.PI).toFixed(1))
+    );
+    console.log("[Transform] Part dimensions:", [part.width, part.height, part.depth]);
     if (target) {
-      console.log('[Transform] Target rotation (euler):', target.rotation.toArray().slice(0, 3));
+      console.log("[Transform] Target rotation (euler):", target.rotation.toArray().slice(0, 3));
     }
 
-    beginBatch('TRANSFORM_PART', {
+    beginBatch("TRANSFORM_PART", {
       targetId: part.id,
       before: initialTransformRef.current,
     });
@@ -248,7 +290,17 @@ export function PartTransformControls({
     setTransformingPartId(null); // Show original Part3D again
     onTransformEnd();
     detectCollisions();
-  }, [target, updatePart, part.id, commitBatch, onTransformEnd, detectCollisions, clearSnapPoints, clearDimensionLines, setTransformingPartId]);
+  }, [
+    target,
+    updatePart,
+    part.id,
+    commitBatch,
+    onTransformEnd,
+    detectCollisions,
+    clearSnapPoints,
+    clearDimensionLines,
+    setTransformingPartId,
+  ]);
 
   // Sync target position with part when part changes externally
   useEffect(() => {
@@ -278,10 +330,14 @@ export function PartTransformControls({
           ref={controlsRef}
           object={target}
           mode={mode}
+          space={effectiveSpace}
           onMouseDown={handleTransformStart}
           onChange={handleChange}
           onMouseUp={handleTransformEnd}
           rotationSnap={rotationSnap}
+          showX={axisConstraints.showX}
+          showY={axisConstraints.showY}
+          showZ={axisConstraints.showZ}
         />
       )}
     </>

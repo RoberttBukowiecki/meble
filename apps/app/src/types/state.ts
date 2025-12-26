@@ -2,13 +2,13 @@
  * Application state type definitions
  */
 
-import type { Part } from './part';
-import type { Material } from './material';
-import type { Furniture } from './furniture';
-import type { Cabinet, CabinetType, CabinetParams, CabinetMaterials } from './cabinet';
-import type { Collision } from './collision';
-import type { Room, WallSegment, Opening, LightSource } from './room';
-import type { TransformMode } from './transform';
+import type { Part } from "./part";
+import type { Material } from "./material";
+import type { Furniture } from "./furniture";
+import type { Cabinet, CabinetType, CabinetParams, CabinetMaterials } from "./cabinet";
+import type { Collision } from "./collision";
+import type { Room, WallSegment, Opening, LightSource } from "./room";
+import type { TransformMode, TransformSpace } from "./transform";
 
 /**
  * Global application state structure
@@ -36,6 +36,8 @@ export interface ProjectState {
   /** ID of cabinet currently being transformed (for hiding all its parts during preview) */
   transformingCabinetId: string | null;
   transformMode: TransformMode;
+  /** Transform space for translation: 'world' or 'local' (respects rotation) */
+  transformSpace: TransformSpace;
 
   // Multiselect state
   /** Set of selected part IDs for multiselect */
@@ -63,6 +65,7 @@ export interface ProjectState {
   setTransformingPartId: (id: string | null) => void;
   setTransformingCabinetId: (id: string | null) => void;
   setTransformMode: (mode: TransformMode) => void;
+  setTransformSpace: (space: TransformSpace) => void;
 
   // Actions - Multiselect
   /** Toggle part in/out of selection (Cmd/Ctrl+click) */
@@ -85,7 +88,7 @@ export interface ProjectState {
   duplicateSelectedParts: () => void;
 
   // Actions - Materials
-  addMaterial: (material: Omit<Material, 'id'>) => void;
+  addMaterial: (material: Omit<Material, "id">) => void;
   updateMaterial: (id: string, patch: Partial<Material>) => void;
   removeMaterial: (id: string) => void;
 
@@ -99,11 +102,16 @@ export interface ProjectState {
   ) => void;
   updateCabinet: (
     id: string,
-    patch: Partial<Omit<Cabinet, 'id' | 'furnitureId' | 'createdAt'>>,
+    patch: Partial<Omit<Cabinet, "id" | "furnitureId" | "createdAt">>,
     skipHistory?: boolean
   ) => void;
   renameCabinet: (id: string, name: string, skipHistory?: boolean) => void;
-  updateCabinetParams: (id: string, params: CabinetParams, skipHistory?: boolean, centerOffset?: [number, number, number]) => void;
+  updateCabinetParams: (
+    id: string,
+    params: CabinetParams,
+    skipHistory?: boolean,
+    centerOffset?: [number, number, number]
+  ) => void;
   updateCabinetTransform: (
     id: string,
     transform: {
@@ -118,6 +126,9 @@ export interface ProjectState {
 
   // Actions - Collision Detection
   detectCollisions: () => void;
+
+  // Actions - Countertop (subset for debounced regeneration)
+  generateCountertopsForFurniture: (furnitureId: string, materialId: string) => void;
 
   // Actions - Room
   addRoom: (room: Room) => void;

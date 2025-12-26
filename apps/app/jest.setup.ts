@@ -1,15 +1,20 @@
-import '@testing-library/jest-dom';
+import "@testing-library/jest-dom";
+import { TextEncoder, TextDecoder } from "util";
+
+// Polyfill TextEncoder/TextDecoder for test environment
+global.TextEncoder = TextEncoder;
+global.TextDecoder = TextDecoder as typeof global.TextDecoder;
 
 // Polyfill crypto.randomUUID for test environment
 // @ts-ignore
-if (typeof global.crypto === 'undefined') {
+if (typeof global.crypto === "undefined") {
   // @ts-ignore
   global.crypto = {};
 }
 // @ts-ignore
-if (typeof global.crypto.randomUUID !== 'function') {
+if (typeof global.crypto.randomUUID !== "function") {
   // @ts-ignore
-  global.crypto.randomUUID = () => 'test-uuid';
+  global.crypto.randomUUID = () => "test-uuid";
 }
 
 // Mock ResizeObserver for Radix UI components
@@ -21,9 +26,9 @@ class MockResizeObserver {
 global.ResizeObserver = MockResizeObserver;
 
 // Mock window.matchMedia for responsive components
-Object.defineProperty(window, 'matchMedia', {
+Object.defineProperty(window, "matchMedia", {
   writable: true,
-  value: jest.fn().mockImplementation(query => ({
+  value: jest.fn().mockImplementation((query) => ({
     matches: false,
     media: query,
     onchange: null,

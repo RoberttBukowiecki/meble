@@ -23,25 +23,28 @@
  */
 
 // Domain modules
-export { Zone } from './zone';
-export type { ZoneBounds, PartitionBounds, ZoneTreeInfo, ParentBounds } from './zone';
+export { Zone } from "./zone";
+export type { ZoneBounds, PartitionBounds, ZoneTreeInfo, ParentBounds } from "./zone";
 
-export { Drawer } from './drawer';
-export type { ZoneBounds as DrawerZoneBounds, BoxBounds } from './drawer';
+export { Drawer } from "./drawer";
+export type { ZoneBounds as DrawerZoneBounds, BoxBounds } from "./drawer";
 
-export { Shelf } from './shelf';
+export { Shelf } from "./shelf";
 
-export { CabinetDomain } from './cabinet';
-export type { CabinetDimensions } from './cabinet';
+export { CabinetDomain } from "./cabinet";
+export type { CabinetDimensions } from "./cabinet";
 
-export { PartDomain } from './part';
-export type { GeneratedPartData } from './part';
+export { PartDomain } from "./part";
+export type { GeneratedPartData } from "./part";
 
-export { LegsDomain } from './legs';
+export { LegsDomain } from "./legs";
 
-export { CornerDomain, CORNER_DEFAULTS, CORNER_LIMITS } from './corner';
+export { CornerDomain, CORNER_DEFAULTS, CORNER_LIMITS } from "./corner";
 
-export { CountertopDomain } from './countertop';
+export { CountertopDomain } from "./countertop";
+
+export { CabinetTransformDomain } from "./cabinetTransform";
+export type { CabinetGeometricBounds, LegsAnchor, CabinetLocalBounds } from "./cabinetTransform";
 
 // Shared types
 export type {
@@ -54,14 +57,10 @@ export type {
   BoundingBox,
   InteriorSpace,
   DrawerBoxDimensions,
-} from './types';
+} from "./types";
 
 // Shared utilities
-export {
-  validResult,
-  invalidResult,
-  mergeValidations,
-} from './types';
+export { validResult, invalidResult, mergeValidations } from "./types";
 
 export {
   generateId,
@@ -77,4 +76,4 @@ export {
   moveArrayItem,
   findIndexById,
   arraysEqual,
-} from './utils';
+} from "./utils";

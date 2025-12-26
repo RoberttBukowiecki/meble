@@ -5,9 +5,9 @@
  * Supports both authenticated users and guests.
  */
 
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -18,13 +18,12 @@ import {
   Button,
   Input,
   Label,
-  Checkbox,
   PayULogo,
-} from '@meble/ui';
-import { track, AnalyticsEvent } from '@meble/analytics';
-import { Check, ChevronDown, CreditCard, Loader2, Sparkles, Zap } from 'lucide-react';
-import Link from 'next/link';
-import { usePayment } from '@/hooks/usePayment';
+} from "@meble/ui";
+import { track, AnalyticsEvent } from "@meble/analytics";
+import { Check, ChevronDown, CreditCard, Loader2, Sparkles, Zap } from "lucide-react";
+import Link from "next/link";
+import { usePayment } from "@/hooks/usePayment";
 import { EXPORT_PACKAGES, ExportPackageId } from "@meble/config";
 
 interface CreditsPurchaseModalProps {
@@ -36,9 +35,9 @@ interface CreditsPurchaseModalProps {
   onSuccess?: () => void;
 }
 
-type PaymentProvider = 'payu';
+type PaymentProvider = "payu";
 
-const PACKAGES_ORDER: ExportPackageId[] = ['single', 'starter', 'standard', 'pro'];
+const PACKAGES_ORDER: ExportPackageId[] = ["single", "starter", "standard", "pro"];
 
 // Filter packages based on auth status
 function getAvailablePackages(isAuthenticated: boolean) {
@@ -51,8 +50,8 @@ function getAvailablePackages(isAuthenticated: boolean) {
   });
 }
 
-const GUEST_EMAIL_KEY = 'e-meble-guest-email';
-export const EXPORT_DIALOG_PENDING_KEY = 'e-meble-export-dialog-pending';
+const GUEST_EMAIL_KEY = "e-meble-guest-email";
+export const EXPORT_DIALOG_PENDING_KEY = "e-meble-export-dialog-pending";
 
 export function CreditsPurchaseModal({
   open,
@@ -62,11 +61,10 @@ export function CreditsPurchaseModal({
   guestSessionId,
   onSuccess,
 }: CreditsPurchaseModalProps) {
-  const [selectedPackage, setSelectedPackage] = useState<ExportPackageId>('standard');
-  const [selectedProvider] = useState<PaymentProvider>('payu');
-  const [email, setEmail] = useState(userEmail || '');
+  const [selectedPackage, setSelectedPackage] = useState<ExportPackageId>("standard");
+  const [selectedProvider] = useState<PaymentProvider>("payu");
+  const [email, setEmail] = useState(userEmail || "");
   const [emailError, setEmailError] = useState<string | null>(null);
-  const [termsAccepted, setTermsAccepted] = useState(false);
   const [showPayuInfo, setShowPayuInfo] = useState(false);
 
   const { createPayment, isCreating, error: paymentError } = usePayment();
@@ -85,12 +83,12 @@ export function CreditsPurchaseModal({
 
   const validateEmail = (value: string): boolean => {
     if (!value) {
-      setEmailError('Email jest wymagany');
+      setEmailError("Email jest wymagany");
       return false;
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(value)) {
-      setEmailError('Nieprawidłowy format email');
+      setEmailError("Nieprawidłowy format email");
       return false;
     }
     setEmailError(null);
@@ -120,11 +118,11 @@ export function CreditsPurchaseModal({
       package_id: selectedPackage,
       amount: (pkg?.price ?? 0) / 100,
       provider: selectedProvider,
-      currency: 'PLN',
+      currency: "PLN",
     });
 
     const result = await createPayment({
-      packageType: selectedPackage as 'single' | 'starter' | 'standard' | 'pro',
+      packageType: selectedPackage as "single" | "starter" | "standard" | "pro",
       provider: selectedProvider,
       email,
       sessionId: !isAuthenticated ? (guestSessionId ?? undefined) : undefined,
@@ -136,7 +134,7 @@ export function CreditsPurchaseModal({
         localStorage.setItem(GUEST_EMAIL_KEY, email);
       }
       // Save flag to reopen export dialog after returning from payment
-      localStorage.setItem(EXPORT_DIALOG_PENDING_KEY, 'true');
+      localStorage.setItem(EXPORT_DIALOG_PENDING_KEY, "true");
       // Redirect to payment provider
       window.location.href = result.redirectUrl;
     } else {
@@ -145,7 +143,7 @@ export function CreditsPurchaseModal({
         package_id: selectedPackage,
         amount: (pkg?.price ?? 0) / 100,
         provider: selectedProvider,
-        error_message: 'redirect_failed',
+        error_message: "redirect_failed",
       });
     }
   };
@@ -156,19 +154,19 @@ export function CreditsPurchaseModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <CreditCard className="h-5 w-5" />
             Kup kredyty eksportu
           </DialogTitle>
           <DialogDescription>
-            Wybierz pakiet kredytów i metodę płatności. Smart Export pozwala na darmowe
-            re-eksporty tego samego projektu przez 24h.
+            Wybierz pakiet kredytów i metodę płatności. Smart Export pozwala na darmowe re-eksporty
+            tego samego projektu przez 24h.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="space-y-6 py-4 flex-1 overflow-y-auto">
           {/* Package Selection */}
           <div className="space-y-3">
             <Label className="text-base font-medium">Wybierz pakiet</Label>
@@ -186,8 +184,8 @@ export function CreditsPurchaseModal({
                     onClick={() => handlePackageSelect(packageId)}
                     className={`relative flex flex-col items-start p-4 rounded-lg border-2 transition-all text-left ${
                       isSelected
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border hover:border-primary/50 hover:bg-muted/50'
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-primary/50 hover:bg-muted/50"
                     }`}
                   >
                     {pkg.popular && (
@@ -205,9 +203,7 @@ export function CreditsPurchaseModal({
                       <span className="font-semibold">{pkg.namePl}</span>
                     </div>
 
-                    <p className="text-sm text-muted-foreground mb-2">
-                      {pkg.descriptionPl}
-                    </p>
+                    <p className="text-sm text-muted-foreground mb-2">{pkg.descriptionPl}</p>
 
                     <div className="flex items-baseline gap-2 mt-auto">
                       <span className="text-2xl font-bold">{formatPrice(pkg.price)}</span>
@@ -221,7 +217,10 @@ export function CreditsPurchaseModal({
                     {pkg.features && (
                       <ul className="mt-2 space-y-1">
                         {pkg.features.slice(0, 2).map((feature, i) => (
-                          <li key={i} className="text-xs text-muted-foreground flex items-center gap-1">
+                          <li
+                            key={i}
+                            className="text-xs text-muted-foreground flex items-center gap-1"
+                          >
                             <Check className="h-3 w-3 text-green-500" />
                             {feature}
                           </li>
@@ -254,11 +253,9 @@ export function CreditsPurchaseModal({
                   if (emailError) validateEmail(e.target.value);
                 }}
                 onBlur={(e) => validateEmail(e.target.value)}
-                className={emailError ? 'border-destructive' : ''}
+                className={emailError ? "border-destructive" : ""}
               />
-              {emailError && (
-                <p className="text-sm text-destructive">{emailError}</p>
-              )}
+              {emailError && <p className="text-sm text-destructive">{emailError}</p>}
               {!isAuthenticated && (
                 <p className="text-xs text-muted-foreground">
                   Email używany do potwierdzenia płatności i odzyskania kredytów.
@@ -273,35 +270,8 @@ export function CreditsPurchaseModal({
             <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
               <div className="flex items-center gap-3">
                 <PayULogo size="sm" />
-                <span className="text-sm text-muted-foreground">
-                  Bezpieczna płatność
-                </span>
+                <span className="text-sm text-muted-foreground">Bezpieczna płatność</span>
               </div>
-            </div>
-
-            {/* Terms acceptance */}
-            <div className="flex items-start gap-3">
-              <Checkbox
-                id="terms"
-                checked={termsAccepted}
-                onCheckedChange={(checked) => setTermsAccepted(checked === true)}
-                className="mt-0.5"
-              />
-              <label htmlFor="terms" className="text-sm text-muted-foreground leading-relaxed cursor-pointer">
-                Akceptuję{' '}
-                <Link href="/regulamin" className="text-primary hover:underline" target="_blank">
-                  regulamin serwisu
-                </Link>
-                {' '}oraz{' '}
-                <a
-                  href="https://static.payu.com/sites/terms/files/payu_terms_of_service_single_transaction_pl_pl.pdf"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline"
-                >
-                  regulamin płatności PayU
-                </a>
-              </label>
             </div>
 
             {/* PayU RODO Info - Collapsible */}
@@ -311,18 +281,20 @@ export function CreditsPurchaseModal({
                 onClick={() => setShowPayuInfo(!showPayuInfo)}
                 className="flex items-center gap-1 hover:text-foreground transition-colors"
               >
-                <ChevronDown className={`h-3 w-3 transition-transform ${showPayuInfo ? 'rotate-180' : ''}`} />
+                <ChevronDown
+                  className={`h-3 w-3 transition-transform ${showPayuInfo ? "rotate-180" : ""}`}
+                />
                 Informacja o przetwarzaniu danych
               </button>
               {showPayuInfo && (
                 <div className="mt-2 p-3 rounded bg-muted/30 space-y-2">
                   <p>
-                    Administratorem danych w zakresie płatności jest PayU S.A. z siedzibą
-                    w Poznaniu (60-166), ul. Grunwaldzka 186.
+                    Administratorem danych w zakresie płatności jest PayU S.A. z siedzibą w Poznaniu
+                    (60-166), ul. Grunwaldzka 186.
                   </p>
                   <p>
-                    Dane przetwarzane są w celu realizacji transakcji płatniczej.
-                    Podanie danych jest dobrowolne, lecz niezbędne do realizacji płatności.
+                    Dane przetwarzane są w celu realizacji transakcji płatniczej. Podanie danych
+                    jest dobrowolne, lecz niezbędne do realizacji płatności.
                   </p>
                   <a
                     href="https://poland.payu.com/privacy-portal/privacy-principles/"
@@ -345,23 +317,42 @@ export function CreditsPurchaseModal({
           )}
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isCreating}>
-            Anuluj
-          </Button>
-          <Button onClick={handlePurchase} disabled={isCreating || !email || !termsAccepted}>
-            {isCreating ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Przetwarzanie...
-              </>
-            ) : (
-              <>
-                <CreditCard className="h-4 w-4" />
-                Zapłać {formatPrice(EXPORT_PACKAGES[selectedPackage]?.price || 0)}
-              </>
-            )}
-          </Button>
+        <DialogFooter className="flex-shrink-0 border-t pt-4 mt-2">
+          <div className="flex flex-col w-full gap-3">
+            <p className="text-xs text-muted-foreground text-center">
+              Klikając „Zapłać", akceptujesz{" "}
+              <Link href="/regulamin" className="text-primary hover:underline" target="_blank">
+                regulamin serwisu
+              </Link>{" "}
+              oraz{" "}
+              <a
+                href="https://static.payu.com/sites/terms/files/payu_terms_of_service_single_transaction_pl_pl.pdf"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline"
+              >
+                regulamin płatności PayU
+              </a>
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isCreating}>
+                Anuluj
+              </Button>
+              <Button onClick={handlePurchase} disabled={isCreating || !email}>
+                {isCreating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Przetwarzanie...
+                  </>
+                ) : (
+                  <>
+                    <CreditCard className="h-4 w-4" />
+                    Zapłać {formatPrice(EXPORT_PACKAGES[selectedPackage]?.price || 0)}
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

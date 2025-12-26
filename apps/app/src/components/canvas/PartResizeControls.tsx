@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * PartResizeControls Component
@@ -7,23 +7,24 @@
  * Store is only updated on pointerup for performance.
  */
 
-import { useRef, useCallback, useEffect, useState, useMemo } from 'react';
-import { useThree, ThreeEvent } from '@react-three/fiber';
-import * as THREE from 'three';
-import { useStore, useMaterial } from '@/lib/store';
-import { useShallow } from 'zustand/react/shallow';
-import { useSnapContext } from '@/lib/snap-context';
-import { calculateResize, getHandlePosition, getHandleNormal } from '@/lib/resize';
-import type { Part, ResizeHandle } from '@/types';
-import { MATERIAL_CONFIG } from '@/lib/config';
-import { ResizeHandleMesh, ResizePreviewMesh, DimensionDisplay } from './resize';
+import { useRef, useCallback, useEffect, useState, useMemo } from "react";
+import { useThree, ThreeEvent } from "@react-three/fiber";
+import * as THREE from "three";
+import { useStore, useMaterial } from "@/lib/store";
+import { useShallow } from "zustand/react/shallow";
+import { useSnapContext } from "@/lib/snap-context";
+import { useHiddenResizeHandles } from "@/hooks/useOrthographicConstraints";
+import { calculateResize, getHandlePosition, getHandleNormal } from "@/lib/resize";
+import type { Part, ResizeHandle } from "@/types";
+import { MATERIAL_CONFIG } from "@/lib/config";
+import { ResizeHandleMesh, ResizePreviewMesh, DimensionDisplay } from "./resize";
 
 // ============================================================================
 // Constants
 // ============================================================================
 
 /** Resize handles (depth disabled - thickness is determined by material) */
-const HANDLES: ResizeHandle[] = ['width+', 'width-', 'height+', 'height-'];
+const HANDLES: ResizeHandle[] = ["width+", "width-", "height+", "height-"];
 
 /** Grid snap size when Shift is pressed */
 const GRID_SNAP = 10;
@@ -61,8 +62,20 @@ export function PartResizeControls({
   const { camera, gl } = useThree();
   const { setSnapPoints, clearSnapPoints } = useSnapContext();
 
+  // Get hidden handles for orthographic view
+  const hiddenHandles = useHiddenResizeHandles();
+
   // Store access
-  const { updatePart, beginBatch, commitBatch, parts, snapEnabled, snapSettings, isShiftPressed, setTransformingPartId } = useStore(
+  const {
+    updatePart,
+    beginBatch,
+    commitBatch,
+    parts,
+    snapEnabled,
+    snapSettings,
+    isShiftPressed,
+    setTransformingPartId,
+  } = useStore(
     useShallow((state) => ({
       updatePart: state.updatePart,
       beginBatch: state.beginBatch,
@@ -110,11 +123,21 @@ export function PartResizeControls({
   const isShiftPressedRef = useRef(isShiftPressed);
 
   // Keep refs in sync
-  useEffect(() => { partRef.current = part; }, [part]);
-  useEffect(() => { partsRef.current = parts; }, [parts]);
-  useEffect(() => { snapEnabledRef.current = snapEnabled; }, [snapEnabled]);
-  useEffect(() => { snapSettingsRef.current = snapSettings; }, [snapSettings]);
-  useEffect(() => { isShiftPressedRef.current = isShiftPressed; }, [isShiftPressed]);
+  useEffect(() => {
+    partRef.current = part;
+  }, [part]);
+  useEffect(() => {
+    partsRef.current = parts;
+  }, [parts]);
+  useEffect(() => {
+    snapEnabledRef.current = snapEnabled;
+  }, [snapEnabled]);
+  useEffect(() => {
+    snapSettingsRef.current = snapSettings;
+  }, [snapSettings]);
+  useEffect(() => {
+    isShiftPressedRef.current = isShiftPressed;
+  }, [isShiftPressed]);
 
   // Cleanup RAF on unmount
   useEffect(() => {
@@ -148,9 +171,14 @@ export function PartResizeControls({
       camera.getWorldDirection(cameraDir);
       dragPlaneRef.current.setFromNormalAndCoplanarPoint(cameraDir, startPoint);
 
-      beginBatch('TRANSFORM_PART', {
+      beginBatch("TRANSFORM_PART", {
         targetId: part.id,
-        before: { position: part.position, width: part.width, height: part.height, depth: part.depth },
+        before: {
+          position: part.position,
+          width: part.width,
+          height: part.height,
+          depth: part.depth,
+        },
       });
 
       setActiveHandle(handle);
@@ -216,7 +244,11 @@ export function PartResizeControls({
           finalDepth = Math.max(GRID_SNAP, Math.round(result.newDepth / GRID_SNAP) * GRID_SNAP);
         }
 
-        dragStateRef.current.previewDimensions = { width: finalWidth, height: finalHeight, depth: finalDepth };
+        dragStateRef.current.previewDimensions = {
+          width: finalWidth,
+          height: finalHeight,
+          depth: finalDepth,
+        };
         dragStateRef.current.previewPosition = result.newPosition;
         dragStateRef.current.hasCollision = result.collision;
 
@@ -240,12 +272,16 @@ export function PartResizeControls({
 
       const preview = dragStateRef.current;
       if (preview.previewDimensions && preview.previewPosition) {
-        updatePart(partRef.current.id, {
-          width: preview.previewDimensions.width,
-          height: preview.previewDimensions.height,
-          depth: preview.previewDimensions.depth,
-          position: preview.previewPosition,
-        }, true);
+        updatePart(
+          partRef.current.id,
+          {
+            width: preview.previewDimensions.width,
+            height: preview.previewDimensions.height,
+            depth: preview.previewDimensions.depth,
+            position: preview.previewPosition,
+          },
+          true
+        );
 
         commitBatch({
           after: {
@@ -279,14 +315,23 @@ export function PartResizeControls({
       onTransformEnd();
     };
 
-    window.addEventListener('pointermove', handlePointerMove);
-    window.addEventListener('pointerup', handlePointerUp);
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
 
     return () => {
-      window.removeEventListener('pointermove', handlePointerMove);
-      window.removeEventListener('pointerup', handlePointerUp);
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
     };
-  }, [camera, gl, updatePart, commitBatch, setSnapPoints, clearSnapPoints, onTransformEnd, setTransformingPartId]);
+  }, [
+    camera,
+    gl,
+    updatePart,
+    commitBatch,
+    setSnapPoints,
+    clearSnapPoints,
+    onTransformEnd,
+    setTransformingPartId,
+  ]);
 
   // Get current preview state
   const preview = dragStateRef.current;
@@ -317,9 +362,9 @@ export function PartResizeControls({
   // Get axis for active handle
   const activeAxis = useMemo(() => {
     if (!activeHandle) return null;
-    if (activeHandle.startsWith('width')) return 'width';
-    if (activeHandle.startsWith('height')) return 'height';
-    return 'depth';
+    if (activeHandle.startsWith("width")) return "width";
+    if (activeHandle.startsWith("height")) return "height";
+    return "depth";
   }, [activeHandle]);
 
   const currentDimension = useMemo(() => {
@@ -327,6 +372,11 @@ export function PartResizeControls({
     return preview.previewDimensions[activeAxis];
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeAxis, isShowingPreview, previewVersion]);
+
+  // Filter handles for orthographic view
+  const visibleHandles = useMemo(() => {
+    return HANDLES.filter((handle) => !hiddenHandles.includes(handle));
+  }, [hiddenHandles]);
 
   return (
     <group>
@@ -345,7 +395,7 @@ export function PartResizeControls({
       )}
 
       {/* Resize handles */}
-      {HANDLES.map((handle) => {
+      {visibleHandles.map((handle) => {
         const position = getHandlePosition(displayPart, handle);
         const normal = getHandleNormal(displayPart, handle);
 

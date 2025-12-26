@@ -3,7 +3,23 @@
  * Centralized keyboard shortcuts and settings
  */
 
-import { CabinetParams, CabinetType, DoorConfig, DrawerSlideType, DrawerSlideConfig, DrawerConfiguration, EdgeBandingRect, LegPreset, LegFinish, LegShape, LegCountMode, CornerConfig, LEG_FINISH_COLORS, HangerCutoutConfig, FoldingDoorConfig } from "@/types";
+import {
+  CabinetParams,
+  CabinetType,
+  DoorConfig,
+  DrawerSlideType,
+  DrawerSlideConfig,
+  DrawerConfiguration,
+  EdgeBandingRect,
+  LegPreset,
+  LegFinish,
+  LegShape,
+  LegCountMode,
+  CornerConfig,
+  LEG_FINISH_COLORS,
+  HangerCutoutConfig,
+  FoldingDoorConfig,
+} from "@/types";
 
 // Utility types/helpers for keyboard shortcuts
 export type ShortcutKeys = string | string[];
@@ -14,7 +30,7 @@ export const normalizeShortcutKeys = (shortcut: ShortcutKeys): string[] =>
 export const formatShortcutLabel = (shortcut: ShortcutKeys): string =>
   normalizeShortcutKeys(shortcut)
     .map((key) => key.toUpperCase())
-    .join(' / ');
+    .join(" / ");
 
 // ============================================================================
 // Keyboard Shortcuts Configuration
@@ -22,28 +38,42 @@ export const formatShortcutLabel = (shortcut: ShortcutKeys): string =>
 
 export const KEYBOARD_SHORTCUTS = {
   // Transform modes
-  TRANSLATE_MODE: 'm',
-  ROTATE_MODE: 'r',
-  RESIZE_MODE: 's',
+  TRANSLATE_MODE: "m",
+  ROTATE_MODE: "r",
+  RESIZE_MODE: "s",
+  TOGGLE_SPACE_MODE: "l", // Toggle world/local space for translation
 
   // Camera controls
-  RESET_CAMERA: 'c',
+  RESET_CAMERA: "c",
+
+  // View modes (numpad or regular numbers)
+  VIEW_PERSPECTIVE: "1",
+  VIEW_TOP: "2",
+  VIEW_FRONT: "3",
+  VIEW_RIGHT: "4",
+  VIEW_BACK: "5",
+  VIEW_LEFT: "6",
+  VIEW_BOTTOM: "7",
 
   // Part actions
-  DELETE_PART: ['Delete', 'Backspace'],
-  DUPLICATE_PART: 'd',
+  DELETE_PART: ["Delete", "Backspace"],
+  DUPLICATE_PART: "d",
 
   // View options
-  TOGGLE_GRID: 'g',
-  TOGGLE_OBJECT_DIMENSIONS: 'b', // Object dimensions (W/H/D)
+  TOGGLE_GRID: "g",
+  TOGGLE_OBJECT_DIMENSIONS: "b", // Object dimensions (W/H/D)
 
   // Selection shortcuts (Cmd/Ctrl modifier required)
-  SELECT_ALL: 'a',
-  CLEAR_SELECTION: 'Escape',
+  SELECT_ALL: "a",
+  CLEAR_SELECTION: "Escape",
 
   // Visibility shortcuts
-  HIDE_SELECTED: 'h',           // Hide selected parts/groups
-  TOGGLE_HIDE_FRONTS: 'h',      // Ctrl+H - Toggle cabinet front visibility
+  HIDE_SELECTED: "h", // Hide selected parts/groups
+  TOGGLE_HIDE_FRONTS: "h", // Ctrl+H - Toggle cabinet front visibility
+
+  // Admin-only shortcuts (for testing)
+  ADMIN_TEST_CREDITS_ANIMATION: "9", // Ctrl+9 - Test credits animation in sidebar
+  ADMIN_TEST_EXPORT_DIALOG: "0", // Ctrl+0 - Open export dialog and test credits animation
 } as const satisfies Record<string, ShortcutKeys>;
 
 // ============================================================================
@@ -52,7 +82,8 @@ export const KEYBOARD_SHORTCUTS = {
 
 export const SCENE_CONFIG = {
   // Camera
-  CAMERA_INITIAL_POSITION: [500, 500, 500] as [number, number, number],
+  // Increased distance for better overview of typical cabinets (720-800mm height)
+  CAMERA_INITIAL_POSITION: [1500, 1000, 1500] as [number, number, number],
   CAMERA_FOV: 50,
 
   // Grid
@@ -75,11 +106,11 @@ export const SCENE_CONFIG = {
 
 export const MATERIAL_CONFIG = {
   // Edge color for parts without edge banding
-  EDGE_COLOR: '#8B4513', // Saddle brown - wood-like color
+  EDGE_COLOR: "#8B4513", // Saddle brown - wood-like color
   EDGE_OPACITY: 1.0,
 
   // Default material fallback
-  DEFAULT_MATERIAL_COLOR: '#808080',
+  DEFAULT_MATERIAL_COLOR: "#808080",
 } as const;
 
 // ============================================================================
@@ -96,38 +127,38 @@ export const PART_CONFIG = {
   DUPLICATE_OFFSET: 50, // mm offset on X-axis when duplicating
 
   // Selection highlight
-  SELECTION_EMISSIVE_COLOR: '#4444ff',
+  SELECTION_EMISSIVE_COLOR: "#4444ff",
   SELECTION_EMISSIVE_INTENSITY: 0.3,
-  SELECTION_EDGE_COLOR: '#4444ff',
+  SELECTION_EDGE_COLOR: "#4444ff",
   SELECTION_EDGE_LINE_WIDTH: 2,
 
   // Cabinet selection highlight
-  CABINET_SELECTION_EMISSIVE_COLOR: '#2222aa',
+  CABINET_SELECTION_EMISSIVE_COLOR: "#2222aa",
   CABINET_SELECTION_EMISSIVE_INTENSITY: 0.2,
-  CABINET_SELECTION_EDGE_COLOR: '#2222aa',
+  CABINET_SELECTION_EDGE_COLOR: "#2222aa",
 
   // Collision highlight
-  COLLISION_EMISSIVE_COLOR: '#ff0000',
+  COLLISION_EMISSIVE_COLOR: "#ff0000",
   COLLISION_EMISSIVE_INTENSITY: 0.4,
-  COLLISION_EDGE_COLOR: '#ff0000',
+  COLLISION_EDGE_COLOR: "#ff0000",
 
   // Multiselect visual feedback
-  MULTISELECT_EMISSIVE_COLOR: '#6644ff',
+  MULTISELECT_EMISSIVE_COLOR: "#6644ff",
   MULTISELECT_EMISSIVE_INTENSITY: 0.25,
-  MULTISELECT_EDGE_COLOR: '#6644ff',
+  MULTISELECT_EDGE_COLOR: "#6644ff",
   MULTISELECT_PREVIEW_OPACITY: 0.7,
-  MULTISELECT_PREVIEW_EMISSIVE: '#4444aa',
+  MULTISELECT_PREVIEW_EMISSIVE: "#4444aa",
 
   // Bounding box visualization
-  MULTISELECT_BBOX_COLOR: '#6644ff',
+  MULTISELECT_BBOX_COLOR: "#6644ff",
   MULTISELECT_BBOX_LINE_WIDTH: 2,
   MULTISELECT_BBOX_DASH_SIZE: 10,
   MULTISELECT_BBOX_GAP_SIZE: 5,
 
   // Resize handle colors
-  RESIZE_HANDLE_COLOR: '#f5a623',           // Yellow/orange - default state
-  RESIZE_HANDLE_HOVER_COLOR: '#ffc107',     // Brighter yellow - hover state
-  RESIZE_HANDLE_ACTIVE_COLOR: '#ffeb3b',    // Bright yellow - active/dragging state
+  RESIZE_HANDLE_COLOR: "#f5a623", // Yellow/orange - default state
+  RESIZE_HANDLE_HOVER_COLOR: "#ffc107", // Brighter yellow - hover state
+  RESIZE_HANDLE_ACTIVE_COLOR: "#ffeb3b", // Bright yellow - active/dragging state
   RESIZE_HANDLE_EMISSIVE_INTENSITY: 0.4,
   RESIZE_HANDLE_HOVER_EMISSIVE_INTENSITY: 0.5,
   RESIZE_HANDLE_ACTIVE_EMISSIVE_INTENSITY: 0.6,
@@ -137,10 +168,10 @@ export const PART_CONFIG = {
 // ============================================================================
 
 export const DEFAULT_GRAPHICS_SETTINGS = {
-  quality: 'high',
+  quality: "high",
   shadows: true,
   ambientOcclusion: false,
-  lightingMode: 'standard',
+  lightingMode: "standard",
 } as const;
 
 /**
@@ -184,7 +215,7 @@ export type QualityPreset = keyof typeof QUALITY_PRESETS;
 // ============================================================================
 
 export const UI_FEATURES = {
-  HIDE_GRAPHICS_SETTINGS: true,   // Hidden by default, can be enabled in settings
+  HIDE_GRAPHICS_SETTINGS: true, // Hidden by default, can be enabled in settings
   HIDE_ROOMS_TAB: true,
 } as const;
 
@@ -248,38 +279,38 @@ export const TRIM_STRIP_CONFIG = {
 
 export const INTERIOR_CONFIG = {
   // Zone tree limits
-  MAX_ZONE_DEPTH: 4,                  // Maximum nesting levels (0, 1, 2, 3)
-  MAX_CHILDREN_PER_ZONE: 6,           // Maximum children in a NESTED zone
-  MAX_TOTAL_ZONES: 20,                // Total zones across entire tree
+  MAX_ZONE_DEPTH: 4, // Maximum nesting levels (0, 1, 2, 3)
+  MAX_CHILDREN_PER_ZONE: 6, // Maximum children in a NESTED zone
+  MAX_TOTAL_ZONES: 20, // Total zones across entire tree
 
   // Zone size limits (mm)
-  MIN_ZONE_HEIGHT_MM: 50,             // Minimum zone height
-  MIN_ZONE_WIDTH_MM: 100,             // Minimum zone width
+  MIN_ZONE_HEIGHT_MM: 50, // Minimum zone height
+  MIN_ZONE_WIDTH_MM: 100, // Minimum zone width
 
   // Zone height ratio limits
-  ZONE_HEIGHT_RATIO_MIN: 1,           // Minimum height ratio
-  ZONE_HEIGHT_RATIO_MAX: 4,           // Maximum height ratio
+  ZONE_HEIGHT_RATIO_MIN: 1, // Minimum height ratio
+  ZONE_HEIGHT_RATIO_MAX: 4, // Maximum height ratio
 
   // Partition limits (mm)
   PARTITION_DEPTH_MIN: 50,
   PARTITION_DEPTH_MAX: 500,
 
   // Drawer zone limits
-  MAX_DRAWER_ZONES_PER_ZONE: 8,       // Maximum drawer zones per zone
-  MAX_BOXES_PER_DRAWER_ZONE: 4,       // Maximum boxes (drawer-in-drawer) per zone
+  MAX_DRAWER_ZONES_PER_ZONE: 8, // Maximum drawer zones per zone
+  MAX_BOXES_PER_DRAWER_ZONE: 4, // Maximum boxes (drawer-in-drawer) per zone
 
   // Shelf limits
-  MAX_SHELVES_PER_ZONE: 10,           // Maximum shelves in a shelf zone
-  MAX_SHELVES_ABOVE_DRAWER: 4,        // Maximum shelves above drawer box
+  MAX_SHELVES_PER_ZONE: 10, // Maximum shelves in a shelf zone
+  MAX_SHELVES_ABOVE_DRAWER: 4, // Maximum shelves above drawer box
 
   // Default presets
-  DEFAULT_SHELF_DEPTH_PRESET: 'FULL' as const,      // Default depth for regular shelves
-  DEFAULT_ABOVE_BOX_SHELF_PRESET: 'FULL' as const,  // Default depth for shelves above drawer
+  DEFAULT_SHELF_DEPTH_PRESET: "FULL" as const, // Default depth for regular shelves
+  DEFAULT_ABOVE_BOX_SHELF_PRESET: "FULL" as const, // Default depth for shelves above drawer
 
   // Custom depth limits (mm)
   CUSTOM_SHELF_DEPTH_MIN: 50,
   CUSTOM_SHELF_DEPTH_MAX: 500,
-  CUSTOM_SHELF_DEPTH_OFFSET: 10,      // Offset from cabinet depth for max calculation
+  CUSTOM_SHELF_DEPTH_OFFSET: 10, // Offset from cabinet depth for max calculation
 } as const;
 
 // ============================================================================
@@ -291,7 +322,7 @@ import type {
   CabinetInteriorConfig,
   ZoneContentType,
   ZoneDivisionDirection,
-} from '@/types';
+} from "@/types";
 
 /**
  * Create a simple zone with given content type
@@ -304,7 +335,7 @@ function createSimpleZone(
   return {
     id: `preset_${depth}_${Math.random().toString(36).slice(2, 5)}`,
     contentType,
-    heightConfig: { mode: 'RATIO', ratio: heightRatio },
+    heightConfig: { mode: "RATIO", ratio: heightRatio },
     depth,
   };
 }
@@ -320,10 +351,10 @@ function createNestedZone(
 ): InteriorZone {
   return {
     id: `preset_${depth}_${Math.random().toString(36).slice(2, 5)}`,
-    contentType: 'NESTED',
+    contentType: "NESTED",
     divisionDirection: direction,
     children,
-    heightConfig: { mode: 'RATIO', ratio: heightRatio },
+    heightConfig: { mode: "RATIO", ratio: heightRatio },
     depth,
   };
 }
@@ -333,164 +364,166 @@ function createNestedZone(
  */
 export const ZONE_PRESETS: Record<string, { labelPl: string; config: CabinetInteriorConfig }> = {
   SINGLE_SHELVES: {
-    labelPl: 'Tylko półki',
+    labelPl: "Tylko półki",
     config: {
       rootZone: {
-        id: 'root',
-        contentType: 'SHELVES',
-        shelvesConfig: { mode: 'UNIFORM', count: 2, depthPreset: 'FULL', shelves: [] },
-        heightConfig: { mode: 'RATIO', ratio: 1 },
+        id: "root",
+        contentType: "SHELVES",
+        shelvesConfig: { mode: "UNIFORM", count: 2, depthPreset: "FULL", shelves: [] },
+        heightConfig: { mode: "RATIO", ratio: 1 },
         depth: 0,
       },
     },
   },
 
   SINGLE_DRAWERS: {
-    labelPl: 'Tylko szuflady',
+    labelPl: "Tylko szuflady",
     config: {
       rootZone: {
-        id: 'root',
-        contentType: 'DRAWERS',
+        id: "root",
+        contentType: "DRAWERS",
         drawerConfig: {
-          slideType: 'SIDE_MOUNT',
+          slideType: "SIDE_MOUNT",
           zones: [
-            { id: 'z1', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
-            { id: 'z2', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
-            { id: 'z3', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
+            { id: "z1", heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
+            { id: "z2", heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
+            { id: "z3", heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
           ],
         },
-        heightConfig: { mode: 'RATIO', ratio: 1 },
+        heightConfig: { mode: "RATIO", ratio: 1 },
         depth: 0,
       },
     },
   },
 
   TWO_COLUMNS_EQUAL: {
-    labelPl: '2 kolumny (równe)',
+    labelPl: "2 kolumny (równe)",
     config: {
-      rootZone: createNestedZone('VERTICAL', 0, [
-        createSimpleZone('EMPTY', 1),
-        createSimpleZone('EMPTY', 1),
+      rootZone: createNestedZone("VERTICAL", 0, [
+        createSimpleZone("EMPTY", 1),
+        createSimpleZone("EMPTY", 1),
       ]),
     },
   },
 
   THREE_COLUMNS_EQUAL: {
-    labelPl: '3 kolumny (równe)',
+    labelPl: "3 kolumny (równe)",
     config: {
-      rootZone: createNestedZone('VERTICAL', 0, [
-        createSimpleZone('EMPTY', 1),
-        createSimpleZone('EMPTY', 1),
-        createSimpleZone('EMPTY', 1),
+      rootZone: createNestedZone("VERTICAL", 0, [
+        createSimpleZone("EMPTY", 1),
+        createSimpleZone("EMPTY", 1),
+        createSimpleZone("EMPTY", 1),
       ]),
     },
   },
 
   LEFT_NARROW_RIGHT_WIDE: {
-    labelPl: 'Wąska lewa + szeroka prawa',
+    labelPl: "Wąska lewa + szeroka prawa",
     config: {
       rootZone: {
-        id: 'root',
-        contentType: 'NESTED',
-        divisionDirection: 'VERTICAL',
+        id: "root",
+        contentType: "NESTED",
+        divisionDirection: "VERTICAL",
         children: [
           {
-            id: 'left',
-            contentType: 'EMPTY',
-            heightConfig: { mode: 'RATIO', ratio: 1 },
-            widthConfig: { mode: 'FIXED', fixedMm: 400 },
+            id: "left",
+            contentType: "EMPTY",
+            heightConfig: { mode: "RATIO", ratio: 1 },
+            widthConfig: { mode: "FIXED", fixedMm: 400 },
             depth: 1,
           },
           {
-            id: 'right',
-            contentType: 'EMPTY',
-            heightConfig: { mode: 'RATIO', ratio: 1 },
-            widthConfig: { mode: 'PROPORTIONAL', ratio: 1 },
+            id: "right",
+            contentType: "EMPTY",
+            heightConfig: { mode: "RATIO", ratio: 1 },
+            widthConfig: { mode: "PROPORTIONAL", ratio: 1 },
             depth: 1,
           },
         ],
-        heightConfig: { mode: 'RATIO', ratio: 1 },
+        heightConfig: { mode: "RATIO", ratio: 1 },
         depth: 0,
       },
     },
   },
 
   TOP_SHELF_BOTTOM_COLUMNS: {
-    labelPl: 'Góra: półki, Dół: 2 kolumny',
+    labelPl: "Góra: półki, Dół: 2 kolumny",
     config: {
       rootZone: {
-        id: 'root',
-        contentType: 'NESTED',
-        divisionDirection: 'HORIZONTAL',
+        id: "root",
+        contentType: "NESTED",
+        divisionDirection: "HORIZONTAL",
         children: [
           // Bottom section with 2 columns
-          createNestedZone('VERTICAL', 1, [
-            createSimpleZone('EMPTY', 2),
-            createSimpleZone('EMPTY', 2),
-          ], 2),
+          createNestedZone(
+            "VERTICAL",
+            1,
+            [createSimpleZone("EMPTY", 2), createSimpleZone("EMPTY", 2)],
+            2
+          ),
           // Top section with shelves
           {
-            id: 'top',
-            contentType: 'SHELVES',
-            shelvesConfig: { mode: 'UNIFORM', count: 2, depthPreset: 'FULL', shelves: [] },
-            heightConfig: { mode: 'RATIO', ratio: 1 },
+            id: "top",
+            contentType: "SHELVES",
+            shelvesConfig: { mode: "UNIFORM", count: 2, depthPreset: "FULL", shelves: [] },
+            heightConfig: { mode: "RATIO", ratio: 1 },
             depth: 1,
           },
         ],
-        heightConfig: { mode: 'RATIO', ratio: 1 },
+        heightConfig: { mode: "RATIO", ratio: 1 },
         depth: 0,
       },
     },
   },
 
   WARDROBE_CLASSIC: {
-    labelPl: 'Szafa klasyczna (2 kolumny + półki)',
+    labelPl: "Szafa klasyczna (2 kolumny + półki)",
     config: {
       rootZone: {
-        id: 'root',
-        contentType: 'NESTED',
-        divisionDirection: 'VERTICAL',
+        id: "root",
+        contentType: "NESTED",
+        divisionDirection: "VERTICAL",
         children: [
           // Left column - shelves
           {
-            id: 'left',
-            contentType: 'SHELVES',
-            shelvesConfig: { mode: 'UNIFORM', count: 4, depthPreset: 'FULL', shelves: [] },
-            heightConfig: { mode: 'RATIO', ratio: 1 },
-            widthConfig: { mode: 'PROPORTIONAL', ratio: 1 },
+            id: "left",
+            contentType: "SHELVES",
+            shelvesConfig: { mode: "UNIFORM", count: 4, depthPreset: "FULL", shelves: [] },
+            heightConfig: { mode: "RATIO", ratio: 1 },
+            widthConfig: { mode: "PROPORTIONAL", ratio: 1 },
             depth: 1,
           },
           // Right column - hanging space (empty)
           {
-            id: 'right',
-            contentType: 'NESTED',
-            divisionDirection: 'HORIZONTAL',
+            id: "right",
+            contentType: "NESTED",
+            divisionDirection: "HORIZONTAL",
             children: [
               // Bottom drawer
               {
-                id: 'drawer',
-                contentType: 'DRAWERS',
+                id: "drawer",
+                contentType: "DRAWERS",
                 drawerConfig: {
-                  slideType: 'SIDE_MOUNT',
-                  zones: [{ id: 'z1', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] }],
+                  slideType: "SIDE_MOUNT",
+                  zones: [{ id: "z1", heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] }],
                 },
-                heightConfig: { mode: 'EXACT', exactMm: 200 },
+                heightConfig: { mode: "EXACT", exactMm: 200 },
                 depth: 2,
               },
               // Hanging space
               {
-                id: 'hanging',
-                contentType: 'EMPTY',
-                heightConfig: { mode: 'RATIO', ratio: 1 },
+                id: "hanging",
+                contentType: "EMPTY",
+                heightConfig: { mode: "RATIO", ratio: 1 },
                 depth: 2,
               },
             ],
-            heightConfig: { mode: 'RATIO', ratio: 1 },
-            widthConfig: { mode: 'PROPORTIONAL', ratio: 2 },
+            heightConfig: { mode: "RATIO", ratio: 1 },
+            widthConfig: { mode: "PROPORTIONAL", ratio: 2 },
             depth: 1,
           },
         ],
-        heightConfig: { mode: 'RATIO', ratio: 1 },
+        heightConfig: { mode: "RATIO", ratio: 1 },
         depth: 0,
       },
     },
@@ -506,9 +539,9 @@ export const ZONE_PRESETS: Record<string, { labelPl: string; config: CabinetInte
  * Used for tracking last used materials per component type
  */
 export type InteriorMaterialType =
-  | 'shelf'           // Shelf material
-  | 'drawerBox'       // Drawer box sides, back, front
-  | 'drawerBottom';   // Drawer bottom panel
+  | "shelf" // Shelf material
+  | "drawerBox" // Drawer box sides, back, front
+  | "drawerBottom"; // Drawer bottom panel
 
 /**
  * Which body material to use by default for each interior component type
@@ -534,11 +567,11 @@ export const INTERIOR_MATERIAL_DEFAULTS = {
  * Note: "top" = front edge when shelf is rotated horizontally [-Math.PI/2, 0, 0]
  */
 export const DEFAULT_SHELF_EDGE_BANDING: EdgeBandingRect = {
-  type: 'RECT',
-  top: true,     // Front edge (visible)
+  type: "RECT",
+  top: true, // Front edge (visible)
   bottom: false, // Back edge (against cabinet back - not banded)
-  left: true,    // Left side
-  right: true,   // Right side
+  left: true, // Left side
+  right: true, // Right side
 };
 
 /**
@@ -546,7 +579,7 @@ export const DEFAULT_SHELF_EDGE_BANDING: EdgeBandingRect = {
  * All edges banded for durability and finished look
  */
 export const DEFAULT_DRAWER_BOX_EDGE_BANDING: EdgeBandingRect = {
-  type: 'RECT',
+  type: "RECT",
   top: true,
   bottom: true,
   left: true,
@@ -558,7 +591,7 @@ export const DEFAULT_DRAWER_BOX_EDGE_BANDING: EdgeBandingRect = {
  * All edges banded (fully visible panel)
  */
 export const DEFAULT_DRAWER_FRONT_EDGE_BANDING: EdgeBandingRect = {
-  type: 'RECT',
+  type: "RECT",
   top: true,
   bottom: true,
   left: true,
@@ -567,9 +600,9 @@ export const DEFAULT_DRAWER_FRONT_EDGE_BANDING: EdgeBandingRect = {
 
 // Default door configuration
 export const DEFAULT_DOOR_CONFIG: DoorConfig = {
-  layout: 'DOUBLE',
-  openingDirection: 'HORIZONTAL',
-  hingeSide: 'LEFT', // For single doors
+  layout: "DOUBLE",
+  openingDirection: "HORIZONTAL",
+  hingeSide: "LEFT", // For single doors
 };
 
 // ============================================================================
@@ -582,14 +615,14 @@ export const DEFAULT_DOOR_CONFIG: DoorConfig = {
  * - depthOffset: how much shorter the drawer is than cabinet depth
  */
 export const DRAWER_SLIDE_PRESETS: Record<DrawerSlideType, DrawerSlideConfig> = {
-  SIDE_MOUNT: { type: 'SIDE_MOUNT', sideOffset: 13, depthOffset: 50 },
-  UNDERMOUNT: { type: 'UNDERMOUNT', sideOffset: 21, depthOffset: 50 },
-  BOTTOM_MOUNT: { type: 'BOTTOM_MOUNT', sideOffset: 13, depthOffset: 50 },
-  CENTER_MOUNT: { type: 'CENTER_MOUNT', sideOffset: 0, depthOffset: 50 },
+  SIDE_MOUNT: { type: "SIDE_MOUNT", sideOffset: 13, depthOffset: 50 },
+  UNDERMOUNT: { type: "UNDERMOUNT", sideOffset: 21, depthOffset: 50 },
+  BOTTOM_MOUNT: { type: "BOTTOM_MOUNT", sideOffset: 13, depthOffset: 50 },
+  CENTER_MOUNT: { type: "CENTER_MOUNT", sideOffset: 0, depthOffset: 50 },
 };
 
 // Default drawer configuration
-export const DEFAULT_DRAWER_SLIDE_TYPE: DrawerSlideType = 'SIDE_MOUNT';
+export const DEFAULT_DRAWER_SLIDE_TYPE: DrawerSlideType = "SIDE_MOUNT";
 
 // Drawer construction constants
 export const DRAWER_CONFIG = {
@@ -601,9 +634,9 @@ export const DRAWER_CONFIG = {
 
   // Box to front ratio slider configuration (for shelves above drawer)
   BOX_TO_FRONT_RATIO: {
-    MIN: 10,    // Minimum ratio in percent (10%)
-    MAX: 100,   // Maximum ratio in percent (100%)
-    STEP: 5,    // Step size in percent (5% increments for fine control)
+    MIN: 10, // Minimum ratio in percent (10%)
+    MAX: 100, // Maximum ratio in percent (100%)
+    STEP: 5, // Step size in percent (5% increments for fine control)
     DEFAULT: 100, // Default ratio (100% = box fills entire front)
   },
 } as const;
@@ -616,81 +649,84 @@ export const DRAWER_CONFIG = {
  * Preset configurations for quick drawer setup
  * Each preset defines a DrawerConfiguration with zones
  */
-export const DRAWER_ZONE_PRESETS: Record<string, { label: string; labelPl: string; config: DrawerConfiguration }> = {
+export const DRAWER_ZONE_PRESETS: Record<
+  string,
+  { label: string; labelPl: string; config: DrawerConfiguration }
+> = {
   EXTERNAL_INTERNAL: {
-    label: '1 External + 1 Internal',
-    labelPl: '1 Zewnętrzna + 1 Wewnętrzna',
+    label: "1 External + 1 Internal",
+    labelPl: "1 Zewnętrzna + 1 Wewnętrzna",
     config: {
-      slideType: 'SIDE_MOUNT',
+      slideType: "SIDE_MOUNT",
       zones: [
-        { id: 'z1', heightRatio: 1, front: null, boxes: [{ heightRatio: 1 }] },
-        { id: 'z2', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
+        { id: "z1", heightRatio: 1, front: null, boxes: [{ heightRatio: 1 }] },
+        { id: "z2", heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
       ],
     },
   },
 
   INTERNAL_3: {
-    label: '3 Internal',
-    labelPl: '3 Wewnętrzne',
+    label: "3 Internal",
+    labelPl: "3 Wewnętrzne",
     config: {
-      slideType: 'SIDE_MOUNT',
+      slideType: "SIDE_MOUNT",
       zones: [
-        { id: 'z1', heightRatio: 1, front: null, boxes: [{ heightRatio: 1 }] },
-        { id: 'z2', heightRatio: 1, front: null, boxes: [{ heightRatio: 1 }] },
-        { id: 'z3', heightRatio: 1, front: null, boxes: [{ heightRatio: 1 }] },
+        { id: "z1", heightRatio: 1, front: null, boxes: [{ heightRatio: 1 }] },
+        { id: "z2", heightRatio: 1, front: null, boxes: [{ heightRatio: 1 }] },
+        { id: "z3", heightRatio: 1, front: null, boxes: [{ heightRatio: 1 }] },
       ],
     },
   },
 
   MIXED: {
-    label: 'Mixed (2 internal + 2 external)',
-    labelPl: 'Mieszane (2 wewnętrzne + 2 zewnętrzne)',
+    label: "Mixed (2 internal + 2 external)",
+    labelPl: "Mieszane (2 wewnętrzne + 2 zewnętrzne)",
     config: {
-      slideType: 'SIDE_MOUNT',
+      slideType: "SIDE_MOUNT",
       zones: [
-        { id: 'z1', heightRatio: 1, front: null, boxes: [{ heightRatio: 1 }] },
-        { id: 'z2', heightRatio: 1, front: null, boxes: [{ heightRatio: 1 }] },
-        { id: 'z3', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
-        { id: 'z4', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
+        { id: "z1", heightRatio: 1, front: null, boxes: [{ heightRatio: 1 }] },
+        { id: "z2", heightRatio: 1, front: null, boxes: [{ heightRatio: 1 }] },
+        { id: "z3", heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
+        { id: "z4", heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
       ],
     },
   },
 
   STANDARD_3: {
-    label: '3 Standard',
-    labelPl: '3 Standardowe',
+    label: "3 Standard",
+    labelPl: "3 Standardowe",
     config: {
-      slideType: 'SIDE_MOUNT',
+      slideType: "SIDE_MOUNT",
       zones: [
-        { id: 'z1', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
-        { id: 'z2', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
-        { id: 'z3', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
+        { id: "z1", heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
+        { id: "z2", heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
+        { id: "z3", heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
       ],
     },
   },
 
   STANDARD_4: {
-    label: '4 Standard',
-    labelPl: '4 Standardowe',
+    label: "4 Standard",
+    labelPl: "4 Standardowe",
     config: {
-      slideType: 'SIDE_MOUNT',
+      slideType: "SIDE_MOUNT",
       zones: [
-        { id: 'z1', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
-        { id: 'z2', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
-        { id: 'z3', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
-        { id: 'z4', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
+        { id: "z1", heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
+        { id: "z2", heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
+        { id: "z3", heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
+        { id: "z4", heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
       ],
     },
   },
 
   TALL_2: {
-    label: '2 Tall (drawer-in-drawer)',
-    labelPl: '2 Wysokie (szuflada w szufladzie)',
+    label: "2 Tall (drawer-in-drawer)",
+    labelPl: "2 Wysokie (szuflada w szufladzie)",
     config: {
-      slideType: 'SIDE_MOUNT',
+      slideType: "SIDE_MOUNT",
       zones: [
-        { id: 'z1', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }, { heightRatio: 1 }] },
-        { id: 'z2', heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }, { heightRatio: 1 }] },
+        { id: "z1", heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }, { heightRatio: 1 }] },
+        { id: "z2", heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }, { heightRatio: 1 }] },
       ],
     },
   },
@@ -705,7 +741,10 @@ export const DRAWER_ZONE_PRESETS: Record<string, { label: string; labelPl: strin
 /**
  * Create a default drawer configuration with specified zone count
  */
-export function createDefaultDrawerConfig(zoneCount: number, hasExternalFronts: boolean = true): DrawerConfiguration {
+export function createDefaultDrawerConfig(
+  zoneCount: number,
+  hasExternalFronts: boolean = true
+): DrawerConfiguration {
   const zones = Array.from({ length: zoneCount }, (_, i) => ({
     id: `z${i + 1}`,
     heightRatio: 1,
@@ -714,7 +753,7 @@ export function createDefaultDrawerConfig(zoneCount: number, hasExternalFronts: 
   }));
 
   return {
-    slideType: 'SIDE_MOUNT',
+    slideType: "SIDE_MOUNT",
     zones,
   };
 }
@@ -734,10 +773,34 @@ export const LEG_PRESET_OPTIONS: Array<{
   height: number;
   adjustRange: number;
 }> = [
-  { value: 'SHORT', labelPl: 'Krótkie (50mm)', description: 'Minimalna wysokość dla podstaw', height: 50, adjustRange: 10 },
-  { value: 'STANDARD', labelPl: 'Standardowe (100mm)', description: 'Typowa wysokość nóżek', height: 100, adjustRange: 20 },
-  { value: 'TALL', labelPl: 'Wysokie (150mm)', description: 'Podwyższone nóżki', height: 150, adjustRange: 30 },
-  { value: 'CUSTOM', labelPl: 'Własne', description: 'Niestandardowa wysokość', height: 100, adjustRange: 20 },
+  {
+    value: "SHORT",
+    labelPl: "Krótkie (50mm)",
+    description: "Minimalna wysokość dla podstaw",
+    height: 50,
+    adjustRange: 10,
+  },
+  {
+    value: "STANDARD",
+    labelPl: "Standardowe (100mm)",
+    description: "Typowa wysokość nóżek",
+    height: 100,
+    adjustRange: 20,
+  },
+  {
+    value: "TALL",
+    labelPl: "Wysokie (150mm)",
+    description: "Podwyższone nóżki",
+    height: 150,
+    adjustRange: 30,
+  },
+  {
+    value: "CUSTOM",
+    labelPl: "Własne",
+    description: "Niestandardowa wysokość",
+    height: 100,
+    adjustRange: 20,
+  },
 ];
 
 /**
@@ -750,10 +813,10 @@ export const LEG_FINISH_OPTIONS: Array<{
   labelPl: string;
   color: string;
 }> = [
-  { value: 'BLACK_PLASTIC', labelPl: 'Plastik czarny', color: LEG_FINISH_COLORS.BLACK_PLASTIC },
-  { value: 'CHROME', labelPl: 'Chrom', color: LEG_FINISH_COLORS.CHROME },
-  { value: 'BRUSHED_STEEL', labelPl: 'Stal szczotkowana', color: LEG_FINISH_COLORS.BRUSHED_STEEL },
-  { value: 'WHITE_PLASTIC', labelPl: 'Plastik biały', color: LEG_FINISH_COLORS.WHITE_PLASTIC },
+  { value: "BLACK_PLASTIC", labelPl: "Plastik czarny", color: LEG_FINISH_COLORS.BLACK_PLASTIC },
+  { value: "CHROME", labelPl: "Chrom", color: LEG_FINISH_COLORS.CHROME },
+  { value: "BRUSHED_STEEL", labelPl: "Stal szczotkowana", color: LEG_FINISH_COLORS.BRUSHED_STEEL },
+  { value: "WHITE_PLASTIC", labelPl: "Plastik biały", color: LEG_FINISH_COLORS.WHITE_PLASTIC },
 ];
 
 /**
@@ -763,8 +826,8 @@ export const LEG_SHAPE_OPTIONS: Array<{
   value: LegShape;
   labelPl: string;
 }> = [
-  { value: 'ROUND', labelPl: 'Okrągłe' },
-  { value: 'SQUARE', labelPl: 'Kwadratowe' },
+  { value: "ROUND", labelPl: "Okrągłe" },
+  { value: "SQUARE", labelPl: "Kwadratowe" },
 ];
 
 /**
@@ -775,21 +838,21 @@ export const LEG_COUNT_MODE_OPTIONS: Array<{
   labelPl: string;
   description: string;
 }> = [
-  { value: 'AUTO', labelPl: 'Automatyczna', description: 'Ilość dobrana do rozmiaru szafki' },
-  { value: 'MANUAL', labelPl: 'Ręczna', description: 'Własna ilość nóżek' },
+  { value: "AUTO", labelPl: "Automatyczna", description: "Ilość dobrana do rozmiaru szafki" },
+  { value: "MANUAL", labelPl: "Ręczna", description: "Własna ilość nóżek" },
 ];
 
 /**
  * Default leg configuration values
  */
 export const LEG_DEFAULTS = {
-  PRESET: 'STANDARD' as LegPreset,
+  PRESET: "STANDARD" as LegPreset,
   HEIGHT: 100,
   ADJUST_RANGE: 20,
   DIAMETER: 30,
-  SHAPE: 'ROUND' as LegShape,
-  FINISH: 'BLACK_PLASTIC' as LegFinish,
-  COUNT_MODE: 'AUTO' as LegCountMode,
+  SHAPE: "ROUND" as LegShape,
+  FINISH: "BLACK_PLASTIC" as LegFinish,
+  COUNT_MODE: "AUTO" as LegCountMode,
   CORNER_INSET: 30,
   MIN_HEIGHT: 20,
   MAX_HEIGHT: 300,
@@ -807,10 +870,10 @@ export const LEG_DEFAULTS = {
  */
 export const DEFAULT_HANGER_CUTOUT_CONFIG: HangerCutoutConfig = {
   enabled: true,
-  width: 50,           // mm - standard hanger width
-  height: 40,          // mm - standard hanger height
+  width: 50, // mm - standard hanger width
+  height: 40, // mm - standard hanger height
   horizontalInset: 50, // mm - distance from side edge
-  verticalInset: 30,   // mm - distance from top edge
+  verticalInset: 30, // mm - distance from top edge
 };
 
 /**
@@ -829,8 +892,8 @@ export const HANGER_CUTOUT_LIMITS = {
  */
 export const DEFAULT_FOLDING_DOOR_CONFIG: FoldingDoorConfig = {
   enabled: false,
-  splitRatio: 0.5,  // Equal split between upper and lower sections
-  sectionGap: 3,    // mm - gap between sections
+  splitRatio: 0.5, // Equal split between upper and lower sections
+  sectionGap: 3, // mm - gap between sections
 };
 
 /**
@@ -854,105 +917,105 @@ export const FOLDING_DOOR_LIMITS = {
  * - doorWidth: Width of the door opening
  */
 export const DEFAULT_CORNER_CONFIG: CornerConfig = {
-  wallSide: 'LEFT',
-  W: 1000,
-  D: 600,
-  bottomMount: 'inset',
-  topMount: 'inset',
-  frontType: 'SINGLE',
+  wallSide: "LEFT",
+  W: 1050, // Calculated so frontPanel + bodyThickness = 580mm (standard cabinet depth)
+  D: 580, // Same as standard KITCHEN cabinet depth
+  bottomMount: "inset",
+  topMount: "inset",
+  frontType: "SINGLE",
   doorGap: 2,
-  doorPosition: 'RIGHT',
+  doorPosition: "RIGHT",
   doorWidth: 450,
 };
 
 export const CABINET_PRESETS: Record<CabinetType, Partial<CabinetParams>> = {
   KITCHEN: {
-    type: 'KITCHEN',
+    type: "KITCHEN",
     width: 800,
     height: 720,
     depth: 580,
     shelfCount: 1,
     hasDoors: true,
-    topBottomPlacement: 'inset',
+    topBottomPlacement: "inset",
     hasBack: true,
     backOverlapRatio: DEFAULT_BACK_OVERLAP_RATIO,
-    backMountType: 'overlap',
+    backMountType: "overlap",
     doorConfig: DEFAULT_DOOR_CONFIG,
   },
   WARDROBE: {
-    type: 'WARDROBE',
+    type: "WARDROBE",
     width: 1000,
     height: 2200,
     depth: 600,
     shelfCount: 1,
     doorCount: 2,
-    topBottomPlacement: 'inset',
+    topBottomPlacement: "inset",
     hasBack: true,
     backOverlapRatio: DEFAULT_BACK_OVERLAP_RATIO,
-    backMountType: 'overlap',
+    backMountType: "overlap",
   },
   BOOKSHELF: {
-    type: 'BOOKSHELF',
+    type: "BOOKSHELF",
     width: 900,
     height: 1800,
     depth: 300,
     shelfCount: 4,
-    topBottomPlacement: 'inset',
+    topBottomPlacement: "inset",
     hasBack: true,
     backOverlapRatio: DEFAULT_BACK_OVERLAP_RATIO,
-    backMountType: 'overlap',
+    backMountType: "overlap",
   },
   DRAWER: {
-    type: 'DRAWER',
+    type: "DRAWER",
     width: 600,
     height: 800,
     depth: 500,
     drawerCount: 4,
-    drawerSlideType: 'SIDE_MOUNT',
+    drawerSlideType: "SIDE_MOUNT",
     hasInternalDrawers: false,
-    topBottomPlacement: 'inset',
+    topBottomPlacement: "inset",
     hasBack: true,
     backOverlapRatio: DEFAULT_BACK_OVERLAP_RATIO,
-    backMountType: 'overlap',
+    backMountType: "overlap",
   },
   WALL: {
-    type: 'WALL',
+    type: "WALL",
     width: 800,
     height: 720,
-    depth: 350,  // Wall cabinets are typically shallower
+    depth: 350, // Wall cabinets are typically shallower
     shelfCount: 1,
     hasDoors: true,
-    topBottomPlacement: 'inset',
+    topBottomPlacement: "inset",
     hasBack: true,
     backOverlapRatio: DEFAULT_BACK_OVERLAP_RATIO,
-    backMountType: 'overlap',
+    backMountType: "overlap",
     doorConfig: {
-      layout: 'DOUBLE',
-      openingDirection: 'LIFT_UP',  // Wall cabinets typically open upward
+      layout: "DOUBLE",
+      openingDirection: "LIFT_UP", // Wall cabinets typically open upward
     },
     hangerCutouts: DEFAULT_HANGER_CUTOUT_CONFIG,
     // Note: legs intentionally not included - wall cabinets don't have legs
   },
   CORNER_INTERNAL: {
-    type: 'CORNER_INTERNAL',
-    width: 800,  // Used as armA
+    type: "CORNER_INTERNAL",
+    width: 800, // Used as armA
     height: 720,
     depth: 580,
-    topBottomPlacement: 'inset',
+    topBottomPlacement: "inset",
     hasBack: true,
     backOverlapRatio: DEFAULT_BACK_OVERLAP_RATIO,
-    backMountType: 'overlap',
+    backMountType: "overlap",
     cornerConfig: DEFAULT_CORNER_CONFIG,
   },
   CORNER_EXTERNAL: {
-    type: 'CORNER_EXTERNAL',
+    type: "CORNER_EXTERNAL",
     width: 800,
     height: 720,
     depth: 580,
-    topBottomPlacement: 'inset',
+    topBottomPlacement: "inset",
     hasBack: true,
     backOverlapRatio: DEFAULT_BACK_OVERLAP_RATIO,
-    backMountType: 'overlap',
+    backMountType: "overlap",
     cornerConfig: DEFAULT_CORNER_CONFIG,
   },
 };
@@ -969,7 +1032,7 @@ import type {
   JointHardware,
   CornerTreatment,
   CutoutPresetType,
-} from '@/types/countertop';
+} from "@/types/countertop";
 
 /**
  * Default countertop configuration values
@@ -979,17 +1042,17 @@ export const COUNTERTOP_DEFAULTS = {
   THICKNESS: 38,
   /** Default overhang values in mm */
   OVERHANG: {
-    front: 30,    // Front overhang (typical 30-50mm)
-    back: 0,      // Back (against wall)
-    left: 0,      // Left side
-    right: 0,     // Right side
+    front: 30, // Front overhang (typical 30-50mm)
+    back: 0, // Back (against wall)
+    left: 0, // Left side
+    right: 0, // Right side
   } as CountertopOverhang,
   /** Default edge banding configuration */
   EDGE_BANDING: {
-    a: 'NONE',      // Back edge (against wall)
-    b: 'NONE',      // Right edge
-    c: 'STANDARD',  // Front edge (visible)
-    d: 'NONE',      // Left edge
+    a: "NONE", // Back edge (against wall)
+    b: "NONE", // Right edge
+    c: "STANDARD", // Front edge (visible)
+    d: "NONE", // Left edge
   } as SegmentEdgeBanding,
   /** Default grain direction (along length) */
   GRAIN_ALONG_LENGTH: true,
@@ -1000,8 +1063,8 @@ export const COUNTERTOP_DEFAULTS = {
  */
 export const COUNTERTOP_LIMITS = {
   THICKNESS: { min: 18, max: 60 },
-  LENGTH: { min: 100, max: 4100 },      // Max standard panel length
-  WIDTH: { min: 100, max: 1200 },       // Max standard panel width
+  LENGTH: { min: 100, max: 4100 }, // Max standard panel length
+  WIDTH: { min: 100, max: 1200 }, // Max standard panel width
   OVERHANG: { min: 0, max: 100 },
 } as const;
 
@@ -1024,54 +1087,57 @@ export const CNC_OPERATION_LIMITS = {
  * Joint hardware presets per joint type
  */
 export const JOINT_HARDWARE_PRESETS: Record<CountertopJointType, JointHardware> = {
-  MITER_45: { type: 'MITER_BOLT', count: 2 },
-  BUTT: { type: 'FLIP_BOLT', count: 3 },
-  EUROPEAN_MITER: { type: 'MITER_BOLT', count: 2 },
-  PUZZLE: { type: 'DOMINO', count: 4 },
+  MITER_45: { type: "MITER_BOLT", count: 2 },
+  BUTT: { type: "FLIP_BOLT", count: 3 },
+  EUROPEAN_MITER: { type: "MITER_BOLT", count: 2 },
+  PUZZLE: { type: "DOMINO", count: 4 },
 };
 
 /**
  * Common cutout presets for sinks, cooktops, etc.
  * Dimensions in mm
  */
-export const CUTOUT_PRESETS: Record<CutoutPresetType, {
-  labelPl: string;
-  dimensions: { width?: number; height?: number; diameter?: number; radius?: number };
-}> = {
+export const CUTOUT_PRESETS: Record<
+  CutoutPresetType,
+  {
+    labelPl: string;
+    dimensions: { width?: number; height?: number; diameter?: number; radius?: number };
+  }
+> = {
   NONE: {
-    labelPl: 'Brak',
+    labelPl: "Brak",
     dimensions: {},
   },
   SINK_STANDARD: {
-    labelPl: 'Zlew standardowy (780×480)',
+    labelPl: "Zlew standardowy (780×480)",
     dimensions: { width: 780, height: 480, radius: 10 },
   },
   SINK_SMALL: {
-    labelPl: 'Zlew mały (580×430)',
+    labelPl: "Zlew mały (580×430)",
     dimensions: { width: 580, height: 430, radius: 10 },
   },
   SINK_ROUND: {
-    labelPl: 'Zlew okrągły (Ø450)',
+    labelPl: "Zlew okrągły (Ø450)",
     dimensions: { diameter: 450 },
   },
   COOKTOP_60: {
-    labelPl: 'Płyta grzewcza 60cm (560×490)',
+    labelPl: "Płyta grzewcza 60cm (560×490)",
     dimensions: { width: 560, height: 490, radius: 5 },
   },
   COOKTOP_80: {
-    labelPl: 'Płyta grzewcza 80cm (760×520)',
+    labelPl: "Płyta grzewcza 80cm (760×520)",
     dimensions: { width: 760, height: 520, radius: 5 },
   },
   FAUCET_HOLE: {
-    labelPl: 'Otwór na baterię (Ø35)',
+    labelPl: "Otwór na baterię (Ø35)",
     dimensions: { diameter: 35 },
   },
   SOAP_DISPENSER: {
-    labelPl: 'Dozownik mydła (Ø28)',
+    labelPl: "Dozownik mydła (Ø28)",
     dimensions: { diameter: 28 },
   },
   CUSTOM: {
-    labelPl: 'Wymiar własny',
+    labelPl: "Wymiar własny",
     dimensions: { width: 600, height: 400, radius: 10 }, // Default values, overridden by customCutout
   },
 };
@@ -1084,10 +1150,10 @@ export const CORNER_TREATMENT_OPTIONS: Array<{
   labelPl: string;
   description: string;
 }> = [
-  { value: 'STRAIGHT', labelPl: 'Narożnik prosty', description: 'Standardowy kąt 90°' },
-  { value: 'CHAMFER', labelPl: 'Ścięcie pod kątem', description: 'Ścięcie 45° w narożniku' },
-  { value: 'RADIUS', labelPl: 'Zaokrąglenie', description: 'Zaokrąglony narożnik' },
-  { value: 'CLIP', labelPl: 'Ścięcie narożnika', description: 'Proste ścięcie narożnika' },
+  { value: "STRAIGHT", labelPl: "Narożnik prosty", description: "Standardowy kąt 90°" },
+  { value: "CHAMFER", labelPl: "Ścięcie pod kątem", description: "Ścięcie 45° w narożniku" },
+  { value: "RADIUS", labelPl: "Zaokrąglenie", description: "Zaokrąglony narożnik" },
+  { value: "CLIP", labelPl: "Ścięcie narożnika", description: "Proste ścięcie narożnika" },
 ];
 
 /**
@@ -1097,12 +1163,12 @@ export const EDGE_BANDING_OPTIONS: Array<{
   value: EdgeBandingOption;
   labelPl: string;
 }> = [
-  { value: 'NONE', labelPl: 'Brak' },
-  { value: 'STANDARD', labelPl: 'Standardowe' },
-  { value: 'ABS_2MM', labelPl: 'ABS 2mm' },
-  { value: 'ABS_1MM', labelPl: 'ABS 1mm' },
-  { value: 'PVC', labelPl: 'PVC' },
-  { value: 'CONTRAST', labelPl: 'Kontrastowe' },
+  { value: "NONE", labelPl: "Brak" },
+  { value: "STANDARD", labelPl: "Standardowe" },
+  { value: "ABS_2MM", labelPl: "ABS 2mm" },
+  { value: "ABS_1MM", labelPl: "ABS 1mm" },
+  { value: "PVC", labelPl: "PVC" },
+  { value: "CONTRAST", labelPl: "Kontrastowe" },
 ];
 
 /**
@@ -1113,10 +1179,14 @@ export const JOINT_TYPE_OPTIONS: Array<{
   labelPl: string;
   description: string;
 }> = [
-  { value: 'MITER_45', labelPl: 'Uciosowe 45°', description: 'Najczęstsze dla kształtu L' },
-  { value: 'BUTT', labelPl: 'Czołowe', description: 'Proste połączenie czołowe' },
-  { value: 'EUROPEAN_MITER', labelPl: 'Europejskie', description: 'Hybrydowe: zaczyna uciosowo, kończy czołowo' },
-  { value: 'PUZZLE', labelPl: 'Puzzle', description: 'Dekoracyjne połączenie puzzle (premium)' },
+  { value: "MITER_45", labelPl: "Uciosowe 45°", description: "Najczęstsze dla kształtu L" },
+  { value: "BUTT", labelPl: "Czołowe", description: "Proste połączenie czołowe" },
+  {
+    value: "EUROPEAN_MITER",
+    labelPl: "Europejskie",
+    description: "Hybrydowe: zaczyna uciosowo, kończy czołowo",
+  },
+  { value: "PUZZLE", labelPl: "Puzzle", description: "Dekoracyjne połączenie puzzle (premium)" },
 ];
 
 /**
@@ -1126,9 +1196,9 @@ export const COUNTERTOP_THICKNESS_OPTIONS: Array<{
   value: number;
   labelPl: string;
 }> = [
-  { value: 28, labelPl: '28 mm' },
-  { value: 38, labelPl: '38 mm (standard)' },
-  { value: 40, labelPl: '40 mm' },
+  { value: 28, labelPl: "28 mm" },
+  { value: 38, labelPl: "38 mm (standard)" },
+  { value: 40, labelPl: "40 mm" },
 ];
 
 /**
@@ -1136,3 +1206,15 @@ export const COUNTERTOP_THICKNESS_OPTIONS: Array<{
  * Cabinets closer than this are considered adjacent for countertop grouping
  */
 export const CABINET_ADJACENCY_THRESHOLD = 50;
+
+/**
+ * Gap thresholds for countertop generation (mm)
+ */
+export const CABINET_GAP_CONFIG = {
+  /** Gaps smaller than this are considered "touching" - no gap indicator shown */
+  TOUCH_THRESHOLD: 5,
+  /** Maximum gap that can be bridged with a single countertop */
+  MAX_BRIDGE_GAP: 1000,
+  /** Gaps larger than this default to SPLIT mode (user can still change to BRIDGE) */
+  AUTO_SPLIT_THRESHOLD: 300,
+} as const;

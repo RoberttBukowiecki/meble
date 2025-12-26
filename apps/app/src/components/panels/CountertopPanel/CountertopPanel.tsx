@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * CountertopPanel - Kitchen countertop configuration panel
@@ -12,37 +12,19 @@
  * - CSV export for production
  */
 
-import * as React from 'react';
-import { useShallow } from 'zustand/react/shallow';
-import {
-  useStore,
-  useCountertopGroups,
-  useSelectedCountertopGroup,
-} from '@/lib/store';
-import { Button, Badge, ScrollArea } from '@meble/ui';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@meble/ui';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@meble/ui';
-import {
-  Download,
-  Scan,
-  Layers,
-} from 'lucide-react';
+import * as React from "react";
+import { useShallow } from "zustand/react/shallow";
+import { useStore, useCountertopGroups, useSelectedCountertopGroup } from "@/lib/store";
+import { Button, Badge, ScrollArea } from "@meble/ui";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@meble/ui";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@meble/ui";
+import { Download, Scan, Layers } from "lucide-react";
 
-import { GroupListItem } from './GroupListItem';
-import { SegmentTable } from './SegmentTable';
-import { CornerTreatmentSection } from './CornerTreatmentSection';
-import { CncOperationsSection } from './CncOperationsSection';
+import { GroupListItem } from "./GroupListItem";
+import { SegmentTable } from "./SegmentTable";
+import { CornerTreatmentSection } from "./CornerTreatmentSection";
+import { CncOperationsSection } from "./CncOperationsSection";
+import { GapSection } from "./GapSection";
 
 export function CountertopPanel() {
   const groups = useCountertopGroups();
@@ -69,15 +51,16 @@ export function CountertopPanel() {
   );
 
   // Get countertop materials (for material selection dropdown)
-  const countertopMaterials = materials.filter((m) => m.category === 'countertop');
+  const countertopMaterials = materials.filter((m) => m.category === "countertop");
 
   // Fallback to board materials if no countertop materials exist
-  const materialOptions = countertopMaterials.length > 0
-    ? countertopMaterials
-    : materials.filter((m) => m.category === 'board' || !m.category);
+  const materialOptions =
+    countertopMaterials.length > 0
+      ? countertopMaterials
+      : materials.filter((m) => m.category === "board" || !m.category);
 
   // Default material for auto-detect
-  const defaultMaterialId = countertopMaterials[0]?.id || materials[0]?.id || '';
+  const defaultMaterialId = countertopMaterials[0]?.id || materials[0]?.id || "";
 
   const handleAutoDetect = () => {
     if (!selectedFurnitureId || !defaultMaterialId) return;
@@ -88,11 +71,11 @@ export function CountertopPanel() {
     if (!selectedGroup) return;
     const csv = exportCountertopGroupCsv(selectedGroup.id);
     if (csv) {
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
-      a.download = `blat_${selectedGroup.name.replace(/\s+/g, '_')}.csv`;
+      a.download = `blat_${selectedGroup.name.replace(/\s+/g, "_")}.csv`;
       a.click();
       URL.revokeObjectURL(url);
     }
@@ -142,11 +125,10 @@ export function CountertopPanel() {
           {groups.length === 0 ? (
             <div className="text-center py-8">
               <Layers className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
-              <p className="text-sm text-muted-foreground">
-                Brak grup blatów
-              </p>
+              <p className="text-sm text-muted-foreground">Brak grup blatów</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Użyj &quot;Wykryj szafki&quot; aby automatycznie utworzyć grupy blatów dla połączonych szafek kuchennych.
+                Użyj &quot;Wykryj szafki&quot; aby automatycznie utworzyć grupy blatów dla
+                połączonych szafek kuchennych.
               </p>
             </div>
           ) : (
@@ -165,7 +147,33 @@ export function CountertopPanel() {
 
           {/* Selected Group Details */}
           {selectedGroup && (
-            <Accordion type="multiple" defaultValue={['segments', 'corners', 'cnc']} className="mt-4">
+            <Accordion
+              type="multiple"
+              defaultValue={["gaps", "segments", "corners", "cnc"]}
+              className="mt-4"
+            >
+              {/* Gap Management - show if there are gaps */}
+              {selectedGroup.gaps && selectedGroup.gaps.length > 0 && (
+                <AccordionItem
+                  value="gaps"
+                  className="border rounded-lg px-3 mb-2 border-orange-500/30 bg-orange-500/5"
+                >
+                  <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
+                    <span className="flex items-center gap-2">
+                      Przerwy między szafkami
+                      <Badge
+                        variant="outline"
+                        className="text-[10px] px-1.5 h-4 border-orange-500/50 text-orange-600"
+                      >
+                        {selectedGroup.gaps.length}
+                      </Badge>
+                    </span>
+                  </AccordionTrigger>
+                  <AccordionContent className="pb-3 pt-0">
+                    <GapSection group={selectedGroup} />
+                  </AccordionContent>
+                </AccordionItem>
+              )}
               {/* Material & Thickness */}
               <AccordionItem value="material" className="border rounded-lg px-3 mb-2">
                 <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
@@ -205,9 +213,15 @@ export function CountertopPanel() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="28" className="text-xs">28 mm</SelectItem>
-                          <SelectItem value="38" className="text-xs">38 mm</SelectItem>
-                          <SelectItem value="40" className="text-xs">40 mm</SelectItem>
+                          <SelectItem value="28" className="text-xs">
+                            28 mm
+                          </SelectItem>
+                          <SelectItem value="38" className="text-xs">
+                            38 mm
+                          </SelectItem>
+                          <SelectItem value="40" className="text-xs">
+                            40 mm
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -226,16 +240,13 @@ export function CountertopPanel() {
                   </span>
                 </AccordionTrigger>
                 <AccordionContent className="pb-3 pt-0">
-                  <SegmentTable
-                    segments={selectedGroup.segments}
-                    groupId={selectedGroup.id}
-                  />
+                  <SegmentTable segments={selectedGroup.segments} groupId={selectedGroup.id} />
                 </AccordionContent>
               </AccordionItem>
 
               {/* Corner Treatments */}
-              {(selectedGroup.layoutType === 'L_SHAPE' ||
-                selectedGroup.layoutType === 'U_SHAPE') && (
+              {(selectedGroup.layoutType === "L_SHAPE" ||
+                selectedGroup.layoutType === "U_SHAPE") && (
                 <AccordionItem value="corners" className="border rounded-lg px-3 mb-2">
                   <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
                     Narożniki
@@ -252,10 +263,7 @@ export function CountertopPanel() {
                   <span className="flex items-center gap-2">
                     Operacje CNC
                     <Badge variant="secondary" className="text-[10px] px-1.5 h-4">
-                      {selectedGroup.segments.reduce(
-                        (sum, s) => sum + s.cncOperations.length,
-                        0
-                      )}
+                      {selectedGroup.segments.reduce((sum, s) => sum + s.cncOperations.length, 0)}
                     </Badge>
                   </span>
                 </AccordionTrigger>

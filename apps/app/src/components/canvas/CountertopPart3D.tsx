@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * 3D representation of a countertop segment
@@ -8,18 +8,19 @@
  * - Click to select cabinet, double-click to select countertop group
  */
 
-import { useMemo, useRef } from 'react';
-import { Edges } from '@react-three/drei';
-import { useShallow } from 'zustand/react/shallow';
-import * as THREE from 'three';
-import { Euler, Quaternion, Vector3, Shape, ExtrudeGeometry } from 'three';
-import type { ThreeEvent } from '@react-three/fiber';
-import { useStore, useMaterial } from '@/lib/store';
-import { useMaterialTexture } from '@/hooks';
-import { MATERIAL_CONFIG } from '@/lib/config';
-import type { CountertopGroup, CountertopSegment, CncOperation } from '@/types/countertop';
-import type { KitchenCabinetParams } from '@/types';
-import { getCabinetBounds } from '@/lib/domain/countertop/helpers';
+import { useMemo, useRef } from "react";
+import { Edges } from "@react-three/drei";
+import { useShallow } from "zustand/react/shallow";
+import * as THREE from "three";
+import { Euler, Quaternion, Vector3, Shape, ExtrudeGeometry } from "three";
+import type { ThreeEvent } from "@react-three/fiber";
+import { useStore, useMaterial } from "@/lib/store";
+import { useMaterialTexture } from "@/hooks";
+import { MATERIAL_CONFIG } from "@/lib/config";
+import type { CountertopGroup, CountertopSegment, CncOperation } from "@/types/countertop";
+import type { KitchenCabinetParams } from "@/types";
+import { getCabinetBounds } from "@/lib/domain/countertop/helpers";
+import { CabinetTransformDomain } from "@/lib/domain";
 
 // ============================================================================
 // Geometry Helpers
@@ -54,11 +55,7 @@ function createRoundedRectPath(
 /**
  * Creates a countertop shape with cutouts
  */
-function createCountertopShape(
-  width: number,
-  depth: number,
-  cutouts: CncOperation[]
-): THREE.Shape {
+function createCountertopShape(width: number, depth: number, cutouts: CncOperation[]): THREE.Shape {
   // Main countertop shape (centered at origin)
   const shape = new THREE.Shape();
   const halfW = width / 2;
@@ -71,23 +68,36 @@ function createCountertopShape(
   shape.closePath();
 
   // Add cutout holes
+  // NOTE: The ExtrudeGeometry is rotated -90° around X axis, which inverts Y axis.
+  // In Shape coords: Y+ = "up" in 2D
+  // After rotation: original Y+ becomes Z- (towards camera = front)
+  // Therefore, cutout.position.y (distance from front edge) must be inverted
+  // to get correct Shape Y coordinate.
   for (const cutout of cutouts) {
-    if (cutout.type === 'RECTANGULAR_CUTOUT' && cutout.dimensions.width && cutout.dimensions.height) {
+    if (
+      cutout.type === "RECTANGULAR_CUTOUT" &&
+      cutout.dimensions.width &&
+      cutout.dimensions.height
+    ) {
       const cutW = cutout.dimensions.width;
       const cutH = cutout.dimensions.height;
       const radius = cutout.dimensions.radius ?? 10;
 
       // Cutout position is from left-front corner, convert to centered coordinates
-      // Note: X is along width, Y (in shape) is along depth
+      // X axis: position.x from left edge -> shapeX = position.x - halfW (correct)
+      // Y axis: position.y from front edge -> after rotation, front = shapeY+, so:
+      //         shapeY = halfD - position.y (inverted!)
+      // Bottom-left corner of cutout rectangle:
       const cutX = cutout.position.x - halfW - cutW / 2;
-      const cutY = cutout.position.y - halfD - cutH / 2;
+      const cutY = halfD - cutout.position.y - cutH / 2;
 
       const holePath = createRoundedRectPath(cutX, cutY, cutW, cutH, radius);
       shape.holes.push(holePath);
-    } else if (cutout.type === 'CIRCULAR_HOLE' && cutout.dimensions.diameter) {
+    } else if (cutout.type === "CIRCULAR_HOLE" && cutout.dimensions.diameter) {
       const r = cutout.dimensions.diameter / 2;
+      // Same logic: X is correct, Y must be inverted
       const cx = cutout.position.x - halfW;
-      const cy = cutout.position.y - halfD;
+      const cy = halfD - cutout.position.y;
 
       const holePath = new THREE.Path();
       holePath.absarc(cx, cy, r, 0, Math.PI * 2, true);
@@ -114,13 +124,7 @@ interface CountertopSegment3DProps {
 function CountertopSegment3D({ segment, group, isSelected }: CountertopSegment3DProps) {
   const clickTimeRef = useRef<number>(0);
 
-  const {
-    cabinets,
-    parts,
-    selectCabinet,
-    selectCountertopGroup,
-    transformingCabinetId,
-  } = useStore(
+  const { cabinets, parts, selectCabinet, selectCountertopGroup, transformingCabinetId } = useStore(
     useShallow((state) => ({
       cabinets: state.cabinets,
       parts: state.parts,
@@ -137,8 +141,8 @@ function CountertopSegment3D({ segment, group, isSelected }: CountertopSegment3D
   const materialThickness = material?.thickness ?? segment.thickness;
 
   // Check if any cabinet in this segment is being transformed
-  const isBeingTransformed = transformingCabinetId !== null &&
-    segment.cabinetIds.includes(transformingCabinetId);
+  const isBeingTransformed =
+    transformingCabinetId !== null && segment.cabinetIds.includes(transformingCabinetId);
 
   // Get cabinets for this segment
   const segmentCabinets = useMemo(
@@ -156,36 +160,29 @@ function CountertopSegment3D({ segment, group, isSelected }: CountertopSegment3D
       };
     }
 
-    // Get cabinet rotation (use first cabinet's rotation)
+    // Get cabinet rotation from first cabinet
     const firstCabinet = segmentCabinets[0];
     const cabinetRotation = firstCabinet.worldTransform?.rotation || [0, 0, 0];
     const rotationQuat = new Quaternion().setFromEuler(
       new Euler(cabinetRotation[0], cabinetRotation[1], cabinetRotation[2])
     );
 
-    // Get cabinet dimensions from params (LOCAL space - always consistent)
-    const cabinetParams = firstCabinet.params as KitchenCabinetParams;
-    const cabinetDepth = cabinetParams.depth || 560;
-
-    // For multiple cabinets, sum up widths (assuming they're aligned side by side)
-    let totalWidth = 0;
-    for (const cab of segmentCabinets) {
-      const params = cab.params as KitchenCabinetParams;
-      totalWidth += params.width || 600;
+    // Calculate LOCAL dimensions from cabinet params (rotation-invariant!)
+    // Sum widths for all cabinets, use max depth
+    let totalLocalWidth = 0;
+    let maxLocalDepth = 0;
+    for (const cabinet of segmentCabinets) {
+      const params = cabinet.params as KitchenCabinetParams;
+      totalLocalWidth += params.width;
+      maxLocalDepth = Math.max(maxLocalDepth, params.depth);
     }
 
-    // Calculate countertop dimensions in LOCAL space (before rotation)
-    const countertopWidth = totalWidth + segment.overhang.left + segment.overhang.right;
-    const countertopDepth = cabinetDepth + segment.overhang.front + segment.overhang.back;
-
-    // Calculate cabinet bounds in world space for positioning
-    // We need bounds for: 1) maxY (to place countertop on top), 2) X and Z span for cabinets
-    let minX = Infinity;
-    let maxX = -Infinity;
-    let minZ = Infinity;
-    let maxZ = -Infinity;
+    // Get world bounds for positioning (topY and center)
+    let minX = Infinity,
+      maxX = -Infinity;
+    let minZ = Infinity,
+      maxZ = -Infinity;
     let maxY = -Infinity;
-
     for (const cabinet of segmentCabinets) {
       const bounds = getCabinetBounds(cabinet, parts);
       minX = Math.min(minX, bounds.min[0]);
@@ -195,7 +192,11 @@ function CountertopSegment3D({ segment, group, isSelected }: CountertopSegment3D
       maxY = Math.max(maxY, bounds.max[1]);
     }
 
-    // Use bounds center for both X and Z (consistent with preview calculation)
+    // Use LOCAL dimensions for countertop size (don't change with rotation!)
+    const countertopWidth = totalLocalWidth + segment.overhang.left + segment.overhang.right;
+    const countertopDepth = maxLocalDepth + segment.overhang.front + segment.overhang.back;
+
+    // Calculate world position from bounds center
     const centerX = (minX + maxX) / 2;
     const centerZ = (minZ + maxZ) / 2;
     const topY = maxY + materialThickness / 2;
@@ -211,16 +212,16 @@ function CountertopSegment3D({ segment, group, isSelected }: CountertopSegment3D
     localOffset.applyQuaternion(rotationQuat);
 
     return {
-      position: [
-        centerX + localOffset.x,
-        topY,
-        centerZ + localOffset.z,
-      ] as [number, number, number],
+      position: [centerX + localOffset.x, topY, centerZ + localOffset.z] as [
+        number,
+        number,
+        number,
+      ],
       rotation: cabinetRotation as [number, number, number],
       dimensions: {
-        width: countertopWidth,  // X axis in local space
+        width: countertopWidth, // LOCAL X axis dimension (rotation-invariant)
         height: materialThickness, // Y axis - use material thickness
-        depth: countertopDepth,   // Z axis in local space
+        depth: countertopDepth, // LOCAL Z axis dimension (rotation-invariant)
       },
     };
   }, [segment, segmentCabinets, parts, materialThickness]); // parts dependency ensures updates when cabinet moves
@@ -245,9 +246,11 @@ function CountertopSegment3D({ segment, group, isSelected }: CountertopSegment3D
     const extrudeGeom = new THREE.ExtrudeGeometry(shape, extrudeSettings);
 
     // Rotate geometry so extrusion is along Y axis (up) instead of Z
+    // After rotation, extrusion goes from Y=0 upward to Y=height
     extrudeGeom.rotateX(-Math.PI / 2);
-    // Center vertically
-    extrudeGeom.translate(0, dimensions.height / 2, 0);
+    // Center vertically to match BoxGeometry (which is centered at origin: -height/2 to +height/2)
+    // Must translate DOWN by height/2 so geometry goes from -height/2 to +height/2
+    extrudeGeom.translate(0, -dimensions.height / 2, 0);
 
     return extrudeGeom;
   }, [dimensions, segment.cncOperations]);
@@ -255,7 +258,7 @@ function CountertopSegment3D({ segment, group, isSelected }: CountertopSegment3D
   const color = material?.color || MATERIAL_CONFIG.DEFAULT_MATERIAL_COLOR;
 
   // Selection visual feedback
-  const emissiveColor = isSelected ? '#4169E1' : '#000000';
+  const emissiveColor = isSelected ? "#4169E1" : "#000000";
   const emissiveIntensity = isSelected ? 0.3 : 0;
 
   // Handle click - single click selects cabinet, double click selects countertop
@@ -316,9 +319,7 @@ interface CountertopPart3DProps {
  * Renders all segments of a countertop group
  */
 export function CountertopPart3D({ group }: CountertopPart3DProps) {
-  const selectedCountertopGroupId = useStore(
-    (state) => state.selectedCountertopGroupId
-  );
+  const selectedCountertopGroupId = useStore((state) => state.selectedCountertopGroupId);
 
   const isGroupSelected = selectedCountertopGroupId === group.id;
 

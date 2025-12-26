@@ -1,10 +1,12 @@
-import { Euler, Quaternion, Vector3 } from 'three';
-import type { Material, Part, ProjectState } from '@/types';
-import { isBodyPartRole } from '@/types/cabinet';
+import { Euler, Quaternion, Vector3 } from "three";
+import type { Material, Part, ProjectState } from "@/types";
+import { isBodyPartRole } from "@/types/cabinet";
 
 let collisionDetectionTimeout: NodeJS.Timeout | null = null;
+let countertopRegenerationTimeout: NodeJS.Timeout | null = null;
 
 const COLLISION_DETECTION_DEBOUNCE_MS = 100;
+const COUNTERTOP_REGENERATION_DEBOUNCE_MS = 500; // Longer debounce for countertop regeneration
 
 /**
  * Default construction rotations for cabinet parts.
@@ -23,12 +25,27 @@ const DEFAULT_PART_ROTATIONS: Record<string, [number, number, number]> = {
   DRAWER_SIDE_LEFT: [0, Math.PI / 2, 0],
   DRAWER_SIDE_RIGHT: [0, Math.PI / 2, 0],
   DRAWER_BACK: [0, 0, 0],
+  // Corner cabinet roles
+  CORNER_BOTTOM: [-Math.PI / 2, 0, 0],
+  CORNER_TOP: [-Math.PI / 2, 0, 0],
+  CORNER_SIDE_INTERNAL: [0, Math.PI / 2, 0],
+  CORNER_SIDE_EXTERNAL: [0, Math.PI / 2, 0],
+  CORNER_BACK: [0, 0, 0],
+  CORNER_FRONT_PANEL: [0, 0, 0],
+  CORNER_SHELF: [-Math.PI / 2, 0, 0],
 };
 
 /**
  * Get the cabinet's world transform (position and rotation).
  * The rotation returned is the CABINET's rotation, not the part's full rotation.
  * This is calculated by factoring out the part's default construction rotation.
+ *
+ * NOTE: The "center" returned is the AVERAGE of part positions, which may
+ * not be the true geometric center for asymmetric cabinets (e.g., with BACK panel).
+ * For accurate geometric center (legs/countertop positioning), use
+ * CabinetTransformDomain.getCabinetGeometricBounds() instead.
+ *
+ * @see CabinetTransformDomain.getCabinetGeometricBounds for true geometric center
  */
 export const getCabinetTransform = (parts: Part[]) => {
   const center = new Vector3();
@@ -37,8 +54,11 @@ export const getCabinetTransform = (parts: Part[]) => {
     center.divideScalar(parts.length);
   }
 
+  // Find a reference part - prefer BOTTOM or CORNER_BOTTOM for consistent rotation calculation
   const referencePart =
-    parts.find((p) => p.cabinetMetadata?.role === 'BOTTOM') ?? parts[0];
+    parts.find((p) => p.cabinetMetadata?.role === "BOTTOM") ??
+    parts.find((p) => p.cabinetMetadata?.role === "CORNER_BOTTOM") ??
+    parts[0];
 
   if (!referencePart?.rotation) {
     return { center, rotation: new Quaternion() };
@@ -50,7 +70,7 @@ export const getCabinetTransform = (parts: Part[]) => {
   );
 
   // Get the part's default construction rotation
-  const role = referencePart.cabinetMetadata?.role ?? 'BOTTOM';
+  const role = referencePart.cabinetMetadata?.role ?? "BOTTOM";
   const defaultRotationArray = DEFAULT_PART_ROTATIONS[role] ?? [0, 0, 0];
   const defaultRotation = new Quaternion().setFromEuler(
     new Euler().fromArray(defaultRotationArray)
@@ -68,22 +88,27 @@ export const getCabinetTransform = (parts: Part[]) => {
  * Returns original parts array if no body parts found.
  */
 export function filterBodyParts(parts: Part[]): Part[] {
-  const bodyParts = parts.filter(p => isBodyPartRole(p.cabinetMetadata?.role));
+  const bodyParts = parts.filter((p) => isBodyPartRole(p.cabinetMetadata?.role));
   return bodyParts.length > 0 ? bodyParts : parts;
 }
 
 /**
  * Get cabinet transform using only body parts for center calculation.
  * This prevents the center from being shifted by doors/fronts that stick out.
+ *
+ * NOTE: This function returns the AVERAGE of part positions as "center",
+ * which is NOT the true geometric center. For legs and countertop positioning,
+ * use CabinetTransformDomain.getCabinetGeometricBounds() instead, which
+ * returns the true geometric center (midpoint of bounding box).
+ *
+ * @see CabinetTransformDomain.getCabinetGeometricBounds for true geometric center
  */
 export function getCabinetBodyTransform(allParts: Part[]) {
   const bodyParts = filterBodyParts(allParts);
   return getCabinetTransform(bodyParts);
 }
 
-export const applyCabinetTransform = <
-  T extends Omit<Part, 'id' | 'createdAt' | 'updatedAt'>
->(
+export const applyCabinetTransform = <T extends Omit<Part, "id" | "createdAt" | "updatedAt">>(
   generatedParts: T[],
   targetCenter: Vector3,
   rotation: Quaternion
@@ -110,18 +135,12 @@ export const applyCabinetTransform = <
     return {
       ...part,
       position: finalPosition.toArray() as [number, number, number],
-      rotation: [finalEuler.x, finalEuler.y, finalEuler.z] as [
-        number,
-        number,
-        number
-      ],
+      rotation: [finalEuler.x, finalEuler.y, finalEuler.z] as [number, number, number],
     };
   });
 };
 
-export function triggerDebouncedCollisionDetection(
-  getState: () => ProjectState
-): void {
+export function triggerDebouncedCollisionDetection(getState: () => ProjectState): void {
   if (collisionDetectionTimeout) {
     clearTimeout(collisionDetectionTimeout);
   }
@@ -133,15 +152,51 @@ export function triggerDebouncedCollisionDetection(
   }, COLLISION_DETECTION_DEBOUNCE_MS);
 }
 
+/**
+ * Debounced countertop regeneration after cabinet transform
+ * Preserves user gap mode choices while updating gap distances
+ */
+export function triggerDebouncedCountertopRegeneration(
+  getState: () => ProjectState,
+  cabinetId: string
+): void {
+  if (countertopRegenerationTimeout) {
+    clearTimeout(countertopRegenerationTimeout);
+  }
+
+  countertopRegenerationTimeout = setTimeout(() => {
+    const state = getState();
+    const cabinet = state.cabinets.find((c) => c.id === cabinetId);
+    if (!cabinet) return;
+
+    // Only regenerate for kitchen cabinets with countertop enabled
+    if (cabinet.type !== "KITCHEN") return;
+    const params = cabinet.params as {
+      countertopConfig?: { hasCountertop?: boolean; materialId?: string };
+    };
+    if (!params.countertopConfig?.hasCountertop) return;
+
+    // Find countertop material
+    let materialId = params.countertopConfig.materialId;
+    if (!materialId) {
+      const countertopMaterials = state.materials.filter((m) => m.category === "countertop");
+      materialId = countertopMaterials[0]?.id || state.materials[0]?.id;
+    }
+
+    if (materialId) {
+      state.generateCountertopsForFurniture(cabinet.furnitureId, materialId);
+    }
+
+    countertopRegenerationTimeout = null;
+  }, COUNTERTOP_REGENERATION_DEBOUNCE_MS);
+}
+
 export function getDefaultMaterials(materials: Material[]) {
   const defaults = materials.filter((material) => material.isDefault);
 
-  const default_material = defaults[0]?.id ?? materials[0]?.id ?? '';
+  const default_material = defaults[0]?.id ?? materials[0]?.id ?? "";
   const default_front_material =
-    defaults[1]?.id ??
-    defaults[0]?.id ??
-    materials[1]?.id ??
-    default_material;
+    defaults[1]?.id ?? defaults[0]?.id ?? materials[1]?.id ?? default_material;
 
   return { default_material, default_front_material };
 }
@@ -152,7 +207,7 @@ export function getDefaultMaterials(materials: Material[]) {
  */
 export function getDefaultBackMaterial(materials: Material[]): Material | undefined {
   // First try to find HDF material
-  const hdfMaterial = materials.find((m) => m.category === 'hdf');
+  const hdfMaterial = materials.find((m) => m.category === "hdf");
   if (hdfMaterial) return hdfMaterial;
 
   // Fallback to thinnest material

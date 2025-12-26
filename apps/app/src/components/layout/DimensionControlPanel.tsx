@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * DimensionControlPanel Component
@@ -9,8 +9,8 @@
  * - Expandable settings dropdown
  */
 
-import { useCallback } from 'react';
-import { Ruler, Settings2 } from 'lucide-react';
+import { useCallback } from "react";
+import { Ruler, Settings2 } from "lucide-react";
 import {
   Button,
   DropdownMenu,
@@ -20,9 +20,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuCheckboxItem,
   Slider,
-} from '@meble/ui';
-import { useStore } from '@/lib/store';
-import { useShallow } from 'zustand/react/shallow';
+} from "@meble/ui";
+import { useStore } from "@/lib/store";
+import { useShallow } from "zustand/react/shallow";
 
 export function DimensionControlPanel() {
   const { dimensionSettings, updateDimensionSettings } = useStore(
@@ -54,13 +54,13 @@ export function DimensionControlPanel() {
     <div className="flex items-center gap-1 rounded-md bg-background/80 p-1 backdrop-blur-sm">
       {/* Main Toggle Button */}
       <Button
-        variant={dimensionSettings?.enabled ? 'default' : 'ghost'}
+        variant={dimensionSettings?.enabled ? "default" : "ghost"}
         size="sm"
         onClick={toggleDimensions}
-        className="h-8 px-2"
-        title={dimensionSettings?.enabled ? 'Ukryj wymiary' : 'Pokaż wymiary'}
+        className="h-11 md:h-8 px-2"
+        title={dimensionSettings?.enabled ? "Ukryj wymiary" : "Pokaż wymiary"}
       >
-        <Ruler className="h-4 w-4" />
+        <Ruler className="h-5 w-5 md:h-4 md:w-4" />
       </Button>
 
       {/* Settings Dropdown */}
@@ -69,10 +69,10 @@ export function DimensionControlPanel() {
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 w-8 p-0"
+            className="h-11 w-11 md:h-8 md:w-8 p-0"
             title="Ustawienia wymiarowania"
           >
-            <Settings2 className="h-4 w-4" />
+            <Settings2 className="h-5 w-5 md:h-4 md:w-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-64">

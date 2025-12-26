@@ -1,37 +1,43 @@
-import { useState, useEffect } from 'react';
-import { useTranslations } from 'next-intl';
-import { useShallow } from 'zustand/react/shallow';
-import { useStore, useSelectedPart, useSelectedCabinet } from '@/lib/store';
-import { Button } from '@meble/ui';
-import { Plus, Download, Settings, List, Package, House, Database, Copy, Check, Layers, Trash2 } from 'lucide-react';
-import { track, AnalyticsEvent } from '@meble/analytics';
-import { useIsAdmin } from '@/hooks';
-import { APP_NAME } from '@meble/constants';
-import { PropertiesPanel } from './PropertiesPanel';
-import { PartsTable } from './PartsTable';
-import { RoomPanel } from './RoomPanel';
-import { CountertopPanel } from '@/components/panels';
-import { validateParts } from '@/lib/csv';
-import { CabinetTemplateDialog } from './CabinetTemplateDialog';
-import { HistoryButtons } from './HistoryButtons';
-import { SettingsDropdown } from './SettingsDropdown';
-import { ExportDialog } from './ExportDialog';
-import { EXPORT_DIALOG_PENDING_KEY } from './CreditsPurchaseModal';
-import { CopySceneDialog, copySceneToClipboard } from './CopySceneDialog';
-import { UserMenu } from '@/components/auth';
+import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
+import { useShallow } from "zustand/react/shallow";
+import { useStore, useSelectedPart, useSelectedCabinet } from "@/lib/store";
+import { Button } from "@meble/ui";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@meble/ui';
+  Plus,
+  Download,
+  Settings,
+  List,
+  Package,
+  House,
+  Database,
+  Copy,
+  Check,
+  Layers,
+  Trash2,
+} from "lucide-react";
+import { track, AnalyticsEvent } from "@meble/analytics";
+import { useIsAdmin } from "@/hooks";
+import { APP_NAME } from "@meble/constants";
+import { PropertiesPanel } from "./PropertiesPanel";
+import { PartsTable } from "./PartsTable";
+import { RoomPanel } from "./RoomPanel";
+import { CountertopPanel } from "@/components/panels";
+import { validateParts } from "@/lib/csv";
+import { CabinetTemplateDialog } from "./CabinetTemplateDialog";
+import { HistoryButtons } from "./HistoryButtons";
+import { SettingsDropdown } from "./SettingsDropdown";
+import { ExportDialog } from "./ExportDialog";
+import { EXPORT_DIALOG_PENDING_KEY } from "./CreditsPurchaseModal";
+import { CopySceneDialog, copySceneToClipboard } from "./CopySceneDialog";
+import { UserMenu } from "@/components/auth";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@meble/ui";
 
-type TabType = 'properties' | 'list' | 'room' | 'countertops';
+type TabType = "properties" | "list" | "room" | "countertops";
 
 export function Sidebar() {
-  const t = useTranslations('Sidebar');
-  const tRoom = useTranslations('RoomPanel');
+  const t = useTranslations("Sidebar");
+  const tRoom = useTranslations("RoomPanel");
   // PERFORMANCE: Use useShallow to prevent re-renders during 3D transforms
   const { selectedFurnitureId, addPart, parts, materials, furnitures, featureFlags } = useStore(
     useShallow((state) => ({
@@ -48,7 +54,7 @@ export function Sidebar() {
   const { isAdmin } = useIsAdmin();
   const [showErrorDialog, setShowErrorDialog] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<TabType>('properties');
+  const [activeTab, setActiveTab] = useState<TabType>("properties");
   const [cabinetDialogOpen, setCabinetDialogOpen] = useState(false);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [copyDialogOpen, setCopyDialogOpen] = useState(false);
@@ -58,7 +64,7 @@ export function Sidebar() {
   // Check if we should reopen export dialog after returning from payment
   useEffect(() => {
     const shouldOpenExport = localStorage.getItem(EXPORT_DIALOG_PENDING_KEY);
-    if (shouldOpenExport === 'true') {
+    if (shouldOpenExport === "true") {
       // Remove flag first to prevent loops
       localStorage.removeItem(EXPORT_DIALOG_PENDING_KEY);
       // Open export dialog after a short delay (let app initialize)
@@ -68,9 +74,21 @@ export function Sidebar() {
     }
   }, []);
 
+  // Admin-only: Listen for export dialog test event (Ctrl+0)
+  useEffect(() => {
+    if (!isAdmin) return;
+
+    const handleTestExportDialog = () => {
+      setExportDialogOpen(true);
+    };
+
+    window.addEventListener("admin:testExportDialog", handleTestExportDialog);
+    return () => window.removeEventListener("admin:testExportDialog", handleTestExportDialog);
+  }, [isAdmin]);
+
   const handleAddPart = () => {
     addPart(selectedFurnitureId);
-    track(AnalyticsEvent.PART_ADDED, { part_type: 'manual' });
+    track(AnalyticsEvent.PART_ADDED, { part_type: "manual" });
   };
 
   const handleExportCSV = () => {
@@ -115,12 +133,12 @@ export function Sidebar() {
     };
 
     const blob = new Blob([JSON.stringify(sceneData, null, 2)], {
-      type: 'application/json',
+      type: "application/json",
     });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = `scene-data_${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `scene-data_${new Date().toISOString().split("T")[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -145,15 +163,14 @@ export function Sidebar() {
     const keysToRemove: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && (
-        key.startsWith('e-meble') ||
-        key.startsWith('e_meble') ||
-        key === 'partsTable.openGroups'
-      )) {
+      if (
+        key &&
+        (key.startsWith("e-meble") || key.startsWith("e_meble") || key === "partsTable.openGroups")
+      ) {
         keysToRemove.push(key);
       }
     }
-    keysToRemove.forEach(key => localStorage.removeItem(key));
+    keysToRemove.forEach((key) => localStorage.removeItem(key));
 
     // Clear all sessionStorage
     sessionStorage.clear();
@@ -167,9 +184,7 @@ export function Sidebar() {
       {/* Header */}
       <div className="border-b border-border p-4">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold text-foreground whitespace-nowrap">
-            {APP_NAME}
-          </h2>
+          <h2 className="text-lg font-semibold text-foreground whitespace-nowrap">{APP_NAME}</h2>
           <div className="flex items-center gap-1">
             <HistoryButtons />
             <SettingsDropdown />
@@ -178,9 +193,14 @@ export function Sidebar() {
         </div>
 
         <div className="space-y-2">
-          <Button onClick={handleAddPart} variant="outline" className="w-full h-11 md:h-8" size="sm">
+          <Button
+            onClick={handleAddPart}
+            variant="outline"
+            className="w-full h-11 md:h-8"
+            size="sm"
+          >
             <Plus className="h-4 w-4 mr-2" />
-            {t('addPart')}
+            {t("addPart")}
           </Button>
 
           <Button
@@ -190,7 +210,7 @@ export function Sidebar() {
             size="sm"
           >
             <Package className="h-4 w-4 mr-2" />
-            {t('addCabinet')}
+            {t("addCabinet")}
           </Button>
 
           <Button
@@ -201,7 +221,7 @@ export function Sidebar() {
             disabled={parts.length === 0}
           >
             <Download className="h-4 w-4 mr-2" />
-            {t('exportCSV')}
+            {t("exportCSV")}
           </Button>
 
           {/* Admin-only: Export scene data */}
@@ -259,47 +279,47 @@ export function Sidebar() {
       {/* Tabs */}
       <div className="flex border-b border-border">
         <button
-          onClick={() => setActiveTab('properties')}
+          onClick={() => setActiveTab("properties")}
           className={`flex flex-1 items-center justify-center gap-1 md:gap-2 px-2 md:px-4 py-3 md:py-3 text-xs md:text-sm font-medium transition-colors ${
-            activeTab === 'properties'
-              ? 'border-b-2 border-primary bg-muted text-foreground'
-              : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+            activeTab === "properties"
+              ? "border-b-2 border-primary bg-muted text-foreground"
+              : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
           }`}
         >
           <Settings className="h-4 w-4" />
-          <span className="hidden sm:inline">{t('propertiesTab')}</span>
+          <span className="hidden sm:inline">{t("propertiesTab")}</span>
         </button>
         <button
-          onClick={() => setActiveTab('list')}
+          onClick={() => setActiveTab("list")}
           className={`flex flex-1 items-center justify-center gap-1 md:gap-2 px-2 md:px-4 py-3 md:py-3 text-xs md:text-sm font-medium transition-colors ${
-            activeTab === 'list'
-              ? 'border-b-2 border-primary bg-muted text-foreground'
-              : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+            activeTab === "list"
+              ? "border-b-2 border-primary bg-muted text-foreground"
+              : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
           }`}
         >
           <List className="h-4 w-4" />
-          <span className="hidden sm:inline">{t('listTabWithCount', { count: parts.length })}</span>
+          <span className="hidden sm:inline">{t("listTabWithCount", { count: parts.length })}</span>
           <span className="sm:hidden">({parts.length})</span>
         </button>
         {!featureFlags.HIDE_ROOMS_TAB && (
           <button
-            onClick={() => setActiveTab('room')}
+            onClick={() => setActiveTab("room")}
             className={`flex flex-1 items-center justify-center gap-1 md:gap-2 px-2 md:px-4 py-3 md:py-3 text-xs md:text-sm font-medium transition-colors ${
-              activeTab === 'room'
-                ? 'border-b-2 border-primary bg-muted text-foreground'
-                : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+              activeTab === "room"
+                ? "border-b-2 border-primary bg-muted text-foreground"
+                : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
             }`}
           >
             <House className="h-4 w-4" />
-            <span className="hidden sm:inline">{tRoom('roomTab')}</span>
+            <span className="hidden sm:inline">{tRoom("roomTab")}</span>
           </button>
         )}
         <button
-          onClick={() => setActiveTab('countertops')}
+          onClick={() => setActiveTab("countertops")}
           className={`flex flex-1 items-center justify-center gap-1 md:gap-2 px-2 md:px-4 py-3 md:py-3 text-xs md:text-sm font-medium transition-colors ${
-            activeTab === 'countertops'
-              ? 'border-b-2 border-primary bg-muted text-foreground'
-              : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+            activeTab === "countertops"
+              ? "border-b-2 border-primary bg-muted text-foreground"
+              : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
           }`}
         >
           <Layers className="h-4 w-4" />
@@ -309,19 +329,17 @@ export function Sidebar() {
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
-        {activeTab === 'properties' ? (
+        {activeTab === "properties" ? (
           selectedPart || selectedCabinet ? (
             <PropertiesPanel />
           ) : (
-            <div className="p-4 text-sm text-muted-foreground">
-              {t('selectPartToEdit')}
-            </div>
+            <div className="p-4 text-sm text-muted-foreground">{t("selectPartToEdit")}</div>
           )
-        ) : activeTab === 'list' ? (
+        ) : activeTab === "list" ? (
           <div className="p-4">
             <PartsTable />
           </div>
-        ) : activeTab === 'room' ? (
+        ) : activeTab === "room" ? (
           <RoomPanel />
         ) : (
           <CountertopPanel />
@@ -336,25 +354,17 @@ export function Sidebar() {
       />
 
       {/* Export Dialog */}
-      <ExportDialog
-        open={exportDialogOpen}
-        onOpenChange={setExportDialogOpen}
-      />
+      <ExportDialog open={exportDialogOpen} onOpenChange={setExportDialogOpen} />
 
       {/* Copy Scene Dialog (Admin) */}
-      <CopySceneDialog
-        open={copyDialogOpen}
-        onOpenChange={setCopyDialogOpen}
-      />
+      <CopySceneDialog open={copyDialogOpen} onOpenChange={setCopyDialogOpen} />
 
       {/* Validation Error Dialog */}
       <Dialog open={showErrorDialog} onOpenChange={setShowErrorDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t('validationErrors')}</DialogTitle>
-            <DialogDescription>
-              {t('validationErrorsDescription')}
-            </DialogDescription>
+            <DialogTitle>{t("validationErrors")}</DialogTitle>
+            <DialogDescription>{t("validationErrorsDescription")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
             {validationErrors.map((error, index) => (
@@ -376,21 +386,14 @@ export function Sidebar() {
             <DialogTitle className="text-red-600">Wyczyść wszystkie dane</DialogTitle>
             <DialogDescription>
               Ta akcja usunie wszystkie dane aplikacji z localStorage i sessionStorage, w tym:
-              zapisane projekty, ustawienia, historię i sesję gościa.
-              Strona zostanie odświeżona.
+              zapisane projekty, ustawienia, historię i sesję gościa. Strona zostanie odświeżona.
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-2 mt-4">
-            <Button
-              variant="outline"
-              onClick={() => setClearDataDialogOpen(false)}
-            >
+            <Button variant="outline" onClick={() => setClearDataDialogOpen(false)}>
               Anuluj
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleClearAllData}
-            >
+            <Button variant="destructive" onClick={handleClearAllData}>
               <Trash2 className="h-4 w-4 mr-2" />
               Wyczyść dane
             </Button>

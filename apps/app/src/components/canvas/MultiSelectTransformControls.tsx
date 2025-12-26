@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * MultiSelectTransformControls Component
@@ -8,21 +8,25 @@
  * Preview meshes are rendered for all selected parts during transform.
  */
 
-import { useRef, useEffect, useMemo, useCallback, useState } from 'react';
-import { TransformControls } from '@react-three/drei';
-import { useStore, useMaterial, useSelectedParts } from '@/lib/store';
-import { useShallow } from 'zustand/react/shallow';
-import * as THREE from 'three';
-import { Part } from '@/types';
-import { SCENE_CONFIG, PART_CONFIG, MATERIAL_CONFIG } from '@/lib/config';
-import { useSnapContext } from '@/lib/snap-context';
-import { useDimensionContext } from '@/lib/dimension-context';
-import { calculatePartSnapV3 } from '@/lib/snapping-v3';
-import { calculateDimensions } from '@/lib/dimension-calculator';
-import { getMultiselectBoundingBoxWithOffset, getOtherBoundingBoxes } from '@/lib/bounding-box-utils';
-import type { TransformControls as TransformControlsImpl } from 'three-stdlib';
+import { useRef, useEffect, useMemo, useCallback, useState } from "react";
+import { TransformControls } from "@react-three/drei";
+import { useStore, useMaterial, useSelectedParts } from "@/lib/store";
+import { useShallow } from "zustand/react/shallow";
+import * as THREE from "three";
+import { Part, TransformSpace } from "@/types";
+import { SCENE_CONFIG, PART_CONFIG, MATERIAL_CONFIG } from "@/lib/config";
+import { useSnapContext } from "@/lib/snap-context";
+import { useDimensionContext } from "@/lib/dimension-context";
+import { useTransformAxisConstraints } from "@/hooks/useOrthographicConstraints";
+import { calculatePartSnapV3 } from "@/lib/snapping-v3";
+import { calculateDimensions } from "@/lib/dimension-calculator";
+import {
+  getMultiselectBoundingBoxWithOffset,
+  getOtherBoundingBoxes,
+} from "@/lib/bounding-box-utils";
+import type { TransformControls as TransformControlsImpl } from "three-stdlib";
 
-type PartTransform = Pick<Part, 'position' | 'rotation'>;
+type PartTransform = Pick<Part, "position" | "rotation">;
 
 // ============================================================================
 // Preview Mesh Component
@@ -39,12 +43,7 @@ function PreviewPartMesh({ part, previewPosition, previewRotation }: PreviewPart
   const color = material?.color || MATERIAL_CONFIG.DEFAULT_MATERIAL_COLOR;
 
   return (
-    <mesh
-      position={previewPosition}
-      rotation={previewRotation}
-      castShadow
-      receiveShadow
-    >
+    <mesh position={previewPosition} rotation={previewRotation} castShadow receiveShadow>
       <boxGeometry args={[part.width, part.height, part.depth]} />
       <meshStandardMaterial
         color={color}
@@ -60,18 +59,23 @@ function PreviewPartMesh({ part, previewPosition, previewRotation }: PreviewPart
 // ============================================================================
 
 interface MultiSelectTransformControlsProps {
-  mode: 'translate' | 'rotate';
+  mode: "translate" | "rotate";
+  space?: TransformSpace;
   onTransformStart: () => void;
   onTransformEnd: () => void;
 }
 
 export function MultiSelectTransformControls({
   mode,
+  space = "world",
   onTransformStart,
   onTransformEnd,
 }: MultiSelectTransformControlsProps) {
   const { setSnapPoints, clearSnapPoints } = useSnapContext();
   const { setDimensionLines, clearDimensionLines, setActiveAxis } = useDimensionContext();
+
+  // Get axis constraints for orthographic view
+  const axisConstraints = useTransformAxisConstraints(mode);
 
   // Get selected parts
   const selectedParts = useSelectedParts();
@@ -114,6 +118,17 @@ export function MultiSelectTransformControls({
 
   const [target, setTarget] = useState<THREE.Group | null>(null);
   const controlRef = useRef<TransformControlsImpl | null>(null);
+
+  // Effective space for TransformControls
+  const effectiveSpace = mode === "translate" ? space : "local";
+
+  // Update TransformControls space directly on every render
+  // (drei's TransformControls doesn't properly react to space prop changes)
+  useEffect(() => {
+    if (controlRef.current) {
+      controlRef.current.setSpace(effectiveSpace);
+    }
+  });
   const initialPartPositions = useRef<Map<string, THREE.Vector3>>(new Map());
   const initialPartRotations = useRef<Map<string, THREE.Quaternion>>(new Map());
   const initialGroupQuaternion = useRef<THREE.Quaternion>(new THREE.Quaternion());
@@ -121,30 +136,33 @@ export function MultiSelectTransformControls({
   const isDraggingRef = useRef(false);
 
   // Preview state - stores calculated transforms without updating store
-  const previewTransformsRef = useRef<Map<string, { position: [number, number, number]; rotation: [number, number, number] }>>(new Map());
+  const previewTransformsRef = useRef<
+    Map<string, { position: [number, number, number]; rotation: [number, number, number] }>
+  >(new Map());
   const [previewVersion, setPreviewVersion] = useState(0);
 
   // Calculate selection center
   const selectionCenter = useMemo(() => {
     if (parts.length === 0) return new THREE.Vector3(0, 0, 0);
     const sum = new THREE.Vector3();
-    parts.forEach(p => {
+    parts.forEach((p) => {
       sum.add(new THREE.Vector3().fromArray(p.position));
     });
     sum.divideScalar(parts.length);
     return sum;
   }, [parts]);
 
-  const rotationSnap = mode === 'rotate' && isShiftPressed
-    ? THREE.MathUtils.degToRad(SCENE_CONFIG.ROTATION_SNAP_DEGREES)
-    : undefined;
+  const rotationSnap =
+    mode === "rotate" && isShiftPressed
+      ? THREE.MathUtils.degToRad(SCENE_CONFIG.ROTATION_SNAP_DEGREES)
+      : undefined;
 
   // Get current drag axis from TransformControls
-  const getDragAxis = useCallback((): 'X' | 'Y' | 'Z' | null => {
+  const getDragAxis = useCallback((): "X" | "Y" | "Z" | null => {
     const controls = controlRef.current;
     if (!controls) return null;
     const axis = (controls as unknown as { axis: string | null }).axis;
-    if (axis === 'X' || axis === 'Y' || axis === 'Z') return axis;
+    if (axis === "X" || axis === "Y" || axis === "Z") return axis;
     return null;
   }, []);
 
@@ -154,7 +172,9 @@ export function MultiSelectTransformControls({
     if (!group || !isDraggingRef.current) return;
 
     // Calculate delta rotation from initial state
-    const deltaQuat = group.quaternion.clone().multiply(initialGroupQuaternion.current.clone().invert());
+    const deltaQuat = group.quaternion
+      .clone()
+      .multiply(initialGroupQuaternion.current.clone().invert());
 
     // Start with frozen selection center
     let pivotPoint = initialSelectionCenter.current.clone();
@@ -162,7 +182,7 @@ export function MultiSelectTransformControls({
     pivotPoint = pivotPoint.add(groupTranslation);
 
     // Apply snap for translate mode (only on the dragged axis)
-    if (mode === 'translate') {
+    if (mode === "translate") {
       const axis = getDragAxis();
 
       if (axis) {
@@ -178,8 +198,8 @@ export function MultiSelectTransformControls({
           ];
 
           // Exclude selected parts from snap targets
-          const selectedIds = new Set(parts.map(p => p.id));
-          const otherParts = allParts.filter(p => !selectedIds.has(p.id));
+          const selectedIds = new Set(parts.map((p) => p.id));
+          const otherParts = allParts.filter((p) => !selectedIds.has(p.id));
 
           const snapResult = calculatePartSnapV3(
             referencePart,
@@ -192,7 +212,7 @@ export function MultiSelectTransformControls({
 
           if (snapResult.snapped && snapResult.snapPoints.length > 0) {
             // Apply snap offset ONLY on the drag axis
-            const axisIndex = axis === 'X' ? 0 : axis === 'Y' ? 1 : 2;
+            const axisIndex = axis === "X" ? 0 : axis === "Y" ? 1 : 2;
             const snapOffset = snapResult.position[axisIndex] - translatedPosition[axisIndex];
 
             if (axisIndex === 0) pivotPoint.x += snapOffset;
@@ -216,7 +236,11 @@ export function MultiSelectTransformControls({
             pivotPoint.z - initialSelectionCenter.current.z,
           ];
 
-          const movingBounds = getMultiselectBoundingBoxWithOffset(selectedPartIds, allParts, offset);
+          const movingBounds = getMultiselectBoundingBoxWithOffset(
+            selectedPartIds,
+            allParts,
+            offset
+          );
 
           if (movingBounds) {
             const excludePartIds = selectedPartIds;
@@ -243,15 +267,18 @@ export function MultiSelectTransformControls({
     }
 
     // Calculate preview transforms for all parts (no store update!)
-    const newTransforms = new Map<string, { position: [number, number, number]; rotation: [number, number, number] }>();
+    const newTransforms = new Map<
+      string,
+      { position: [number, number, number]; rotation: [number, number, number] }
+    >();
 
-    parts.forEach(part => {
+    parts.forEach((part) => {
       const relativePos = initialPartPositions.current.get(part.id);
       const originalRot = initialPartRotations.current.get(part.id);
       if (relativePos && originalRot) {
         const newPos = relativePos.clone().applyQuaternion(deltaQuat).add(pivotPoint);
         const newRotQuat = new THREE.Quaternion().multiplyQuaternions(deltaQuat, originalRot);
-        const newRot = new THREE.Euler().setFromQuaternion(newRotQuat, 'XYZ');
+        const newRot = new THREE.Euler().setFromQuaternion(newRotQuat, "XYZ");
 
         newTransforms.set(part.id, {
           position: newPos.toArray() as [number, number, number],
@@ -262,8 +289,23 @@ export function MultiSelectTransformControls({
 
     // Update preview ref and trigger re-render
     previewTransformsRef.current = newTransforms;
-    setPreviewVersion(v => v + 1);
-  }, [parts, target, mode, snapEnabled, snapSettings, dimensionSettings, allParts, allCabinets, selectedPartIds, setSnapPoints, clearSnapPoints, setDimensionLines, setActiveAxis, getDragAxis]);
+    setPreviewVersion((v) => v + 1);
+  }, [
+    parts,
+    target,
+    mode,
+    snapEnabled,
+    snapSettings,
+    dimensionSettings,
+    allParts,
+    allCabinets,
+    selectedPartIds,
+    setSnapPoints,
+    clearSnapPoints,
+    setDimensionLines,
+    setActiveAxis,
+    getDragAxis,
+  ]);
 
   const handleTransformStart = useCallback(() => {
     if (!target) return;
@@ -284,19 +326,22 @@ export function MultiSelectTransformControls({
     initialPartPositions.current.clear();
     initialPartRotations.current.clear();
 
-    parts.forEach(part => {
+    parts.forEach((part) => {
       const partPos = new THREE.Vector3().fromArray(part.position);
       const relativePos = partPos.clone().sub(initialSelectionCenter.current);
       initialPartPositions.current.set(part.id, relativePos);
 
-      const partRot = new THREE.Euler(part.rotation[0], part.rotation[1], part.rotation[2], 'XYZ');
+      const partRot = new THREE.Euler(part.rotation[0], part.rotation[1], part.rotation[2], "XYZ");
       const partQuat = new THREE.Quaternion().setFromEuler(partRot);
       initialPartRotations.current.set(part.id, partQuat);
     });
 
     // Initialize preview transforms
-    const initialTransforms = new Map<string, { position: [number, number, number]; rotation: [number, number, number] }>();
-    parts.forEach(part => {
+    const initialTransforms = new Map<
+      string,
+      { position: [number, number, number]; rotation: [number, number, number] }
+    >();
+    parts.forEach((part) => {
       initialTransforms.set(part.id, {
         position: [...part.position],
         rotation: [...part.rotation],
@@ -309,17 +354,26 @@ export function MultiSelectTransformControls({
 
     // Record history - use first part ID as targetId, store all parts in before state
     const beforeState: Record<string, PartTransform> = {};
-    parts.forEach(p => {
+    parts.forEach((p) => {
       beforeState[p.id] = { position: [...p.position], rotation: [...p.rotation] };
     });
-    beginBatch('TRANSFORM_MULTISELECT', {
+    beginBatch("TRANSFORM_MULTISELECT", {
       targetId: `multiselect-${parts.length}`,
       before: beforeState,
     });
 
-    setPreviewVersion(v => v + 1);
+    setPreviewVersion((v) => v + 1);
     onTransformStart();
-  }, [setIsTransforming, setTransformingPartIds, parts, beginBatch, selectionCenter, target, selectedPartIds, onTransformStart]);
+  }, [
+    setIsTransforming,
+    setTransformingPartIds,
+    parts,
+    beginBatch,
+    selectionCenter,
+    target,
+    selectedPartIds,
+    onTransformStart,
+  ]);
 
   const handleTransformEnd = useCallback(() => {
     isDraggingRef.current = false;
@@ -367,7 +421,18 @@ export function MultiSelectTransformControls({
     setIsTransforming(false);
     onTransformEnd();
     detectCollisions();
-  }, [target, updatePartsBatch, commitBatch, selectionCenter, setIsTransforming, setTransformingPartIds, onTransformEnd, detectCollisions, clearSnapPoints, clearDimensionLines]);
+  }, [
+    target,
+    updatePartsBatch,
+    commitBatch,
+    selectionCenter,
+    setIsTransforming,
+    setTransformingPartIds,
+    onTransformEnd,
+    detectCollisions,
+    clearSnapPoints,
+    clearDimensionLines,
+  ]);
 
   // Handle change during drag
   const handleChange = useCallback(() => {
@@ -386,11 +451,14 @@ export function MultiSelectTransformControls({
   const getPreviewTransform = (partId: string) => {
     const preview = previewTransformsRef.current.get(partId);
     if (preview) return preview;
-    const part = parts.find(p => p.id === partId);
+    const part = parts.find((p) => p.id === partId);
     if (part) {
       return { position: part.position, rotation: part.rotation };
     }
-    return { position: [0, 0, 0] as [number, number, number], rotation: [0, 0, 0] as [number, number, number] };
+    return {
+      position: [0, 0, 0] as [number, number, number],
+      rotation: [0, 0, 0] as [number, number, number],
+    };
   };
 
   if (parts.length < 2) {
@@ -400,14 +468,10 @@ export function MultiSelectTransformControls({
   return (
     <>
       {/* Target group that TransformControls operates on */}
-      <group
-        ref={setTarget}
-        position={selectionCenter.toArray()}
-        rotation={[0, 0, 0]}
-      />
+      <group ref={setTarget} position={selectionCenter.toArray()} rotation={[0, 0, 0]} />
 
       {/* Preview meshes for all selected parts */}
-      {parts.map(part => {
+      {parts.map((part) => {
         const transform = getPreviewTransform(part.id);
         return (
           <PreviewPartMesh
@@ -424,10 +488,14 @@ export function MultiSelectTransformControls({
           ref={controlRef}
           object={target}
           mode={mode}
+          space={effectiveSpace}
           onMouseDown={handleTransformStart}
           onChange={handleChange}
           onMouseUp={handleTransformEnd}
           rotationSnap={rotationSnap}
+          showX={axisConstraints.showX}
+          showY={axisConstraints.showY}
+          showZ={axisConstraints.showZ}
         />
       )}
     </>

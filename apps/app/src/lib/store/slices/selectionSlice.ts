@@ -1,11 +1,11 @@
-import { v4 as uuidv4 } from 'uuid';
-import type { TransformMode, Part, PartSnapshot } from '@/types';
-import { DEFAULT_FURNITURE_ID } from '../constants';
-import type { SelectionSlice, StoreSlice } from '../types';
-import { HISTORY_LABELS } from '../history/constants';
-import { generateId } from '../history/utils';
-import { triggerDebouncedCollisionDetection } from '../utils';
-import { PART_CONFIG } from '@/lib/config';
+import { v4 as uuidv4 } from "uuid";
+import type { TransformMode, TransformSpace, Part, PartSnapshot } from "@/types";
+import { DEFAULT_FURNITURE_ID } from "../constants";
+import type { SelectionSlice, StoreSlice } from "../types";
+import { HISTORY_LABELS } from "../history/constants";
+import { generateId } from "../history/utils";
+import { triggerDebouncedCollisionDetection } from "../utils";
+import { PART_CONFIG } from "@/lib/config";
 
 export const createSelectionSlice: StoreSlice<SelectionSlice> = (set, get) => ({
   selectedPartId: null,
@@ -14,7 +14,8 @@ export const createSelectionSlice: StoreSlice<SelectionSlice> = (set, get) => ({
   isTransforming: false,
   transformingPartId: null,
   transformingCabinetId: null,
-  transformMode: 'translate',
+  transformMode: "translate",
+  transformSpace: "local",
 
   // Multiselect state
   selectedPartIds: new Set<string>(),
@@ -57,10 +58,11 @@ export const createSelectionSlice: StoreSlice<SelectionSlice> = (set, get) => ({
         selectedPartId: null,
         selectedPartIds: new Set<string>(),
         multiSelectAnchorId: null,
+        selectedCountertopGroupId: null, // Clear countertop selection when deselecting cabinet
       });
     } else {
       // Set anchor to first part of cabinet for potential Shift+click range selection
-      const cabinet = get().cabinets.find(c => c.id === id);
+      const cabinet = get().cabinets.find((c) => c.id === id);
       const firstPartId = cabinet?.partIds[0] || null;
 
       set({
@@ -88,6 +90,10 @@ export const createSelectionSlice: StoreSlice<SelectionSlice> = (set, get) => ({
     set({ transformMode: mode });
   },
 
+  setTransformSpace: (space: TransformSpace) => {
+    set({ transformSpace: space });
+  },
+
   // =========================================================================
   // Multiselect Actions
   // =========================================================================
@@ -108,9 +114,12 @@ export const createSelectionSlice: StoreSlice<SelectionSlice> = (set, get) => ({
     const firstId = newSet.size > 0 ? Array.from(newSet)[0] : null;
 
     // Set anchor if this is the first selection
-    const newAnchor = newSet.size > 0
-      ? (multiSelectAnchorId && newSet.has(multiSelectAnchorId) ? multiSelectAnchorId : id)
-      : null;
+    const newAnchor =
+      newSet.size > 0
+        ? multiSelectAnchorId && newSet.has(multiSelectAnchorId)
+          ? multiSelectAnchorId
+          : id
+        : null;
 
     set({
       selectedPartIds: newSet,
@@ -152,9 +161,8 @@ export const createSelectionSlice: StoreSlice<SelectionSlice> = (set, get) => ({
     }
 
     const firstId = newSet.size > 0 ? Array.from(newSet)[0] : null;
-    const newAnchor = multiSelectAnchorId && newSet.has(multiSelectAnchorId)
-      ? multiSelectAnchorId
-      : firstId;
+    const newAnchor =
+      multiSelectAnchorId && newSet.has(multiSelectAnchorId) ? multiSelectAnchorId : firstId;
 
     set({
       selectedPartIds: newSet,
@@ -167,10 +175,10 @@ export const createSelectionSlice: StoreSlice<SelectionSlice> = (set, get) => ({
     const { parts, cabinets, selectedFurnitureId } = get();
 
     // Get parts in current furniture (ordered as they appear in table)
-    const furnitureParts = parts.filter(p => p.furnitureId === selectedFurnitureId);
+    const furnitureParts = parts.filter((p) => p.furnitureId === selectedFurnitureId);
 
-    const fromIndex = furnitureParts.findIndex(p => p.id === fromId);
-    const toIndex = furnitureParts.findIndex(p => p.id === toId);
+    const fromIndex = furnitureParts.findIndex((p) => p.id === fromId);
+    const toIndex = furnitureParts.findIndex((p) => p.id === toId);
 
     if (fromIndex === -1 || toIndex === -1) return;
 
@@ -179,7 +187,7 @@ export const createSelectionSlice: StoreSlice<SelectionSlice> = (set, get) => ({
 
     // Get initial range of part IDs
     const rangeParts = furnitureParts.slice(startIndex, endIndex + 1);
-    const rangeIdSet = new Set(rangeParts.map(p => p.id));
+    const rangeIdSet = new Set(rangeParts.map((p) => p.id));
 
     // For any cabinet part in the range, include ALL parts of that cabinet
     const cabinetIdsInRange = new Set<string>();
@@ -211,8 +219,8 @@ export const createSelectionSlice: StoreSlice<SelectionSlice> = (set, get) => ({
   selectAll: () => {
     const { parts, selectedFurnitureId } = get();
 
-    const furnitureParts = parts.filter(p => p.furnitureId === selectedFurnitureId);
-    const allIds = furnitureParts.map(p => p.id);
+    const furnitureParts = parts.filter((p) => p.furnitureId === selectedFurnitureId);
+    const allIds = furnitureParts.map((p) => p.id);
 
     if (allIds.length === 0) return;
 
@@ -230,6 +238,7 @@ export const createSelectionSlice: StoreSlice<SelectionSlice> = (set, get) => ({
       selectedPartId: null,
       selectedCabinetId: null,
       multiSelectAnchorId: null,
+      selectedCountertopGroupId: null, // Clear countertop selection too
     });
   },
 
@@ -259,7 +268,7 @@ export const createSelectionSlice: StoreSlice<SelectionSlice> = (set, get) => ({
 
     // Record history entry
     pushEntry({
-      type: 'DELETE_MULTISELECT',
+      type: "DELETE_MULTISELECT",
       targetIds: Array.from(selectedPartIds),
       furnitureId: partsToDelete[0].furnitureId,
       before: { parts: partsToDelete },
@@ -267,17 +276,17 @@ export const createSelectionSlice: StoreSlice<SelectionSlice> = (set, get) => ({
         id: generateId(),
         timestamp: Date.now(),
         label: `${HISTORY_LABELS.DELETE_MULTISELECT} (${partsToDelete.length})`,
-        kind: 'geometry',
+        kind: "geometry",
       },
     });
 
     // Update cabinets to remove deleted parts from their partIds
-    const updatedCabinets = cabinets.map(cabinet => {
-      const hasDeletedParts = cabinet.partIds.some(pid => idsToDelete.has(pid));
+    const updatedCabinets = cabinets.map((cabinet) => {
+      const hasDeletedParts = cabinet.partIds.some((pid) => idsToDelete.has(pid));
       if (hasDeletedParts) {
         return {
           ...cabinet,
-          partIds: cabinet.partIds.filter(pid => !idsToDelete.has(pid)),
+          partIds: cabinet.partIds.filter((pid) => !idsToDelete.has(pid)),
           updatedAt: new Date(),
         };
       }
@@ -286,7 +295,7 @@ export const createSelectionSlice: StoreSlice<SelectionSlice> = (set, get) => ({
 
     // Single state update
     set({
-      parts: parts.filter(p => !idsToDelete.has(p.id)),
+      parts: parts.filter((p) => !idsToDelete.has(p.id)),
       cabinets: updatedCabinets,
       selectedPartIds: new Set<string>(),
       selectedPartId: null,
@@ -301,32 +310,32 @@ export const createSelectionSlice: StoreSlice<SelectionSlice> = (set, get) => ({
     if (selectedPartIds.size === 0) return;
 
     const now = new Date();
-    const selectedParts = parts.filter(p => selectedPartIds.has(p.id));
+    const selectedParts = parts.filter((p) => selectedPartIds.has(p.id));
 
     if (selectedParts.length === 0) return;
 
     const offset = PART_CONFIG.DUPLICATE_OFFSET;
 
-    const duplicates: Part[] = selectedParts.map(part => ({
+    const duplicates: Part[] = selectedParts.map((part) => ({
       ...part,
       id: uuidv4(),
       name: `${part.name} (kopia)`,
-      position: [
-        part.position[0] + offset,
-        part.position[1],
-        part.position[2],
-      ] as [number, number, number],
+      position: [part.position[0] + offset, part.position[1], part.position[2]] as [
+        number,
+        number,
+        number,
+      ],
       createdAt: now,
       updatedAt: now,
       cabinetMetadata: undefined, // Remove cabinet association
       group: undefined, // Remove group association
     }));
 
-    const newPartIds = duplicates.map(p => p.id);
+    const newPartIds = duplicates.map((p) => p.id);
 
     // Record history entry
     pushEntry({
-      type: 'DUPLICATE_MULTISELECT',
+      type: "DUPLICATE_MULTISELECT",
       targetIds: newPartIds,
       furnitureId: duplicates[0].furnitureId,
       after: { parts: duplicates },
@@ -334,7 +343,7 @@ export const createSelectionSlice: StoreSlice<SelectionSlice> = (set, get) => ({
         id: generateId(),
         timestamp: Date.now(),
         label: `${HISTORY_LABELS.DUPLICATE_MULTISELECT} (${duplicates.length})`,
-        kind: 'geometry',
+        kind: "geometry",
       },
     });
 

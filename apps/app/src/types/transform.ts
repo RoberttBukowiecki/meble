@@ -5,24 +5,31 @@
 /**
  * Transform mode for parts
  */
-export type TransformMode = 'translate' | 'rotate' | 'resize';
+export type TransformMode = "translate" | "rotate" | "resize";
+
+/**
+ * Transform space for translation
+ * - 'world': Translate along global X, Y, Z axes
+ * - 'local': Translate along object's local axes (respects rotation)
+ */
+export type TransformSpace = "world" | "local";
 
 /**
  * Resize handle direction
  * Represents which face of the part is being resized
  */
 export type ResizeHandle =
-  | 'width+'  // +X (right face)
-  | 'width-'  // -X (left face)
-  | 'height+' // +Y (top face)
-  | 'height-' // -Y (bottom face)
-  | 'depth+'  // +Z (front face)
-  | 'depth-'; // -Z (back face)
+  | "width+" // +X (right face)
+  | "width-" // -X (left face)
+  | "height+" // +Y (top face)
+  | "height-" // -Y (bottom face)
+  | "depth+" // +Z (front face)
+  | "depth-"; // -Z (back face)
 
 /**
  * Snap point type
  */
-export type SnapType = 'edge' | 'face' | 'edge-to-face';
+export type SnapType = "edge" | "face" | "edge-to-face";
 
 /**
  * Active snap point for visualization
@@ -35,7 +42,7 @@ export interface SnapPoint {
   partId: string;
   strength: number; // 0-1, based on distance
   /** The axis being snapped (for visualization) */
-  axis?: 'X' | 'Y' | 'Z';
+  axis?: "X" | "Y" | "Z";
 }
 
 /**
@@ -76,34 +83,34 @@ export interface BoundingFace {
 /**
  * Axis constraint for snapping - limits snap to specific axis during drag
  */
-export type SnapAxisConstraint = 'X' | 'Y' | 'Z' | 'XY' | 'XZ' | 'YZ' | 'XYZ' | null;
+export type SnapAxisConstraint = "X" | "Y" | "Z" | "XY" | "XZ" | "YZ" | "XYZ" | null;
 
 /**
  * Snap version:
  * - v2: Uses group bounding boxes (for cabinet arrangement)
  * - v3: Face-to-face with movement direction awareness (recommended)
  */
-export type SnapVersion = 'v2' | 'v3';
+export type SnapVersion = "v2" | "v3";
 
 /**
  * Snap settings configuration
  */
 export interface SnapSettings {
   // Core settings
-  distance: number;             // Snap threshold in mm (default: 20)
-  collisionOffset: number;      // Gap between snapped faces in mm (default: 1.0)
+  distance: number; // Snap threshold in mm (default: 20)
+  collisionOffset: number; // Gap between snapped faces in mm (default: 1.0)
 
   // Snap types
-  faceSnap: boolean;            // Enable face-to-face snapping (opposite normals) - "connection"
-  edgeSnap: boolean;            // Enable parallel face alignment - "alignment"
-  tJointSnap: boolean;          // Enable T-joint snapping (perpendicular normals)
+  faceSnap: boolean; // Enable face-to-face snapping (opposite normals) - "connection"
+  edgeSnap: boolean; // Enable parallel face alignment - "alignment"
+  tJointSnap: boolean; // Enable T-joint snapping (perpendicular normals)
 
   // Visualization
-  showGuides: boolean;          // Show visual snap lines (default: true)
-  debug: boolean;               // Show debug visualization (OBBs, faces, normals)
+  showGuides: boolean; // Show visual snap lines (default: true)
+  debug: boolean; // Show debug visualization (OBBs, faces, normals)
 
   // Version
-  version: SnapVersion;         // v2 for cabinet groups, v3 for parts (default: v3)
+  version: SnapVersion; // v2 for cabinet groups, v3 for parts (default: v3)
 }
 
 /**
@@ -123,9 +130,9 @@ export interface ResizeConstraints {
   min: number;
   max: number;
   snapTargets: {
-    value: number;    // Dimension value to snap to
+    value: number; // Dimension value to snap to
     distance: number; // Current distance to snap
-    partId: string;   // Part providing snap target
+    partId: string; // Part providing snap target
   }[];
 }
 
@@ -151,12 +158,12 @@ export interface ResizeResult {
  * Cabinet resize handle type - 6 faces of bounding box
  */
 export type CabinetResizeHandle =
-  | 'width+'   // +X face (right)
-  | 'width-'   // -X face (left)
-  | 'height+'  // +Y face (top)
-  | 'height-'  // -Y face (bottom)
-  | 'depth+'   // +Z face (front)
-  | 'depth-';  // -Z face (back)
+  | "width+" // +X face (right)
+  | "width-" // -X face (left)
+  | "height+" // +Y face (top)
+  | "height-" // -Y face (bottom)
+  | "depth+" // +Z face (front)
+  | "depth-"; // -Z face (back)
 
 /**
  * Bounding box for cabinet resize calculations
@@ -212,7 +219,7 @@ export interface DimensionBoundingBox {
   max: [number, number, number];
   center: [number, number, number];
   groupId: string; // Cabinet ID, manual group ID, or part ID
-  groupType: 'cabinet' | 'group' | 'part';
+  groupType: "cabinet" | "group" | "part";
 }
 
 /**
@@ -220,7 +227,7 @@ export interface DimensionBoundingBox {
  */
 export interface DimensionLine {
   id: string;
-  axis: 'X' | 'Y' | 'Z';
+  axis: "X" | "Y" | "Z";
   /** Start point (on moving object's face) */
   startPoint: [number, number, number];
   /** End point (on target object's face) */
@@ -249,10 +256,10 @@ export interface DimensionSettings {
  * Graphics settings for 3D rendering
  */
 export interface GraphicsSettings {
-  quality: 'low' | 'medium' | 'high';
+  quality: "low" | "medium" | "high";
   shadows: boolean;
   ambientOcclusion: boolean;
-  lightingMode: 'standard' | 'simulation';
+  lightingMode: "standard" | "simulation";
 }
 
 /**
@@ -271,15 +278,15 @@ export interface FeatureFlags {
  * Display mode for object dimensions
  */
 export type ObjectDimensionMode =
-  | 'selection'  // Only selected objects
-  | 'all';       // All objects in furniture
+  | "selection" // Only selected objects
+  | "all"; // All objects in furniture
 
 /**
  * Granularity of dimension display
  */
 export type ObjectDimensionGranularity =
-  | 'group'      // Cabinet/group bounding box
-  | 'part';      // Individual parts
+  | "group" // Cabinet/group bounding box
+  | "part"; // Individual parts
 
 /**
  * Single dimension line for an object
@@ -287,9 +294,9 @@ export type ObjectDimensionGranularity =
 export interface ObjectDimension {
   id: string;
   objectId: string;
-  objectType: 'part' | 'cabinet' | 'countertop' | 'multiselect';
-  axis: 'X' | 'Y' | 'Z';
-  label: 'W' | 'H' | 'D';
+  objectType: "part" | "cabinet" | "countertop" | "multiselect";
+  axis: "X" | "Y" | "Z";
+  label: "W" | "H" | "D";
   startPoint: [number, number, number];
   endPoint: [number, number, number];
   length: number;
@@ -298,10 +305,18 @@ export interface ObjectDimension {
 
 /**
  * Complete dimension set for an object
+ * Dimensions are in local space (relative to center) and should be
+ * rendered inside a group with the object's rotation
  */
 export interface ObjectDimensionSet {
   objectId: string;
-  objectType: 'part' | 'cabinet' | 'countertop' | 'multiselect';
+  objectType: "part" | "cabinet" | "countertop" | "multiselect";
+  /** World position of object center (group position for rendering) */
+  worldCenter: [number, number, number];
+  /** Object rotation in radians (group rotation for rendering) */
+  rotation: [number, number, number];
+  /** Local dimensions (W/H/D) - actual object size, not AABB */
+  localSize: [number, number, number];
   boundingBox: {
     min: [number, number, number];
     max: [number, number, number];

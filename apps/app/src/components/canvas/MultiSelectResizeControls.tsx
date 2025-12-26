@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * MultiSelectResizeControls Component
@@ -13,13 +13,20 @@
  * - Original parts hidden via setTransformingPartIds
  */
 
-import { useRef, useCallback, useEffect, useState, useMemo } from 'react';
-import { useThree, ThreeEvent } from '@react-three/fiber';
-import * as THREE from 'three';
-import { useStore, useMaterial, useSelectedParts } from '@/lib/store';
-import { useShallow } from 'zustand/react/shallow';
-import type { Part, CabinetResizeHandle, CabinetBoundingBox, CabinetPartInitialTransform, CabinetPartPreview } from '@/types';
-import { PART_CONFIG, MATERIAL_CONFIG } from '@/lib/config';
+import { useRef, useCallback, useEffect, useState, useMemo } from "react";
+import { useThree, ThreeEvent } from "@react-three/fiber";
+import * as THREE from "three";
+import { useStore, useMaterial, useSelectedParts } from "@/lib/store";
+import { useShallow } from "zustand/react/shallow";
+import { useHiddenResizeHandles } from "@/hooks/useOrthographicConstraints";
+import type {
+  Part,
+  CabinetResizeHandle,
+  CabinetBoundingBox,
+  CabinetPartInitialTransform,
+  CabinetPartPreview,
+} from "@/types";
+import { PART_CONFIG, MATERIAL_CONFIG } from "@/lib/config";
 import {
   calculateCabinetBoundingBox,
   getCabinetHandlePosition,
@@ -28,8 +35,8 @@ import {
   calculateEdgeBasedResize,
   getHandleAxisName,
   getHandleAxisIndex,
-} from '@/lib/cabinetResize';
-import { ResizeHandleMesh, DimensionDisplay } from './resize';
+} from "@/lib/cabinetResize";
+import { ResizeHandleMesh, DimensionDisplay } from "./resize";
 
 // ============================================================================
 // Constants
@@ -37,9 +44,12 @@ import { ResizeHandleMesh, DimensionDisplay } from './resize';
 
 /** All 6 resize handles */
 const HANDLES: CabinetResizeHandle[] = [
-  'width+', 'width-',
-  'height+', 'height-',
-  'depth+', 'depth-',
+  "width+",
+  "width-",
+  "height+",
+  "height-",
+  "depth+",
+  "depth-",
 ];
 
 /** Grid snap size when Shift is pressed */
@@ -78,12 +88,7 @@ function PreviewPartMesh({ preview, materialId }: PreviewPartMeshProps) {
   const color = material?.color || MATERIAL_CONFIG.DEFAULT_MATERIAL_COLOR;
 
   return (
-    <mesh
-      position={preview.position}
-      rotation={preview.rotation}
-      castShadow
-      receiveShadow
-    >
+    <mesh position={preview.position} rotation={preview.rotation} castShadow receiveShadow>
       <boxGeometry args={[preview.width, preview.height, preview.depth]} />
       <meshStandardMaterial
         color={color}
@@ -103,6 +108,9 @@ export function MultiSelectResizeControls({
   onTransformEnd,
 }: MultiSelectResizeControlsProps) {
   const { camera, gl } = useThree();
+
+  // Get hidden handles for orthographic view
+  const hiddenHandles = useHiddenResizeHandles();
 
   // Get selected parts
   const selectedParts = useSelectedParts();
@@ -132,10 +140,7 @@ export function MultiSelectResizeControls({
   const [previewVersion, setPreviewVersion] = useState(0);
 
   // Calculate bounding box
-  const boundingBox = useMemo(
-    () => calculateCabinetBoundingBox(selectedParts),
-    [selectedParts]
-  );
+  const boundingBox = useMemo(() => calculateCabinetBoundingBox(selectedParts), [selectedParts]);
 
   // Ref-based drag state
   const dragStateRef = useRef<DragState>({
@@ -188,7 +193,7 @@ export function MultiSelectResizeControls({
 
       // Initialize preview transforms with current values
       const initialPreviews = new Map<string, CabinetPartPreview>();
-      selectedPartsRef.current.forEach(part => {
+      selectedPartsRef.current.forEach((part) => {
         initialPreviews.set(part.id, {
           position: [...part.position],
           rotation: [...part.rotation],
@@ -214,8 +219,11 @@ export function MultiSelectResizeControls({
       dragPlaneRef.current.setFromNormalAndCoplanarPoint(cameraDir, startPoint);
 
       // Begin history batch
-      const beforeState: Record<string, { position: [number, number, number]; width: number; height: number; depth: number }> = {};
-      selectedPartsRef.current.forEach(p => {
+      const beforeState: Record<
+        string,
+        { position: [number, number, number]; width: number; height: number; depth: number }
+      > = {};
+      selectedPartsRef.current.forEach((p) => {
         beforeState[p.id] = {
           position: [...p.position],
           width: p.width,
@@ -224,7 +232,7 @@ export function MultiSelectResizeControls({
         };
       });
 
-      beginBatch('TRANSFORM_MULTISELECT', {
+      beginBatch("TRANSFORM_MULTISELECT", {
         targetId: `multiselect-resize-${selectedPartsRef.current.length}`,
         before: beforeState,
       });
@@ -306,7 +314,10 @@ export function MultiSelectResizeControls({
       // Get final transforms from preview state
       const previews = dragStateRef.current.previewTransforms;
       const updates: Array<{ id: string; patch: Partial<Part> }> = [];
-      const afterState: Record<string, { position: [number, number, number]; width: number; height: number; depth: number }> = {};
+      const afterState: Record<
+        string,
+        { position: [number, number, number]; width: number; height: number; depth: number }
+      > = {};
 
       previews.forEach((preview, partId) => {
         updates.push({
@@ -344,21 +355,27 @@ export function MultiSelectResizeControls({
       onTransformEnd();
     };
 
-    window.addEventListener('pointermove', handlePointerMove);
-    window.addEventListener('pointerup', handlePointerUp);
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
 
     return () => {
-      window.removeEventListener('pointermove', handlePointerMove);
-      window.removeEventListener('pointerup', handlePointerUp);
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
     };
   }, [camera, gl, updatePartsBatch, commitBatch, setTransformingPartIds, onTransformEnd]);
 
   // Get current preview state
   const previewState = dragStateRef.current;
   const isShowingPreview = activeHandle !== null && previewState.previewTransforms.size > 0;
-  const displayBoundingBox = isShowingPreview && previewState.previewBoundingBox
-    ? previewState.previewBoundingBox
-    : boundingBox;
+  const displayBoundingBox =
+    isShowingPreview && previewState.previewBoundingBox
+      ? previewState.previewBoundingBox
+      : boundingBox;
+
+  // Filter handles for orthographic view
+  const visibleHandles = useMemo(() => {
+    return HANDLES.filter((handle) => !hiddenHandles.includes(handle));
+  }, [hiddenHandles]);
 
   // Don't render if less than 2 parts selected
   if (selectedParts.length < 2) {
@@ -382,20 +399,21 @@ export function MultiSelectResizeControls({
   return (
     <group>
       {/* Preview meshes during drag */}
-      {isShowingPreview && selectedParts.map(part => {
-        const preview = previewState.previewTransforms.get(part.id);
-        if (!preview) return null;
-        return (
-          <PreviewPartMesh
-            key={`preview-${part.id}-${previewVersion}`}
-            preview={preview}
-            materialId={part.materialId}
-          />
-        );
-      })}
+      {isShowingPreview &&
+        selectedParts.map((part) => {
+          const preview = previewState.previewTransforms.get(part.id);
+          if (!preview) return null;
+          return (
+            <PreviewPartMesh
+              key={`preview-${part.id}-${previewVersion}`}
+              preview={preview}
+              materialId={part.materialId}
+            />
+          );
+        })}
 
       {/* Resize handles */}
-      {HANDLES.map((handle) => {
+      {visibleHandles.map((handle) => {
         const position = getCabinetHandlePosition(displayBoundingBox, handle);
         const normal = getCabinetHandleNormal(handle);
         return (

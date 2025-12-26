@@ -20,10 +20,10 @@ import type {
   CornerDoorPosition,
   CornerFrontType,
   CornerMountType,
-} from '@/types';
-import type { ValidationResult } from './types';
-import { validResult, invalidResult } from './types';
-import { DEFAULT_BACK_OVERLAP_RATIO } from '@/lib/config';
+} from "@/types";
+import type { ValidationResult } from "./types";
+import { validResult, invalidResult } from "./types";
+import { DEFAULT_BACK_OVERLAP_RATIO } from "@/lib/config";
 
 // ============================================================================
 // CONSTANTS
@@ -33,15 +33,15 @@ import { DEFAULT_BACK_OVERLAP_RATIO } from '@/lib/config';
  * Default corner cabinet configuration values
  */
 export const CORNER_DEFAULTS = {
-  W: 1000,          // Full cabinet width
-  D: 600,           // Cabinet depth
-  bottomMount: 'inset' as CornerMountType,
-  topMount: 'inset' as CornerMountType,
-  frontType: 'SINGLE' as CornerFrontType,
+  W: 1050, // Full cabinet width (calculated so frontPanel + t = 580mm = standard cabinet depth)
+  D: 580, // Cabinet depth (same as standard KITCHEN cabinet)
+  bottomMount: "inset" as CornerMountType,
+  topMount: "inset" as CornerMountType,
+  frontType: "SINGLE" as CornerFrontType,
   doorGap: 2,
-  wallSide: 'LEFT' as CornerWallSide,
-  doorPosition: 'RIGHT' as CornerDoorPosition,
-  doorWidth: 450,    // Default door width
+  wallSide: "LEFT" as CornerWallSide,
+  doorPosition: "RIGHT" as CornerDoorPosition,
+  doorWidth: 450, // Default door width
 } as const;
 
 /**
@@ -74,9 +74,7 @@ export const CornerDomain = {
   /**
    * Create a new corner configuration with defaults
    */
-  createConfig: (
-    wallSide: CornerWallSide = 'LEFT'
-  ): CornerConfig => ({
+  createConfig: (wallSide: CornerWallSide = "LEFT"): CornerConfig => ({
     wallSide,
     W: CORNER_DEFAULTS.W,
     D: CORNER_DEFAULTS.D,
@@ -97,14 +95,14 @@ export const CornerDomain = {
     depth: number,
     cornerConfig?: Partial<CornerConfig>
   ): CornerInternalCabinetParams => ({
-    type: 'CORNER_INTERNAL',
+    type: "CORNER_INTERNAL",
     width, // = W (full width)
     height,
     depth, // = D (cabinet depth)
-    topBottomPlacement: 'inset',
+    topBottomPlacement: "inset",
     hasBack: true,
     backOverlapRatio: DEFAULT_BACK_OVERLAP_RATIO,
-    backMountType: 'overlap',
+    backMountType: "overlap",
     cornerConfig: { ...CornerDomain.createConfig(), ...cornerConfig },
   }),
 
@@ -115,11 +113,7 @@ export const CornerDomain = {
   /**
    * Update dimensions (W, D)
    */
-  updateDimensions: (
-    config: CornerConfig,
-    W: number,
-    D: number
-  ): CornerConfig => ({
+  updateDimensions: (config: CornerConfig, W: number, D: number): CornerConfig => ({
     ...config,
     W: Math.max(CORNER_LIMITS.MIN_W, Math.min(CORNER_LIMITS.MAX_W, W)),
     D: Math.max(CORNER_LIMITS.MIN_D, Math.min(CORNER_LIMITS.MAX_D, D)),
@@ -128,10 +122,7 @@ export const CornerDomain = {
   /**
    * Update wall side (which side is at the wall)
    */
-  updateWallSide: (
-    config: CornerConfig,
-    wallSide: CornerWallSide
-  ): CornerConfig => ({
+  updateWallSide: (config: CornerConfig, wallSide: CornerWallSide): CornerConfig => ({
     ...config,
     wallSide,
   }),
@@ -139,10 +130,7 @@ export const CornerDomain = {
   /**
    * Update door position (which side of front has the door)
    */
-  updateDoorPosition: (
-    config: CornerConfig,
-    doorPosition: CornerDoorPosition
-  ): CornerConfig => ({
+  updateDoorPosition: (config: CornerConfig, doorPosition: CornerDoorPosition): CornerConfig => ({
     ...config,
     doorPosition,
   }),
@@ -150,21 +138,18 @@ export const CornerDomain = {
   /**
    * Update door width
    */
-  updateDoorWidth: (
-    config: CornerConfig,
-    doorWidth: number
-  ): CornerConfig => ({
+  updateDoorWidth: (config: CornerConfig, doorWidth: number): CornerConfig => ({
     ...config,
-    doorWidth: Math.max(CORNER_LIMITS.MIN_DOOR_WIDTH, Math.min(CORNER_LIMITS.MAX_DOOR_WIDTH, doorWidth)),
+    doorWidth: Math.max(
+      CORNER_LIMITS.MIN_DOOR_WIDTH,
+      Math.min(CORNER_LIMITS.MAX_DOOR_WIDTH, doorWidth)
+    ),
   }),
 
   /**
    * Update bottom mount type
    */
-  updateBottomMount: (
-    config: CornerConfig,
-    mount: CornerMountType
-  ): CornerConfig => ({
+  updateBottomMount: (config: CornerConfig, mount: CornerMountType): CornerConfig => ({
     ...config,
     bottomMount: mount,
   }),
@@ -172,10 +157,7 @@ export const CornerDomain = {
   /**
    * Update top mount type
    */
-  updateTopMount: (
-    config: CornerConfig,
-    mount: CornerMountType
-  ): CornerConfig => ({
+  updateTopMount: (config: CornerConfig, mount: CornerMountType): CornerConfig => ({
     ...config,
     topMount: mount,
   }),
@@ -183,10 +165,7 @@ export const CornerDomain = {
   /**
    * Update front type
    */
-  updateFrontType: (
-    config: CornerConfig,
-    frontType: CornerFrontType
-  ): CornerConfig => ({
+  updateFrontType: (config: CornerConfig, frontType: CornerFrontType): CornerConfig => ({
     ...config,
     frontType,
   }),
@@ -194,10 +173,7 @@ export const CornerDomain = {
   /**
    * Update hinge side
    */
-  updateHingeSide: (
-    config: CornerConfig,
-    side: 'left' | 'right'
-  ): CornerConfig => ({
+  updateHingeSide: (config: CornerConfig, side: "left" | "right"): CornerConfig => ({
     ...config,
     hingeSide: side,
   }),
@@ -225,8 +201,8 @@ export const CornerDomain = {
     topMount: CornerMountType,
     thickness: number
   ): number => {
-    const bottomOffset = bottomMount === 'inset' ? 0 : thickness;
-    const topOffset = topMount === 'inset' ? 0 : thickness;
+    const bottomOffset = bottomMount === "inset" ? 0 : thickness;
+    const topOffset = topMount === "inset" ? 0 : thickness;
     return cabinetHeight - bottomOffset - topOffset;
   },
 
@@ -279,12 +255,14 @@ export const CornerDomain = {
     // Door width validation
     const doorWidth = config.doorWidth ?? CORNER_DEFAULTS.doorWidth;
     if (doorWidth < CORNER_LIMITS.MIN_DOOR_WIDTH || doorWidth > CORNER_LIMITS.MAX_DOOR_WIDTH) {
-      errors.push(`Szerokość drzwi musi być między ${CORNER_LIMITS.MIN_DOOR_WIDTH}-${CORNER_LIMITS.MAX_DOOR_WIDTH}mm`);
+      errors.push(
+        `Szerokość drzwi musi być między ${CORNER_LIMITS.MIN_DOOR_WIDTH}-${CORNER_LIMITS.MAX_DOOR_WIDTH}mm`
+      );
     }
 
     // Door width must be less than cabinet width
     if (doorWidth >= config.W - 100) {
-      errors.push('Szerokość drzwi musi być mniejsza niż szerokość szafki - 100mm');
+      errors.push("Szerokość drzwi musi być mniejsza niż szerokość szafki - 100mm");
     }
 
     return errors.length === 0 ? validResult() : invalidResult(...errors);
@@ -298,7 +276,9 @@ export const CornerDomain = {
 
     // Height validation
     if (params.height < CORNER_LIMITS.MIN_HEIGHT || params.height > CORNER_LIMITS.MAX_HEIGHT) {
-      errors.push(`Wysokość musi być między ${CORNER_LIMITS.MIN_HEIGHT}-${CORNER_LIMITS.MAX_HEIGHT}mm`);
+      errors.push(
+        `Wysokość musi być między ${CORNER_LIMITS.MIN_HEIGHT}-${CORNER_LIMITS.MAX_HEIGHT}mm`
+      );
     }
 
     // Validate corner config
@@ -317,28 +297,25 @@ export const CornerDomain = {
   /**
    * Check if corner has a front door
    */
-  hasFront: (config: CornerConfig): boolean =>
-    config.frontType !== 'NONE',
+  hasFront: (config: CornerConfig): boolean => config.frontType !== "NONE",
 
   /**
    * Check if wall is on left side
    */
-  isWallLeft: (config: CornerConfig): boolean =>
-    config.wallSide === 'LEFT',
+  isWallLeft: (config: CornerConfig): boolean => config.wallSide === "LEFT",
 
   /**
    * Check if door is on left side
    */
-  isDoorLeft: (config: CornerConfig): boolean =>
-    config.doorPosition === 'LEFT',
+  isDoorLeft: (config: CornerConfig): boolean => config.doorPosition === "LEFT",
 
   /**
    * Get wall side label in Polish
    */
   getWallSideLabel: (side: CornerWallSide): string => {
     const labels: Record<CornerWallSide, string> = {
-      LEFT: 'Lewa (przy ścianie)',
-      RIGHT: 'Prawa (przy ścianie)',
+      LEFT: "Lewa (przy ścianie)",
+      RIGHT: "Prawa (przy ścianie)",
     };
     return labels[side];
   },
@@ -348,8 +325,8 @@ export const CornerDomain = {
    */
   getDoorPositionLabel: (position: CornerDoorPosition): string => {
     const labels: Record<CornerDoorPosition, string> = {
-      LEFT: 'Drzwi po lewej',
-      RIGHT: 'Drzwi po prawej',
+      LEFT: "Drzwi po lewej",
+      RIGHT: "Drzwi po prawej",
     };
     return labels[position];
   },
@@ -359,8 +336,8 @@ export const CornerDomain = {
    */
   getFrontTypeLabel: (frontType: CornerFrontType): string => {
     const labels: Record<CornerFrontType, string> = {
-      NONE: 'Brak',
-      SINGLE: 'Drzwi + panel',
+      NONE: "Brak",
+      SINGLE: "Drzwi + panel",
     };
     return labels[frontType];
   },
@@ -370,8 +347,8 @@ export const CornerDomain = {
    */
   getSummary: (config: CornerConfig): string => {
     const dims = `${config.W}×${config.D}mm`;
-    const wall = config.wallSide === 'LEFT' ? 'L' : 'P';
-    const door = config.doorPosition === 'LEFT' ? 'L' : 'P';
+    const wall = config.wallSide === "LEFT" ? "L" : "P";
+    const door = config.doorPosition === "LEFT" ? "L" : "P";
 
     return `Narożna ${dims} (ściana: ${wall}, drzwi: ${door})`;
   },

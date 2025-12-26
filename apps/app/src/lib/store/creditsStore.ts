@@ -10,12 +10,12 @@
  * 3. Needs to stay in sync across all components
  */
 
-import { create } from 'zustand';
+import { create } from "zustand";
 
 // Types
 export interface CreditPackage {
   id: string;
-  type: 'single' | 'starter' | 'standard' | 'pro' | 'migrated_guest' | 'bonus';
+  type: "single" | "starter" | "standard" | "pro" | "migrated_guest" | "bonus";
   total: number;
   used: number;
   remaining: number;
@@ -73,8 +73,8 @@ interface CreditsState {
 
 // Use local API routes for authenticated user credits (same-origin cookies)
 // Guest credits still use payments API (no auth cookies needed)
-const LOCAL_API = '/api';
-const PAYMENTS_API = process.env.NEXT_PUBLIC_PAYMENTS_API_URL || '/api';
+const LOCAL_API = "/api";
+const PAYMENTS_API = process.env.NEXT_PUBLIC_PAYMENTS_API_URL || "/api";
 
 const initialState = {
   userBalance: null,
@@ -100,24 +100,24 @@ export const useCreditsStore = create<CreditsState>((set, get) => ({
     try {
       // Use local API for authenticated user (same-origin cookies work reliably)
       const response = await fetch(`${LOCAL_API}/credits`, {
-        method: 'GET',
-        credentials: 'include',
+        method: "GET",
+        credentials: "include",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       });
 
       const data = await response.json();
 
       if (!response.ok || !data.success) {
-        throw new Error(data.error?.message || 'Failed to fetch credits');
+        throw new Error(data.error?.message || "Failed to fetch credits");
       }
 
       set({ userBalance: data.data, userLoading: false });
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
+      const message = err instanceof Error ? err.message : "Unknown error";
       set({ userError: message, userLoading: false });
-      console.error('Failed to fetch user credits:', err);
+      console.error("Failed to fetch user credits:", err);
     }
   },
 
@@ -127,6 +127,15 @@ export const useCreditsStore = create<CreditsState>((set, get) => ({
   fetchGuestCredits: async (sessionId: string) => {
     if (!sessionId) return;
 
+    // Skip if payments API is not configured (dev environment without payments service)
+    if (!PAYMENTS_API || PAYMENTS_API === "/api") {
+      set({
+        guestBalance: { availableCredits: 0, expiresAt: null },
+        guestLoading: false,
+      });
+      return;
+    }
+
     set({ guestLoading: true, guestError: null, guestSessionId: sessionId });
 
     try {
@@ -134,9 +143,9 @@ export const useCreditsStore = create<CreditsState>((set, get) => ({
       const response = await fetch(
         `${PAYMENTS_API}/guest/credits?sessionId=${encodeURIComponent(sessionId)}`,
         {
-          method: 'GET',
+          method: "GET",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
         }
       );
@@ -145,25 +154,29 @@ export const useCreditsStore = create<CreditsState>((set, get) => ({
 
       if (!response.ok || !data.success) {
         // No credits is not an error for guests
-        if (data.error?.code === 'NO_CREDITS') {
+        if (data.error?.code === "NO_CREDITS") {
           set({
             guestBalance: { availableCredits: 0, expiresAt: null },
             guestLoading: false,
           });
           return;
         }
-        throw new Error(data.error?.message || 'Failed to fetch credits');
+        throw new Error(data.error?.message || "Failed to fetch credits");
       }
 
       set({ guestBalance: data.data, guestLoading: false });
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
+      const message = err instanceof Error ? err.message : "Unknown error";
       set({
-        guestError: message,
         guestBalance: { availableCredits: 0, expiresAt: null },
         guestLoading: false,
+        // Don't set error for network failures - silently fail
+        // guestError: message,
       });
-      console.error('Failed to fetch guest credits:', err);
+      // Only log in development, not an error if payments service isn't running
+      if (process.env.NODE_ENV === "development") {
+        console.debug("[GuestCredits] Payments API unavailable:", message);
+      }
     }
   },
 
@@ -176,10 +189,10 @@ export const useCreditsStore = create<CreditsState>((set, get) => ({
     try {
       // Use local API for authenticated user (same-origin cookies work reliably)
       const response = await fetch(`${LOCAL_API}/credits/use`, {
-        method: 'POST',
-        credentials: 'include',
+        method: "POST",
+        credentials: "include",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ projectHash }),
       });
@@ -187,7 +200,7 @@ export const useCreditsStore = create<CreditsState>((set, get) => ({
       const data = await response.json();
 
       if (!response.ok || !data.success) {
-        const errorMessage = data.error?.message || 'Failed to use credit';
+        const errorMessage = data.error?.message || "Failed to use credit";
         set({ userError: errorMessage, isUsingCredit: false });
         return null;
       }
@@ -211,9 +224,9 @@ export const useCreditsStore = create<CreditsState>((set, get) => ({
 
       return data.data;
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
+      const message = err instanceof Error ? err.message : "Unknown error";
       set({ userError: message, isUsingCredit: false });
-      console.error('Failed to use credit:', err);
+      console.error("Failed to use credit:", err);
       return null;
     }
   },
@@ -226,7 +239,7 @@ export const useCreditsStore = create<CreditsState>((set, get) => ({
     projectHash: string
   ): Promise<UseCreditResult | null> => {
     if (!sessionId) {
-      set({ guestError: 'Session not available' });
+      set({ guestError: "Session not available" });
       return null;
     }
 
@@ -235,10 +248,10 @@ export const useCreditsStore = create<CreditsState>((set, get) => ({
     try {
       // Guest credits use payments API (no auth cookies needed)
       const response = await fetch(`${PAYMENTS_API}/guest/credits/use`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'x-session-id': sessionId,
+          "Content-Type": "application/json",
+          "x-session-id": sessionId,
         },
         body: JSON.stringify({ projectHash }),
       });
@@ -246,7 +259,7 @@ export const useCreditsStore = create<CreditsState>((set, get) => ({
       const data = await response.json();
 
       if (!response.ok || !data.success) {
-        const errorMessage = data.error?.message || 'Failed to use credit';
+        const errorMessage = data.error?.message || "Failed to use credit";
         set({ guestError: errorMessage, isUsingCredit: false });
         return null;
       }
@@ -269,9 +282,9 @@ export const useCreditsStore = create<CreditsState>((set, get) => ({
 
       return data.data;
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
+      const message = err instanceof Error ? err.message : "Unknown error";
       set({ guestError: message, isUsingCredit: false });
-      console.error('Failed to use credit:', err);
+      console.error("Failed to use credit:", err);
       return null;
     }
   },
@@ -325,8 +338,7 @@ export const selectAvailableCredits = (isAuthenticated: boolean) => (state: Cred
   return state.guestBalance?.availableCredits ?? 0;
 };
 
-export const selectHasUnlimited = (state: CreditsState) =>
-  state.userBalance?.hasUnlimited ?? false;
+export const selectHasUnlimited = (state: CreditsState) => state.userBalance?.hasUnlimited ?? false;
 
 export const selectIsLoading = (isAuthenticated: boolean) => (state: CreditsState) => {
   if (isAuthenticated) {

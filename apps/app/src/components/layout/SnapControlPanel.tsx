@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * SnapControlPanel Component
@@ -10,8 +10,8 @@
  * - Expandable settings dropdown
  */
 
-import { useCallback } from 'react';
-import { Magnet, Settings2 } from 'lucide-react';
+import { useCallback } from "react";
+import { Magnet, Settings2 } from "lucide-react";
 import {
   Button,
   DropdownMenu,
@@ -23,10 +23,10 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   Slider,
-} from '@meble/ui';
-import { useStore } from '@/lib/store';
-import { useShallow } from 'zustand/react/shallow';
-import type { SnapVersion } from '@/types';
+} from "@meble/ui";
+import { useStore } from "@/lib/store";
+import { useShallow } from "zustand/react/shallow";
+import type { SnapVersion } from "@/types";
 
 export function SnapControlPanel() {
   const { snapEnabled, snapSettings, toggleSnap, updateSnapSettings } = useStore(
@@ -56,14 +56,16 @@ export function SnapControlPanel() {
     <div className="flex items-center gap-1 rounded-md bg-background/80 p-1 backdrop-blur-sm">
       {/* Main Toggle Button */}
       <Button
-        variant={snapEnabled ? 'default' : 'ghost'}
+        variant={snapEnabled ? "default" : "ghost"}
         size="sm"
         onClick={toggleSnap}
-        className="h-8 gap-1 px-2"
-        title={snapEnabled ? 'Wyłącz przyciąganie' : 'Włącz przyciąganie'}
+        className="h-11 md:h-8 gap-1 px-2"
+        title={snapEnabled ? "Wyłącz przyciąganie" : "Włącz przyciąganie"}
       >
-        <Magnet className="h-4 w-4" />
-        <span className="text-xs uppercase opacity-70">{snapSettings.version}</span>
+        <Magnet className="h-5 w-5 md:h-4 md:w-4" />
+        <span className="hidden md:inline text-xs uppercase opacity-70">
+          {snapSettings.version}
+        </span>
       </Button>
 
       {/* Settings Dropdown */}
@@ -72,10 +74,10 @@ export function SnapControlPanel() {
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 w-8 p-0"
+            className="h-11 w-11 md:h-8 md:w-8 p-0"
             title="Ustawienia przyciągania"
           >
-            <Settings2 className="h-4 w-4" />
+            <Settings2 className="h-5 w-5 md:h-4 md:w-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-64">
@@ -86,7 +88,7 @@ export function SnapControlPanel() {
           <div className="px-2 py-1.5">
             <div className="mb-1.5 text-sm font-medium">Tryb przyciągania</div>
             <DropdownMenuRadioGroup
-              value={snapSettings.version || 'v3'}
+              value={snapSettings.version || "v3"}
               onValueChange={handleVersionChange}
             >
               <DropdownMenuRadioItem value="v3" className="text-sm">

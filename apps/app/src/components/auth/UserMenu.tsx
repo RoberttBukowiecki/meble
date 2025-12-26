@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useAuth } from '@/providers/AuthProvider';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from "react";
+import { useAuth } from "@/providers/AuthProvider";
+import { useRouter } from "next/navigation";
 import {
   Button,
   DropdownMenu,
@@ -16,7 +16,8 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from '@meble/ui';
+  AnimatedCredits,
+} from "@meble/ui";
 import {
   User,
   LogOut,
@@ -26,23 +27,43 @@ import {
   CreditCard,
   Sparkles,
   Plus,
-} from 'lucide-react';
-import { useCredits } from '@/hooks/useCredits';
-import { CreditsPurchaseModal } from '@/components/ui/CreditsPurchaseModal';
+} from "lucide-react";
+import { useCredits } from "@/hooks/useCredits";
+import { useIsAdmin } from "@/hooks";
+import { CreditsPurchaseModal } from "@/components/ui/CreditsPurchaseModal";
 
 export function UserMenu() {
   const router = useRouter();
   const { user, profile, isAuthenticated, isLoading, signOut } = useAuth();
   const { balance, isLoading: creditsLoading } = useCredits(isAuthenticated);
+  const { isAdmin } = useIsAdmin();
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+  const [testCreditsBonus, setTestCreditsBonus] = useState(0);
 
   const availableCredits = balance?.availableCredits ?? 0;
   const hasUnlimited = balance?.hasUnlimited ?? false;
 
+  // Admin-only: Listen for credits animation test event
+  useEffect(() => {
+    if (!isAdmin) return;
+
+    const handleTestCreditsAnimation = () => {
+      // Add 5 fake credits to trigger animation
+      setTestCreditsBonus((prev) => prev + 5);
+      // Reset after animation completes
+      setTimeout(() => setTestCreditsBonus(0), 3000);
+    };
+
+    window.addEventListener("admin:testCreditsAnimation", handleTestCreditsAnimation);
+    return () =>
+      window.removeEventListener("admin:testCreditsAnimation", handleTestCreditsAnimation);
+  }, [isAdmin]);
+
+  // Combine real credits with test bonus for animation
+  const displayCredits = availableCredits + testCreditsBonus;
+
   if (isLoading) {
-    return (
-      <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />
-    );
+    return <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />;
   }
 
   if (!isAuthenticated) {
@@ -54,11 +75,11 @@ export function UserMenu() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">
-          <DropdownMenuItem onClick={() => router.push('/login')}>
+          <DropdownMenuItem onClick={() => router.push("/login")}>
             <LogIn className="mr-2 h-4 w-4" />
             Zaloguj sie
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => router.push('/register')}>
+          <DropdownMenuItem onClick={() => router.push("/register")}>
             <UserPlus className="mr-2 h-4 w-4" />
             Zarejestruj sie
           </DropdownMenuItem>
@@ -70,55 +91,58 @@ export function UserMenu() {
   const displayName = profile?.displayName || profile?.fullName;
   const initials = displayName
     ? displayName
-        .split(' ')
+        .split(" ")
         .map((n) => n[0])
-        .join('')
+        .join("")
         .toUpperCase()
         .slice(0, 2)
     : user?.email?.slice(0, 2).toUpperCase();
 
   const handleSignOut = async () => {
     await signOut();
-    router.push('/');
+    router.push("/");
     router.refresh();
   };
 
   return (
     <>
-      <div className="flex items-center gap-1">
-        {/* Credits display */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="gap-1.5 h-8 px-2"
-              onClick={() => setShowPurchaseModal(true)}
-            >
-              {hasUnlimited ? (
-                <Sparkles className="h-4 w-4 text-amber-500" />
-              ) : (
-                <CreditCard className="h-4 w-4" />
-              )}
-              <span className="font-medium text-sm">
-                {creditsLoading ? '...' : hasUnlimited ? 'Pro' : availableCredits}
-              </span>
-              <Plus className="h-3 w-3 text-muted-foreground" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            {hasUnlimited ? (
-              'Nielimitowane eksporty - kliknij aby zobaczyc pakiety'
-            ) : (
-              <>
-                {availableCredits} kredyt{availableCredits === 1 ? '' : availableCredits < 5 ? 'y' : 'ow'} dostepnych
-                <span className="block text-xs text-muted-foreground">
-                  Kliknij, aby kupic wiecej
+      <div className="flex items-center gap-2">
+        {/* Credits display with animation */}
+        <AnimatedCredits currentCredits={displayCredits} className="overflow-visible">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-1.5 h-8 px-2"
+                onClick={() => setShowPurchaseModal(true)}
+              >
+                {hasUnlimited ? (
+                  <Sparkles className="h-4 w-4 text-amber-500" />
+                ) : (
+                  <CreditCard className="h-4 w-4" />
+                )}
+                <span className="font-medium text-sm">
+                  {creditsLoading ? "..." : hasUnlimited ? "Pro" : availableCredits}
                 </span>
-              </>
-            )}
-          </TooltipContent>
-        </Tooltip>
+                <Plus className="h-3 w-3 text-muted-foreground" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {hasUnlimited ? (
+                "Nielimitowane eksporty - kliknij aby zobaczyc pakiety"
+              ) : (
+                <>
+                  {availableCredits} kredyt
+                  {availableCredits === 1 ? "" : availableCredits < 5 ? "y" : "ow"} dostepnych
+                  <span className="block text-xs text-muted-foreground">
+                    Kliknij, aby kupic wiecej
+                  </span>
+                </>
+              )}
+            </TooltipContent>
+          </Tooltip>
+        </AnimatedCredits>
 
         {/* User menu */}
         <DropdownMenu>
@@ -135,12 +159,8 @@ export function UserMenu() {
 
           <DropdownMenuContent align="end" className="w-48">
             <div className="px-2 py-1.5">
-              <p className="text-sm font-medium truncate">
-                {displayName || 'Uzytkownik'}
-              </p>
-              <p className="text-xs text-muted-foreground truncate">
-                {user?.email}
-              </p>
+              <p className="text-sm font-medium truncate">{displayName || "Uzytkownik"}</p>
+              <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
             </div>
 
             <DropdownMenuSeparator />

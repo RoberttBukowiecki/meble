@@ -3,16 +3,18 @@
  *
  * Hook for guest (non-authenticated) user credits management.
  * Uses the shared Zustand credits store for state.
+ *
+ * @param enabled - If false, skips fetching credits (use when user is authenticated)
  */
 
-import { useEffect } from 'react';
-import { useShallow } from 'zustand/react/shallow';
-import { useGuestSession } from './useGuestSession';
+import { useEffect } from "react";
+import { useShallow } from "zustand/react/shallow";
+import { useGuestSession } from "./useGuestSession";
 import {
   useCreditsStore,
   type GuestCreditBalance,
   type UseCreditResult,
-} from '@/lib/store/creditsStore';
+} from "@/lib/store/creditsStore";
 
 interface UseGuestCreditsReturn {
   balance: GuestCreditBalance | null;
@@ -28,8 +30,9 @@ interface UseGuestCreditsReturn {
 
 /**
  * Hook for managing guest credits
+ * @param enabled - If false, skips fetching credits (use when user is authenticated)
  */
-export function useGuestCredits(): UseGuestCreditsReturn {
+export function useGuestCredits(enabled = true): UseGuestCreditsReturn {
   const {
     sessionId,
     email,
@@ -58,12 +61,14 @@ export function useGuestCredits(): UseGuestCreditsReturn {
   );
 
   // Sync session to store and fetch credits when session is ready
+  // Skip if disabled (user is authenticated)
   useEffect(() => {
+    if (!enabled) return;
     if (sessionId && !sessionLoading) {
       setGuestSession(sessionId, email);
       fetchGuestCredits(sessionId);
     }
-  }, [sessionId, email, sessionLoading, setGuestSession, fetchGuestCredits]);
+  }, [sessionId, email, sessionLoading, setGuestSession, fetchGuestCredits, enabled]);
 
   // Wrapper for useCredit that includes sessionId
   // Note: useGuestCredit is a store action, not a React hook

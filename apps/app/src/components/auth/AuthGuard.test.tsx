@@ -1,9 +1,9 @@
-import { render, screen, waitFor } from '@testing-library/react';
-import { AuthGuard } from './AuthGuard';
+import { render, screen, waitFor } from "@testing-library/react";
+import { AuthGuard } from "./AuthGuard";
 
 // Mock next/navigation
 const mockPush = jest.fn();
-jest.mock('next/navigation', () => ({
+jest.mock("next/navigation", () => ({
   useRouter: () => ({
     push: mockPush,
   }),
@@ -15,28 +15,28 @@ let mockAuthState = {
   isLoading: false,
 };
 
-jest.mock('@/providers/AuthProvider', () => ({
+jest.mock("@/providers/AuthProvider", () => ({
   useAuth: () => mockAuthState,
 }));
 
 const originalHref = window.location.href;
 
 beforeAll(() => {
-  window.history.pushState({}, '', '/protected-page');
+  window.history.pushState({}, "", "/protected-page");
 });
 
 afterAll(() => {
-  window.history.pushState({}, '', originalHref);
+  window.history.pushState({}, "", originalHref);
 });
 
-  describe('AuthGuard', () => {
-    beforeEach(() => {
-      jest.clearAllMocks();
-      window.history.pushState({}, '', '/protected-page');
+describe("AuthGuard", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    window.history.pushState({}, "", "/protected-page");
   });
 
-  describe('Loading state', () => {
-    it('shows loading spinner when auth is loading', () => {
+  describe("Loading state", () => {
+    it("shows loading spinner when auth is loading", () => {
       mockAuthState = {
         isAuthenticated: false,
         isLoading: true,
@@ -48,13 +48,13 @@ afterAll(() => {
         </AuthGuard>
       );
 
-      expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
+      expect(screen.queryByText("Protected Content")).not.toBeInTheDocument();
       // Check for loading spinner (Loader2 component)
-      const spinner = document.querySelector('.animate-spin');
+      const spinner = document.querySelector(".animate-spin");
       expect(spinner).toBeInTheDocument();
     });
 
-    it('shows custom fallback when loading', () => {
+    it("shows custom fallback when loading", () => {
       mockAuthState = {
         isAuthenticated: false,
         isLoading: true,
@@ -66,13 +66,13 @@ afterAll(() => {
         </AuthGuard>
       );
 
-      expect(screen.getByText('Custom Loading...')).toBeInTheDocument();
-      expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
+      expect(screen.getByText("Custom Loading...")).toBeInTheDocument();
+      expect(screen.queryByText("Protected Content")).not.toBeInTheDocument();
     });
   });
 
-  describe('Authenticated state', () => {
-    it('renders children when authenticated', () => {
+  describe("Authenticated state", () => {
+    it("renders children when authenticated", () => {
       mockAuthState = {
         isAuthenticated: true,
         isLoading: false,
@@ -84,10 +84,10 @@ afterAll(() => {
         </AuthGuard>
       );
 
-      expect(screen.getByText('Protected Content')).toBeInTheDocument();
+      expect(screen.getByText("Protected Content")).toBeInTheDocument();
     });
 
-    it('does not redirect when authenticated', () => {
+    it("does not redirect when authenticated", () => {
       mockAuthState = {
         isAuthenticated: true,
         isLoading: false,
@@ -103,8 +103,8 @@ afterAll(() => {
     });
   });
 
-  describe('Unauthenticated state', () => {
-    it('redirects to login when not authenticated', async () => {
+  describe("Unauthenticated state", () => {
+    it("redirects to login when not authenticated", async () => {
       mockAuthState = {
         isAuthenticated: false,
         isLoading: false,
@@ -117,13 +117,11 @@ afterAll(() => {
       );
 
       await waitFor(() => {
-        expect(mockPush).toHaveBeenCalledWith(
-          '/login?redirect=%2Fprotected-page'
-        );
+        expect(mockPush).toHaveBeenCalledWith("/login?redirect=%2Fprotected-page");
       });
     });
 
-    it('redirects to custom URL when provided', async () => {
+    it("redirects to custom URL when provided", async () => {
       mockAuthState = {
         isAuthenticated: false,
         isLoading: false,
@@ -136,13 +134,11 @@ afterAll(() => {
       );
 
       await waitFor(() => {
-        expect(mockPush).toHaveBeenCalledWith(
-          '/custom-login?redirect=%2Fprotected-page'
-        );
+        expect(mockPush).toHaveBeenCalledWith("/custom-login?redirect=%2Fprotected-page");
       });
     });
 
-    it('does not render children when not authenticated', () => {
+    it("does not render children when not authenticated", () => {
       mockAuthState = {
         isAuthenticated: false,
         isLoading: false,
@@ -154,15 +150,20 @@ afterAll(() => {
         </AuthGuard>
       );
 
-      expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
+      expect(screen.queryByText("Protected Content")).not.toBeInTheDocument();
     });
 
-    it('encodes special characters in redirect URL', async () => {
+    it("encodes special characters in redirect URL", async () => {
       mockAuthState = {
         isAuthenticated: false,
         isLoading: false,
       };
-      window.history.pushState({}, '', '/page/with spaces');
+
+      // Mock window.location.pathname with special characters
+      Object.defineProperty(window, "location", {
+        value: { ...window.location, pathname: "/page/with spaces" },
+        writable: true,
+      });
 
       render(
         <AuthGuard>
@@ -171,15 +172,19 @@ afterAll(() => {
       );
 
       await waitFor(() => {
-        expect(mockPush).toHaveBeenCalledWith(
-          '/login?redirect=%2Fpage%2Fwith%20spaces'
-        );
+        expect(mockPush).toHaveBeenCalledWith("/login?redirect=%2Fpage%2Fwith%20spaces");
+      });
+
+      // Restore
+      Object.defineProperty(window, "location", {
+        value: { ...window.location, pathname: "/protected-page" },
+        writable: true,
       });
     });
   });
 
-  describe('Transition states', () => {
-    it('handles transition from loading to authenticated', async () => {
+  describe("Transition states", () => {
+    it("handles transition from loading to authenticated", async () => {
       mockAuthState = {
         isAuthenticated: false,
         isLoading: true,
@@ -191,7 +196,7 @@ afterAll(() => {
         </AuthGuard>
       );
 
-      expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
+      expect(screen.queryByText("Protected Content")).not.toBeInTheDocument();
 
       mockAuthState = {
         isAuthenticated: true,
@@ -204,10 +209,10 @@ afterAll(() => {
         </AuthGuard>
       );
 
-      expect(screen.getByText('Protected Content')).toBeInTheDocument();
+      expect(screen.getByText("Protected Content")).toBeInTheDocument();
     });
 
-    it('handles transition from loading to unauthenticated', async () => {
+    it("handles transition from loading to unauthenticated", async () => {
       mockAuthState = {
         isAuthenticated: false,
         isLoading: true,

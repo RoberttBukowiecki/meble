@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
 /**
  * Post-processing effects for the 3D scene
  * Includes SSAO (Screen Space Ambient Occlusion) for better depth perception
  */
 
-import { EffectComposer, SSAO } from '@react-three/postprocessing';
-import { BlendFunction } from 'postprocessing';
-import { useStore } from '@/lib/store';
-import { useShallow } from 'zustand/react/shallow';
-import * as THREE from 'three';
-import { useQualityPreset } from '@/hooks/useQualityPreset';
+import { EffectComposer, SSAO } from "@react-three/postprocessing";
+import { BlendFunction } from "postprocessing";
+import { useStore } from "@/lib/store";
+import { useShallow } from "zustand/react/shallow";
+import * as THREE from "three";
+import { useQualityPreset } from "@/hooks/useQualityPreset";
 
 // Black color for AO (memoized to prevent recreation)
 const AO_COLOR = new THREE.Color(0x000000);
@@ -31,7 +31,7 @@ export function SceneEffects() {
   }
 
   return (
-    <EffectComposer>
+    <EffectComposer enableNormalPass>
       <SSAO
         blendFunction={BlendFunction.MULTIPLY}
         samples={qualityPreset.aoSamples}

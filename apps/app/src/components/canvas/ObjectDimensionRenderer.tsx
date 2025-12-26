@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * ObjectDimensionRenderer Component
@@ -13,13 +13,13 @@
  * - Stable keys to prevent unnecessary remounts
  */
 
-import { useRef, useState, memo } from 'react';
-import { useFrame, useThree } from '@react-three/fiber';
-import { Html, Line } from '@react-three/drei';
-import { useStore } from '@/lib/store';
-import { useShallow } from 'zustand/react/shallow';
-import { calculateAllObjectDimensions } from '@/lib/object-dimensions-calculator';
-import type { ObjectDimension, ObjectDimensionSet } from '@/types';
+import { useRef, useState, memo } from "react";
+import { useFrame, useThree } from "@react-three/fiber";
+import { Html, Line } from "@react-three/drei";
+import { useStore } from "@/lib/store";
+import { useShallow } from "zustand/react/shallow";
+import { calculateAllObjectDimensions } from "@/lib/object-dimensions-calculator";
+import type { ObjectDimension, ObjectDimensionSet } from "@/types";
 
 // ============================================================================
 // Configuration
@@ -58,13 +58,13 @@ const CONFIG = {
 
 type Vec3 = [number, number, number];
 
-function getPerpendicularDirection(axis: 'X' | 'Y' | 'Z'): Vec3 {
+function getPerpendicularDirection(axis: "X" | "Y" | "Z"): Vec3 {
   switch (axis) {
-    case 'X':
+    case "X":
       return [0, 1, 0]; // Width: extension lines go up (Y)
-    case 'Y':
+    case "Y":
       return [1, 0, 0]; // Height: extension lines go right (X)
-    case 'Z':
+    case "Z":
       return [1, 0, 0]; // Depth: extension lines go right (X)
   }
 }
@@ -84,10 +84,8 @@ const ObjectDimensionLine = memo(function ObjectDimensionLine({
   showAxisColors,
   showLabel,
 }: ObjectDimensionLineProps) {
-  const color = showAxisColors
-    ? CONFIG.AXIS_COLORS[dimension.axis]
-    : CONFIG.LINE_COLOR;
-  const colorHex = `#${color.toString(16).padStart(6, '0')}`;
+  const color = showAxisColors ? CONFIG.AXIS_COLORS[dimension.axis] : CONFIG.LINE_COLOR;
+  const colorHex = `#${color.toString(16).padStart(6, "0")}`;
 
   // Calculate perpendicular direction for extension lines
   const perpDir = getPerpendicularDirection(dimension.axis);
@@ -169,22 +167,16 @@ const ObjectDimensionLine = memo(function ObjectDimensionLine({
       </mesh>
 
       {/* Label */}
-      <Html
-        position={labelPos}
-        center
-        style={{ pointerEvents: 'none', userSelect: 'none' }}
-      >
+      <Html position={labelPos} center style={{ pointerEvents: "none", userSelect: "none" }}>
         <div
           className="whitespace-nowrap rounded px-1.5 py-0.5 text-xs font-medium shadow-sm"
           style={{
-            backgroundColor: 'rgba(255, 255, 255, 0.92)',
+            backgroundColor: "rgba(255, 255, 255, 0.92)",
             color: colorHex,
             border: `1px solid ${colorHex}`,
           }}
         >
-          {showLabel && (
-            <span className="mr-1 opacity-60">{dimension.label}:</span>
-          )}
+          {showLabel && <span className="mr-1 opacity-60">{dimension.label}:</span>}
           {Math.round(dimension.length)} mm
         </div>
       </Html>
@@ -237,7 +229,7 @@ export function ObjectDimensionRenderer() {
   const lastCameraY = useRef(0);
   const lastCameraZ = useRef(0);
   const lastUpdateTime = useRef(0);
-  const lastSelectionKey = useRef('');
+  const lastSelectionKey = useRef("");
 
   // Calculate dimensions in render loop with throttling
   useFrame(() => {
@@ -270,12 +262,9 @@ export function ObjectDimensionRenderer() {
 
     // Check if we should hide when no selection
     const hasSelection =
-      selectedPartId ||
-      selectedCabinetId ||
-      selectedPartIds.size > 0 ||
-      selectedCountertopGroupId;
+      selectedPartId || selectedCabinetId || selectedPartIds.size > 0 || selectedCountertopGroupId;
 
-    if (settings.mode === 'selection' && !hasSelection) {
+    if (settings.mode === "selection" && !hasSelection) {
       if (dimensionSets.length > 0) {
         setDimensionSets([]);
       }
@@ -318,16 +307,20 @@ export function ObjectDimensionRenderer() {
 
   return (
     <group>
-      {dimensionSets.map((set) =>
-        set.dimensions.map((dim) => (
-          <ObjectDimensionLine
-            key={dim.id}
-            dimension={dim}
-            showAxisColors={settings.showAxisColors}
-            showLabel={settings.showLabels}
-          />
-        ))
-      )}
+      {dimensionSets.map((set) => (
+        // Wrap dimensions in a group with object's position and rotation
+        // Dimensions are calculated in local space (relative to object center)
+        <group key={set.objectId} position={set.worldCenter} rotation={set.rotation}>
+          {set.dimensions.map((dim) => (
+            <ObjectDimensionLine
+              key={dim.id}
+              dimension={dim}
+              showAxisColors={settings.showAxisColors}
+              showLabel={settings.showLabels}
+            />
+          ))}
+        </group>
+      ))}
     </group>
   );
 }

@@ -13,10 +13,10 @@ export type {
   ShapeParamsLShape,
   ShapeParamsPolygon,
   ShapeParams,
-} from './shape';
+} from "./shape";
 
 // Material types
-export type { MaterialCategory, Material, MaterialTexture } from './material';
+export type { MaterialCategory, Material, MaterialTexture } from "./material";
 
 // Edge banding types
 export type {
@@ -25,16 +25,16 @@ export type {
   EdgeBandingTrapezoid,
   EdgeBandingGeneric,
   EdgeBanding,
-} from './edge';
+} from "./edge";
 
 // Furniture types
-export type { Furniture } from './furniture';
+export type { Furniture } from "./furniture";
 
 // Part types
-export type { Part } from './part';
+export type { Part } from "./part";
 
 // Collision types
-export type { Collision } from './collision';
+export type { Collision } from "./collision";
 
 // Door types
 export type {
@@ -44,7 +44,7 @@ export type {
   DoorConfig,
   DoorMetadata,
   FoldingDoorConfig,
-} from './door';
+} from "./door";
 
 // Handle types
 export type {
@@ -59,7 +59,7 @@ export type {
   HandlePosition,
   HandleConfig,
   HandleMetadata,
-} from './handle';
+} from "./handle";
 
 // Drawer types
 export type {
@@ -71,8 +71,8 @@ export type {
   DrawerZoneAboveBoxContent,
   DrawerZone,
   DrawerConfiguration,
-} from './drawer';
-export { generateAboveBoxShelfId } from './drawer';
+} from "./drawer";
+export { generateAboveBoxShelfId } from "./drawer";
 
 // Cabinet interior types
 export type {
@@ -88,7 +88,7 @@ export type {
   ShelfDepthPreset,
   ShelfConfig,
   ShelvesConfiguration,
-} from './cabinetInterior';
+} from "./cabinetInterior";
 export {
   DEFAULT_ZONE_HEIGHT_CONFIG,
   DEFAULT_ZONE_WIDTH_CONFIG,
@@ -98,7 +98,7 @@ export {
   generateZoneId,
   generatePartitionId,
   generateShelfId,
-} from './cabinetInterior';
+} from "./cabinetInterior";
 
 // Decorative panel types
 export type {
@@ -108,12 +108,12 @@ export type {
   DecorativePanelPosition,
   DecorativePanelConfig,
   DecorativePanelsConfig,
-} from './decorative';
+} from "./decorative";
 export {
   DEFAULT_SIDE_FRONT_CONFIG,
   DECORATIVE_PANEL_DEFAULTS,
   DEFAULT_DECORATIVE_PANEL_CONFIG,
-} from './decorative';
+} from "./decorative";
 
 // Leg types
 export type {
@@ -125,8 +125,8 @@ export type {
   LegsConfig,
   LegPosition,
   LegData,
-} from './legs';
-export { LEG_FINISH_COLORS, getLegColor } from './legs';
+} from "./legs";
+export { LEG_FINISH_COLORS, getLegColor } from "./legs";
 
 // Cabinet types
 export type {
@@ -147,7 +147,7 @@ export type {
   Cabinet,
   CabinetPartRole,
   CabinetPartMetadata,
-} from './cabinet';
+} from "./cabinet";
 
 // Corner cabinet types
 export type {
@@ -157,7 +157,7 @@ export type {
   CornerMountType,
   CornerConfig,
   CornerPartRole,
-} from './corner';
+} from "./corner";
 
 // History types
 export type {
@@ -176,11 +176,12 @@ export type {
   CountertopJointSnapshot,
   BatchCountertopConfigSnapshot,
   HistoryEntry,
-} from './history';
+} from "./history";
 
 // Transform and snapping types
 export type {
   TransformMode,
+  TransformSpace,
   ResizeHandle,
   SnapType,
   SnapVersion,
@@ -209,7 +210,7 @@ export type {
   ObjectDimension,
   ObjectDimensionSet,
   ObjectDimensionSettings,
-} from './transform';
+} from "./transform";
 
 // Room types
 export type {
@@ -223,10 +224,10 @@ export type {
   LightType,
   LightSource,
   RoomTemplate,
-} from './room';
+} from "./room";
 
 // State types
-export type { ProjectState, InteriorMaterialPreferences } from './state';
+export type { ProjectState, InteriorMaterialPreferences } from "./state";
 
 // Countertop types
 export type {
@@ -253,11 +254,43 @@ export type {
   CountertopProductionData,
   CountertopGroupOptions,
   AdjacentCabinetGroup,
-} from './countertop';
+} from "./countertop";
 export {
   generateCountertopGroupId,
   generateSegmentId,
   generateJointId,
   generateCncOperationId,
   generateCornerId,
-} from './countertop';
+} from "./countertop";
+
+// Camera and view types
+export type { CameraMode, OrthographicView, OrthographicViewConfig } from "./camera";
+export {
+  ORTHOGRAPHIC_VIEW_CONFIGS,
+  ORTHOGRAPHIC_VIEWS,
+  DEFAULT_ORTHO_CAMERA_DISTANCE,
+  DEFAULT_ORTHO_ZOOM,
+  getEditableAxes,
+  getRotationAxis,
+  getPerpendicularAxis,
+  isAxisEditable,
+} from "./camera";
+
+// Project types (multi-project system)
+export type {
+  Project,
+  ProjectListItem,
+  ProjectData,
+  SyncStatus,
+  SyncState,
+  SaveResult,
+  ConflictResolution,
+  ProjectSizeEstimate,
+} from "./project";
+export {
+  PROJECT_SIZE_SOFT_LIMIT,
+  PROJECT_SIZE_HARD_LIMIT,
+  PROJECT_SCHEMA_VERSION,
+  DEFAULT_SYNC_STATE,
+  EMPTY_PROJECT_DATA,
+} from "./project";

@@ -1,5 +1,5 @@
-import { v4 as uuidv4 } from 'uuid';
-import { Euler, Quaternion, Vector3 } from 'three';
+import { v4 as uuidv4 } from "uuid";
+import { Euler, Quaternion, Vector3 } from "three";
 import type {
   Cabinet,
   CabinetMaterials,
@@ -8,31 +8,38 @@ import type {
   CabinetRegenerationSnapshot,
   LegData,
   KitchenCabinetParams,
-} from '@/types';
-import { getGeneratorForType } from '../../cabinetGenerators';
-import { generateLegs } from '../../cabinetGenerators/legs';
+} from "@/types";
+import { getGeneratorForType } from "../../cabinetGenerators";
+import { generateLegs } from "../../cabinetGenerators/legs";
 import {
   applyCabinetTransform,
   getCabinetTransform,
   getDefaultBackMaterial,
   triggerDebouncedCollisionDetection,
-} from '../utils';
-import type { CabinetSlice, StoreSlice } from '../types';
-import { HISTORY_LABELS } from '../history/constants';
-import { generateId, createPartIdMap, inferKindFromType } from '../history/utils';
-import { sanitizeName, NAME_MAX_LENGTH } from '@/lib/naming';
-import { roundPosition, roundRotation } from '@/lib/utils';
+  triggerDebouncedCountertopRegeneration,
+} from "../utils";
+import type { CabinetSlice, StoreSlice } from "../types";
+import { HISTORY_LABELS } from "../history/constants";
+import { generateId, createPartIdMap, inferKindFromType } from "../history/utils";
+import { sanitizeName, NAME_MAX_LENGTH } from "@/lib/naming";
+import { roundPosition, roundRotation } from "@/lib/utils";
 
 export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
   cabinets: [],
 
-  addCabinet: (furnitureId: string, type: CabinetType, params: CabinetParams, materials: CabinetMaterials, skipHistory = false) => {
+  addCabinet: (
+    furnitureId: string,
+    type: CabinetType,
+    params: CabinetParams,
+    materials: CabinetMaterials,
+    skipHistory = false
+  ) => {
     const cabinetId = uuidv4();
     const now = new Date();
 
     const bodyMaterial = get().materials.find((m) => m.id === materials.bodyMaterialId);
     if (!bodyMaterial) {
-      console.error('Body material not found');
+      console.error("Body material not found");
       return;
     }
 
@@ -42,7 +49,14 @@ export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
       : getDefaultBackMaterial(get().materials);
 
     const generator = getGeneratorForType(type);
-    const generatedParts = generator(cabinetId, furnitureId, params, materials, bodyMaterial, backMaterial);
+    const generatedParts = generator(
+      cabinetId,
+      furnitureId,
+      params,
+      materials,
+      bodyMaterial,
+      backMaterial
+    );
 
     const parts = generatedParts.map((part) => ({
       ...part,
@@ -81,7 +95,7 @@ export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
     // Record history
     if (!skipHistory) {
       get().pushEntry({
-        type: 'ADD_CABINET',
+        type: "ADD_CABINET",
         targetId: cabinetId,
         furnitureId,
         after: {
@@ -92,7 +106,7 @@ export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
           id: generateId(),
           timestamp: Date.now(),
           label: HISTORY_LABELS.ADD_CABINET,
-          kind: 'cabinet',
+          kind: "cabinet",
           isMilestone: true,
         },
       });
@@ -101,23 +115,33 @@ export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
     triggerDebouncedCollisionDetection(get);
 
     // Auto-create/merge countertop for kitchen cabinets with hasCountertop enabled
-    if (type === 'KITCHEN') {
-      const kitchenParams = params as KitchenCabinetParams;
-      if (kitchenParams.countertopConfig?.hasCountertop) {
+    // Generate countertops for kitchen and corner cabinet types
+    const countertopEligibleTypes: CabinetType[] = [
+      "KITCHEN",
+      "CORNER_INTERNAL",
+      "CORNER_EXTERNAL",
+    ];
+    if (countertopEligibleTypes.includes(type)) {
+      const cabinetParams = params;
+      if (cabinetParams.countertopConfig?.hasCountertop) {
         // Get countertop material - prefer specified, then default countertop, then board
-        let countertopMaterialId = kitchenParams.countertopConfig.materialId;
+        let countertopMaterialId = cabinetParams.countertopConfig.materialId;
         if (!countertopMaterialId) {
-          const countertopMaterials = get().materials.filter(m => m.category === 'countertop');
+          const countertopMaterials = get().materials.filter((m) => m.category === "countertop");
           countertopMaterialId = countertopMaterials[0]?.id;
         }
         if (!countertopMaterialId) {
-          const boardMaterials = get().materials.filter(m => m.category === 'board' || !m.category);
+          const boardMaterials = get().materials.filter(
+            (m) => m.category === "board" || !m.category
+          );
           countertopMaterialId = boardMaterials[0]?.id;
         }
 
         if (countertopMaterialId) {
           // Check for existing adjacent countertop groups to merge with
-          const existingGroups = get().countertopGroups.filter(g => g.furnitureId === furnitureId);
+          const existingGroups = get().countertopGroups.filter(
+            (g) => g.furnitureId === furnitureId
+          );
 
           // Find groups that have adjacent cabinets (we'll regenerate after adding)
           // For now, if there are existing groups for this furniture, regenerate all
@@ -130,7 +154,7 @@ export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
               furnitureId,
               [cabinetId],
               countertopMaterialId,
-              { thickness: kitchenParams.countertopConfig.thicknessOverride },
+              { thickness: cabinetParams.countertopConfig.thicknessOverride },
               true // skipHistory
             );
           }
@@ -141,7 +165,7 @@ export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
 
   updateCabinet: (
     id,
-    patch: Partial<Omit<Cabinet, 'id' | 'furnitureId' | 'createdAt'>>,
+    patch: Partial<Omit<Cabinet, "id" | "furnitureId" | "createdAt">>,
     _skipHistory = false
   ) => {
     set((state) => {
@@ -174,7 +198,14 @@ export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
           : getDefaultBackMaterial(state.materials);
 
         const generator = getGeneratorForType(cabinet.type);
-        const generatedParts = generator(id, cabinet.furnitureId, params, materials, bodyMaterial, backMaterial);
+        const generatedParts = generator(
+          id,
+          cabinet.furnitureId,
+          params,
+          materials,
+          bodyMaterial,
+          backMaterial
+        );
         const transformedParts = applyCabinetTransform(generatedParts, center, rotation);
 
         const now = new Date();
@@ -238,7 +269,7 @@ export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
 
     if (!skipHistory) {
       get().pushEntry({
-        type: 'UPDATE_CABINET',
+        type: "UPDATE_CABINET",
         targetId: id,
         furnitureId: cabinet.furnitureId,
         before: { name: currentName },
@@ -247,13 +278,18 @@ export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
           id: generateId(),
           timestamp: Date.now(),
           label: HISTORY_LABELS.UPDATE_CABINET,
-          kind: inferKindFromType('UPDATE_CABINET'),
+          kind: inferKindFromType("UPDATE_CABINET"),
         },
       });
     }
   },
 
-  updateCabinetParams: (id: string, params: CabinetParams, skipHistory = false, centerOffset?: [number, number, number]) => {
+  updateCabinetParams: (
+    id: string,
+    params: CabinetParams,
+    skipHistory = false,
+    centerOffset?: [number, number, number]
+  ) => {
     const state = get();
     const cabinet = state.cabinets.find((c) => c.id === id);
     if (!cabinet) return;
@@ -275,7 +311,14 @@ export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
       : center;
 
     const generator = getGeneratorForType(params.type);
-    const generatedParts = generator(id, cabinet.furnitureId, params, cabinet.materials, bodyMaterial, backMaterial);
+    const generatedParts = generator(
+      id,
+      cabinet.furnitureId,
+      params,
+      cabinet.materials,
+      bodyMaterial,
+      backMaterial
+    );
     const transformedParts = applyCabinetTransform(generatedParts, targetCenter, rotation);
 
     const now = new Date();
@@ -308,7 +351,7 @@ export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
       };
 
       get().pushEntry({
-        type: 'REGENERATE_CABINET',
+        type: "REGENERATE_CABINET",
         targetId: id,
         cabinetId: id,
         furnitureId: cabinet.furnitureId,
@@ -318,7 +361,7 @@ export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
           id: generateId(),
           timestamp: Date.now(),
           label: HISTORY_LABELS.REGENERATE_CABINET,
-          kind: 'cabinet',
+          kind: "cabinet",
           isMilestone: true, // Mark cabinet regeneration as milestone
         },
       });
@@ -417,7 +460,11 @@ export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
           const partQuat = new Quaternion().setFromEuler(new Euler().fromArray(part.rotation));
           const newPartQuat = rotationDelta.clone().multiply(partQuat);
           const newPartEuler = new Euler().setFromQuaternion(newPartQuat);
-          finalRotation = [newPartEuler.x, newPartEuler.y, newPartEuler.z] as [number, number, number];
+          finalRotation = [newPartEuler.x, newPartEuler.y, newPartEuler.z] as [
+            number,
+            number,
+            number,
+          ];
         }
 
         return {
@@ -442,6 +489,9 @@ export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
     });
 
     triggerDebouncedCollisionDetection(get);
+
+    // Regenerate countertops with updated gap distances after cabinet move
+    triggerDebouncedCountertopRegeneration(get, id);
   },
 
   removeCabinet: (id: string, skipHistory = false) => {
@@ -454,7 +504,7 @@ export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
     // Record history before removal
     if (!skipHistory) {
       get().pushEntry({
-        type: 'REMOVE_CABINET',
+        type: "REMOVE_CABINET",
         targetId: id,
         furnitureId: cabinet.furnitureId,
         before: {
@@ -465,7 +515,7 @@ export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
           id: generateId(),
           timestamp: Date.now(),
           label: HISTORY_LABELS.REMOVE_CABINET,
-          kind: 'cabinet',
+          kind: "cabinet",
           isMilestone: true,
         },
       });
@@ -477,14 +527,14 @@ export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
 
       // Remove countertop groups that contain this cabinet
       const updatedCountertopGroups = state.countertopGroups
-        .map(group => {
+        .map((group) => {
           // Remove this cabinet from all segments
           const updatedSegments = group.segments
-            .map(seg => ({
+            .map((seg) => ({
               ...seg,
-              cabinetIds: seg.cabinetIds.filter(cId => cId !== id),
+              cabinetIds: seg.cabinetIds.filter((cId) => cId !== id),
             }))
-            .filter(seg => seg.cabinetIds.length > 0); // Remove empty segments
+            .filter((seg) => seg.cabinetIds.length > 0); // Remove empty segments
 
           if (updatedSegments.length === 0) {
             return null; // Mark group for removal
@@ -498,7 +548,9 @@ export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
         parts: state.parts.filter((p) => !cabinet.partIds.includes(p.id)),
         selectedCabinetId: state.selectedCabinetId === id ? null : state.selectedCabinetId,
         countertopGroups: updatedCountertopGroups,
-        selectedCountertopGroupId: updatedCountertopGroups.some(g => g.id === state.selectedCountertopGroupId)
+        selectedCountertopGroupId: updatedCountertopGroups.some(
+          (g) => g.id === state.selectedCountertopGroupId
+        )
           ? state.selectedCountertopGroupId
           : null,
       };
@@ -520,11 +572,11 @@ export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
       ...part,
       id: uuidv4(),
       name: part.name,
-      position: [
-        part.position[0] + 100,
-        part.position[1],
-        part.position[2],
-      ] as [number, number, number],
+      position: [part.position[0] + 100, part.position[1], part.position[2]] as [
+        number,
+        number,
+        number,
+      ],
       cabinetMetadata: part.cabinetMetadata
         ? { ...part.cabinetMetadata, cabinetId: newCabinetId }
         : undefined,
@@ -551,7 +603,7 @@ export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
     // Record history
     if (!skipHistory) {
       get().pushEntry({
-        type: 'DUPLICATE_CABINET',
+        type: "DUPLICATE_CABINET",
         targetId: newCabinetId,
         furnitureId: cabinet.furnitureId,
         after: {
@@ -562,11 +614,41 @@ export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
           id: generateId(),
           timestamp: Date.now(),
           label: HISTORY_LABELS.DUPLICATE_CABINET,
-          kind: 'cabinet',
+          kind: "cabinet",
         },
       });
     }
 
     triggerDebouncedCollisionDetection(get);
+
+    // Auto-create countertop for duplicated cabinets with hasCountertop enabled
+    const countertopEligibleTypes: CabinetType[] = [
+      "KITCHEN",
+      "CORNER_INTERNAL",
+      "CORNER_EXTERNAL",
+    ];
+    if (countertopEligibleTypes.includes(cabinet.type)) {
+      const cabinetParams = cabinet.params;
+      if (cabinetParams.countertopConfig?.hasCountertop) {
+        // Get countertop material - prefer specified, then default countertop, then board
+        let countertopMaterialId = cabinetParams.countertopConfig.materialId;
+        if (!countertopMaterialId) {
+          const countertopMaterials = get().materials.filter((m) => m.category === "countertop");
+          countertopMaterialId = countertopMaterials[0]?.id;
+        }
+        if (!countertopMaterialId) {
+          const boardMaterials = get().materials.filter(
+            (m) => m.category === "board" || !m.category
+          );
+          countertopMaterialId = boardMaterials[0]?.id;
+        }
+
+        if (countertopMaterialId) {
+          // Regenerate countertops for this furniture - will create separate group for duplicated cabinet
+          // since it's offset by 100mm and not adjacent to original
+          get().generateCountertopsForFurniture(cabinet.furnitureId, countertopMaterialId);
+        }
+      }
+    }
   },
 });

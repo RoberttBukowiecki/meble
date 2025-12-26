@@ -22,13 +22,15 @@ import type {
   CutoutPresetType,
   CountertopProductionData,
   CabinetCountertopConfig,
-} from '@/types/countertop';
-import type { Cabinet, Part, Material, KitchenCabinetParams } from '@/types';
-import { CountertopDomain } from '@/lib/domain/countertop';
-import { getCabinetBounds } from '@/lib/domain/countertop/helpers';
-import type { StoreSlice } from '../types';
-import { HISTORY_LABELS } from '../history/constants';
-import { generateId, inferKindFromType } from '../history/utils';
+  CabinetGap,
+  CabinetGapMode,
+} from "@/types/countertop";
+import type { Cabinet, Part, Material, KitchenCabinetParams } from "@/types";
+import { CountertopDomain } from "@/lib/domain/countertop";
+import { getCabinetBounds } from "@/lib/domain/countertop/helpers";
+import type { StoreSlice } from "../types";
+import { HISTORY_LABELS } from "../history/constants";
+import { generateId, inferKindFromType } from "../history/utils";
 
 /**
  * Countertop slice interface
@@ -51,7 +53,7 @@ export interface CountertopSlice {
   ) => void;
   updateCountertopGroup: (
     id: string,
-    patch: Partial<Omit<CountertopGroup, 'id' | 'createdAt'>>,
+    patch: Partial<Omit<CountertopGroup, "id" | "createdAt">>,
     skipHistory?: boolean
   ) => void;
   removeCountertopGroup: (id: string, skipHistory?: boolean) => void;
@@ -64,7 +66,7 @@ export interface CountertopSlice {
   updateSegment: (
     groupId: string,
     segmentId: string,
-    patch: Partial<Omit<CountertopSegment, 'id'>>,
+    patch: Partial<Omit<CountertopSegment, "id">>,
     skipHistory?: boolean
   ) => void;
   updateSegmentDimensions: (
@@ -83,11 +85,7 @@ export interface CountertopSlice {
     edge: EdgeId,
     option: EdgeBandingOption
   ) => void;
-  updateSegmentGrain: (
-    groupId: string,
-    segmentId: string,
-    grainAlongLength: boolean
-  ) => void;
+  updateSegmentGrain: (groupId: string, segmentId: string, grainAlongLength: boolean) => void;
 
   // CNC operations
   addCncOperation: (
@@ -95,7 +93,7 @@ export interface CountertopSlice {
     segmentId: string,
     type: CncOperationType,
     position: { x: number; y: number },
-    dimensions: CncOperation['dimensions'],
+    dimensions: CncOperation["dimensions"],
     skipHistory?: boolean
   ) => void;
   addCncOperationFromPreset: (
@@ -109,10 +107,15 @@ export interface CountertopSlice {
     groupId: string,
     segmentId: string,
     operationId: string,
-    updates: Partial<Omit<CncOperation, 'id'>>,
+    updates: Partial<Omit<CncOperation, "id">>,
     skipHistory?: boolean
   ) => void;
-  removeCncOperation: (groupId: string, segmentId: string, operationId: string, skipHistory?: boolean) => void;
+  removeCncOperation: (
+    groupId: string,
+    segmentId: string,
+    operationId: string,
+    skipHistory?: boolean
+  ) => void;
 
   // Corner operations
   updateCornerTreatment: (
@@ -124,7 +127,12 @@ export interface CountertopSlice {
   ) => void;
 
   // Joint operations
-  updateJointType: (groupId: string, jointId: string, type: CountertopJointType, skipHistory?: boolean) => void;
+  updateJointType: (
+    groupId: string,
+    jointId: string,
+    type: CountertopJointType,
+    skipHistory?: boolean
+  ) => void;
 
   // Export
   exportCountertopGroupCsv: (groupId: string) => string | null;
@@ -136,7 +144,11 @@ export interface CountertopSlice {
 
   // Material sync operations
   /** Update countertop group material and sync to all cabinets in the group */
-  updateCountertopGroupMaterial: (groupId: string, materialId: string, skipHistory?: boolean) => void;
+  updateCountertopGroupMaterial: (
+    groupId: string,
+    materialId: string,
+    skipHistory?: boolean
+  ) => void;
 
   /** Separate a cabinet from its countertop group (sets excludeFromGroup and regenerates) */
   separateCabinetFromGroup: (cabinetId: string, skipHistory?: boolean) => void;
@@ -151,6 +163,15 @@ export interface CountertopSlice {
 
   /** Get count of kitchen cabinets in a furniture (excluding specified cabinet) */
   getOtherKitchenCabinetsCount: (furnitureId: string, excludeCabinetId?: string) => number;
+
+  // Gap operations
+  /** Update gap mode (BRIDGE or SPLIT) and regenerate segments accordingly */
+  updateGapMode: (
+    groupId: string,
+    gapId: string,
+    mode: CabinetGapMode,
+    skipHistory?: boolean
+  ) => void;
 }
 
 export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => ({
@@ -176,21 +197,15 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
     options?: CountertopGroupOptions,
     skipHistory = false
   ) => {
-    const cabinets = get().cabinets.filter(c => cabinetIds.includes(c.id));
+    const cabinets = get().cabinets.filter((c) => cabinetIds.includes(c.id));
     const parts = get().parts;
 
     if (cabinets.length === 0) {
-      console.warn('No cabinets found for countertop group');
+      console.warn("No cabinets found for countertop group");
       return;
     }
 
-    const group = CountertopDomain.createGroup(
-      furnitureId,
-      cabinets,
-      parts,
-      materialId,
-      options
-    );
+    const group = CountertopDomain.createGroup(furnitureId, cabinets, parts, materialId, options);
 
     const index = get().countertopGroups.length;
 
@@ -201,7 +216,7 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
 
     if (!skipHistory) {
       get().pushEntry({
-        type: 'ADD_COUNTERTOP_GROUP',
+        type: "ADD_COUNTERTOP_GROUP",
         targetId: group.id,
         furnitureId,
         before: null,
@@ -210,30 +225,32 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
           id: generateId(),
           timestamp: Date.now(),
           label: HISTORY_LABELS.ADD_COUNTERTOP_GROUP,
-          kind: inferKindFromType('ADD_COUNTERTOP_GROUP'),
+          kind: inferKindFromType("ADD_COUNTERTOP_GROUP"),
         },
       });
     }
   },
 
-  updateCountertopGroup: (id: string, patch: Partial<Omit<CountertopGroup, 'id' | 'createdAt'>>, skipHistory = false) => {
-    const group = get().countertopGroups.find(g => g.id === id);
+  updateCountertopGroup: (
+    id: string,
+    patch: Partial<Omit<CountertopGroup, "id" | "createdAt">>,
+    skipHistory = false
+  ) => {
+    const group = get().countertopGroups.find((g) => g.id === id);
     if (!group) return;
 
     const beforeSnapshot = { group: { ...group } };
 
     set((state) => ({
       countertopGroups: state.countertopGroups.map((g) =>
-        g.id === id
-          ? { ...g, ...patch, updatedAt: new Date() }
-          : g
+        g.id === id ? { ...g, ...patch, updatedAt: new Date() } : g
       ),
     }));
 
     if (!skipHistory) {
-      const updatedGroup = get().countertopGroups.find(g => g.id === id);
+      const updatedGroup = get().countertopGroups.find((g) => g.id === id);
       get().pushEntry({
-        type: 'UPDATE_COUNTERTOP_GROUP',
+        type: "UPDATE_COUNTERTOP_GROUP",
         targetId: id,
         furnitureId: group.furnitureId,
         before: beforeSnapshot,
@@ -242,17 +259,17 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
           id: generateId(),
           timestamp: Date.now(),
           label: HISTORY_LABELS.UPDATE_COUNTERTOP_GROUP,
-          kind: inferKindFromType('UPDATE_COUNTERTOP_GROUP'),
+          kind: inferKindFromType("UPDATE_COUNTERTOP_GROUP"),
         },
       });
     }
   },
 
   removeCountertopGroup: (id: string, skipHistory = false) => {
-    const group = get().countertopGroups.find(g => g.id === id);
+    const group = get().countertopGroups.find((g) => g.id === id);
     if (!group) return;
 
-    const index = get().countertopGroups.findIndex(g => g.id === id);
+    const index = get().countertopGroups.findIndex((g) => g.id === id);
     const beforeSnapshot = { group: { ...group, _index: index } };
 
     set((state) => ({
@@ -263,7 +280,7 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
 
     if (!skipHistory) {
       get().pushEntry({
-        type: 'REMOVE_COUNTERTOP_GROUP',
+        type: "REMOVE_COUNTERTOP_GROUP",
         targetId: id,
         furnitureId: group.furnitureId,
         before: beforeSnapshot,
@@ -272,7 +289,7 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
           id: generateId(),
           timestamp: Date.now(),
           label: HISTORY_LABELS.REMOVE_COUNTERTOP_GROUP,
-          kind: inferKindFromType('REMOVE_COUNTERTOP_GROUP'),
+          kind: inferKindFromType("REMOVE_COUNTERTOP_GROUP"),
         },
       });
     }
@@ -284,21 +301,37 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
 
   generateCountertopsForFurniture: (furnitureId: string, materialId: string) => {
     // Only include cabinets that have countertop enabled
-    const allCabinets = get().cabinets.filter(c => c.furnitureId === furnitureId);
-    const cabinetsWithCountertop = allCabinets.filter(c => {
-      if (c.type !== 'KITCHEN') return false;
-      const kitchenParams = c.params as KitchenCabinetParams;
-      return kitchenParams.countertopConfig?.hasCountertop === true;
+    const allCabinets = get().cabinets.filter((c) => c.furnitureId === furnitureId);
+    // Include kitchen and corner cabinet types for countertop generation
+    const eligibleTypes = ["KITCHEN", "CORNER_INTERNAL", "CORNER_EXTERNAL"];
+    const cabinetsWithCountertop = allCabinets.filter((c) => {
+      if (!eligibleTypes.includes(c.type)) return false;
+      return c.params.countertopConfig?.hasCountertop === true;
     });
+
+    // Separate cabinets that should be excluded from grouping
+    const groupableCabinets = cabinetsWithCountertop.filter((c) => {
+      const kitchenParams = c.params as KitchenCabinetParams;
+      return !kitchenParams.countertopConfig?.excludeFromGroup;
+    });
+    const excludedCabinets = cabinetsWithCountertop.filter((c) => {
+      const kitchenParams = c.params as KitchenCabinetParams;
+      return kitchenParams.countertopConfig?.excludeFromGroup === true;
+    });
+
     const parts = get().parts;
+
+    // Preserve existing gaps with user-set modes
+    const existingGroups = get().countertopGroups.filter((g) => g.furnitureId === furnitureId);
+    const existingGaps: CabinetGap[] = existingGroups.flatMap((g) => g.gaps || []);
 
     // Remove existing countertop groups for this furniture
     set((state) => ({
-      countertopGroups: state.countertopGroups.filter(g => g.furnitureId !== furnitureId),
+      countertopGroups: state.countertopGroups.filter((g) => g.furnitureId !== furnitureId),
     }));
 
-    // Detect adjacent cabinet groups (only among cabinets with countertop enabled)
-    const adjacentGroups = CountertopDomain.detectAdjacentCabinets(cabinetsWithCountertop, parts);
+    // Detect adjacent cabinet groups (only among cabinets that are NOT excluded from grouping)
+    const adjacentGroups = CountertopDomain.detectAdjacentCabinets(groupableCabinets, parts);
 
     // Create a countertop group for each adjacent group
     const newGroups: CountertopGroup[] = adjacentGroups.map((cabinetGroup, index) => {
@@ -307,55 +340,96 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
         cabinetGroup,
         parts,
         materialId,
-        { name: `Blat ${index + 1}` }
+        { name: `Blat ${index + 1}` },
+        existingGaps // Pass existing gaps to preserve user choices
       );
 
       // Sync cutout presets from cabinet configs to CNC operations
-      const updatedSegments = group.segments.map(segment => {
+      const updatedSegments = group.segments.map((segment) => {
         // Find cabinets in this segment that have cutout presets
-        const segmentCabinets = cabinetGroup.filter(c => segment.cabinetIds.includes(c.id));
+        const segmentCabinets = cabinetGroup.filter((c) => segment.cabinetIds.includes(c.id));
         const cncOperations: CncOperation[] = [];
+
+        // Calculate segment bounds from all cabinets
+        const allBounds = segmentCabinets.map((c) => getCabinetBounds(c, parts));
+        const segmentBounds = {
+          minX: Math.min(...allBounds.map((b) => b.min[0])),
+          maxX: Math.max(...allBounds.map((b) => b.max[0])),
+          minZ: Math.min(...allBounds.map((b) => b.min[2])), // Back (away from camera)
+          maxZ: Math.max(...allBounds.map((b) => b.max[2])), // Front (towards camera)
+        };
+
+        // Segment left-front corner with overhang
+        const segmentLeftEdge = segmentBounds.minX - segment.overhang.left;
+        const segmentFrontEdge = segmentBounds.maxZ + segment.overhang.front;
 
         for (const cabinet of segmentCabinets) {
           const kitchenParams = cabinet.params as KitchenCabinetParams;
           const cutoutPreset = kitchenParams.countertopConfig?.cutoutPreset;
 
-          if (cutoutPreset && cutoutPreset !== 'NONE') {
+          if (cutoutPreset && cutoutPreset !== "NONE") {
             // Calculate center position of cabinet within segment
             const cabinetBounds = getCabinetBounds(cabinet, parts);
-            const segmentBounds = {
-              minX: Math.min(...segmentCabinets.map(c => getCabinetBounds(c, parts).min[0])),
-              minZ: Math.min(...segmentCabinets.map(c => getCabinetBounds(c, parts).min[2])),
-            };
 
-            // Position relative to segment (from left-front corner)
-            const posX = (cabinetBounds.center[0] - segmentBounds.minX);
-            const posY = (cabinetBounds.center[2] - segmentBounds.minZ);
+            // Position relative to segment's left-front corner
+            // X: distance from left edge (increases to the right)
+            // Y: distance from front edge (increases towards back)
+            // Note: In world space, Z+ is back, Z- is front, so:
+            //   - Front edge of segment = maxZ + overhang.front
+            //   - Distance from front = frontEdge - cabinetCenter.z
+            const posX = cabinetBounds.center[0] - segmentLeftEdge;
+            const posY = segmentFrontEdge - cabinetBounds.center[2];
 
             let operation: CncOperation | null = null;
 
-            if (cutoutPreset === 'CUSTOM' && kitchenParams.countertopConfig?.customCutout) {
+            if (cutoutPreset === "CUSTOM" && kitchenParams.countertopConfig?.customCutout) {
               // Custom cutout with user-defined dimensions
               const custom = kitchenParams.countertopConfig.customCutout;
               operation = CountertopDomain.createCncOperation(
-                'RECTANGULAR_CUTOUT',
+                "RECTANGULAR_CUTOUT",
                 { x: posX, y: posY },
                 {
                   width: custom.width,
                   height: custom.height,
                   radius: custom.radius ?? 10,
                 },
-                'CUSTOM'
+                "CUSTOM"
               );
             } else {
               // Standard preset
-              operation = CountertopDomain.createCncOperationFromPreset(
-                cutoutPreset,
-                { x: posX, y: posY }
-              );
+              operation = CountertopDomain.createCncOperationFromPreset(cutoutPreset, {
+                x: posX,
+                y: posY,
+              });
             }
 
             if (operation) {
+              // Validate that cutout fits within segment bounds
+              const cutoutWidth = operation.dimensions.width ?? operation.dimensions.diameter ?? 0;
+              const cutoutHeight =
+                operation.dimensions.height ?? operation.dimensions.diameter ?? 0;
+              const halfW = cutoutWidth / 2;
+              const halfH = cutoutHeight / 2;
+
+              // Clamp position to keep cutout within segment
+              const minEdgeDist = 50; // Minimum distance from edge
+              const clampedX = Math.max(
+                minEdgeDist + halfW,
+                Math.min(segment.length - minEdgeDist - halfW, posX)
+              );
+              const clampedY = Math.max(
+                minEdgeDist + halfH,
+                Math.min(segment.width - minEdgeDist - halfH, posY)
+              );
+
+              // Update position if clamped
+              if (clampedX !== posX || clampedY !== posY) {
+                operation = {
+                  ...operation,
+                  position: { x: clampedX, y: clampedY },
+                };
+              }
+
               cncOperations.push(operation);
             }
           }
@@ -373,25 +447,83 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
       };
     });
 
+    // Create separate countertop groups for each excluded cabinet
+    const excludedGroups: CountertopGroup[] = excludedCabinets.map((cabinet, index) => {
+      const kitchenParams = cabinet.params as KitchenCabinetParams;
+      const cabinetMaterialId = kitchenParams.countertopConfig?.materialId || materialId;
+
+      const group = CountertopDomain.createGroup(furnitureId, [cabinet], parts, cabinetMaterialId, {
+        name: `Blat ${adjacentGroups.length + index + 1} (oddzielny)`,
+      });
+
+      // Sync cutout presets from cabinet config to CNC operations
+      if (
+        kitchenParams.countertopConfig?.cutoutPreset &&
+        kitchenParams.countertopConfig.cutoutPreset !== "NONE" &&
+        group.segments.length > 0
+      ) {
+        const segment = group.segments[0];
+        const cabinetBounds = getCabinetBounds(cabinet, parts);
+
+        // Calculate center position within segment
+        const segmentLeftEdge = cabinetBounds.min[0] - segment.overhang.left;
+        const segmentFrontEdge = cabinetBounds.max[2] + segment.overhang.front;
+
+        const posX = cabinetBounds.center[0] - segmentLeftEdge;
+        const posY = segmentFrontEdge - cabinetBounds.center[2];
+
+        let operation: CncOperation | null = null;
+        const cutoutPreset = kitchenParams.countertopConfig.cutoutPreset;
+
+        if (cutoutPreset === "CUSTOM" && kitchenParams.countertopConfig.customCutout) {
+          const custom = kitchenParams.countertopConfig.customCutout;
+          operation = CountertopDomain.createCncOperation(
+            "RECTANGULAR_CUTOUT",
+            { x: posX, y: posY },
+            {
+              width: custom.width,
+              height: custom.height,
+              radius: custom.radius ?? 10,
+            },
+            "CUSTOM"
+          );
+        } else {
+          operation = CountertopDomain.createCncOperationFromPreset(cutoutPreset, {
+            x: posX,
+            y: posY,
+          });
+        }
+
+        if (operation) {
+          group.segments[0] = {
+            ...segment,
+            cncOperations: [operation],
+          };
+        }
+      }
+
+      return group;
+    });
+
+    const allNewGroups = [...newGroups, ...excludedGroups];
+
     set((state) => ({
-      countertopGroups: [...state.countertopGroups, ...newGroups],
-      selectedCountertopGroupId: newGroups.length > 0 ? newGroups[0].id : null,
+      countertopGroups: [...state.countertopGroups, ...allNewGroups],
+      selectedCountertopGroupId: allNewGroups.length > 0 ? allNewGroups[0].id : null,
     }));
   },
 
   regenerateCountertopGroup: (groupId: string) => {
-    const group = get().countertopGroups.find(g => g.id === groupId);
+    const group = get().countertopGroups.find((g) => g.id === groupId);
     if (!group) return;
 
-    const cabinetIds = group.segments.flatMap(s => s.cabinetIds);
-    const cabinets = get().cabinets.filter(c => cabinetIds.includes(c.id));
+    const cabinetIds = group.segments.flatMap((s) => s.cabinetIds);
+    const cabinets = get().cabinets.filter((c) => cabinetIds.includes(c.id));
     const parts = get().parts;
 
-    const newSegments = CountertopDomain.generateSegmentsFromCabinets(
-      cabinets,
-      parts,
-      { thickness: group.thickness }
-    );
+    const newSegments = CountertopDomain.generateSegmentsFromCabinets(cabinets, parts, {
+      thickness: group.thickness,
+    });
 
     const layoutType = CountertopDomain.detectLayoutType(cabinets, parts);
     const newJoints = CountertopDomain.generateJointsForLayout(newSegments, layoutType);
@@ -420,10 +552,10 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
   updateSegment: (
     groupId: string,
     segmentId: string,
-    patch: Partial<Omit<CountertopSegment, 'id'>>,
+    patch: Partial<Omit<CountertopSegment, "id">>,
     skipHistory = false
   ) => {
-    const group = get().countertopGroups.find(g => g.id === groupId);
+    const group = get().countertopGroups.find((g) => g.id === groupId);
     if (!group) return;
 
     const segment = group.segments.find((s: CountertopSegment) => s.id === segmentId);
@@ -433,18 +565,18 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
 
     set((state) => ({
       countertopGroups: state.countertopGroups.map((g) =>
-        g.id === groupId
-          ? CountertopDomain.updateSegmentInGroup(g, segmentId, patch)
-          : g
+        g.id === groupId ? CountertopDomain.updateSegmentInGroup(g, segmentId, patch) : g
       ),
     }));
 
     if (!skipHistory) {
-      const updatedGroup = get().countertopGroups.find(g => g.id === groupId);
-      const updatedSegment = updatedGroup?.segments.find((s: CountertopSegment) => s.id === segmentId);
+      const updatedGroup = get().countertopGroups.find((g) => g.id === groupId);
+      const updatedSegment = updatedGroup?.segments.find(
+        (s: CountertopSegment) => s.id === segmentId
+      );
       if (updatedSegment) {
         get().pushEntry({
-          type: 'UPDATE_COUNTERTOP_SEGMENT',
+          type: "UPDATE_COUNTERTOP_SEGMENT",
           targetId: segmentId,
           furnitureId: group.furnitureId,
           before: beforeSnapshot,
@@ -453,7 +585,7 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
             id: generateId(),
             timestamp: Date.now(),
             label: HISTORY_LABELS.UPDATE_COUNTERTOP_SEGMENT,
-            kind: inferKindFromType('UPDATE_COUNTERTOP_SEGMENT'),
+            kind: inferKindFromType("UPDATE_COUNTERTOP_SEGMENT"),
           },
         });
       }
@@ -465,7 +597,7 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
     segmentId: string,
     dimensions: { length?: number; width?: number; thickness?: number }
   ) => {
-    const group = get().countertopGroups.find(g => g.id === groupId);
+    const group = get().countertopGroups.find((g) => g.id === groupId);
     if (!group) return;
 
     const segment = group.segments.find((s: CountertopSegment) => s.id === segmentId);
@@ -481,7 +613,7 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
     segmentId: string,
     overhang: Partial<CountertopOverhang>
   ) => {
-    const group = get().countertopGroups.find(g => g.id === groupId);
+    const group = get().countertopGroups.find((g) => g.id === groupId);
     if (!group) return;
 
     const segment = group.segments.find((s: CountertopSegment) => s.id === segmentId);
@@ -498,7 +630,7 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
     edge: EdgeId,
     option: EdgeBandingOption
   ) => {
-    const group = get().countertopGroups.find(g => g.id === groupId);
+    const group = get().countertopGroups.find((g) => g.id === groupId);
     if (!group) return;
 
     const segment = group.segments.find((s: CountertopSegment) => s.id === segmentId);
@@ -509,12 +641,8 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
     get().updateSegment(groupId, segmentId, updatedSegment);
   },
 
-  updateSegmentGrain: (
-    groupId: string,
-    segmentId: string,
-    grainAlongLength: boolean
-  ) => {
-    const group = get().countertopGroups.find(g => g.id === groupId);
+  updateSegmentGrain: (groupId: string, segmentId: string, grainAlongLength: boolean) => {
+    const group = get().countertopGroups.find((g) => g.id === groupId);
     if (!group) return;
 
     const segment = group.segments.find((s: CountertopSegment) => s.id === segmentId);
@@ -534,10 +662,10 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
     segmentId: string,
     type: CncOperationType,
     position: { x: number; y: number },
-    dimensions: CncOperation['dimensions'],
+    dimensions: CncOperation["dimensions"],
     skipHistory = false
   ) => {
-    const group = get().countertopGroups.find(g => g.id === groupId);
+    const group = get().countertopGroups.find((g) => g.id === groupId);
     if (!group) return;
 
     const segment = group.segments.find((s: CountertopSegment) => s.id === segmentId);
@@ -559,7 +687,7 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
 
     if (!skipHistory) {
       get().pushEntry({
-        type: 'ADD_CNC_OPERATION',
+        type: "ADD_CNC_OPERATION",
         targetId: operation.id,
         furnitureId: group.furnitureId,
         before: null,
@@ -568,7 +696,7 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
           id: generateId(),
           timestamp: Date.now(),
           label: HISTORY_LABELS.ADD_CNC_OPERATION,
-          kind: inferKindFromType('ADD_CNC_OPERATION'),
+          kind: inferKindFromType("ADD_CNC_OPERATION"),
         },
       });
     }
@@ -584,7 +712,7 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
     const operation = CountertopDomain.createCncOperationFromPreset(preset, position);
     if (!operation) return;
 
-    const group = get().countertopGroups.find(g => g.id === groupId);
+    const group = get().countertopGroups.find((g) => g.id === groupId);
     if (!group) return;
 
     set((state) => ({
@@ -601,7 +729,7 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
 
     if (!skipHistory) {
       get().pushEntry({
-        type: 'ADD_CNC_OPERATION',
+        type: "ADD_CNC_OPERATION",
         targetId: operation.id,
         furnitureId: group.furnitureId,
         before: null,
@@ -610,7 +738,7 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
           id: generateId(),
           timestamp: Date.now(),
           label: HISTORY_LABELS.ADD_CNC_OPERATION,
-          kind: inferKindFromType('ADD_CNC_OPERATION'),
+          kind: inferKindFromType("ADD_CNC_OPERATION"),
         },
       });
     }
@@ -620,10 +748,10 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
     groupId: string,
     segmentId: string,
     operationId: string,
-    updates: Partial<Omit<CncOperation, 'id'>>,
+    updates: Partial<Omit<CncOperation, "id">>,
     skipHistory = false
   ) => {
-    const group = get().countertopGroups.find(g => g.id === groupId);
+    const group = get().countertopGroups.find((g) => g.id === groupId);
     if (!group) return;
 
     const segment = group.segments.find((s: CountertopSegment) => s.id === segmentId);
@@ -647,12 +775,16 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
     }));
 
     if (!skipHistory) {
-      const updatedGroup = get().countertopGroups.find(g => g.id === groupId);
-      const updatedSegment = updatedGroup?.segments.find((s: CountertopSegment) => s.id === segmentId);
-      const updatedOp = updatedSegment?.cncOperations.find((o: CncOperation) => o.id === operationId);
+      const updatedGroup = get().countertopGroups.find((g) => g.id === groupId);
+      const updatedSegment = updatedGroup?.segments.find(
+        (s: CountertopSegment) => s.id === segmentId
+      );
+      const updatedOp = updatedSegment?.cncOperations.find(
+        (o: CncOperation) => o.id === operationId
+      );
       if (updatedOp) {
         get().pushEntry({
-          type: 'UPDATE_CNC_OPERATION',
+          type: "UPDATE_CNC_OPERATION",
           targetId: operationId,
           furnitureId: group.furnitureId,
           before: beforeSnapshot,
@@ -661,15 +793,20 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
             id: generateId(),
             timestamp: Date.now(),
             label: HISTORY_LABELS.UPDATE_CNC_OPERATION,
-            kind: inferKindFromType('UPDATE_CNC_OPERATION'),
+            kind: inferKindFromType("UPDATE_CNC_OPERATION"),
           },
         });
       }
     }
   },
 
-  removeCncOperation: (groupId: string, segmentId: string, operationId: string, skipHistory = false) => {
-    const group = get().countertopGroups.find(g => g.id === groupId);
+  removeCncOperation: (
+    groupId: string,
+    segmentId: string,
+    operationId: string,
+    skipHistory = false
+  ) => {
+    const group = get().countertopGroups.find((g) => g.id === groupId);
     if (!group) return;
 
     const segment = group.segments.find((s: CountertopSegment) => s.id === segmentId);
@@ -694,7 +831,7 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
 
     if (!skipHistory) {
       get().pushEntry({
-        type: 'REMOVE_CNC_OPERATION',
+        type: "REMOVE_CNC_OPERATION",
         targetId: operationId,
         furnitureId: group.furnitureId,
         before: beforeSnapshot,
@@ -703,7 +840,7 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
           id: generateId(),
           timestamp: Date.now(),
           label: HISTORY_LABELS.REMOVE_CNC_OPERATION,
-          kind: inferKindFromType('REMOVE_CNC_OPERATION'),
+          kind: inferKindFromType("REMOVE_CNC_OPERATION"),
         },
       });
     }
@@ -720,28 +857,26 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
     params?: { chamferAngle?: number; radius?: number; clipSize?: number },
     skipHistory = false
   ) => {
-    const group = get().countertopGroups.find(g => g.id === groupId);
+    const group = get().countertopGroups.find((g) => g.id === groupId);
     if (!group) return;
 
-    const corner = group.corners.find(c => c.position === position);
+    const corner = group.corners.find((c) => c.position === position);
     const beforeSnapshot = corner
       ? { groupId, corner: { ...corner } }
-      : { groupId, corner: { position, treatment: 'SQUARE' as CornerTreatment } };
+      : { groupId, corner: { position, treatment: "SQUARE" as CornerTreatment } };
 
     set((state) => ({
       countertopGroups: state.countertopGroups.map((g) =>
-        g.id === groupId
-          ? CountertopDomain.updateCorner(g, position, treatment, params)
-          : g
+        g.id === groupId ? CountertopDomain.updateCorner(g, position, treatment, params) : g
       ),
     }));
 
     if (!skipHistory) {
-      const updatedGroup = get().countertopGroups.find(g => g.id === groupId);
-      const updatedCorner = updatedGroup?.corners.find(c => c.position === position);
+      const updatedGroup = get().countertopGroups.find((g) => g.id === groupId);
+      const updatedCorner = updatedGroup?.corners.find((c) => c.position === position);
       if (updatedCorner) {
         get().pushEntry({
-          type: 'UPDATE_COUNTERTOP_CORNER',
+          type: "UPDATE_COUNTERTOP_CORNER",
           targetId: `${groupId}-corner-${position}`,
           furnitureId: group.furnitureId,
           before: beforeSnapshot,
@@ -750,7 +885,7 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
             id: generateId(),
             timestamp: Date.now(),
             label: HISTORY_LABELS.UPDATE_COUNTERTOP_CORNER,
-            kind: inferKindFromType('UPDATE_COUNTERTOP_CORNER'),
+            kind: inferKindFromType("UPDATE_COUNTERTOP_CORNER"),
           },
         });
       }
@@ -761,8 +896,13 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
   // Joint Operations
   // ==========================================================================
 
-  updateJointType: (groupId: string, jointId: string, type: CountertopJointType, skipHistory = false) => {
-    const group = get().countertopGroups.find(g => g.id === groupId);
+  updateJointType: (
+    groupId: string,
+    jointId: string,
+    type: CountertopJointType,
+    skipHistory = false
+  ) => {
+    const group = get().countertopGroups.find((g) => g.id === groupId);
     if (!group) return;
 
     const joint = group.joints.find((j: CountertopJoint) => j.id === jointId);
@@ -772,18 +912,16 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
 
     set((state) => ({
       countertopGroups: state.countertopGroups.map((g) =>
-        g.id === groupId
-          ? CountertopDomain.updateJointType(g, jointId, type)
-          : g
+        g.id === groupId ? CountertopDomain.updateJointType(g, jointId, type) : g
       ),
     }));
 
     if (!skipHistory) {
-      const updatedGroup = get().countertopGroups.find(g => g.id === groupId);
+      const updatedGroup = get().countertopGroups.find((g) => g.id === groupId);
       const updatedJoint = updatedGroup?.joints.find((j: CountertopJoint) => j.id === jointId);
       if (updatedJoint) {
         get().pushEntry({
-          type: 'UPDATE_COUNTERTOP_JOINT',
+          type: "UPDATE_COUNTERTOP_JOINT",
           targetId: jointId,
           furnitureId: group.furnitureId,
           before: beforeSnapshot,
@@ -792,7 +930,7 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
             id: generateId(),
             timestamp: Date.now(),
             label: HISTORY_LABELS.UPDATE_COUNTERTOP_JOINT,
-            kind: inferKindFromType('UPDATE_COUNTERTOP_JOINT'),
+            kind: inferKindFromType("UPDATE_COUNTERTOP_JOINT"),
           },
         });
       }
@@ -804,20 +942,20 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
   // ==========================================================================
 
   exportCountertopGroupCsv: (groupId: string): string | null => {
-    const group = get().countertopGroups.find(g => g.id === groupId);
+    const group = get().countertopGroups.find((g) => g.id === groupId);
     if (!group) return null;
 
-    const material = get().materials.find(m => m.id === group.materialId);
+    const material = get().materials.find((m) => m.id === group.materialId);
     if (!material) return null;
 
     return CountertopDomain.generateCuttingListCsv(group, material);
   },
 
   getCountertopProductionData: (groupId: string) => {
-    const group = get().countertopGroups.find(g => g.id === groupId);
+    const group = get().countertopGroups.find((g) => g.id === groupId);
     if (!group) return null;
 
-    const material = get().materials.find(m => m.id === group.materialId);
+    const material = get().materials.find((m) => m.id === group.materialId);
     if (!material) return null;
 
     return CountertopDomain.generateProductionData(group, material);
@@ -828,12 +966,12 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
   // ==========================================================================
 
   getCountertopGroupsForFurniture: (furnitureId: string) => {
-    return get().countertopGroups.filter(g => g.furnitureId === furnitureId);
+    return get().countertopGroups.filter((g) => g.furnitureId === furnitureId);
   },
 
   getCountertopGroupForCabinet: (cabinetId: string) => {
-    return get().countertopGroups.find(g =>
-      g.segments.some(s => s.cabinetIds.includes(cabinetId))
+    return get().countertopGroups.find((g) =>
+      g.segments.some((s) => s.cabinetIds.includes(cabinetId))
     );
   },
 
@@ -842,27 +980,27 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
   // ==========================================================================
 
   updateCountertopGroupMaterial: (groupId: string, materialId: string, skipHistory = false) => {
-    const group = get().countertopGroups.find(g => g.id === groupId);
+    const group = get().countertopGroups.find((g) => g.id === groupId);
     if (!group) return;
 
     // Get all cabinet IDs in this group
-    const cabinetIds = group.segments.flatMap(s => s.cabinetIds);
+    const cabinetIds = group.segments.flatMap((s) => s.cabinetIds);
 
     // Update the group material
     const beforeGroup = { ...group };
 
     set((state) => ({
       countertopGroups: state.countertopGroups.map((g) =>
-        g.id === groupId
-          ? { ...g, materialId, updatedAt: new Date() }
-          : g
+        g.id === groupId ? { ...g, materialId, updatedAt: new Date() } : g
       ),
       // Also update all cabinet configs to keep them in sync
       cabinets: state.cabinets.map((cabinet) => {
         if (!cabinetIds.includes(cabinet.id)) return cabinet;
-        if (cabinet.type !== 'KITCHEN') return cabinet;
+        // Support kitchen and corner cabinet types
+        const eligibleTypes = ["KITCHEN", "CORNER_INTERNAL", "CORNER_EXTERNAL"];
+        if (!eligibleTypes.includes(cabinet.type)) return cabinet;
 
-        const params = cabinet.params as KitchenCabinetParams;
+        const params = cabinet.params;
         return {
           ...cabinet,
           params: {
@@ -879,9 +1017,9 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
     }));
 
     if (!skipHistory) {
-      const updatedGroup = get().countertopGroups.find(g => g.id === groupId);
+      const updatedGroup = get().countertopGroups.find((g) => g.id === groupId);
       get().pushEntry({
-        type: 'UPDATE_COUNTERTOP_GROUP',
+        type: "UPDATE_COUNTERTOP_GROUP",
         targetId: groupId,
         furnitureId: group.furnitureId,
         before: { group: beforeGroup },
@@ -889,18 +1027,20 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
         meta: {
           id: generateId(),
           timestamp: Date.now(),
-          label: 'Zmiana materiału blatu',
-          kind: inferKindFromType('UPDATE_COUNTERTOP_GROUP'),
+          label: "Zmiana materiału blatu",
+          kind: inferKindFromType("UPDATE_COUNTERTOP_GROUP"),
         },
       });
     }
   },
 
   separateCabinetFromGroup: (cabinetId: string, skipHistory = false) => {
-    const cabinet = get().cabinets.find(c => c.id === cabinetId);
-    if (!cabinet || cabinet.type !== 'KITCHEN') return;
+    const cabinet = get().cabinets.find((c) => c.id === cabinetId);
+    // Support kitchen and corner cabinet types
+    const eligibleTypes = ["KITCHEN", "CORNER_INTERNAL", "CORNER_EXTERNAL"];
+    if (!cabinet || !eligibleTypes.includes(cabinet.type)) return;
 
-    const params = cabinet.params as KitchenCabinetParams;
+    const params = cabinet.params;
 
     // Set excludeFromGroup on the cabinet
     set((state) => ({
@@ -923,21 +1063,24 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
     }));
 
     // Regenerate countertops for this furniture to create separate group
-    const materialId = params.countertopConfig?.materialId || get().materials.find(m => m.category === 'countertop')?.id || '';
+    const materialId =
+      params.countertopConfig?.materialId ||
+      get().materials.find((m) => m.category === "countertop")?.id ||
+      "";
     get().generateCountertopsForFurniture(cabinet.furnitureId, materialId);
 
     if (!skipHistory) {
       get().pushEntry({
-        type: 'UPDATE_CABINET',
+        type: "UPDATE_CABINET",
         targetId: cabinetId,
         furnitureId: cabinet.furnitureId,
         before: { cabinet: { ...cabinet } },
-        after: { cabinet: { ...get().cabinets.find(c => c.id === cabinetId)! } },
+        after: { cabinet: { ...get().cabinets.find((c) => c.id === cabinetId)! } },
         meta: {
           id: generateId(),
           timestamp: Date.now(),
-          label: 'Oddzielenie blatu szafki',
-          kind: inferKindFromType('UPDATE_CABINET'),
+          label: "Oddzielenie blatu szafki",
+          kind: inferKindFromType("UPDATE_CABINET"),
         },
       });
     }
@@ -953,22 +1096,24 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
     skipHistory = false
   ) => {
     const state = get();
-    const kitchenCabinets = state.cabinets.filter(
-      c => c.furnitureId === furnitureId && c.type === 'KITCHEN'
+    // Include kitchen and corner cabinet types
+    const eligibleTypes = ["KITCHEN", "CORNER_INTERNAL", "CORNER_EXTERNAL"];
+    const eligibleCabinets = state.cabinets.filter(
+      (c) => c.furnitureId === furnitureId && eligibleTypes.includes(c.type)
     );
 
-    if (kitchenCabinets.length === 0) return;
+    if (eligibleCabinets.length === 0) return;
 
     // Capture before state for history
-    const beforeConfigs = kitchenCabinets.map(cabinet => ({
+    const beforeConfigs = eligibleCabinets.map((cabinet) => ({
       cabinetId: cabinet.id,
-      config: (cabinet.params as KitchenCabinetParams).countertopConfig,
+      config: cabinet.params.countertopConfig,
     }));
 
     const now = new Date();
     set((s) => ({
       cabinets: s.cabinets.map((cabinet) => {
-        if (cabinet.furnitureId !== furnitureId || cabinet.type !== 'KITCHEN') {
+        if (cabinet.furnitureId !== furnitureId || !eligibleTypes.includes(cabinet.type)) {
           return cabinet;
         }
 
@@ -976,7 +1121,7 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
         const updatedParams = {
           ...cabinet.params,
           countertopConfig: config,
-        } as KitchenCabinetParams;
+        };
 
         return {
           ...cabinet,
@@ -988,14 +1133,14 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
 
     if (!skipHistory) {
       // Capture after state
-      const afterConfigs = kitchenCabinets.map(cabinet => ({
+      const afterConfigs = eligibleCabinets.map((cabinet) => ({
         cabinetId: cabinet.id,
         config,
       }));
 
       get().pushEntry({
-        type: 'BATCH_UPDATE_COUNTERTOP_CONFIG',
-        targetIds: kitchenCabinets.map(c => c.id),
+        type: "BATCH_UPDATE_COUNTERTOP_CONFIG",
+        targetIds: eligibleCabinets.map((c) => c.id),
         furnitureId,
         before: { furnitureId, cabinetConfigs: beforeConfigs },
         after: { furnitureId, cabinetConfigs: afterConfigs },
@@ -1003,21 +1148,89 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
           id: generateId(),
           timestamp: Date.now(),
           label: HISTORY_LABELS.BATCH_UPDATE_COUNTERTOP_CONFIG,
-          kind: inferKindFromType('BATCH_UPDATE_COUNTERTOP_CONFIG'),
+          kind: inferKindFromType("BATCH_UPDATE_COUNTERTOP_CONFIG"),
         },
       });
     }
   },
 
   getOtherKitchenCabinetsCount: (furnitureId: string, excludeCabinetId?: string) => {
-    const kitchenCabinets = get().cabinets.filter(
-      c => c.furnitureId === furnitureId && c.type === 'KITCHEN'
+    // Include kitchen and corner cabinet types
+    const eligibleTypes = ["KITCHEN", "CORNER_INTERNAL", "CORNER_EXTERNAL"];
+    const eligibleCabinets = get().cabinets.filter(
+      (c) => c.furnitureId === furnitureId && eligibleTypes.includes(c.type)
     );
 
     if (excludeCabinetId) {
-      return kitchenCabinets.filter(c => c.id !== excludeCabinetId).length;
+      return eligibleCabinets.filter((c) => c.id !== excludeCabinetId).length;
     }
 
-    return kitchenCabinets.length;
+    return eligibleCabinets.length;
+  },
+
+  // ==========================================================================
+  // Gap Operations
+  // ==========================================================================
+
+  updateGapMode: (groupId: string, gapId: string, mode: CabinetGapMode, skipHistory = false) => {
+    const group = get().countertopGroups.find((g) => g.id === groupId);
+    if (!group) return;
+
+    const gap = group.gaps.find((g) => g.id === gapId);
+    if (!gap) return;
+
+    const beforeSnapshot = { group: { ...group } };
+
+    // Update gap mode
+    const updatedGaps = group.gaps.map((g) => (g.id === gapId ? { ...g, mode } : g));
+
+    // Get all cabinet IDs from the group
+    const cabinetIds = group.segments.flatMap((s) => s.cabinetIds);
+    const cabinets = get().cabinets.filter((c) => cabinetIds.includes(c.id));
+    const parts = get().parts;
+
+    // Regenerate segments with updated gaps
+    const newSegments = CountertopDomain.generateSegmentsFromCabinets(
+      cabinets,
+      parts,
+      { thickness: group.thickness },
+      updatedGaps
+    );
+
+    const layoutType = CountertopDomain.detectLayoutType(cabinets, parts);
+    const newJoints = CountertopDomain.generateJointsForLayout(newSegments, layoutType);
+
+    set((state) => ({
+      countertopGroups: state.countertopGroups.map((g) =>
+        g.id === groupId
+          ? {
+              ...g,
+              gaps: updatedGaps,
+              segments: newSegments,
+              joints: newJoints,
+              layoutType,
+              updatedAt: new Date(),
+            }
+          : g
+      ),
+    }));
+
+    if (!skipHistory) {
+      const updatedGroup = get().countertopGroups.find((g) => g.id === groupId);
+      get().pushEntry({
+        type: "UPDATE_COUNTERTOP_GROUP",
+        targetId: groupId,
+        furnitureId: group.furnitureId,
+        before: beforeSnapshot,
+        after: { group: { ...updatedGroup! } },
+        meta: {
+          id: generateId(),
+          timestamp: Date.now(),
+          label:
+            mode === "BRIDGE" ? "Połączenie blatu nad przerwą" : "Rozdzielenie blatu w przerwie",
+          kind: inferKindFromType("UPDATE_COUNTERTOP_GROUP"),
+        },
+      });
+    }
   },
 });

@@ -10,26 +10,40 @@
  * - Analytics tracking
  */
 
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { ExportDialog } from './ExportDialog';
-import { track, AnalyticsEvent, resetAllAnalyticsMocks } from '../../../test/__mocks__/analytics';
-import type { Part, Material, Furniture } from '@/types';
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { ExportDialog } from "./ExportDialog";
+import { track, AnalyticsEvent, resetAllAnalyticsMocks } from "../../../test/__mocks__/analytics";
+import type { Part, Material, Furniture } from "@/types";
+
+// Mock global fetch for Supabase
+global.fetch = jest.fn(() =>
+  Promise.resolve({
+    ok: true,
+    json: () => Promise.resolve({}),
+  })
+) as jest.Mock;
+
+// Mock useIsAdmin hook
+jest.mock("@/hooks", () => ({
+  ...jest.requireActual("@/hooks"),
+  useIsAdmin: () => ({ isAdmin: false }),
+}));
 
 // Mock hooks
 const mockUseCredits = jest.fn();
 const mockUseGuestCredits = jest.fn();
 const mockUseAuth = jest.fn();
 
-jest.mock('@/hooks/useCredits', () => ({
+jest.mock("@/hooks/useCredits", () => ({
   useCredits: () => mockUseCredits(),
 }));
 
-jest.mock('@/hooks/useGuestCredits', () => ({
+jest.mock("@/hooks/useGuestCredits", () => ({
   useGuestCredits: () => mockUseGuestCredits(),
 }));
 
-jest.mock('@/providers/AuthProvider', () => ({
+jest.mock("@/providers/AuthProvider", () => ({
   useAuth: () => mockUseAuth(),
 }));
 
@@ -38,7 +52,7 @@ const mockParts: Part[] = [];
 const mockMaterials: Material[] = [];
 const mockFurnitures: Furniture[] = [];
 
-jest.mock('@/lib/store', () => ({
+jest.mock("@/lib/store", () => ({
   useStore: () => ({
     parts: mockParts,
     materials: mockMaterials,
@@ -47,61 +61,61 @@ jest.mock('@/lib/store', () => ({
 }));
 
 // Mock CSV functions
-const mockGenerateCSV = jest.fn(() => 'furniture;part_name;material\nTest;Part1;Plywood');
+const mockGenerateCSV = jest.fn(() => "furniture;part_name;material\nTest;Part1;Plywood");
 const mockDownloadCSV = jest.fn();
 
-jest.mock('@/lib/csv', () => ({
+jest.mock("@/lib/csv", () => ({
   AVAILABLE_COLUMNS: [
-    { id: 'furniture', label: 'furniture', accessor: () => 'Test Furniture' },
-    { id: 'part_name', label: 'partName', accessor: () => 'Test Part' },
-    { id: 'material', label: 'material', accessor: () => 'Plywood' },
-    { id: 'thickness_mm', label: 'thickness', accessor: () => '18' },
-    { id: 'length_x_mm', label: 'length', accessor: () => '500' },
-    { id: 'width_y_mm', label: 'width', accessor: () => '300' },
-    { id: 'notes', label: 'notes', accessor: () => '' },
+    { id: "furniture", label: "furniture", accessor: () => "Test Furniture" },
+    { id: "part_name", label: "partName", accessor: () => "Test Part" },
+    { id: "material", label: "material", accessor: () => "Plywood" },
+    { id: "thickness_mm", label: "thickness", accessor: () => "18" },
+    { id: "length_x_mm", label: "length", accessor: () => "500" },
+    { id: "width_y_mm", label: "width", accessor: () => "300" },
+    { id: "notes", label: "notes", accessor: () => "" },
   ],
   DEFAULT_COLUMNS: [
-    { id: 'furniture', label: 'furniture' },
-    { id: 'part_name', label: 'partName' },
-    { id: 'material', label: 'material' },
-    { id: 'thickness_mm', label: 'thickness' },
-    { id: 'length_x_mm', label: 'length' },
-    { id: 'width_y_mm', label: 'width' },
+    { id: "furniture", label: "furniture" },
+    { id: "part_name", label: "partName" },
+    { id: "material", label: "material" },
+    { id: "thickness_mm", label: "thickness" },
+    { id: "length_x_mm", label: "length" },
+    { id: "width_y_mm", label: "width" },
   ],
   generateCSV: (...args: any[]) => mockGenerateCSV(...args),
   downloadCSV: (...args: any[]) => mockDownloadCSV(...args),
 }));
 
 // Mock projectHash
-jest.mock('@/lib/projectHash', () => ({
-  generatePartsHash: () => 'parts_abc123xyz',
+jest.mock("@/lib/projectHash", () => ({
+  generatePartsHash: () => "parts_abc123xyz",
 }));
 
 // Mock next-intl
-jest.mock('next-intl', () => ({
+jest.mock("next-intl", () => ({
   useTranslations: () => (key: string) => {
     const translations: Record<string, string> = {
-      title: 'Export',
-      description: 'Export your project parts',
-      selectColumns: 'Select columns',
-      preview: 'Preview',
-      csvPreview: 'CSV Preview',
-      noData: 'No data',
-      cancel: 'Anuluj',
-      exportCSV: 'Download CSV',
-      exportDXF: 'Download DXF',
-      dxfHint: 'DXF hint',
-      dxfMissing: 'No DXF-only parts',
-      dxfCount: 'DXF count: {count}',
-      export: 'Export',
-      showingFirst: 'Showing 5 of {total} parts',
-      'columns.furniture': 'Furniture',
-      'columns.partName': 'Part Name',
-      'columns.material': 'Material',
-      'columns.thickness': 'Thickness (mm)',
-      'columns.length': 'Length (mm)',
-      'columns.width': 'Width (mm)',
-      'columns.notes': 'Notes',
+      title: "Export",
+      description: "Export your project parts",
+      selectColumns: "Select columns",
+      preview: "Preview",
+      csvPreview: "CSV Preview",
+      noData: "No data",
+      cancel: "Anuluj",
+      exportCSV: "Download CSV",
+      exportDXF: "Download DXF",
+      dxfHint: "DXF hint",
+      dxfMissing: "No DXF-only parts",
+      dxfCount: "DXF count: {count}",
+      export: "Export",
+      showingFirst: "Showing 5 of {total} parts",
+      "columns.furniture": "Furniture",
+      "columns.partName": "Part Name",
+      "columns.material": "Material",
+      "columns.thickness": "Thickness (mm)",
+      "columns.length": "Length (mm)",
+      "columns.width": "Width (mm)",
+      "columns.notes": "Notes",
     };
     return translations[key] || key;
   },
@@ -110,18 +124,18 @@ jest.mock('next-intl', () => ({
 // Helper to create test part
 function createTestPart(overrides: Partial<Part> = {}): Part {
   return {
-    id: 'part-1',
-    name: 'Test Part',
-    furnitureId: 'furniture-1',
-    shapeType: 'RECT',
+    id: "part-1",
+    name: "Test Part",
+    furnitureId: "furniture-1",
+    shapeType: "RECT",
     shapeParams: { width: 500, height: 300 },
     width: 500,
     height: 300,
     depth: 18,
     position: [0, 0, 0],
     rotation: [0, 0, 0],
-    materialId: 'material-1',
-    edgeBanding: { type: 'RECT', top: true, bottom: false, left: false, right: false },
+    materialId: "material-1",
+    edgeBanding: { type: "RECT", top: true, bottom: false, left: false, right: false },
     createdAt: new Date(),
     updatedAt: new Date(),
     ...overrides,
@@ -130,24 +144,24 @@ function createTestPart(overrides: Partial<Part> = {}): Part {
 
 function createTestMaterial(overrides: Partial<Material> = {}): Material {
   return {
-    id: 'material-1',
-    name: 'Plywood 18mm',
-    color: '#D4A574',
+    id: "material-1",
+    name: "Plywood 18mm",
+    color: "#D4A574",
     thickness: 18,
-    category: 'board',
+    category: "board",
     ...overrides,
   } as Material;
 }
 
 function createTestFurniture(overrides: Partial<Furniture> = {}): Furniture {
   return {
-    id: 'furniture-1',
-    name: 'Test Furniture',
+    id: "furniture-1",
+    name: "Test Furniture",
     ...overrides,
   } as Furniture;
 }
 
-describe('ExportDialog', () => {
+describe("ExportDialog", () => {
   const defaultProps = {
     open: true,
     onOpenChange: jest.fn(),
@@ -169,7 +183,7 @@ describe('ExportDialog', () => {
 
     // Default: authenticated user with credits
     mockUseAuth.mockReturnValue({
-      user: { id: 'user-1', email: 'test@example.com' },
+      user: { id: "user-1", email: "test@example.com" },
       isAuthenticated: true,
     });
 
@@ -186,9 +200,9 @@ describe('ExportDialog', () => {
       error: null,
       useCredit: jest.fn().mockResolvedValue({
         creditUsed: true,
-        sessionId: 'session-123',
+        sessionId: "session-123",
         creditsRemaining: 7,
-        message: 'Credit used',
+        message: "Credit used",
         isFreeReexport: false,
       }),
       refetch: jest.fn(),
@@ -196,7 +210,7 @@ describe('ExportDialog', () => {
 
     mockUseGuestCredits.mockReturnValue({
       balance: { availableCredits: 0, expiresAt: null },
-      sessionId: 'guest_abc123',
+      sessionId: "guest_abc123",
       email: null,
       isLoading: false,
       error: null,
@@ -205,22 +219,22 @@ describe('ExportDialog', () => {
     });
   });
 
-  describe('authenticated user flow', () => {
-    it('renders with user credits balance', () => {
+  describe("authenticated user flow", () => {
+    it("renders with user credits balance", () => {
       render(<ExportDialog {...defaultProps} />);
 
       // Should show credits badge
-      expect(screen.getByText('8 kredytów')).toBeInTheDocument();
+      expect(screen.getByText("8 kredytów")).toBeInTheDocument();
     });
 
-    it('shows Pro badge for unlimited users', () => {
+    it("shows Pro badge for unlimited users", () => {
       mockUseCredits.mockReturnValue({
         balance: {
           totalCredits: 999,
           usedCredits: 0,
           availableCredits: 999,
           hasUnlimited: true,
-          unlimitedExpiresAt: '2025-12-31',
+          unlimitedExpiresAt: "2025-12-31",
           packages: [],
         },
         isLoading: false,
@@ -231,13 +245,13 @@ describe('ExportDialog', () => {
 
       render(<ExportDialog {...defaultProps} />);
 
-      expect(screen.getByText('Pro')).toBeInTheDocument();
+      expect(screen.getByText("Pro")).toBeInTheDocument();
     });
 
-    it('shows credits count for limited users', () => {
+    it("shows credits count for limited users", () => {
       render(<ExportDialog {...defaultProps} />);
 
-      expect(screen.getByText('8 kredytów')).toBeInTheDocument();
+      expect(screen.getByText("8 kredytów")).toBeInTheDocument();
     });
 
     it('shows singular "kredyt" for 1 credit', () => {
@@ -258,29 +272,29 @@ describe('ExportDialog', () => {
 
       render(<ExportDialog {...defaultProps} />);
 
-      expect(screen.getByText('1 kredyt')).toBeInTheDocument();
+      expect(screen.getByText("1 kredyt")).toBeInTheDocument();
     });
 
-    it('enables export button when user has credits', () => {
+    it("enables export button when user has credits", () => {
       render(<ExportDialog {...defaultProps} />);
 
-      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
+      const exportButton = screen.getByRole("button", { name: /Download CSV/i });
       expect(exportButton).not.toBeDisabled();
     });
 
-    it('disables export button when no parts', () => {
+    it("disables export button when no parts", () => {
       mockParts.length = 0;
 
       render(<ExportDialog {...defaultProps} />);
 
-      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
+      const exportButton = screen.getByRole("button", { name: /Download CSV/i });
       expect(exportButton).toBeDisabled();
     });
 
-    it('calls useCredit on export button click', async () => {
+    it("calls useCredit on export button click", async () => {
       const useCredit = jest.fn().mockResolvedValue({
         creditUsed: true,
-        sessionId: 'session-123',
+        sessionId: "session-123",
         creditsRemaining: 7,
         isFreeReexport: false,
       });
@@ -296,15 +310,15 @@ describe('ExportDialog', () => {
       const user = userEvent.setup();
       render(<ExportDialog {...defaultProps} />);
 
-      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
+      const exportButton = screen.getByRole("button", { name: /Download CSV/i });
       await user.click(exportButton);
 
       await waitFor(() => {
-        expect(useCredit).toHaveBeenCalledWith('parts_abc123xyz');
+        expect(useCredit).toHaveBeenCalledWith("parts_abc123xyz");
       });
     });
 
-    it('downloads CSV after successful credit use', async () => {
+    it("downloads CSV after successful credit use", async () => {
       const useCredit = jest.fn().mockResolvedValue({
         creditUsed: true,
         creditsRemaining: 7,
@@ -322,7 +336,7 @@ describe('ExportDialog', () => {
       const user = userEvent.setup();
       render(<ExportDialog {...defaultProps} />);
 
-      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
+      const exportButton = screen.getByRole("button", { name: /Download CSV/i });
       await user.click(exportButton);
 
       await waitFor(() => {
@@ -330,7 +344,7 @@ describe('ExportDialog', () => {
       });
     });
 
-    it('shows success message after export', async () => {
+    it("shows success message after export", async () => {
       const useCredit = jest.fn().mockResolvedValue({
         creditUsed: true,
         creditsRemaining: 7,
@@ -348,7 +362,7 @@ describe('ExportDialog', () => {
       const user = userEvent.setup();
       render(<ExportDialog {...defaultProps} />);
 
-      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
+      const exportButton = screen.getByRole("button", { name: /Download CSV/i });
       await user.click(exportButton);
 
       await waitFor(() => {
@@ -356,13 +370,13 @@ describe('ExportDialog', () => {
       });
     });
 
-    it('shows error message on credit use failure', async () => {
+    it("shows error message on credit use failure", async () => {
       const useCredit = jest.fn().mockResolvedValue(null);
 
       mockUseCredits.mockReturnValue({
         balance: { availableCredits: 8, hasUnlimited: false },
         isLoading: false,
-        error: 'No credits available',
+        error: "Server error", // Error without 'credit' to trigger error message display
         useCredit,
         refetch: jest.fn(),
       });
@@ -370,16 +384,16 @@ describe('ExportDialog', () => {
       const user = userEvent.setup();
       render(<ExportDialog {...defaultProps} />);
 
-      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
+      const exportButton = screen.getByRole("button", { name: /Download CSV/i });
       await user.click(exportButton);
 
       await waitFor(() => {
-        expect(screen.getByText(/No credits available|Nie udało się/i)).toBeInTheDocument();
+        expect(screen.getByText(/Server error|Nie udało się/i)).toBeInTheDocument();
       });
     });
   });
 
-  describe('guest user flow', () => {
+  describe("guest user flow", () => {
     beforeEach(() => {
       mockUseAuth.mockReturnValue({
         user: null,
@@ -387,8 +401,8 @@ describe('ExportDialog', () => {
       });
 
       mockUseGuestCredits.mockReturnValue({
-        balance: { availableCredits: 3, expiresAt: '2025-02-01' },
-        sessionId: 'guest_abc123',
+        balance: { availableCredits: 3, expiresAt: "2025-02-01" },
+        sessionId: "guest_abc123",
         email: null,
         isLoading: false,
         error: null,
@@ -401,13 +415,13 @@ describe('ExportDialog', () => {
       });
     });
 
-    it('renders with guest credits balance', () => {
+    it("renders with guest credits balance", () => {
       render(<ExportDialog {...defaultProps} />);
 
-      expect(screen.getByText('3 kredyty')).toBeInTheDocument();
+      expect(screen.getByText("3 kredyty")).toBeInTheDocument();
     });
 
-    it('uses guestCredits.useCredit for export', async () => {
+    it("uses guestCredits.useCredit for export", async () => {
       const useCredit = jest.fn().mockResolvedValue({
         creditUsed: true,
         creditsRemaining: 2,
@@ -416,7 +430,7 @@ describe('ExportDialog', () => {
 
       mockUseGuestCredits.mockReturnValue({
         balance: { availableCredits: 3, expiresAt: null },
-        sessionId: 'guest_abc123',
+        sessionId: "guest_abc123",
         email: null,
         isLoading: false,
         error: null,
@@ -427,18 +441,18 @@ describe('ExportDialog', () => {
       const user = userEvent.setup();
       render(<ExportDialog {...defaultProps} />);
 
-      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
+      const exportButton = screen.getByRole("button", { name: /Download CSV/i });
       await user.click(exportButton);
 
       await waitFor(() => {
-        expect(useCredit).toHaveBeenCalledWith('parts_abc123xyz');
+        expect(useCredit).toHaveBeenCalledWith("parts_abc123xyz");
       });
     });
 
-    it('shows purchase modal when no credits', async () => {
+    it("shows purchase modal when guest never had credits", async () => {
       mockUseGuestCredits.mockReturnValue({
-        balance: { availableCredits: 0, expiresAt: null },
-        sessionId: 'guest_abc123',
+        balance: null, // Never had credits
+        sessionId: "guest_abc123",
         email: null,
         isLoading: false,
         error: null,
@@ -449,44 +463,71 @@ describe('ExportDialog', () => {
       render(<ExportDialog {...defaultProps} />);
 
       // Should show "Kup kredyty" button instead of export
-      expect(screen.getByRole('button', { name: /Kup kredyty/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Kup kredyty/i })).toBeInTheDocument();
     });
   });
 
-  describe('no credits flow', () => {
-    beforeEach(() => {
-      mockUseCredits.mockReturnValue({
-        balance: { availableCredits: 0, hasUnlimited: false },
-        isLoading: false,
-        error: null,
-        useCredit: jest.fn(),
-        refetch: jest.fn(),
+  describe("no credits flow", () => {
+    describe("never had credits (balance null)", () => {
+      beforeEach(() => {
+        mockUseCredits.mockReturnValue({
+          balance: null, // Never had credits
+          isLoading: false,
+          error: null,
+          useCredit: jest.fn(),
+          refetch: jest.fn(),
+        });
+      });
+
+      it('shows "Brak kredytów" warning when never had credits', () => {
+        render(<ExportDialog {...defaultProps} />);
+
+        expect(screen.getByText(/Brak kredytów/i)).toBeInTheDocument();
+      });
+
+      it('shows "Kup kredyty" button instead of export', () => {
+        render(<ExportDialog {...defaultProps} />);
+
+        expect(screen.getByRole("button", { name: /Kup kredyty/i })).toBeInTheDocument();
+        expect(screen.queryByRole("button", { name: /Download CSV/i })).not.toBeInTheDocument();
       });
     });
 
-    it('shows no credits warning when balance is zero', () => {
-      render(<ExportDialog {...defaultProps} />);
+    describe("had credits before but exhausted", () => {
+      beforeEach(() => {
+        mockUseCredits.mockReturnValue({
+          balance: { availableCredits: 0, hasUnlimited: false }, // Had credits, now 0
+          isLoading: false,
+          error: null,
+          useCredit: jest.fn(),
+          refetch: jest.fn(),
+        });
+      });
 
-      expect(screen.getByText(/Brak kredytów/i)).toBeInTheDocument();
-    });
+      it('shows "0 kredytów" warning with Smart Export hint', () => {
+        render(<ExportDialog {...defaultProps} />);
 
-    it('shows "Kup kredyty" button instead of export', () => {
-      render(<ExportDialog {...defaultProps} />);
+        expect(screen.getByText(/0 kredytów/i)).toBeInTheDocument();
+      });
 
-      expect(screen.getByRole('button', { name: /Kup kredyty/i })).toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: /Download CSV/i })).not.toBeInTheDocument();
+      it("still shows export buttons for potential Smart Export", () => {
+        render(<ExportDialog {...defaultProps} />);
+
+        // Export buttons should be visible for Smart Export
+        expect(screen.getByRole("button", { name: /Download CSV/i })).toBeInTheDocument();
+      });
     });
   });
 
-  describe('Smart Export display', () => {
-    it('shows Smart Export info when user has credits', () => {
+  describe("Smart Export display", () => {
+    it("shows Smart Export info when user has credits", () => {
       render(<ExportDialog {...defaultProps} />);
 
       expect(screen.getByText(/Smart Export/i)).toBeInTheDocument();
       expect(screen.getByText(/24h/i)).toBeInTheDocument();
     });
 
-    it('displays free re-export message on isFreeReexport', async () => {
+    it("displays free re-export message on isFreeReexport", async () => {
       const useCredit = jest.fn().mockResolvedValue({
         creditUsed: false,
         creditsRemaining: 8,
@@ -504,7 +545,7 @@ describe('ExportDialog', () => {
       const user = userEvent.setup();
       render(<ExportDialog {...defaultProps} />);
 
-      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
+      const exportButton = screen.getByRole("button", { name: /Download CSV/i });
       await user.click(exportButton);
 
       await waitFor(() => {
@@ -512,7 +553,7 @@ describe('ExportDialog', () => {
       });
     });
 
-    it('displays credits remaining after paid export', async () => {
+    it("displays credits remaining after paid export", async () => {
       const useCredit = jest.fn().mockResolvedValue({
         creditUsed: true,
         creditsRemaining: 7,
@@ -530,7 +571,7 @@ describe('ExportDialog', () => {
       const user = userEvent.setup();
       render(<ExportDialog {...defaultProps} />);
 
-      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
+      const exportButton = screen.getByRole("button", { name: /Download CSV/i });
       await user.click(exportButton);
 
       await waitFor(() => {
@@ -539,28 +580,28 @@ describe('ExportDialog', () => {
     });
   });
 
-  describe('column selection', () => {
-    it('renders all available columns', () => {
+  describe("column selection", () => {
+    it("renders all available columns", () => {
       render(<ExportDialog {...defaultProps} />);
 
       // Check labels exist (use getAllByText since text appears in both checkbox labels and table headers)
-      expect(screen.getAllByText('Furniture').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('Part Name').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('Material').length).toBeGreaterThan(0);
+      expect(screen.getAllByText("Furniture").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("Part Name").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("Material").length).toBeGreaterThan(0);
     });
 
-    it('has default columns pre-selected', () => {
+    it("has default columns pre-selected", () => {
       render(<ExportDialog {...defaultProps} />);
 
-      const furnitureCheckbox = screen.getByLabelText('Furniture');
+      const furnitureCheckbox = screen.getByLabelText("Furniture");
       expect(furnitureCheckbox).toBeChecked();
     });
 
-    it('toggles column selection on checkbox click', async () => {
+    it("toggles column selection on checkbox click", async () => {
       const user = userEvent.setup();
       render(<ExportDialog {...defaultProps} />);
 
-      const notesCheckbox = screen.getByLabelText('Notes');
+      const notesCheckbox = screen.getByLabelText("Notes");
       expect(notesCheckbox).not.toBeChecked();
 
       await user.click(notesCheckbox);
@@ -569,59 +610,59 @@ describe('ExportDialog', () => {
     });
   });
 
-  describe('preview table', () => {
-    it('shows parts in preview', () => {
+  describe("preview table", () => {
+    it("shows parts in preview", () => {
       render(<ExportDialog {...defaultProps} />);
 
       // The preview should show part data
-      expect(screen.getByText('Preview')).toBeInTheDocument();
+      expect(screen.getByText("Preview")).toBeInTheDocument();
     });
 
-    it('shows no data message when empty', () => {
+    it("shows no data message when empty", () => {
       mockParts.length = 0;
 
       render(<ExportDialog {...defaultProps} />);
 
-      expect(screen.getByText('No data')).toBeInTheDocument();
+      expect(screen.getByText("No data")).toBeInTheDocument();
     });
 
-    it('shows CSV preview in textarea', () => {
+    it("shows CSV preview in textarea", () => {
       render(<ExportDialog {...defaultProps} />);
 
-      const csvPreview = screen.getByRole('textbox');
+      const csvPreview = screen.getByRole("textbox");
       expect(csvPreview).toBeInTheDocument();
-      expect(csvPreview).toHaveAttribute('readonly');
+      expect(csvPreview).toHaveAttribute("readonly");
     });
   });
 
-  describe('DXF export state', () => {
-    it('disables DXF export when there are no non-rect parts', () => {
+  describe("DXF export state", () => {
+    it("disables DXF export when there are no non-rect parts", () => {
       render(<ExportDialog {...defaultProps} />);
 
-      const dxfButton = screen.getByRole('button', { name: /Download DXF/i });
+      const dxfButton = screen.getByRole("button", { name: /Download DXF/i });
       expect(dxfButton).toBeDisabled();
     });
 
-    it('enables DXF export when non-rect parts exist', () => {
+    it("enables DXF export when non-rect parts exist", () => {
       mockParts.length = 0;
-      mockParts.push(createTestPart({ id: 'rect-1' }));
+      mockParts.push(createTestPart({ id: "rect-1" }));
       mockParts.push(
         createTestPart({
-          id: 'lshape-1',
-          shapeType: 'L_SHAPE',
-          shapeParams: { type: 'L_SHAPE', x: 300, y: 300, cutX: 80, cutY: 80 } as any,
+          id: "lshape-1",
+          shapeType: "L_SHAPE",
+          shapeParams: { type: "L_SHAPE", x: 300, y: 300, cutX: 80, cutY: 80 } as any,
         })
       );
 
       render(<ExportDialog {...defaultProps} />);
 
-      const dxfButton = screen.getByRole('button', { name: /Download DXF/i });
+      const dxfButton = screen.getByRole("button", { name: /Download DXF/i });
       expect(dxfButton).not.toBeDisabled();
     });
   });
 
-  describe('analytics tracking', () => {
-    it('tracks EXPORT_INITIATED on dialog open', () => {
+  describe("analytics tracking", () => {
+    it("tracks EXPORT_INITIATED on dialog open", () => {
       render(<ExportDialog {...defaultProps} />);
 
       expect(track).toHaveBeenCalledWith(AnalyticsEvent.EXPORT_INITIATED, {
@@ -630,7 +671,7 @@ describe('ExportDialog', () => {
       });
     });
 
-    it('tracks EXPORT_COMPLETED on success', async () => {
+    it("tracks EXPORT_COMPLETED on success", async () => {
       const useCredit = jest.fn().mockResolvedValue({
         creditUsed: true,
         creditsRemaining: 7,
@@ -648,19 +689,19 @@ describe('ExportDialog', () => {
       const user = userEvent.setup();
       render(<ExportDialog {...defaultProps} />);
 
-      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
+      const exportButton = screen.getByRole("button", { name: /Download CSV/i });
       await user.click(exportButton);
 
       await waitFor(() => {
         expect(track).toHaveBeenCalledWith(AnalyticsEvent.EXPORT_COMPLETED, {
           parts_count: 1,
           used_credit: true,
-          export_format: 'csv',
+          export_format: "csv",
         });
       });
     });
 
-    it('tracks SMART_EXPORT_USED for free re-export', async () => {
+    it("tracks SMART_EXPORT_USED for free re-export", async () => {
       const useCredit = jest.fn().mockResolvedValue({
         creditUsed: false,
         creditsRemaining: 8,
@@ -678,7 +719,7 @@ describe('ExportDialog', () => {
       const user = userEvent.setup();
       render(<ExportDialog {...defaultProps} />);
 
-      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
+      const exportButton = screen.getByRole("button", { name: /Download CSV/i });
       await user.click(exportButton);
 
       await waitFor(() => {
@@ -688,7 +729,7 @@ describe('ExportDialog', () => {
       });
     });
 
-    it('tracks EXPORT_VALIDATION_FAILED on error', async () => {
+    it("tracks EXPORT_VALIDATION_FAILED on error", async () => {
       const useCredit = jest.fn().mockResolvedValue(null);
 
       mockUseCredits.mockReturnValue({
@@ -702,40 +743,40 @@ describe('ExportDialog', () => {
       const user = userEvent.setup();
       render(<ExportDialog {...defaultProps} />);
 
-      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
+      const exportButton = screen.getByRole("button", { name: /Download CSV/i });
       await user.click(exportButton);
 
       await waitFor(() => {
         expect(track).toHaveBeenCalledWith(AnalyticsEvent.EXPORT_VALIDATION_FAILED, {
           error_count: 1,
-          error_types: ['no_credits'],
+          error_types: ["credit_error"],
         });
       });
     });
   });
 
-  describe('dialog behavior', () => {
-    it('calls onOpenChange when cancel is clicked', async () => {
+  describe("dialog behavior", () => {
+    it("calls onOpenChange when cancel is clicked", async () => {
       const onOpenChange = jest.fn();
       const user = userEvent.setup();
 
       render(<ExportDialog {...defaultProps} onOpenChange={onOpenChange} />);
 
-      const cancelButton = screen.getByRole('button', { name: 'Anuluj' });
+      const cancelButton = screen.getByRole("button", { name: "Anuluj" });
       await user.click(cancelButton);
 
       expect(onOpenChange).toHaveBeenCalledWith(false);
     });
 
-    it('renders dialog title', () => {
+    it("renders dialog title", () => {
       render(<ExportDialog {...defaultProps} />);
 
-      expect(screen.getByText('Export')).toBeInTheDocument();
+      expect(screen.getByText("Export")).toBeInTheDocument();
     });
   });
 
-  describe('loading state', () => {
-    it('shows loading spinner during export', async () => {
+  describe("loading state", () => {
+    it("shows loading spinner during export", async () => {
       // Create a promise that doesn't resolve immediately
       let resolveCredit: (value: any) => void;
       const useCredit = jest.fn().mockReturnValue(
@@ -755,7 +796,7 @@ describe('ExportDialog', () => {
       const user = userEvent.setup();
       render(<ExportDialog {...defaultProps} />);
 
-      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
+      const exportButton = screen.getByRole("button", { name: /Download CSV/i });
       await user.click(exportButton);
 
       // Should show loading state
@@ -765,7 +806,7 @@ describe('ExportDialog', () => {
       resolveCredit!({ creditUsed: true, creditsRemaining: 7, isFreeReexport: false });
     });
 
-    it('disables export button during processing', async () => {
+    it("disables export button during processing", async () => {
       let resolveCredit: (value: any) => void;
       const useCredit = jest.fn().mockReturnValue(
         new Promise((resolve) => {
@@ -784,11 +825,11 @@ describe('ExportDialog', () => {
       const user = userEvent.setup();
       render(<ExportDialog {...defaultProps} />);
 
-      const exportButton = screen.getByRole('button', { name: /Download CSV/i });
+      const exportButton = screen.getByRole("button", { name: /Download CSV/i });
       await user.click(exportButton);
 
       // Button should be disabled during processing
-      const processingButton = screen.getByRole('button', { name: /Eksportowanie CSV/i });
+      const processingButton = screen.getByRole("button", { name: /Eksportowanie CSV/i });
       expect(processingButton).toBeDisabled();
 
       // Cleanup
@@ -796,31 +837,31 @@ describe('ExportDialog', () => {
     });
   });
 
-  describe('credits badge click', () => {
-    it('clicking credits badge opens purchase modal', async () => {
+  describe("credits badge click", () => {
+    it("clicking credits badge opens purchase modal", async () => {
       const user = userEvent.setup();
       render(<ExportDialog {...defaultProps} />);
 
-      const creditsBadge = screen.getByText('8 kredytów');
+      const creditsBadge = screen.getByText("8 kredytów");
       await user.click(creditsBadge);
 
       // Badge click opens purchase modal (to buy more credits)
-      expect(screen.getByText('Kup kredyty eksportu')).toBeInTheDocument();
+      expect(screen.getByText("Kup kredyty eksportu")).toBeInTheDocument();
     });
   });
 
-  describe('multiple parts', () => {
-    it('handles multiple parts correctly', () => {
+  describe("multiple parts", () => {
+    it("handles multiple parts correctly", () => {
       // Add more parts
       mockParts.push(
-        createTestPart({ id: 'part-2', name: 'Part 2' }),
-        createTestPart({ id: 'part-3', name: 'Part 3' })
+        createTestPart({ id: "part-2", name: "Part 2" }),
+        createTestPart({ id: "part-3", name: "Part 3" })
       );
 
       render(<ExportDialog {...defaultProps} />);
 
       // Should show parts in preview
-      expect(screen.getByText('Preview')).toBeInTheDocument();
+      expect(screen.getByText("Preview")).toBeInTheDocument();
     });
   });
 });

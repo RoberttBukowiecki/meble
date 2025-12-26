@@ -12,30 +12,20 @@ interface CreditsAnimationProps {
 
 /**
  * Animated credits indicator that shows +X when credits are added.
- * Features a floating animation with fade-in/fade-out.
+ * Features a floating animation that flies off screen.
  */
-function CreditsAnimation({
-  amount,
-  show,
-  onAnimationEnd,
-  className,
-}: CreditsAnimationProps) {
+function CreditsAnimation({ amount, show, onAnimationEnd, className }: CreditsAnimationProps) {
   const [isVisible, setIsVisible] = React.useState(false);
-  const [isAnimating, setIsAnimating] = React.useState(false);
 
   React.useEffect(() => {
     if (show && amount > 0) {
       setIsVisible(true);
-      setIsAnimating(true);
 
-      // Animation duration - total 2s
+      // Animation duration matches tailwind config (1.5s)
       const timer = setTimeout(() => {
-        setIsAnimating(false);
-        setTimeout(() => {
-          setIsVisible(false);
-          onAnimationEnd?.();
-        }, 300); // Fade out duration
-      }, 1700); // Main animation duration
+        setIsVisible(false);
+        onAnimationEnd?.();
+      }, 1500);
 
       return () => clearTimeout(timer);
     }
@@ -46,13 +36,11 @@ function CreditsAnimation({
   return (
     <span
       className={cn(
-        "absolute -top-1 -right-1 inline-flex items-center justify-center",
-        "px-1.5 py-0.5 text-xs font-bold rounded-full",
-        "bg-green-500 text-white shadow-lg",
-        "transition-all duration-300",
-        isAnimating
-          ? "animate-credits-pop opacity-100"
-          : "opacity-0 translate-y-2",
+        "absolute -top-2 -right-2 z-50 inline-flex items-center justify-center",
+        "px-2.5 py-1 text-base font-bold rounded-full",
+        "bg-green-500 text-white shadow-xl",
+        "ring-2 ring-green-300/50",
+        "animate-credits-pop",
         className
       )}
     >
@@ -70,11 +58,7 @@ interface AnimatedCreditsProps {
   className?: string;
 }
 
-function AnimatedCredits({
-  currentCredits,
-  children,
-  className,
-}: AnimatedCreditsProps) {
+function AnimatedCredits({ currentCredits, children, className }: AnimatedCreditsProps) {
   const [prevCredits, setPrevCredits] = React.useState(currentCredits);
   const [creditsDelta, setCreditsDelta] = React.useState(0);
   const [showAnimation, setShowAnimation] = React.useState(false);
@@ -95,7 +79,7 @@ function AnimatedCredits({
   };
 
   return (
-    <div className={cn("relative inline-flex", className)}>
+    <div className={cn("relative inline-flex overflow-visible", className)}>
       {children}
       <CreditsAnimation
         amount={creditsDelta}

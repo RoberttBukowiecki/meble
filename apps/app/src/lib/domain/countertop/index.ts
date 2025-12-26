@@ -21,42 +21,44 @@ import type {
   CutoutPresetType,
   CountertopGroupOptions,
   EdgeId,
-} from '@/types/countertop';
+  CabinetGap,
+  CabinetGapMode,
+} from "@/types/countertop";
 import {
   generateCountertopGroupId,
   generateSegmentId,
   generateJointId,
   generateCncOperationId,
   generateCornerId,
-} from '@/types/countertop';
-import type { Cabinet, Part, Material } from '@/types';
+  generateGapId,
+} from "@/types/countertop";
+import type { Cabinet, Part, Material } from "@/types";
 import {
   COUNTERTOP_DEFAULTS,
   COUNTERTOP_LIMITS,
   JOINT_HARDWARE_PRESETS,
   CUTOUT_PRESETS,
   CABINET_ADJACENCY_THRESHOLD,
-} from '@/lib/config';
+  CABINET_GAP_CONFIG,
+} from "@/lib/config";
 
 // Import from split modules
 import {
   clamp,
   getCabinetBounds,
   areCabinetsAdjacent,
+  getCabinetGapInfo,
   findConnectedComponents,
-} from './helpers';
-import {
-  validateSegment,
-  validateCncOperation,
-  validateGroup,
-} from './validation';
+  findDirectionChangeIndices,
+} from "./helpers";
+import { validateSegment, validateCncOperation, validateGroup } from "./validation";
 import {
   calculateTotalArea,
   calculateTotalAreaM2,
   calculateEdgeBandingLength,
   generateProductionData,
   generateCuttingListCsv,
-} from './export';
+} from "./export";
 
 /**
  * Unified CountertopDomain module
@@ -70,7 +72,7 @@ export const CountertopDomain = {
     name: string,
     cabinetIds: string[],
     dimensions: { length: number; width: number },
-    options?: Partial<Omit<CountertopSegment, 'id' | 'name' | 'cabinetIds' | 'length' | 'width'>>
+    options?: Partial<Omit<CountertopSegment, "id" | "name" | "cabinetIds" | "length" | "width">>
   ): CountertopSegment => ({
     id: generateSegmentId(),
     name,
@@ -88,7 +90,7 @@ export const CountertopDomain = {
   createJoint: (
     segmentAId: string,
     segmentBId: string,
-    type: CountertopJointType = 'MITER_45',
+    type: CountertopJointType = "MITER_45",
     angle: number = 90
   ): CountertopJoint => ({
     id: generateJointId(),
@@ -97,26 +99,26 @@ export const CountertopDomain = {
     segmentBId,
     angle,
     hardware: { ...JOINT_HARDWARE_PRESETS[type] },
-    notchDepth: type === 'MITER_45' || type === 'EUROPEAN_MITER' ? 650 : undefined,
+    notchDepth: type === "MITER_45" || type === "EUROPEAN_MITER" ? 650 : undefined,
   }),
 
   createCorner: (
     position: CornerPosition,
-    treatment: CornerTreatment = 'STRAIGHT',
+    treatment: CornerTreatment = "STRAIGHT",
     params?: { chamferAngle?: number; radius?: number; clipSize?: number }
   ): CountertopCornerConfig => ({
     id: generateCornerId(),
     position,
     treatment,
-    chamferAngle: treatment === 'CHAMFER' ? (params?.chamferAngle ?? 45) : undefined,
-    radius: treatment === 'RADIUS' ? (params?.radius ?? 30) : undefined,
-    clipSize: treatment === 'CLIP' ? (params?.clipSize ?? 30) : undefined,
+    chamferAngle: treatment === "CHAMFER" ? (params?.chamferAngle ?? 45) : undefined,
+    radius: treatment === "RADIUS" ? (params?.radius ?? 30) : undefined,
+    clipSize: treatment === "CLIP" ? (params?.clipSize ?? 30) : undefined,
   }),
 
   createCncOperation: (
     type: CncOperationType,
     position: { x: number; y: number },
-    dimensions: CncOperation['dimensions'],
+    dimensions: CncOperation["dimensions"],
     preset?: CutoutPresetType
   ): CncOperation => ({
     id: generateCncOperationId(),
@@ -130,14 +132,12 @@ export const CountertopDomain = {
     preset: CutoutPresetType,
     position: { x: number; y: number }
   ): CncOperation | null => {
-    if (preset === 'NONE') return null;
+    if (preset === "NONE") return null;
 
     const presetConfig = CUTOUT_PRESETS[preset];
     const { dimensions } = presetConfig;
 
-    const type: CncOperationType = dimensions.diameter
-      ? 'CIRCULAR_HOLE'
-      : 'RECTANGULAR_CUTOUT';
+    const type: CncOperationType = dimensions.diameter ? "CIRCULAR_HOLE" : "RECTANGULAR_CUTOUT";
 
     return CountertopDomain.createCncOperation(type, position, dimensions, preset);
   },
@@ -147,22 +147,28 @@ export const CountertopDomain = {
     cabinets: Cabinet[],
     parts: Part[],
     materialId: string,
-    options?: CountertopGroupOptions
+    options?: CountertopGroupOptions,
+    existingGaps?: CabinetGap[]
   ): CountertopGroup => {
     const layoutType = CountertopDomain.detectLayoutType(cabinets, parts);
-    const segments = CountertopDomain.generateSegmentsFromCabinets(cabinets, parts, options);
+    // Detect gaps between cabinets, preserving existing user choices if provided
+    const gaps = CountertopDomain.detectGapsInCabinets(cabinets, parts, existingGaps);
+    const segments = CountertopDomain.generateSegmentsFromCabinets(cabinets, parts, options, gaps);
     const joints = CountertopDomain.generateJointsForLayout(segments, layoutType);
     const corners = CountertopDomain.generateCornersForLayout(layoutType);
 
     return {
       id: generateCountertopGroupId(),
-      name: options?.name ?? `Blat ${layoutType === 'STRAIGHT' ? 'prosty' : layoutType === 'L_SHAPE' ? 'L' : layoutType}`,
+      name:
+        options?.name ??
+        `Blat ${layoutType === "STRAIGHT" ? "prosty" : layoutType === "L_SHAPE" ? "L" : layoutType}`,
       furnitureId,
       layoutType,
       materialId,
       segments,
       joints,
       corners,
+      gaps,
       thickness: options?.thickness ?? COUNTERTOP_DEFAULTS.THICKNESS,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -178,15 +184,22 @@ export const CountertopDomain = {
     dimensions: Partial<{ length: number; width: number; thickness: number }>
   ): CountertopSegment => ({
     ...segment,
-    length: dimensions.length !== undefined
-      ? clamp(dimensions.length, COUNTERTOP_LIMITS.LENGTH.min, COUNTERTOP_LIMITS.LENGTH.max)
-      : segment.length,
-    width: dimensions.width !== undefined
-      ? clamp(dimensions.width, COUNTERTOP_LIMITS.WIDTH.min, COUNTERTOP_LIMITS.WIDTH.max)
-      : segment.width,
-    thickness: dimensions.thickness !== undefined
-      ? clamp(dimensions.thickness, COUNTERTOP_LIMITS.THICKNESS.min, COUNTERTOP_LIMITS.THICKNESS.max)
-      : segment.thickness,
+    length:
+      dimensions.length !== undefined
+        ? clamp(dimensions.length, COUNTERTOP_LIMITS.LENGTH.min, COUNTERTOP_LIMITS.LENGTH.max)
+        : segment.length,
+    width:
+      dimensions.width !== undefined
+        ? clamp(dimensions.width, COUNTERTOP_LIMITS.WIDTH.min, COUNTERTOP_LIMITS.WIDTH.max)
+        : segment.width,
+    thickness:
+      dimensions.thickness !== undefined
+        ? clamp(
+            dimensions.thickness,
+            COUNTERTOP_LIMITS.THICKNESS.min,
+            COUNTERTOP_LIMITS.THICKNESS.max
+          )
+        : segment.thickness,
   }),
 
   updateSegmentOverhang: (
@@ -195,18 +208,22 @@ export const CountertopDomain = {
   ): CountertopSegment => ({
     ...segment,
     overhang: {
-      front: overhang.front !== undefined
-        ? clamp(overhang.front, COUNTERTOP_LIMITS.OVERHANG.min, COUNTERTOP_LIMITS.OVERHANG.max)
-        : segment.overhang.front,
-      back: overhang.back !== undefined
-        ? clamp(overhang.back, COUNTERTOP_LIMITS.OVERHANG.min, COUNTERTOP_LIMITS.OVERHANG.max)
-        : segment.overhang.back,
-      left: overhang.left !== undefined
-        ? clamp(overhang.left, COUNTERTOP_LIMITS.OVERHANG.min, COUNTERTOP_LIMITS.OVERHANG.max)
-        : segment.overhang.left,
-      right: overhang.right !== undefined
-        ? clamp(overhang.right, COUNTERTOP_LIMITS.OVERHANG.min, COUNTERTOP_LIMITS.OVERHANG.max)
-        : segment.overhang.right,
+      front:
+        overhang.front !== undefined
+          ? clamp(overhang.front, COUNTERTOP_LIMITS.OVERHANG.min, COUNTERTOP_LIMITS.OVERHANG.max)
+          : segment.overhang.front,
+      back:
+        overhang.back !== undefined
+          ? clamp(overhang.back, COUNTERTOP_LIMITS.OVERHANG.min, COUNTERTOP_LIMITS.OVERHANG.max)
+          : segment.overhang.back,
+      left:
+        overhang.left !== undefined
+          ? clamp(overhang.left, COUNTERTOP_LIMITS.OVERHANG.min, COUNTERTOP_LIMITS.OVERHANG.max)
+          : segment.overhang.left,
+      right:
+        overhang.right !== undefined
+          ? clamp(overhang.right, COUNTERTOP_LIMITS.OVERHANG.min, COUNTERTOP_LIMITS.OVERHANG.max)
+          : segment.overhang.right,
     },
   }),
 
@@ -241,29 +258,23 @@ export const CountertopDomain = {
     grainAlongLength,
   }),
 
-  addCncOperation: (
-    segment: CountertopSegment,
-    operation: CncOperation
-  ): CountertopSegment => ({
+  addCncOperation: (segment: CountertopSegment, operation: CncOperation): CountertopSegment => ({
     ...segment,
     cncOperations: [...segment.cncOperations, operation],
   }),
 
-  removeCncOperation: (
-    segment: CountertopSegment,
-    operationId: string
-  ): CountertopSegment => ({
+  removeCncOperation: (segment: CountertopSegment, operationId: string): CountertopSegment => ({
     ...segment,
-    cncOperations: segment.cncOperations.filter(op => op.id !== operationId),
+    cncOperations: segment.cncOperations.filter((op) => op.id !== operationId),
   }),
 
   updateCncOperation: (
     segment: CountertopSegment,
     operationId: string,
-    updates: Partial<Omit<CncOperation, 'id'>>
+    updates: Partial<Omit<CncOperation, "id">>
   ): CountertopSegment => ({
     ...segment,
-    cncOperations: segment.cncOperations.map(op =>
+    cncOperations: segment.cncOperations.map((op) =>
       op.id === operationId ? { ...op, ...updates } : op
     ),
   }),
@@ -275,14 +286,14 @@ export const CountertopDomain = {
     params?: { chamferAngle?: number; radius?: number; clipSize?: number }
   ): CountertopGroup => ({
     ...group,
-    corners: group.corners.map(corner =>
+    corners: group.corners.map((corner) =>
       corner.position === position
         ? {
             ...corner,
             treatment,
-            chamferAngle: treatment === 'CHAMFER' ? (params?.chamferAngle ?? 45) : undefined,
-            radius: treatment === 'RADIUS' ? (params?.radius ?? 30) : undefined,
-            clipSize: treatment === 'CLIP' ? (params?.clipSize ?? 30) : undefined,
+            chamferAngle: treatment === "CHAMFER" ? (params?.chamferAngle ?? 45) : undefined,
+            radius: treatment === "RADIUS" ? (params?.radius ?? 30) : undefined,
+            clipSize: treatment === "CLIP" ? (params?.clipSize ?? 30) : undefined,
           }
         : corner
     ),
@@ -295,13 +306,13 @@ export const CountertopDomain = {
     type: CountertopJointType
   ): CountertopGroup => ({
     ...group,
-    joints: group.joints.map(joint =>
+    joints: group.joints.map((joint) =>
       joint.id === jointId
         ? {
             ...joint,
             type,
             hardware: { ...JOINT_HARDWARE_PRESETS[type] },
-            notchDepth: type === 'MITER_45' || type === 'EUROPEAN_MITER' ? 650 : undefined,
+            notchDepth: type === "MITER_45" || type === "EUROPEAN_MITER" ? 650 : undefined,
           }
         : joint
     ),
@@ -311,10 +322,10 @@ export const CountertopDomain = {
   updateSegmentInGroup: (
     group: CountertopGroup,
     segmentId: string,
-    updates: Partial<Omit<CountertopSegment, 'id'>>
+    updates: Partial<Omit<CountertopSegment, "id">>
   ): CountertopGroup => ({
     ...group,
-    segments: group.segments.map(segment =>
+    segments: group.segments.map((segment) =>
       segment.id === segmentId ? { ...segment, ...updates } : segment
     ),
     updatedAt: new Date(),
@@ -327,10 +338,10 @@ export const CountertopDomain = {
   detectAdjacentCabinets: (
     cabinets: Cabinet[],
     parts: Part[],
-    threshold: number = CABINET_ADJACENCY_THRESHOLD
+    threshold: number = CABINET_GAP_CONFIG.MAX_BRIDGE_GAP
   ): Cabinet[][] => {
-    const eligibleTypes = ['KITCHEN', 'CORNER_INTERNAL', 'CORNER_EXTERNAL'];
-    const eligible = cabinets.filter(c => eligibleTypes.includes(c.type));
+    const eligibleTypes = ["KITCHEN", "CORNER_INTERNAL", "CORNER_EXTERNAL"];
+    const eligible = cabinets.filter((c) => eligibleTypes.includes(c.type));
 
     if (eligible.length === 0) return [];
     if (eligible.length === 1) return [eligible];
@@ -347,6 +358,7 @@ export const CountertopDomain = {
         const boundsA = boundsMap.get(eligible[i].id)!;
         const boundsB = boundsMap.get(eligible[j].id)!;
 
+        // Use MAX_BRIDGE_GAP to group cabinets that can potentially share a countertop
         if (areCabinetsAdjacent(boundsA, boundsB, threshold)) {
           if (!adjacency.has(eligible[i].id)) {
             adjacency.set(eligible[i].id, new Set());
@@ -363,19 +375,70 @@ export const CountertopDomain = {
     return findConnectedComponents(eligible, adjacency);
   },
 
-  detectLayoutType: (
+  /**
+   * Detect gaps between cabinets in a group
+   * Returns array of gaps with their distances and default modes
+   */
+  detectGapsInCabinets: (
     cabinets: Cabinet[],
-    parts: Part[]
-  ): CountertopLayoutType => {
-    if (cabinets.length === 0) return 'STRAIGHT';
-    if (cabinets.length === 1) {
-      if (cabinets[0].type === 'CORNER_INTERNAL' || cabinets[0].type === 'CORNER_EXTERNAL') {
-        return 'L_SHAPE';
-      }
-      return 'STRAIGHT';
+    parts: Part[],
+    existingGaps?: CabinetGap[]
+  ): CabinetGap[] => {
+    if (cabinets.length < 2) return [];
+
+    const gaps: CabinetGap[] = [];
+    const boundsMap = new Map<string, ReturnType<typeof getCabinetBounds>>();
+
+    // Build bounds map
+    for (const cabinet of cabinets) {
+      boundsMap.set(cabinet.id, getCabinetBounds(cabinet, parts));
     }
 
-    const centers = cabinets.map(c => getCabinetBounds(c, parts).center);
+    // Check all pairs
+    for (let i = 0; i < cabinets.length; i++) {
+      for (let j = i + 1; j < cabinets.length; j++) {
+        const boundsA = boundsMap.get(cabinets[i].id)!;
+        const boundsB = boundsMap.get(cabinets[j].id)!;
+
+        const gapInfo = getCabinetGapInfo(boundsA, boundsB, CABINET_GAP_CONFIG.MAX_BRIDGE_GAP);
+
+        if (gapInfo && gapInfo.gap > CABINET_GAP_CONFIG.TOUCH_THRESHOLD) {
+          // Check if there's an existing gap with user-set mode
+          const existingGap = existingGaps?.find(
+            (g) =>
+              (g.cabinetAId === cabinets[i].id && g.cabinetBId === cabinets[j].id) ||
+              (g.cabinetAId === cabinets[j].id && g.cabinetBId === cabinets[i].id)
+          );
+
+          // Determine default mode based on gap size
+          const defaultMode: CabinetGapMode =
+            gapInfo.gap > CABINET_GAP_CONFIG.AUTO_SPLIT_THRESHOLD ? "SPLIT" : "BRIDGE";
+
+          gaps.push({
+            id: existingGap?.id ?? generateGapId(),
+            cabinetAId: cabinets[i].id,
+            cabinetBId: cabinets[j].id,
+            distance: Math.round(gapInfo.gap),
+            axis: gapInfo.axis,
+            mode: existingGap?.mode ?? defaultMode,
+          });
+        }
+      }
+    }
+
+    return gaps;
+  },
+
+  detectLayoutType: (cabinets: Cabinet[], parts: Part[]): CountertopLayoutType => {
+    if (cabinets.length === 0) return "STRAIGHT";
+    if (cabinets.length === 1) {
+      if (cabinets[0].type === "CORNER_INTERNAL" || cabinets[0].type === "CORNER_EXTERNAL") {
+        return "L_SHAPE";
+      }
+      return "STRAIGHT";
+    }
+
+    const centers = cabinets.map((c) => getCabinetBounds(c, parts).center);
     const directions: [number, number][] = [];
 
     for (let i = 1; i < centers.length; i++) {
@@ -387,7 +450,7 @@ export const CountertopDomain = {
       }
     }
 
-    if (directions.length === 0) return 'STRAIGHT';
+    if (directions.length === 0) return "STRAIGHT";
 
     let angleChanges = 0;
     for (let i = 1; i < directions.length; i++) {
@@ -399,20 +462,21 @@ export const CountertopDomain = {
     }
 
     const hasCornerCabinet = cabinets.some(
-      c => c.type === 'CORNER_INTERNAL' || c.type === 'CORNER_EXTERNAL'
+      (c) => c.type === "CORNER_INTERNAL" || c.type === "CORNER_EXTERNAL"
     );
 
-    if (angleChanges === 0 && !hasCornerCabinet) return 'STRAIGHT';
-    if (angleChanges === 1 || hasCornerCabinet) return 'L_SHAPE';
-    if (angleChanges >= 2) return 'U_SHAPE';
+    if (angleChanges === 0 && !hasCornerCabinet) return "STRAIGHT";
+    if (angleChanges === 1 || hasCornerCabinet) return "L_SHAPE";
+    if (angleChanges >= 2) return "U_SHAPE";
 
-    return 'STRAIGHT';
+    return "STRAIGHT";
   },
 
   generateSegmentsFromCabinets: (
     cabinets: Cabinet[],
     parts: Part[],
-    options?: CountertopGroupOptions
+    options?: CountertopGroupOptions,
+    gaps?: CabinetGap[]
   ): CountertopSegment[] => {
     if (cabinets.length === 0) return [];
 
@@ -429,15 +493,15 @@ export const CountertopDomain = {
       group: Cabinet[],
       overhang: CountertopOverhang
     ) => {
-      const bounds = group.map(c => getCabinetBounds(c, parts));
-      const minX = Math.min(...bounds.map(b => b.min[0]));
-      const maxX = Math.max(...bounds.map(b => b.max[0]));
-      const minZ = Math.min(...bounds.map(b => b.min[2]));
-      const maxZ = Math.max(...bounds.map(b => b.max[2]));
+      const bounds = group.map((c) => getCabinetBounds(c, parts));
+      const minX = Math.min(...bounds.map((b) => b.min[0]));
+      const maxX = Math.max(...bounds.map((b) => b.max[0]));
+      const minZ = Math.min(...bounds.map((b) => b.min[2]));
+      const maxZ = Math.max(...bounds.map((b) => b.max[2]));
 
       return CountertopDomain.createSegment(
         name,
-        group.map(c => c.id),
+        group.map((c) => c.id),
         {
           length: maxX - minX + overhang.left + overhang.right,
           width: maxZ - minZ + overhang.front + overhang.back,
@@ -450,33 +514,128 @@ export const CountertopDomain = {
       );
     };
 
-    if (layoutType === 'STRAIGHT') {
-      return [createSegmentFromBounds('Blat I', cabinets, defaultOverhang)];
+    // Check for SPLIT gaps first - these override layout-based splitting
+    const splitGaps = gaps?.filter((g) => g.mode === "SPLIT") ?? [];
+
+    // If there are SPLIT gaps, we need to split cabinets into sub-groups
+    if (splitGaps.length > 0 && cabinets.length > 1) {
+      // Sort cabinets by position (X then Z) to maintain order
+      const boundsMap = new Map(cabinets.map((c) => [c.id, getCabinetBounds(c, parts)]));
+      const sortedCabinets = [...cabinets].sort((a, b) => {
+        const boundsA = boundsMap.get(a.id)!;
+        const boundsB = boundsMap.get(b.id)!;
+        const xDiff = boundsA.center[0] - boundsB.center[0];
+        if (Math.abs(xDiff) > 10) return xDiff;
+        return boundsA.center[2] - boundsB.center[2];
+      });
+
+      // Build sub-groups by finding cabinets that are NOT separated by SPLIT gaps
+      const subGroups: Cabinet[][] = [];
+      let currentGroup: Cabinet[] = [sortedCabinets[0]];
+
+      for (let i = 1; i < sortedCabinets.length; i++) {
+        const prevCabinet = sortedCabinets[i - 1];
+        const currentCabinet = sortedCabinets[i];
+
+        // Check if there's a SPLIT gap between these cabinets
+        const hasSplitGap = splitGaps.some(
+          (g) =>
+            (g.cabinetAId === prevCabinet.id && g.cabinetBId === currentCabinet.id) ||
+            (g.cabinetAId === currentCabinet.id && g.cabinetBId === prevCabinet.id)
+        );
+
+        if (hasSplitGap) {
+          // End current group and start new one
+          subGroups.push(currentGroup);
+          currentGroup = [currentCabinet];
+        } else {
+          // Add to current group
+          currentGroup.push(currentCabinet);
+        }
+      }
+      // Don't forget the last group
+      subGroups.push(currentGroup);
+
+      // Generate segment for each sub-group
+      const segmentNames = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
+      return subGroups.map((group, i) =>
+        createSegmentFromBounds(`Blat ${segmentNames[i] || i + 1}`, group, defaultOverhang)
+      );
     }
 
-    if (layoutType === 'L_SHAPE') {
-      const midIndex = Math.ceil(cabinets.length / 2);
-      const group1 = cabinets.slice(0, midIndex);
-      const group2 = cabinets.slice(midIndex);
+    // For STRAIGHT layout with no SPLIT gaps, use single segment
+    if (layoutType === "STRAIGHT") {
+      return [createSegmentFromBounds("Blat I", cabinets, defaultOverhang)];
+    }
 
-      const segments = [createSegmentFromBounds('Blat I', group1, defaultOverhang)];
-      if (group2.length > 0) {
-        segments.push(createSegmentFromBounds('Blat II', group2, defaultOverhang));
+    // Find actual direction change points for L_SHAPE and U_SHAPE
+    const changeIndices = findDirectionChangeIndices(cabinets, parts);
+
+    if (layoutType === "L_SHAPE") {
+      // L-shape should have 1 direction change
+      if (changeIndices.length === 0) {
+        // No direction change detected - treat as single segment
+        // This can happen if cabinets are detected as L but actually aligned
+        return [createSegmentFromBounds("Blat I", cabinets, defaultOverhang)];
       }
+
+      // Use first direction change point to split
+      const splitIndex = changeIndices[0];
+      const group1 = cabinets.slice(0, splitIndex);
+      const group2 = cabinets.slice(splitIndex);
+
+      const segments: CountertopSegment[] = [];
+      if (group1.length > 0) {
+        segments.push(createSegmentFromBounds("Blat I", group1, defaultOverhang));
+      }
+      if (group2.length > 0) {
+        segments.push(createSegmentFromBounds("Blat II", group2, defaultOverhang));
+      }
+
+      // Ensure we have at least one segment
+      if (segments.length === 0) {
+        return [createSegmentFromBounds("Blat I", cabinets, defaultOverhang)];
+      }
+
       return segments;
     }
 
-    if (layoutType === 'U_SHAPE') {
-      const third = Math.ceil(cabinets.length / 3);
+    if (layoutType === "U_SHAPE") {
+      // U-shape should have 2 direction changes
+      if (changeIndices.length < 2) {
+        // Not enough direction changes - fall back to L or straight logic
+        if (changeIndices.length === 1) {
+          const splitIndex = changeIndices[0];
+          const group1 = cabinets.slice(0, splitIndex);
+          const group2 = cabinets.slice(splitIndex);
+
+          const segments: CountertopSegment[] = [];
+          if (group1.length > 0) {
+            segments.push(createSegmentFromBounds("Blat I", group1, defaultOverhang));
+          }
+          if (group2.length > 0) {
+            segments.push(createSegmentFromBounds("Blat II", group2, defaultOverhang));
+          }
+          return segments.length > 0
+            ? segments
+            : [createSegmentFromBounds("Blat I", cabinets, defaultOverhang)];
+        }
+        return [createSegmentFromBounds("Blat I", cabinets, defaultOverhang)];
+      }
+
+      // Use first two direction change points to create 3 segments
+      const split1 = changeIndices[0];
+      const split2 = changeIndices[1];
+
       const groups = [
-        cabinets.slice(0, third),
-        cabinets.slice(third, third * 2),
-        cabinets.slice(third * 2),
+        cabinets.slice(0, split1),
+        cabinets.slice(split1, split2),
+        cabinets.slice(split2),
       ];
-      const names = ['Blat I', 'Blat II', 'Blat III'];
+      const names = ["Blat I", "Blat II", "Blat III"];
 
       return groups
-        .filter(g => g.length > 0)
+        .filter((g) => g.length > 0)
         .map((g, i) => createSegmentFromBounds(names[i], g, defaultOverhang));
     }
 
@@ -489,18 +648,25 @@ export const CountertopDomain = {
   ): CountertopJoint[] => {
     if (segments.length < 2) return [];
 
-    return segments.slice(0, -1).map((segment, i) =>
-      CountertopDomain.createJoint(segment.id, segments[i + 1].id, 'MITER_45', 90)
-    );
+    return segments
+      .slice(0, -1)
+      .map((segment, i) =>
+        CountertopDomain.createJoint(segment.id, segments[i + 1].id, "MITER_45", 90)
+      );
   },
 
   generateCornersForLayout: (layoutType: CountertopLayoutType): CountertopCornerConfig[] => {
-    const cornerCount = layoutType === 'STRAIGHT' ? 4 :
-                        layoutType === 'L_SHAPE' ? 6 :
-                        layoutType === 'U_SHAPE' ? 8 : 4;
+    const cornerCount =
+      layoutType === "STRAIGHT"
+        ? 4
+        : layoutType === "L_SHAPE"
+          ? 6
+          : layoutType === "U_SHAPE"
+            ? 8
+            : 4;
 
     return Array.from({ length: cornerCount }, (_, i) =>
-      CountertopDomain.createCorner((i + 1) as CornerPosition, 'STRAIGHT')
+      CountertopDomain.createCorner((i + 1) as CornerPosition, "STRAIGHT")
     );
   },
 
@@ -532,15 +698,18 @@ export const CountertopDomain = {
   // ==========================================================================
 
   getSegmentById: (group: CountertopGroup, segmentId: string): CountertopSegment | undefined => {
-    return group.segments.find(s => s.id === segmentId);
+    return group.segments.find((s) => s.id === segmentId);
   },
 
   getJointById: (group: CountertopGroup, jointId: string): CountertopJoint | undefined => {
-    return group.joints.find(j => j.id === jointId);
+    return group.joints.find((j) => j.id === jointId);
   },
 
-  getCornerByPosition: (group: CountertopGroup, position: CornerPosition): CountertopCornerConfig | undefined => {
-    return group.corners.find(c => c.position === position);
+  getCornerByPosition: (
+    group: CountertopGroup,
+    position: CornerPosition
+  ): CountertopCornerConfig | undefined => {
+    return group.corners.find((c) => c.position === position);
   },
 
   segmentHasCncOperations: (segment: CountertopSegment): boolean => {
@@ -548,36 +717,36 @@ export const CountertopDomain = {
   },
 
   segmentHasEdgeBanding: (segment: CountertopSegment): boolean => {
-    return Object.values(segment.edgeBanding).some(v => v !== 'NONE');
+    return Object.values(segment.edgeBanding).some((v) => v !== "NONE");
   },
 
   getLayoutTypeLabel: (layoutType: CountertopLayoutType): string => {
     const labels: Record<CountertopLayoutType, string> = {
-      STRAIGHT: 'Prosty',
-      L_SHAPE: 'Kształt L',
-      U_SHAPE: 'Kształt U',
-      ISLAND: 'Wyspa',
-      PENINSULA: 'Półwysep',
+      STRAIGHT: "Prosty",
+      L_SHAPE: "Kształt L",
+      U_SHAPE: "Kształt U",
+      ISLAND: "Wyspa",
+      PENINSULA: "Półwysep",
     };
     return labels[layoutType] ?? layoutType;
   },
 
   getJointTypeLabel: (jointType: CountertopJointType): string => {
     const labels: Record<CountertopJointType, string> = {
-      MITER_45: 'Uciosowe 45°',
-      BUTT: 'Czołowe',
-      EUROPEAN_MITER: 'Europejskie',
-      PUZZLE: 'Puzzle',
+      MITER_45: "Uciosowe 45°",
+      BUTT: "Czołowe",
+      EUROPEAN_MITER: "Europejskie",
+      PUZZLE: "Puzzle",
     };
     return labels[jointType] ?? jointType;
   },
 
   getCornerTreatmentLabel: (treatment: CornerTreatment): string => {
     const labels: Record<CornerTreatment, string> = {
-      STRAIGHT: 'Narożnik prosty',
-      CHAMFER: 'Ścięcie pod kątem',
-      RADIUS: 'Zaokrąglenie',
-      CLIP: 'Ścięcie narożnika',
+      STRAIGHT: "Narożnik prosty",
+      CHAMFER: "Ścięcie pod kątem",
+      RADIUS: "Zaokrąglenie",
+      CLIP: "Ścięcie narożnika",
     };
     return labels[treatment] ?? treatment;
   },
@@ -587,6 +756,6 @@ export const CountertopDomain = {
     const totalArea = calculateTotalAreaM2(group);
     const layout = CountertopDomain.getLayoutTypeLabel(group.layoutType);
 
-    return `${layout}, ${segmentCount} ${segmentCount === 1 ? 'segment' : 'segmenty'}, ${totalArea.toFixed(2)} m²`;
+    return `${layout}, ${segmentCount} ${segmentCount === 1 ? "segment" : "segmenty"}, ${totalArea.toFixed(2)} m²`;
   },
 } as const;

@@ -33,10 +33,11 @@ import type {
   CabinetMaterials,
   Material,
   EdgeBandingRect,
-} from '@/types';
-import type { GeneratedPart } from '../types';
-import { CornerDomain, CORNER_DEFAULTS } from '@/lib/domain/corner';
-import { LegsDomain } from '@/lib/domain/legs';
+} from "@/types";
+import type { GeneratedPart } from "../types";
+import { FRONT_MARGIN } from "../constants";
+import { CornerDomain, CORNER_DEFAULTS } from "@/lib/domain/corner";
+import { LegsDomain } from "@/lib/domain/legs";
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -46,7 +47,7 @@ import { LegsDomain } from '@/lib/domain/legs';
  * Standard edge banding configs
  */
 const ALL_EDGES: EdgeBandingRect = {
-  type: 'RECT',
+  type: "RECT",
   top: true,
   bottom: true,
   left: true,
@@ -54,7 +55,7 @@ const ALL_EDGES: EdgeBandingRect = {
 };
 
 const FRONT_EDGE_ONLY: EdgeBandingRect = {
-  type: 'RECT',
+  type: "RECT",
   top: true,
   bottom: false,
   left: false,
@@ -62,7 +63,7 @@ const FRONT_EDGE_ONLY: EdgeBandingRect = {
 };
 
 const VISIBLE_EDGES: EdgeBandingRect = {
-  type: 'RECT',
+  type: "RECT",
   top: true,
   bottom: false,
   left: true,
@@ -70,7 +71,7 @@ const VISIBLE_EDGES: EdgeBandingRect = {
 };
 
 const NO_EDGES: EdgeBandingRect = {
-  type: 'RECT',
+  type: "RECT",
   top: false,
   bottom: false,
   left: false,
@@ -94,7 +95,8 @@ export function generateLShapedCorner(
 ): GeneratedPart[] {
   const parts: GeneratedPart[] = [];
   const { cornerConfig, height: H, hasBack } = params;
-  const { W, D, bottomMount, topMount, frontType, doorPosition, doorWidth, hingeSide, doorGap } = cornerConfig;
+  const { W, D, bottomMount, topMount, frontType, doorPosition, doorWidth, hingeSide, doorGap } =
+    cornerConfig;
 
   const t = bodyMaterial.thickness;
   const gap = doorGap ?? CORNER_DEFAULTS.doorGap;
@@ -104,8 +106,8 @@ export function generateLShapedCorner(
   const legOffset = LegsDomain.calculateLegHeightOffset(params.legs);
 
   // Mount type calculations
-  const isBottomInset = bottomMount === 'inset';
-  const isTopInset = topMount === 'inset';
+  const isBottomInset = bottomMount === "inset";
+  const isTopInset = topMount === "inset";
 
   // Side height (depends on mounting)
   const sideHeight = CornerDomain.calculateSideHeight(H, bottomMount, topMount, t);
@@ -125,11 +127,11 @@ export function generateLShapedCorner(
   const bottomDepth = D;
 
   parts.push({
-    name: 'Dół',
+    name: "Dół",
     furnitureId,
     group: cabinetId,
-    shapeType: 'RECT',
-    shapeParams: { type: 'RECT', x: bottomWidth, y: bottomDepth },
+    shapeType: "RECT",
+    shapeParams: { type: "RECT", x: bottomWidth, y: bottomDepth },
     width: bottomWidth,
     height: bottomDepth,
     depth: t,
@@ -137,7 +139,7 @@ export function generateLShapedCorner(
     rotation: [-Math.PI / 2, 0, 0],
     materialId: materials.bodyMaterialId,
     edgeBanding: FRONT_EDGE_ONLY,
-    cabinetMetadata: { cabinetId, role: 'CORNER_BOTTOM' },
+    cabinetMetadata: { cabinetId, role: "CORNER_BOTTOM" },
   });
 
   // ===========================================================================
@@ -147,11 +149,11 @@ export function generateLShapedCorner(
   const topDepth = D;
 
   parts.push({
-    name: 'Góra',
+    name: "Góra",
     furnitureId,
     group: cabinetId,
-    shapeType: 'RECT',
-    shapeParams: { type: 'RECT', x: topWidth, y: topDepth },
+    shapeType: "RECT",
+    shapeParams: { type: "RECT", x: topWidth, y: topDepth },
     width: topWidth,
     height: topDepth,
     depth: t,
@@ -159,18 +161,18 @@ export function generateLShapedCorner(
     rotation: [-Math.PI / 2, 0, 0],
     materialId: materials.bodyMaterialId,
     edgeBanding: FRONT_EDGE_ONLY,
-    cabinetMetadata: { cabinetId, role: 'CORNER_TOP' },
+    cabinetMetadata: { cabinetId, role: "CORNER_TOP" },
   });
 
   // ===========================================================================
   // 3. LEFT SIDE PANEL (Internal - at wall)
   // ===========================================================================
   parts.push({
-    name: 'Bok wewnętrzny',
+    name: "Bok wewnętrzny",
     furnitureId,
     group: cabinetId,
-    shapeType: 'RECT',
-    shapeParams: { type: 'RECT', x: D, y: sideHeight },
+    shapeType: "RECT",
+    shapeParams: { type: "RECT", x: D, y: sideHeight },
     width: D,
     height: sideHeight,
     depth: t,
@@ -178,18 +180,18 @@ export function generateLShapedCorner(
     rotation: [0, Math.PI / 2, 0],
     materialId: materials.bodyMaterialId,
     edgeBanding: VISIBLE_EDGES,
-    cabinetMetadata: { cabinetId, role: 'CORNER_SIDE_INTERNAL' },
+    cabinetMetadata: { cabinetId, role: "CORNER_SIDE_INTERNAL" },
   });
 
   // ===========================================================================
   // 4. RIGHT SIDE PANEL (External - where other cabinet joins)
   // ===========================================================================
   parts.push({
-    name: 'Bok zewnętrzny',
+    name: "Bok zewnętrzny",
     furnitureId,
     group: cabinetId,
-    shapeType: 'RECT',
-    shapeParams: { type: 'RECT', x: D, y: sideHeight },
+    shapeType: "RECT",
+    shapeParams: { type: "RECT", x: D, y: sideHeight },
     width: D,
     height: sideHeight,
     depth: t,
@@ -197,7 +199,7 @@ export function generateLShapedCorner(
     rotation: [0, Math.PI / 2, 0],
     materialId: materials.bodyMaterialId,
     edgeBanding: VISIBLE_EDGES,
-    cabinetMetadata: { cabinetId, role: 'CORNER_SIDE_EXTERNAL' },
+    cabinetMetadata: { cabinetId, role: "CORNER_SIDE_EXTERNAL" },
   });
 
   // ===========================================================================
@@ -213,11 +215,11 @@ export function generateLShapedCorner(
     const backCenterY = H / 2 + legOffset;
 
     parts.push({
-      name: 'Plecy',
+      name: "Plecy",
       furnitureId,
       group: cabinetId,
-      shapeType: 'RECT',
-      shapeParams: { type: 'RECT', x: backWidth, y: backHeight },
+      shapeType: "RECT",
+      shapeParams: { type: "RECT", x: backWidth, y: backHeight },
       width: backWidth,
       height: backHeight,
       depth: backThickness,
@@ -226,14 +228,14 @@ export function generateLShapedCorner(
       rotation: [0, 0, 0],
       materialId: materials.backMaterialId || backMaterial.id,
       edgeBanding: NO_EDGES,
-      cabinetMetadata: { cabinetId, role: 'CORNER_BACK' },
+      cabinetMetadata: { cabinetId, role: "CORNER_BACK" },
     });
   }
 
   // ===========================================================================
   // 6. FRONT CLOSING PANEL (structural, inset) + DOOR
   // ===========================================================================
-  if (frontType === 'SINGLE') {
+  if (frontType === "SINGLE") {
     // Calculate front panel and door dimensions
     const frontOpeningWidth = W - 2 * t; // Width between sides at front
     const frontPanelWidth = frontOpeningWidth - actualDoorWidth - gap;
@@ -241,20 +243,20 @@ export function generateLShapedCorner(
     // Front closing panel is structural - inset between top and bottom
     const frontPanelHeight = interiorHeight;
 
-    const isDoorOnRight = doorPosition === 'RIGHT';
+    const isDoorOnRight = doorPosition === "RIGHT";
 
     // Front closing panel (structural element, inset between top/bottom)
     if (frontPanelWidth > 50) {
       const panelX = isDoorOnRight
-        ? t + frontPanelWidth / 2  // Panel on left
-        : W - t - frontPanelWidth / 2;  // Panel on right
+        ? t + frontPanelWidth / 2 // Panel on left
+        : W - t - frontPanelWidth / 2; // Panel on right
 
       parts.push({
-        name: 'Panel przedni',
+        name: "Panel przedni",
         furnitureId,
         group: cabinetId,
-        shapeType: 'RECT',
-        shapeParams: { type: 'RECT', x: frontPanelWidth, y: frontPanelHeight },
+        shapeType: "RECT",
+        shapeParams: { type: "RECT", x: frontPanelWidth, y: frontPanelHeight },
         width: frontPanelWidth,
         height: frontPanelHeight,
         depth: t,
@@ -263,35 +265,37 @@ export function generateLShapedCorner(
         rotation: [0, 0, 0],
         materialId: materials.bodyMaterialId, // Uses body material (structural)
         edgeBanding: FRONT_EDGE_ONLY,
-        cabinetMetadata: { cabinetId, role: 'CORNER_FRONT_PANEL' },
+        cabinetMetadata: { cabinetId, role: "CORNER_FRONT_PANEL" },
       });
     }
 
     // Door (uses DOOR role for front hiding/handles integration)
+    // Door overlaps external side panel (like standard cabinet fronts)
     if (actualDoorWidth > 50) {
-      // Door height accounts for gaps
-      const doorHeight = H - gap * 2;
-      const doorCenterY = gap + doorHeight / 2 + legOffset;
+      // Door height with standard front margin (like other cabinets)
+      const doorHeight = H - FRONT_MARGIN * 2;
+      const doorCenterY = FRONT_MARGIN + doorHeight / 2 + legOffset;
 
+      // Door overlaps external side - positioned to edge with FRONT_MARGIN
       const doorX = isDoorOnRight
-        ? W - t - gap - actualDoorWidth / 2  // Door on right
-        : t + gap + actualDoorWidth / 2;  // Door on left
+        ? W - FRONT_MARGIN - actualDoorWidth / 2 // Door overlaps right side
+        : FRONT_MARGIN + actualDoorWidth / 2; // Door overlaps left side
 
       // Determine hinge side based on door position and explicit setting
-      let hinge: 'LEFT' | 'RIGHT';
+      let hinge: "LEFT" | "RIGHT";
       if (hingeSide) {
-        hinge = hingeSide === 'left' ? 'LEFT' : 'RIGHT';
+        hinge = hingeSide === "left" ? "LEFT" : "RIGHT";
       } else {
-        // Default: hinge away from the front panel
-        hinge = isDoorOnRight ? 'RIGHT' : 'LEFT';
+        // Default: hinge on the external side (overlapping the side panel)
+        hinge = isDoorOnRight ? "RIGHT" : "LEFT";
       }
 
       parts.push({
-        name: 'Drzwi',
+        name: "Drzwi",
         furnitureId,
         group: cabinetId,
-        shapeType: 'RECT',
-        shapeParams: { type: 'RECT', x: actualDoorWidth, y: doorHeight },
+        shapeType: "RECT",
+        shapeParams: { type: "RECT", x: actualDoorWidth, y: doorHeight },
         width: actualDoorWidth,
         height: doorHeight,
         depth: t,
@@ -302,8 +306,8 @@ export function generateLShapedCorner(
         edgeBanding: ALL_EDGES,
         cabinetMetadata: {
           cabinetId,
-          role: 'DOOR', // Uses DOOR role for front hiding/handles
-          doorMetadata: { hingeSide: hinge, openingDirection: 'HORIZONTAL' },
+          role: "DOOR", // Uses DOOR role for front hiding/handles
+          doorMetadata: { hingeSide: hinge, openingDirection: "HORIZONTAL" },
           index: 0,
         },
       });
@@ -329,8 +333,8 @@ export function generateLShapedCorner(
         name: `Półka ${i + 1}`,
         furnitureId,
         group: cabinetId,
-        shapeType: 'RECT',
-        shapeParams: { type: 'RECT', x: shelfWidth, y: shelfDepth },
+        shapeType: "RECT",
+        shapeParams: { type: "RECT", x: shelfWidth, y: shelfDepth },
         width: shelfWidth,
         height: shelfDepth,
         depth: t,
@@ -338,7 +342,7 @@ export function generateLShapedCorner(
         rotation: [-Math.PI / 2, 0, 0],
         materialId: materials.bodyMaterialId,
         edgeBanding: FRONT_EDGE_ONLY,
-        cabinetMetadata: { cabinetId, role: 'CORNER_SHELF', index: i },
+        cabinetMetadata: { cabinetId, role: "CORNER_SHELF", index: i },
       });
     }
   }

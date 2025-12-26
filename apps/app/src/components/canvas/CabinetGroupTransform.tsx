@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * CabinetGroupTransform Component
@@ -8,24 +8,26 @@
  * Preview meshes are rendered for all cabinet parts during transform.
  */
 
-import { useRef, useEffect, useMemo, useCallback, useState } from 'react';
-import { TransformControls } from '@react-three/drei';
-import { useStore, useMaterial } from '@/lib/store';
-import { useShallow } from 'zustand/react/shallow';
-import * as THREE from 'three';
-import { Part, KitchenCabinetParams } from '@/types';
-import type { LegData } from '@/types';
-import type { CountertopSegment, CountertopGroup } from '@/types/countertop';
-import { isBodyPartRole } from '@/types/cabinet';
-import { SCENE_CONFIG, PART_CONFIG, MATERIAL_CONFIG, COUNTERTOP_DEFAULTS } from '@/lib/config';
-import { useSnapContext } from '@/lib/snap-context';
-import { useDimensionContext } from '@/lib/dimension-context';
-import { calculateCabinetSnapV2 } from '@/lib/snapping-v2';
-import { calculateDimensions } from '@/lib/dimension-calculator';
-import { getCabinetBoundingBoxWithOffset, getOtherBoundingBoxes } from '@/lib/bounding-box-utils';
-import type { TransformControls as TransformControlsImpl } from 'three-stdlib';
+import { useRef, useEffect, useMemo, useCallback, useState } from "react";
+import { TransformControls } from "@react-three/drei";
+import { useStore, useMaterial } from "@/lib/store";
+import { useShallow } from "zustand/react/shallow";
+import * as THREE from "three";
+import { Part, KitchenCabinetParams, TransformSpace } from "@/types";
+import type { LegData } from "@/types";
+import type { CountertopSegment, CountertopGroup } from "@/types/countertop";
+import { isBodyPartRole } from "@/types/cabinet";
+import { CabinetTransformDomain } from "@/lib/domain";
+import { SCENE_CONFIG, PART_CONFIG, MATERIAL_CONFIG, COUNTERTOP_DEFAULTS } from "@/lib/config";
+import { useSnapContext } from "@/lib/snap-context";
+import { useDimensionContext } from "@/lib/dimension-context";
+import { calculateCabinetSnapV2 } from "@/lib/snapping-v2";
+import { calculateDimensions } from "@/lib/dimension-calculator";
+import { getCabinetBoundingBoxWithOffset, getOtherBoundingBoxes } from "@/lib/bounding-box-utils";
+import { useTransformAxisConstraints } from "@/hooks/useOrthographicConstraints";
+import type { TransformControls as TransformControlsImpl } from "three-stdlib";
 
-type PartTransform = Pick<Part, 'position' | 'rotation'>;
+type PartTransform = Pick<Part, "position" | "rotation">;
 
 // ============================================================================
 // Preview Mesh Component
@@ -42,12 +44,7 @@ function PreviewPartMesh({ part, previewPosition, previewRotation }: PreviewPart
   const color = material?.color || MATERIAL_CONFIG.DEFAULT_MATERIAL_COLOR;
 
   return (
-    <mesh
-      position={previewPosition}
-      rotation={previewRotation}
-      castShadow
-      receiveShadow
-    >
+    <mesh position={previewPosition} rotation={previewRotation} castShadow receiveShadow>
       <boxGeometry args={[part.width, part.height, part.depth]} />
       <meshStandardMaterial
         color={color}
@@ -69,14 +66,14 @@ interface PreviewCountertopMeshProps {
   color: string;
 }
 
-function PreviewCountertopMesh({ position, rotation, dimensions, color }: PreviewCountertopMeshProps) {
+function PreviewCountertopMesh({
+  position,
+  rotation,
+  dimensions,
+  color,
+}: PreviewCountertopMeshProps) {
   return (
-    <mesh
-      position={position}
-      rotation={rotation}
-      castShadow
-      receiveShadow
-    >
+    <mesh position={position} rotation={rotation} castShadow receiveShadow>
       <boxGeometry args={[dimensions.width, dimensions.height, dimensions.depth]} />
       <meshStandardMaterial
         color={color}
@@ -116,8 +113,8 @@ function PreviewLegMesh({ leg, groupPosition, groupRotation }: PreviewLegMeshPro
     ] as [number, number, number];
   }, [position.x, position.z, height, groupPosition, groupRotation]);
 
-  const rotation: [number, number, number] = useMemo(() =>
-    [groupRotation.x, groupRotation.y, groupRotation.z],
+  const rotation: [number, number, number] = useMemo(
+    () => [groupRotation.x, groupRotation.y, groupRotation.z],
     [groupRotation.x, groupRotation.y, groupRotation.z]
   );
 
@@ -125,14 +122,14 @@ function PreviewLegMesh({ leg, groupPosition, groupRotation }: PreviewLegMeshPro
 
   return (
     <mesh position={worldPos} rotation={rotation}>
-      {shape === 'ROUND' ? (
+      {shape === "ROUND" ? (
         <cylinderGeometry args={[radius, radius, height, 16]} />
       ) : (
         <boxGeometry args={[diameter, height, diameter]} />
       )}
       <meshStandardMaterial
         color={color}
-        metalness={shape === 'ROUND' ? 0.3 : 0.1}
+        metalness={shape === "ROUND" ? 0.3 : 0.1}
         roughness={0.7}
         emissive={PART_CONFIG.CABINET_SELECTION_EMISSIVE_COLOR}
         emissiveIntensity={PART_CONFIG.CABINET_SELECTION_EMISSIVE_INTENSITY}
@@ -148,37 +145,25 @@ function PreviewLegMesh({ leg, groupPosition, groupRotation }: PreviewLegMeshPro
 interface PreviewLegsProps {
   legs: LegData[];
   parts: Part[];
-  previewTransforms: Map<string, { position: [number, number, number]; rotation: [number, number, number] }>;
+  previewTransforms: Map<
+    string,
+    { position: [number, number, number]; rotation: [number, number, number] }
+  >;
   groupRotation: THREE.Euler;
 }
 
 /**
  * Renders all legs preview during cabinet transformation.
- * Calculates center from body parts only (excludes doors/fronts).
+ * Uses geometric bounds (true center) instead of position average.
  */
 function PreviewLegs({ legs, parts, previewTransforms, groupRotation }: PreviewLegsProps) {
-  const legsPosition = useMemo(() => {
-    let sumX = 0, sumZ = 0, count = 0;
-
-    previewTransforms.forEach((transform, partId) => {
-      const part = parts.find(p => p.id === partId);
-      if (isBodyPartRole(part?.cabinetMetadata?.role)) {
-        sumX += transform.position[0];
-        sumZ += transform.position[2];
-        count++;
-      }
-    });
-
-    // Fallback to all parts if no body parts found
-    if (count === 0) {
-      previewTransforms.forEach((transform) => {
-        sumX += transform.position[0];
-        sumZ += transform.position[2];
-        count++;
-      });
-    }
-
-    return [sumX / (count || 1), 0, sumZ / (count || 1)] as [number, number, number];
+  const legsAnchor = useMemo(() => {
+    // Use geometric bounds for correct positioning at all rotations
+    const bounds = CabinetTransformDomain.getCabinetGeometricBoundsFromPreview(
+      parts,
+      previewTransforms
+    );
+    return CabinetTransformDomain.getLegsAnchorPoint(bounds);
   }, [parts, previewTransforms]);
 
   return (
@@ -187,7 +172,7 @@ function PreviewLegs({ legs, parts, previewTransforms, groupRotation }: PreviewL
         <PreviewLegMesh
           key={`preview-leg-${leg.index}`}
           leg={leg}
-          groupPosition={legsPosition}
+          groupPosition={legsAnchor.position}
           groupRotation={groupRotation}
         />
       ))}
@@ -207,110 +192,94 @@ interface CountertopPreviewData {
 }
 
 /**
- * Calculate countertop preview data based on preview part transforms
+ * Calculate countertop preview data based on preview part transforms.
+ * Uses LOCAL dimensions from cabinet params (rotation-invariant) to prevent size changes on rotation.
  */
 function calculateCountertopPreview(
   segment: CountertopSegment,
   group: CountertopGroup,
-  previewTransforms: Map<string, { position: [number, number, number]; rotation: [number, number, number] }>,
+  previewTransforms: Map<
+    string,
+    { position: [number, number, number]; rotation: [number, number, number] }
+  >,
   parts: Part[],
   cabinets: { id: string; params: KitchenCabinetParams }[],
   materials: { id: string; color: string }[],
   groupRotation: THREE.Euler
 ): CountertopPreviewData | null {
   // Get cabinets for this segment
-  const segmentCabinets = cabinets.filter(c => segment.cabinetIds.includes(c.id));
+  const segmentCabinets = cabinets.filter((c) => segment.cabinetIds.includes(c.id));
   if (segmentCabinets.length === 0) return null;
 
-  // Get parts for this cabinet group (to find bounds from preview positions)
-  const segmentPartIds = new Set<string>();
-  for (const cab of segmentCabinets) {
-    for (const part of parts) {
-      if (part.cabinetMetadata?.cabinetId === cab.id) {
-        segmentPartIds.add(part.id);
-      }
-    }
+  // Get segment parts for preview bounds
+  const segmentParts = parts.filter((p) =>
+    segmentCabinets.some((c) => p.cabinetMetadata?.cabinetId === c.id)
+  );
+
+  if (segmentParts.length === 0) return null;
+
+  // Calculate LOCAL dimensions from cabinet params (rotation-invariant!)
+  // Sum widths for all cabinets, use max depth
+  let totalLocalWidth = 0;
+  let maxLocalDepth = 0;
+  for (const cabinet of segmentCabinets) {
+    totalLocalWidth += cabinet.params.width;
+    maxLocalDepth = Math.max(maxLocalDepth, cabinet.params.depth);
   }
 
-  // Calculate bounds from preview positions
-  let minX = Infinity, minZ = Infinity;
-  let maxX = -Infinity, maxZ = -Infinity;
+  // Calculate world-space bounds from preview transforms for positioning only
+  // Must use rotation-aware extent calculation since parts are rotated
+  let minX = Infinity,
+    maxX = -Infinity;
+  let minZ = Infinity,
+    maxZ = -Infinity;
   let maxY = -Infinity;
 
-  // Create rotation quaternion for transforming dimensions
-  const rotationQuat = new THREE.Quaternion().setFromEuler(groupRotation);
-
-  for (const partId of Array.from(segmentPartIds)) {
-    const transform = previewTransforms.get(partId);
-    const part = parts.find(p => p.id === partId);
-    if (!transform || !part) continue;
+  for (const part of segmentParts) {
+    const transform = previewTransforms.get(part.id);
+    if (!transform) continue;
 
     const [px, py, pz] = transform.position;
 
-    // Use ORIGINAL part rotation to determine panel type (not preview rotation)
-    const [origRx, origRy] = part.rotation;
+    // Calculate rotation-aware world extents
+    const rotationQuat = new THREE.Quaternion().setFromEuler(
+      new THREE.Euler(transform.rotation[0], transform.rotation[1], transform.rotation[2])
+    );
 
-    // Calculate half dimensions in original part's local space
-    let localHalfW = part.width / 2;
-    let localHalfH = part.height / 2;
-    let localHalfD = part.depth / 2;
+    const halfW = part.width / 2;
+    const halfH = part.height / 2;
+    const halfD = part.depth / 2;
 
-    // Check for horizontal panel rotation (around X axis by ~90°)
-    const isHorizontalPanel = Math.abs(Math.abs(origRx) - Math.PI / 2) < 0.01;
-    // Check for vertical side panel rotation (around Y axis by ~90°)
-    const isVerticalSidePanel = Math.abs(Math.abs(origRy) - Math.PI / 2) < 0.01;
-
-    if (isHorizontalPanel) {
-      localHalfW = part.width / 2;
-      localHalfH = part.depth / 2;
-      localHalfD = part.height / 2;
-    } else if (isVerticalSidePanel) {
-      localHalfW = part.depth / 2;
-      localHalfH = part.height / 2;
-      localHalfD = part.width / 2;
-    }
-
-    // Transform the extent vectors by the group rotation to get world-space extents
-    const extentX = new THREE.Vector3(localHalfW, 0, 0).applyQuaternion(rotationQuat);
-    const extentY = new THREE.Vector3(0, localHalfH, 0).applyQuaternion(rotationQuat);
-    const extentZ = new THREE.Vector3(0, 0, localHalfD).applyQuaternion(rotationQuat);
+    // Transform extent vectors by part's rotation to get world-space extents
+    const extentX = new THREE.Vector3(halfW, 0, 0).applyQuaternion(rotationQuat);
+    const extentY = new THREE.Vector3(0, halfH, 0).applyQuaternion(rotationQuat);
+    const extentZ = new THREE.Vector3(0, 0, halfD).applyQuaternion(rotationQuat);
 
     // Calculate world-space half dimensions (max extent in each axis)
-    const halfW = Math.abs(extentX.x) + Math.abs(extentY.x) + Math.abs(extentZ.x);
-    const halfH = Math.abs(extentX.y) + Math.abs(extentY.y) + Math.abs(extentZ.y);
-    const halfD = Math.abs(extentX.z) + Math.abs(extentY.z) + Math.abs(extentZ.z);
+    const worldHalfW = Math.abs(extentX.x) + Math.abs(extentY.x) + Math.abs(extentZ.x);
+    const worldHalfH = Math.abs(extentX.y) + Math.abs(extentY.y) + Math.abs(extentZ.y);
+    const worldHalfD = Math.abs(extentX.z) + Math.abs(extentY.z) + Math.abs(extentZ.z);
 
-    // The preview position already accounts for group rotation
-    minX = Math.min(minX, px - halfW);
-    maxX = Math.max(maxX, px + halfW);
-    minZ = Math.min(minZ, pz - halfD);
-    maxZ = Math.max(maxZ, pz + halfD);
-    maxY = Math.max(maxY, py + halfH);
+    minX = Math.min(minX, px - worldHalfW);
+    maxX = Math.max(maxX, px + worldHalfW);
+    minZ = Math.min(minZ, pz - worldHalfD);
+    maxZ = Math.max(maxZ, pz + worldHalfD);
+    maxY = Math.max(maxY, py + worldHalfH);
   }
 
-  // If no preview parts found, skip
-  if (minX === Infinity) return null;
-
-  // Get cabinet dimensions from first cabinet's params (LOCAL space)
-  const firstCabinet = segmentCabinets[0];
-  const cabinetDepth = firstCabinet.params.depth || 560;
-
-  // Calculate total width from all cabinets (LOCAL space)
-  let totalWidth = 0;
-  for (const cab of segmentCabinets) {
-    totalWidth += cab.params.width || 600;
-  }
+  // If no valid bounds, skip
+  if (!isFinite(minX) || !isFinite(maxX)) return null;
 
   // Get material for thickness and color
-  const material = materials.find(m => m.id === group.materialId);
+  const material = materials.find((m) => m.id === group.materialId);
   const materialThickness = (material as any)?.thickness ?? segment.thickness;
   const color = material?.color || MATERIAL_CONFIG.DEFAULT_MATERIAL_COLOR;
 
-  // Calculate countertop dimensions (LOCAL space)
-  const countertopWidth = totalWidth + segment.overhang.left + segment.overhang.right;
-  const countertopDepth = cabinetDepth + segment.overhang.front + segment.overhang.back;
+  // Use LOCAL dimensions for countertop size (don't change with rotation!)
+  const countertopWidth = totalLocalWidth + segment.overhang.left + segment.overhang.right;
+  const countertopDepth = maxLocalDepth + segment.overhang.front + segment.overhang.back;
 
-  // Calculate center position from bounds
+  // Calculate world position from bounds center
   const centerX = (minX + maxX) / 2;
   const centerZ = (minZ + maxZ) / 2;
   const topY = maxY + materialThickness / 2;
@@ -319,16 +288,13 @@ function calculateCountertopPreview(
   const localOffsetX = (segment.overhang.right - segment.overhang.left) / 2;
   const localOffsetZ = (segment.overhang.front - segment.overhang.back) / 2;
 
-  // Transform offset to world space using preview rotation (rotationQuat already created above)
+  // Transform offset to world space using cabinet rotation
+  const rotationQuat = new THREE.Quaternion().setFromEuler(groupRotation);
   const localOffset = new THREE.Vector3(localOffsetX, 0, localOffsetZ);
   localOffset.applyQuaternion(rotationQuat);
 
   return {
-    position: [
-      centerX + localOffset.x,
-      topY,
-      centerZ + localOffset.z,
-    ],
+    position: [centerX + localOffset.x, topY, centerZ + localOffset.z],
     rotation: [groupRotation.x, groupRotation.y, groupRotation.z],
     dimensions: {
       width: countertopWidth,
@@ -343,15 +309,31 @@ function calculateCountertopPreview(
 // Main Component
 // ============================================================================
 
-export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
+export function CabinetGroupTransform({
+  cabinetId,
+  space = "world",
+}: {
+  cabinetId: string;
+  space?: TransformSpace;
+}) {
   const { setSnapPoints, clearSnapPoints } = useSnapContext();
   const { setDimensionLines, clearDimensionLines, setActiveAxis } = useDimensionContext();
 
+  // Get transform mode from store for axis constraints
+  const storeTransformMode = useStore((state) => state.transformMode);
+  const orthoConstraints = useTransformAxisConstraints(
+    storeTransformMode === "resize" ? "translate" : storeTransformMode
+  );
+
+  // For cabinets, rotation is restricted to Y axis only (no tilting)
+  const axisConstraints =
+    storeTransformMode === "rotate"
+      ? { showX: false, showY: true, showZ: false }
+      : orthoConstraints;
+
   // Get cabinet parts using useShallow
   const cabinetParts = useStore(
-    useShallow((state) =>
-      state.parts.filter((p) => p.cabinetMetadata?.cabinetId === cabinetId)
-    )
+    useShallow((state) => state.parts.filter((p) => p.cabinetMetadata?.cabinetId === cabinetId))
   );
 
   // Get all parts for snap calculations
@@ -363,15 +345,15 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
   // Get countertop groups that contain this cabinet
   const countertopGroups = useStore(
     useShallow((state) =>
-      state.countertopGroups.filter(g =>
-        g.segments.some(seg => seg.cabinetIds.includes(cabinetId))
+      state.countertopGroups.filter((g) =>
+        g.segments.some((seg) => seg.cabinetIds.includes(cabinetId))
       )
     )
   );
 
   // Get current cabinet for legs
   const currentCabinet = useStore(
-    useShallow((state) => state.cabinets.find(c => c.id === cabinetId))
+    useShallow((state) => state.cabinets.find((c) => c.id === cabinetId))
   );
 
   // Get materials for countertop color
@@ -412,6 +394,26 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
 
   const [target, setTarget] = useState<THREE.Group | null>(null);
   const controlRef = useRef<TransformControlsImpl | null>(null);
+
+  // Effective space for TransformControls
+  const effectiveSpace = transformMode === "translate" ? space : "local";
+
+  // Update TransformControls space directly on every render
+  // (drei's TransformControls doesn't properly react to space prop changes)
+  useEffect(() => {
+    if (controlRef.current) {
+      controlRef.current.setSpace(effectiveSpace);
+    }
+  });
+
+  // Also update space after any transform operation ends
+  const updateControlsSpace = useCallback(() => {
+    requestAnimationFrame(() => {
+      if (controlRef.current) {
+        controlRef.current.setSpace(effectiveSpace);
+      }
+    });
+  }, [effectiveSpace]);
   const initialPartPositions = useRef<Map<string, THREE.Vector3>>(new Map());
   const initialPartRotations = useRef<Map<string, THREE.Quaternion>>(new Map());
   const initialGroupQuaternion = useRef<THREE.Quaternion>(new THREE.Quaternion());
@@ -419,7 +421,9 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
   const isDraggingRef = useRef(false);
 
   // Preview state - stores calculated transforms without updating store
-  const previewTransformsRef = useRef<Map<string, { position: [number, number, number]; rotation: [number, number, number] }>>(new Map());
+  const previewTransformsRef = useRef<
+    Map<string, { position: [number, number, number]; rotation: [number, number, number] }>
+  >(new Map());
   const previewRotationRef = useRef<THREE.Euler>(new THREE.Euler());
   const [previewVersion, setPreviewVersion] = useState(0);
 
@@ -427,23 +431,24 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
   const cabinetCenter = useMemo(() => {
     if (parts.length === 0) return new THREE.Vector3(0, 0, 0);
     const sum = new THREE.Vector3();
-    parts.forEach(p => {
+    parts.forEach((p) => {
       sum.add(new THREE.Vector3().fromArray(p.position));
     });
     sum.divideScalar(parts.length);
     return sum;
   }, [parts]);
 
-  const rotationSnap = transformMode === 'rotate' && isShiftPressed
-    ? THREE.MathUtils.degToRad(SCENE_CONFIG.ROTATION_SNAP_DEGREES)
-    : undefined;
+  const rotationSnap =
+    transformMode === "rotate" && isShiftPressed
+      ? THREE.MathUtils.degToRad(SCENE_CONFIG.ROTATION_SNAP_DEGREES)
+      : undefined;
 
   // Get current drag axis from TransformControls
-  const getDragAxis = useCallback((): 'X' | 'Y' | 'Z' | null => {
+  const getDragAxis = useCallback((): "X" | "Y" | "Z" | null => {
     const controls = controlRef.current;
     if (!controls) return null;
     const axis = (controls as unknown as { axis: string | null }).axis;
-    if (axis === 'X' || axis === 'Y' || axis === 'Z') return axis;
+    if (axis === "X" || axis === "Y" || axis === "Z") return axis;
     return null;
   }, []);
 
@@ -453,7 +458,9 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
     if (!group || !isDraggingRef.current) return;
 
     // Calculate delta rotation from initial state
-    const deltaQuat = group.quaternion.clone().multiply(initialGroupQuaternion.current.clone().invert());
+    const deltaQuat = group.quaternion
+      .clone()
+      .multiply(initialGroupQuaternion.current.clone().invert());
 
     // Start with frozen cabinet center
     let pivotPoint = initialCabinetCenter.current.clone();
@@ -461,7 +468,7 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
     pivotPoint = pivotPoint.add(groupTranslation);
 
     // Apply snap for translate mode (only on the dragged axis)
-    if (transformMode === 'translate') {
+    if (transformMode === "translate") {
       const axis = getDragAxis();
 
       if (axis) {
@@ -488,7 +495,7 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
 
           if (snapResult?.snapped && snapResult.snapPoints.length > 0) {
             // Apply snap offset ONLY on the drag axis
-            const axisIndex = axis === 'X' ? 0 : axis === 'Y' ? 1 : 2;
+            const axisIndex = axis === "X" ? 0 : axis === "Y" ? 1 : 2;
 
             // For V2, the snapResult.position is the final position, calculate offset
             const currentPos = [
@@ -546,15 +553,18 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
     }
 
     // Calculate preview transforms for all parts (no store update!)
-    const newTransforms = new Map<string, { position: [number, number, number]; rotation: [number, number, number] }>();
+    const newTransforms = new Map<
+      string,
+      { position: [number, number, number]; rotation: [number, number, number] }
+    >();
 
-    parts.forEach(part => {
+    parts.forEach((part) => {
       const relativePos = initialPartPositions.current.get(part.id);
       const originalRot = initialPartRotations.current.get(part.id);
       if (relativePos && originalRot) {
         const newPos = relativePos.clone().applyQuaternion(deltaQuat).add(pivotPoint);
         const newRotQuat = new THREE.Quaternion().multiplyQuaternions(deltaQuat, originalRot);
-        const newRot = new THREE.Euler().setFromQuaternion(newRotQuat, 'XYZ');
+        const newRot = new THREE.Euler().setFromQuaternion(newRotQuat, "XYZ");
 
         newTransforms.set(part.id, {
           position: newPos.toArray() as [number, number, number],
@@ -571,13 +581,28 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
     const currentCabinet = allCabinets.find((c) => c.id === cabinetId);
     const existingRotation = currentCabinet?.worldTransform?.rotation ?? [0, 0, 0];
     const existingQuat = new THREE.Quaternion().setFromEuler(
-      new THREE.Euler(existingRotation[0], existingRotation[1], existingRotation[2], 'XYZ')
+      new THREE.Euler(existingRotation[0], existingRotation[1], existingRotation[2], "XYZ")
     );
     const newRotQuat = deltaQuat.clone().multiply(existingQuat);
-    previewRotationRef.current.setFromQuaternion(newRotQuat, 'XYZ');
+    previewRotationRef.current.setFromQuaternion(newRotQuat, "XYZ");
 
-    setPreviewVersion(v => v + 1);
-  }, [parts, target, transformMode, snapEnabled, snapSettings, dimensionSettings, allParts, allCabinets, cabinetId, setSnapPoints, clearSnapPoints, setDimensionLines, setActiveAxis, getDragAxis]);
+    setPreviewVersion((v) => v + 1);
+  }, [
+    parts,
+    target,
+    transformMode,
+    snapEnabled,
+    snapSettings,
+    dimensionSettings,
+    allParts,
+    allCabinets,
+    cabinetId,
+    setSnapPoints,
+    clearSnapPoints,
+    setDimensionLines,
+    setActiveAxis,
+    getDragAxis,
+  ]);
 
   const handleTransformStart = useCallback(() => {
     if (!target) return;
@@ -598,19 +623,22 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
     initialPartPositions.current.clear();
     initialPartRotations.current.clear();
 
-    parts.forEach(part => {
+    parts.forEach((part) => {
       const partPos = new THREE.Vector3().fromArray(part.position);
       const relativePos = partPos.clone().sub(initialCabinetCenter.current);
       initialPartPositions.current.set(part.id, relativePos);
 
-      const partRot = new THREE.Euler(part.rotation[0], part.rotation[1], part.rotation[2], 'XYZ');
+      const partRot = new THREE.Euler(part.rotation[0], part.rotation[1], part.rotation[2], "XYZ");
       const partQuat = new THREE.Quaternion().setFromEuler(partRot);
       initialPartRotations.current.set(part.id, partQuat);
     });
 
     // Initialize preview transforms
-    const initialTransforms = new Map<string, { position: [number, number, number]; rotation: [number, number, number] }>();
-    parts.forEach(part => {
+    const initialTransforms = new Map<
+      string,
+      { position: [number, number, number]; rotation: [number, number, number] }
+    >();
+    parts.forEach((part) => {
       initialTransforms.set(part.id, {
         position: [...part.position],
         rotation: [...part.rotation],
@@ -621,22 +649,36 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
     // Initialize preview rotation from cabinet's current worldTransform
     const currentCabinet = allCabinets.find((c) => c.id === cabinetId);
     const existingRotation = currentCabinet?.worldTransform?.rotation ?? [0, 0, 0];
-    previewRotationRef.current.set(existingRotation[0], existingRotation[1], existingRotation[2], 'XYZ');
+    previewRotationRef.current.set(
+      existingRotation[0],
+      existingRotation[1],
+      existingRotation[2],
+      "XYZ"
+    );
 
     setIsTransforming(true);
     setTransformingCabinetId(cabinetId); // Hide original parts, show preview
 
     const beforeState: Record<string, PartTransform> = {};
-    parts.forEach(p => {
+    parts.forEach((p) => {
       beforeState[p.id] = { position: [...p.position], rotation: [...p.rotation] };
     });
-    beginBatch('TRANSFORM_CABINET', {
+    beginBatch("TRANSFORM_CABINET", {
       targetId: cabinetId,
       before: beforeState,
     });
 
-    setPreviewVersion(v => v + 1);
-  }, [setIsTransforming, setTransformingCabinetId, parts, beginBatch, cabinetId, cabinetCenter, target, allCabinets]);
+    setPreviewVersion((v) => v + 1);
+  }, [
+    setIsTransforming,
+    setTransformingCabinetId,
+    parts,
+    beginBatch,
+    cabinetId,
+    cabinetCenter,
+    target,
+    allCabinets,
+  ]);
 
   const handleTransformEnd = useCallback(() => {
     isDraggingRef.current = false;
@@ -680,7 +722,7 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
     }
 
     // Get rotation from group (Euler angles to avoid gimbal lock)
-    const groupEuler = new THREE.Euler().setFromQuaternion(group.quaternion, 'XYZ');
+    const groupEuler = new THREE.Euler().setFromQuaternion(group.quaternion, "XYZ");
 
     // Get current cabinet to read existing worldTransform rotation
     const currentCabinet = allCabinets.find((c) => c.id === cabinetId);
@@ -688,12 +730,14 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
 
     // For rotation: add delta rotation to existing rotation
     // Delta = group.quaternion * inverse(initialGroupQuaternion)
-    const deltaQuat = group.quaternion.clone().multiply(initialGroupQuaternion.current.clone().invert());
+    const deltaQuat = group.quaternion
+      .clone()
+      .multiply(initialGroupQuaternion.current.clone().invert());
     const existingQuat = new THREE.Quaternion().setFromEuler(
-      new THREE.Euler(existingRotation[0], existingRotation[1], existingRotation[2], 'XYZ')
+      new THREE.Euler(existingRotation[0], existingRotation[1], existingRotation[2], "XYZ")
     );
     const newRotQuat = deltaQuat.multiply(existingQuat);
-    const newRotEuler = new THREE.Euler().setFromQuaternion(newRotQuat, 'XYZ');
+    const newRotEuler = new THREE.Euler().setFromQuaternion(newRotQuat, "XYZ");
 
     // Update cabinet with new worldTransform
     updateCabinet(cabinetId, {
@@ -720,7 +764,31 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
 
     // Clear preview
     previewTransformsRef.current.clear();
-  }, [target, setIsTransforming, setTransformingCabinetId, commitBatch, detectCollisions, clearSnapPoints, clearDimensionLines, updatePartsBatch, updateCabinet, cabinetId, allCabinets]);
+
+    // Ensure space is correct after transform ends
+    updateControlsSpace();
+  }, [
+    target,
+    setIsTransforming,
+    setTransformingCabinetId,
+    commitBatch,
+    detectCollisions,
+    clearSnapPoints,
+    clearDimensionLines,
+    updatePartsBatch,
+    updateCabinet,
+    cabinetId,
+    allCabinets,
+    updateControlsSpace,
+  ]);
+
+  // Reset target rotation when cabinet changes to prevent state carryover
+  useEffect(() => {
+    if (target) {
+      target.rotation.set(0, 0, 0);
+      target.updateMatrixWorld();
+    }
+  }, [target, cabinetId]);
 
   // Get current preview state
   const isShowingPreview = isDraggingRef.current && previewTransformsRef.current.size > 0;
@@ -728,50 +796,52 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
   return (
     <>
       {/* Preview meshes during drag (looks identical to original parts) */}
-      {isShowingPreview && parts.map(part => {
-        const transform = previewTransformsRef.current.get(part.id);
-        if (!transform) return null;
-        return (
-          <PreviewPartMesh
-            key={`preview-${part.id}`}
-            part={part}
-            previewPosition={transform.position}
-            previewRotation={transform.rotation}
-          />
-        );
-      })}
-
-      {/* Preview countertop meshes during drag */}
-      {isShowingPreview && countertopGroups.map(group =>
-        group.segments.map(segment => {
-          // Get cabinets for this segment
-          const segmentCabinets = allCabinets
-            .filter(c => segment.cabinetIds.includes(c.id))
-            .map(c => ({ id: c.id, params: c.params as KitchenCabinetParams }));
-
-          const previewData = calculateCountertopPreview(
-            segment,
-            group,
-            previewTransformsRef.current,
-            allParts,
-            segmentCabinets,
-            materials,
-            previewRotationRef.current
-          );
-
-          if (!previewData) return null;
-
+      {isShowingPreview &&
+        parts.map((part) => {
+          const transform = previewTransformsRef.current.get(part.id);
+          if (!transform) return null;
           return (
-            <PreviewCountertopMesh
-              key={`preview-countertop-${segment.id}`}
-              position={previewData.position}
-              rotation={previewData.rotation}
-              dimensions={previewData.dimensions}
-              color={previewData.color}
+            <PreviewPartMesh
+              key={`preview-${part.id}`}
+              part={part}
+              previewPosition={transform.position}
+              previewRotation={transform.rotation}
             />
           );
-        })
-      )}
+        })}
+
+      {/* Preview countertop meshes during drag */}
+      {isShowingPreview &&
+        countertopGroups.map((group) =>
+          group.segments.map((segment) => {
+            // Get cabinets for this segment
+            const segmentCabinets = allCabinets
+              .filter((c) => segment.cabinetIds.includes(c.id))
+              .map((c) => ({ id: c.id, params: c.params as KitchenCabinetParams }));
+
+            const previewData = calculateCountertopPreview(
+              segment,
+              group,
+              previewTransformsRef.current,
+              allParts,
+              segmentCabinets,
+              materials,
+              previewRotationRef.current
+            );
+
+            if (!previewData) return null;
+
+            return (
+              <PreviewCountertopMesh
+                key={`preview-countertop-${segment.id}`}
+                position={previewData.position}
+                rotation={previewData.rotation}
+                dimensions={previewData.dimensions}
+                color={previewData.color}
+              />
+            );
+          })
+        )}
 
       {/* Preview leg meshes during drag */}
       {isShowingPreview && currentCabinet?.legs && currentCabinet.legs.length > 0 && (
@@ -783,19 +853,23 @@ export function CabinetGroupTransform({ cabinetId }: { cabinetId: string }) {
         />
       )}
 
-      {/* Proxy group for controls */}
-      <group ref={setTarget} position={cabinetCenter} />
+      {/* Proxy group for controls - explicit rotation={[0,0,0]} to prevent state carryover */}
+      <group ref={setTarget} position={cabinetCenter} rotation={[0, 0, 0]} />
 
       {/* Conditionally render controls when target is ready */}
-      {target && (transformMode === 'translate' || transformMode === 'rotate') && (
+      {target && (transformMode === "translate" || transformMode === "rotate") && (
         <TransformControls
           ref={controlRef}
           object={target}
           mode={transformMode}
+          space={effectiveSpace}
           onMouseDown={handleTransformStart}
           onChange={calculatePreviewTransforms}
           onMouseUp={handleTransformEnd}
           rotationSnap={rotationSnap}
+          showX={axisConstraints.showX}
+          showY={axisConstraints.showY}
+          showZ={axisConstraints.showZ}
         />
       )}
     </>

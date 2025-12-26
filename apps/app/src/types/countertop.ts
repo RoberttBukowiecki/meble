@@ -17,30 +17,30 @@
  * Countertop layout types based on cabinet arrangement
  */
 export type CountertopLayoutType =
-  | 'STRAIGHT'     // Single straight countertop (I-shape)
-  | 'L_SHAPE'      // Two countertops meeting at 90° (L-shape)
-  | 'U_SHAPE'      // Three countertops forming U
-  | 'ISLAND'       // Standalone island countertop
-  | 'PENINSULA';   // Attached to wall on one end
+  | "STRAIGHT" // Single straight countertop (I-shape)
+  | "L_SHAPE" // Two countertops meeting at 90° (L-shape)
+  | "U_SHAPE" // Three countertops forming U
+  | "ISLAND" // Standalone island countertop
+  | "PENINSULA"; // Attached to wall on one end
 
 /**
  * Joint connection types between countertop segments
  * Based on industry standards
  */
 export type CountertopJointType =
-  | 'MITER_45'          // 45° miter joint (most common for L-shapes)
-  | 'BUTT'              // Straight butt joint
-  | 'EUROPEAN_MITER'    // Hybrid: starts miter, ends butt
-  | 'PUZZLE';           // Decorative puzzle joint (premium)
+  | "MITER_45" // 45° miter joint (most common for L-shapes)
+  | "BUTT" // Straight butt joint
+  | "EUROPEAN_MITER" // Hybrid: starts miter, ends butt
+  | "PUZZLE"; // Decorative puzzle joint (premium)
 
 /**
  * Hardware types for joining countertop segments
  */
 export type JointHardwareType =
-  | 'MITER_BOLT'    // Standard miter bolt
-  | 'FLIP_BOLT'     // FlipBolt connector
-  | 'DOMINO'        // Festool Domino
-  | 'BISCUIT';      // Biscuit joiner
+  | "MITER_BOLT" // Standard miter bolt
+  | "FLIP_BOLT" // FlipBolt connector
+  | "DOMINO" // Festool Domino
+  | "BISCUIT"; // Biscuit joiner
 
 // ============================================================================
 // Corner & Edge Types
@@ -50,10 +50,10 @@ export type JointHardwareType =
  * Corner treatment options for CNC processing
  */
 export type CornerTreatment =
-  | 'STRAIGHT'          // Narożnik prosty - 90° corner
-  | 'CHAMFER'           // Ścięcie pod kątem - angled cut
-  | 'RADIUS'            // Zaokrąglenie - rounded corner
-  | 'CLIP';             // Ścięcie narożnika - corner clip
+  | "STRAIGHT" // Narożnik prosty - 90° corner
+  | "CHAMFER" // Ścięcie pod kątem - angled cut
+  | "RADIUS" // Zaokrąglenie - rounded corner
+  | "CLIP"; // Ścięcie narożnika - corner clip
 
 /**
  * Corner positions (matching industry standard for L-shape layouts)
@@ -65,18 +65,18 @@ export type CornerPosition = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
  * Edge banding options per edge
  */
 export type EdgeBandingOption =
-  | 'NONE'              // No edge banding
-  | 'STANDARD'          // Standard edge banding (same material)
-  | 'CONTRAST'          // Contrasting color
-  | 'ABS_2MM'           // ABS 2mm
-  | 'ABS_1MM'           // ABS 1mm
-  | 'PVC';              // PVC edge
+  | "NONE" // No edge banding
+  | "STANDARD" // Standard edge banding (same material)
+  | "CONTRAST" // Contrasting color
+  | "ABS_2MM" // ABS 2mm
+  | "ABS_1MM" // ABS 1mm
+  | "PVC"; // PVC edge
 
 /**
  * Edge identifiers for a countertop segment
  * Following industry standard labeling (a, b, c, d)
  */
-export type EdgeId = 'a' | 'b' | 'c' | 'd';
+export type EdgeId = "a" | "b" | "c" | "d";
 
 // ============================================================================
 // CNC Operations
@@ -86,24 +86,24 @@ export type EdgeId = 'a' | 'b' | 'c' | 'd';
  * CNC operation types for countertops
  */
 export type CncOperationType =
-  | 'RECTANGULAR_CUTOUT'    // Wcięcie prostokątne (sink, cooktop)
-  | 'CIRCULAR_HOLE'         // Otwór okrągły (faucet, accessories)
-  | 'RECTANGULAR_HOLE'      // Otwór prostokątny
-  | 'EDGE_NOTCH';           // Wcięcie w krawędzi
+  | "RECTANGULAR_CUTOUT" // Wcięcie prostokątne (sink, cooktop)
+  | "CIRCULAR_HOLE" // Otwór okrągły (faucet, accessories)
+  | "RECTANGULAR_HOLE" // Otwór prostokątny
+  | "EDGE_NOTCH"; // Wcięcie w krawędzi
 
 /**
  * Cutout preset types for common appliances
  */
 export type CutoutPresetType =
-  | 'NONE'
-  | 'SINK_STANDARD'     // Standard sink ~780x480mm
-  | 'SINK_SMALL'        // Small sink ~580x430mm
-  | 'SINK_ROUND'        // Round sink
-  | 'COOKTOP_60'        // 60cm cooktop
-  | 'COOKTOP_80'        // 80cm cooktop
-  | 'FAUCET_HOLE'       // Standard faucet hole 35mm
-  | 'SOAP_DISPENSER'    // Soap dispenser hole 28mm
-  | 'CUSTOM';           // Custom cutout with user-defined dimensions
+  | "NONE"
+  | "SINK_STANDARD" // Standard sink ~780x480mm
+  | "SINK_SMALL" // Small sink ~580x430mm
+  | "SINK_ROUND" // Round sink
+  | "COOKTOP_60" // 60cm cooktop
+  | "COOKTOP_80" // 80cm cooktop
+  | "FAUCET_HOLE" // Standard faucet hole 35mm
+  | "SOAP_DISPENSER" // Soap dispenser hole 28mm
+  | "CUSTOM"; // Custom cutout with user-defined dimensions
 
 /**
  * Single CNC operation definition
@@ -113,16 +113,16 @@ export interface CncOperation {
   type: CncOperationType;
   /** Position relative to countertop segment (mm from left-front corner) */
   position: {
-    x: number;        // Distance from left edge
-    y: number;        // Distance from front edge
+    x: number; // Distance from left edge
+    y: number; // Distance from front edge
   };
   /** Dimensions based on operation type */
   dimensions: {
-    width?: number;   // For rectangular operations
-    height?: number;  // For rectangular operations
+    width?: number; // For rectangular operations
+    height?: number; // For rectangular operations
     diameter?: number; // For circular holes
-    depth?: number;   // Depth of cut (undefined = through)
-    radius?: number;  // Corner radius for rectangular cutouts
+    depth?: number; // Depth of cut (undefined = through)
+    radius?: number; // Corner radius for rectangular cutouts
   };
   /** Optional preset that generated this operation */
   preset?: CutoutPresetType;
@@ -252,6 +252,34 @@ export interface CountertopJoint {
 }
 
 // ============================================================================
+// Cabinet Gap Configuration
+// ============================================================================
+
+/**
+ * Gap handling mode between adjacent cabinets
+ * - BRIDGE: Single countertop spans over the gap (empty space underneath)
+ * - SPLIT: Separate countertops for cabinets on each side of the gap
+ */
+export type CabinetGapMode = "BRIDGE" | "SPLIT";
+
+/**
+ * Detected gap between two cabinets in a countertop group
+ */
+export interface CabinetGap {
+  id: string;
+  /** First cabinet ID */
+  cabinetAId: string;
+  /** Second cabinet ID */
+  cabinetBId: string;
+  /** Gap distance in mm */
+  distance: number;
+  /** Axis of the gap: 'X' (side-by-side) or 'Z' (front-back) */
+  axis: "X" | "Z";
+  /** User-selected mode (defaults based on distance) */
+  mode: CabinetGapMode;
+}
+
+// ============================================================================
 // Countertop Group
 // ============================================================================
 
@@ -275,6 +303,8 @@ export interface CountertopGroup {
   joints: CountertopJoint[];
   /** Corner configurations */
   corners: CountertopCornerConfig[];
+  /** Detected gaps between cabinets with their handling modes */
+  gaps: CabinetGap[];
   /** Default thickness for all segments (can be overridden per segment) */
   thickness: number;
   /** Created timestamp */
@@ -326,7 +356,7 @@ export interface CutListEntry {
   length: number;
   width: number;
   thickness: number;
-  grainDirection: 'LENGTH' | 'WIDTH';
+  grainDirection: "LENGTH" | "WIDTH";
   quantity: number;
   material: string;
 }
@@ -402,7 +432,7 @@ export interface CountertopGroupOptions {
  * Result of adjacent cabinet detection
  */
 export interface AdjacentCabinetGroup {
-  cabinets: string[];  // Cabinet IDs
+  cabinets: string[]; // Cabinet IDs
   layoutType: CountertopLayoutType;
   suggestedSegments: number;
 }
@@ -424,3 +454,6 @@ export const generateCncOperationId = (): string =>
 
 export const generateCornerId = (): string =>
   `cor_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+export const generateGapId = (): string =>
+  `gap_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
