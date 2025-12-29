@@ -307,6 +307,12 @@ export interface CountertopGroup {
   gaps: CabinetGap[];
   /** Default thickness for all segments (can be overridden per segment) */
   thickness: number;
+  /**
+   * True when cabinets in this group have been modified (moved, resized, etc.)
+   * and the countertop dimensions may no longer match.
+   * User should regenerate to update dimensions.
+   */
+  isOutdated?: boolean;
   /** Created timestamp */
   createdAt: Date;
   /** Updated timestamp */

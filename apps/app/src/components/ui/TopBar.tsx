@@ -8,9 +8,11 @@
  * - File menu (New, Open, Save, Save As)
  * - Sync status indicator
  * - Save to cloud for authenticated users
+ * - Unsaved changes warnings
+ * - Conflict resolution
  */
 
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useStore } from "@/lib/store";
 import { useShallow } from "zustand/react/shallow";
 import { useAuth } from "@/providers/AuthProvider";
@@ -18,6 +20,9 @@ import { cn } from "@/lib/utils";
 import { SyncStatusIndicator } from "@/components/projects/SyncStatusIndicator";
 import { ProjectListDialog } from "@/components/projects/ProjectListDialog";
 import { NewProjectDialog } from "@/components/projects/NewProjectDialog";
+import { useUnsavedChangesDialog } from "@/components/projects/UnsavedChangesDialog";
+import { useConflictResolutionDialog } from "@/components/projects/ConflictResolutionDialog";
+import { useBeforeUnloadWarning } from "@/hooks/useUnsavedChangesWarning";
 import {
   Button,
   DropdownMenu,
@@ -35,7 +40,10 @@ interface TopBarProps {
 export function TopBar({ className }: TopBarProps) {
   const [projectListOpen, setProjectListOpen] = useState(false);
   const [newProjectOpen, setNewProjectOpen] = useState(false);
+  const [newProjectMode, setNewProjectMode] = useState<"new" | "saveAs">("new");
   const [isSaving, setIsSaving] = useState(false);
+  const [pendingProjectId, setPendingProjectId] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState<"open" | "new" | null>(null);
 
   const { isAuthenticated } = useAuth();
 
@@ -43,26 +51,42 @@ export function TopBar({ className }: TopBarProps) {
     currentProjectId,
     currentProjectName,
     syncState,
+    isProjectLoading,
     parts,
     saveProject,
     loadProject,
     createNewProject,
     updateProjectName,
+    setProjectData,
   } = useStore(
     useShallow((state) => ({
       currentProjectId: state.currentProjectId,
       currentProjectName: state.currentProjectName,
       syncState: state.syncState,
+      isProjectLoading: state.isProjectLoading,
       parts: state.parts,
       saveProject: state.saveProject,
       loadProject: state.loadProject,
       createNewProject: state.createNewProject,
       updateProjectName: state.updateProjectName,
+      setProjectData: state.setProjectData,
     }))
   );
 
+  // Unsaved changes dialog hook
+  const { hasUnsavedChanges, confirmUnsavedChanges, UnsavedChangesDialogComponent } =
+    useUnsavedChangesDialog();
+
+  // Conflict resolution dialog hook
+  const { ConflictResolutionDialogComponent } = useConflictResolutionDialog();
+
+  // beforeunload warning for browser close/refresh
+  useBeforeUnloadWarning(hasUnsavedChanges);
+
   const hasUnsavedWork = parts.length > 0;
-  const canSave = syncState.status === "local_only" || syncState.status === "error";
+  // Disable save while project is loading to prevent race condition with stale revision
+  const canSave =
+    !isProjectLoading && (syncState.status === "local_only" || syncState.status === "error");
 
   const handleSave = async () => {
     if (isSaving) return;
@@ -77,17 +101,47 @@ export function TopBar({ className }: TopBarProps) {
 
   const handleSaveAs = () => {
     // For "Save As", open new project dialog with current data
+    setNewProjectMode("saveAs");
     setNewProjectOpen(true);
   };
 
-  const handleOpenProject = async (projectId: string) => {
-    await loadProject(projectId);
-    setProjectListOpen(false);
-  };
+  // Handle opening a project with unsaved changes check
+  const handleOpenProject = useCallback(
+    async (projectId: string) => {
+      // Don't reopen the same project
+      if (projectId === currentProjectId) {
+        setProjectListOpen(false);
+        return;
+      }
 
-  const handleNewProject = () => {
+      // Check for unsaved changes
+      const action = await confirmUnsavedChanges("otwarciem innego projektu");
+
+      if (action === "cancel") {
+        return; // User cancelled, don't switch
+      }
+
+      // action is "save" (saved successfully) or "discard" (user chose to discard)
+      // Proceed with loading the new project
+      setProjectListOpen(false);
+      await loadProject(projectId);
+    },
+    [currentProjectId, confirmUnsavedChanges, loadProject]
+  );
+
+  // Handle creating a new project with unsaved changes check
+  const handleNewProject = useCallback(async () => {
+    // Check for unsaved changes
+    const action = await confirmUnsavedChanges("tworzeniem nowego projektu");
+
+    if (action === "cancel") {
+      return; // User cancelled
+    }
+
+    // Proceed with new project dialog
+    setNewProjectMode("new");
     setNewProjectOpen(true);
-  };
+  }, [confirmUnsavedChanges]);
 
   const handleProjectCreated = () => {
     setNewProjectOpen(false);
@@ -222,9 +276,14 @@ export function TopBar({ className }: TopBarProps) {
         open={projectListOpen}
         onOpenChange={setProjectListOpen}
         onOpenProject={handleOpenProject}
-        onCreateNew={() => {
+        onCreateNew={async () => {
           setProjectListOpen(false);
-          setNewProjectOpen(true);
+          // Check for unsaved changes before creating new
+          const action = await confirmUnsavedChanges("tworzeniem nowego projektu");
+          if (action !== "cancel") {
+            setNewProjectMode("new");
+            setNewProjectOpen(true);
+          }
         }}
       />
 
@@ -232,7 +291,14 @@ export function TopBar({ className }: TopBarProps) {
         open={newProjectOpen}
         onOpenChange={setNewProjectOpen}
         onCreated={handleProjectCreated}
+        mode={newProjectMode}
       />
+
+      {/* Unsaved changes confirmation dialog */}
+      <UnsavedChangesDialogComponent />
+
+      {/* Conflict resolution dialog */}
+      <ConflictResolutionDialogComponent />
     </>
   );
 }

@@ -1,19 +1,15 @@
-'use client';
+"use client";
 
-import { useMemo } from 'react';
-import * as THREE from 'three';
-import { useStore } from '@/lib/store';
-import { useShallow } from 'zustand/react/shallow';
-import { Room, WallSegment, Opening } from '@/types';
-import { DoubleSide } from 'three';
-import { Opening3D } from './Opening3D';
+import { useMemo, useEffect } from "react";
+import * as THREE from "three";
+import { useStore } from "@/lib/store";
+import { useShallow } from "zustand/react/shallow";
+import { Room, WallSegment, Opening } from "@/types";
+import { DoubleSide } from "three";
+import { Opening3D } from "./Opening3D";
 
 // Helper to create shape for a wall segment with holes for openings
-function createWallShape(
-  wall: WallSegment,
-  openings: Opening[],
-  wallHeight: number
-): THREE.Shape {
+function createWallShape(wall: WallSegment, openings: Opening[], wallHeight: number): THREE.Shape {
   const length = Math.sqrt(
     Math.pow(wall.end[0] - wall.start[0], 2) + Math.pow(wall.end[1] - wall.start[1], 2)
   );
@@ -47,15 +43,12 @@ function createWallShape(
   return shape;
 }
 
-function Wall3D({
-  wall,
-  room,
-  openings,
-}: {
-  wall: WallSegment;
-  room: Room;
-  openings: Opening[];
-}) {
+function Wall3D({ wall, room, openings }: { wall: WallSegment; room: Room; openings: Opening[] }) {
+  // Subscribe to occlusion state - selector returns boolean for this specific wall
+  const isOccluding = useStore(
+    (state) => state.wallOcclusionEnabled && state.occludingWallIds.has(wall.id)
+  );
+
   const shape = useMemo(() => {
     const height = wall.heightMm || room.heightMm;
     return createWallShape(wall, openings, height);
@@ -70,18 +63,25 @@ function Wall3D({
     });
   }, [shape, wall.thicknessMm, room.wallThicknessMm]);
 
+  // CRITICAL: Dispose geometry on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      geometry.dispose();
+    };
+  }, [geometry]);
+
   const { position, rotation } = useMemo(() => {
     const dx = wall.end[0] - wall.start[0];
     const dz = wall.end[1] - wall.start[1];
     const angle = Math.atan2(dz, dx);
-    
+
     // In Three.js:
     // +X is right, +Z is towards viewer (South).
     // Rotation around Y:
     // 0 = +X
     // -90deg (-PI/2) = +Z
     // 90deg (PI/2) = -Z
-    
+
     // Math.atan2(dz, dx) gives angle from +X (0) towards +Z (positive angle if Z>0? No, standard math Y is up)
     // In 2D map: X is Right, Z is Down (usually in screen coords) or Up?
     // In 3D World: X is Right, Z is Front.
@@ -93,7 +93,7 @@ function Wall3D({
     // Rotation Y -PI/2 rotates +X to +Z.
     // So if angle is PI/2, we need rotation -PI/2.
     // So rotation = -angle.
-    
+
     return {
       position: [wall.start[0], 0, wall.start[1]] as [number, number, number],
       rotation: [0, -angle, 0] as [number, number, number],
@@ -106,23 +106,19 @@ function Wall3D({
     <group position={position} rotation={rotation}>
       {/* Wall Mesh */}
       {/* Offset Z by -thickness/2 to center the wall on the line */}
-      <mesh
-        geometry={geometry}
-        position={[0, 0, -thickness / 2]}
-        castShadow
-        receiveShadow
-      >
-        <meshStandardMaterial color="#e5e7eb" side={DoubleSide} />
+      <mesh geometry={geometry} position={[0, 0, -thickness / 2]} castShadow receiveShadow>
+        <meshStandardMaterial
+          color="#e5e7eb"
+          side={DoubleSide}
+          transparent={isOccluding}
+          opacity={isOccluding ? 0.2 : 1}
+        />
       </mesh>
 
       {openings
         .filter((o) => o.wallId === wall.id)
         .map((opening) => (
-          <Opening3D
-            key={opening.id}
-            opening={opening}
-            wallThickness={thickness}
-          />
+          <Opening3D key={opening.id} opening={opening} wallThickness={thickness} />
         ))}
     </group>
   );
@@ -144,12 +140,7 @@ export function Room3D() {
           {walls
             .filter((w) => w.roomId === room.id)
             .map((wall) => (
-              <Wall3D
-                key={wall.id}
-                wall={wall}
-                room={room}
-                openings={openings}
-              />
+              <Wall3D key={wall.id} wall={wall} room={room} openings={openings} />
             ))}
         </group>
       ))}

@@ -17,6 +17,7 @@ import {
 } from "@/lib/store";
 import { Part3D } from "./Part3D";
 import { Room3D } from "./Room3D";
+import { WallOcclusionController } from "./WallOcclusionController";
 import { RoomLighting } from "./RoomLighting";
 import { FloorCeiling3D } from "./FloorCeiling3D";
 import { CabinetLegs } from "./Leg3D";
@@ -38,17 +39,18 @@ import { CountertopPart3D } from "./CountertopPart3D";
 import { SnapGuidesRenderer } from "./SnapGuidesRenderer";
 import { SnapDebugRenderer } from "./SnapDebugRenderer";
 import { DimensionRenderer } from "./DimensionRenderer";
+import { WallSnapCacheUpdater } from "./WallSnapCacheUpdater";
 import { SnapProvider } from "@/lib/snap-context";
 import { DimensionProvider } from "@/lib/dimension-context";
 import { SnapControlPanel } from "@/components/layout/SnapControlPanel";
 import { GraphicsSettingsPanel } from "@/components/layout/GraphicsSettingsPanel";
-import { DimensionControlPanel } from "@/components/layout/DimensionControlPanel";
+import { DimensionSettingsPanel } from "@/components/layout/DimensionSettingsPanel";
 import { SceneEffects } from "./SceneEffects";
-import { ObjectDimensionControlPanel } from "@/components/layout/ObjectDimensionControlPanel";
 import { ObjectDimensionRenderer } from "./ObjectDimensionRenderer";
 import { OrthographicCameraController } from "./OrthographicCameraController";
 import { PerspectiveCameraController } from "./PerspectiveCameraController";
 import { ViewModePanel } from "./ViewModePanel";
+import { ThreeStateProvider } from "./ThreeStateProvider";
 import { ORTHOGRAPHIC_VIEW_CONFIGS } from "@/types";
 
 interface SceneProps {
@@ -252,11 +254,8 @@ export function Scene({ onOpenMobileSidebar, isMobile }: SceneProps) {
         {/* Snap Control Panel */}
         <SnapControlPanel />
 
-        {/* Distance Dimensions (during drag) */}
-        <DimensionControlPanel />
-
-        {/* Object Dimensions (W/H/D) */}
-        <ObjectDimensionControlPanel />
+        {/* Dimension Settings (combined distance + object dimensions) */}
+        <DimensionSettingsPanel />
 
         {/* View Mode Panel */}
         <ViewModePanel />
@@ -304,6 +303,12 @@ export function Scene({ onOpenMobileSidebar, isMobile }: SceneProps) {
       <DimensionProvider>
         <SnapProvider>
           <Canvas shadows dpr={[1, qualityPreset.pixelRatio]} onPointerMissed={handlePointerMissed}>
+            {/* Store Three.js refs for thumbnail generation */}
+            <ThreeStateProvider />
+
+            {/* Wall snap cache updater - updates wall geometry cache when room/walls change */}
+            <WallSnapCacheUpdater />
+
             {/* Camera and Controls - conditional based on view mode */}
             {isPerspective ? (
               <PerspectiveCameraController
@@ -372,6 +377,7 @@ export function Scene({ onOpenMobileSidebar, isMobile }: SceneProps) {
 
             {/* Room Structure */}
             <Room3D />
+            <WallOcclusionController />
             {rooms.map((room) => (
               <FloorCeiling3D key={room.id} roomId={room.id} />
             ))}

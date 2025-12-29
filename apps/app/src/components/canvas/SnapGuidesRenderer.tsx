@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * SnapGuidesRenderer Component
@@ -7,11 +7,11 @@
  * Uses useFrame to read from refs for high-performance updates without rerenders.
  */
 
-import { useRef, useMemo } from 'react';
-import { useFrame } from '@react-three/fiber';
-import * as THREE from 'three';
-import { useStore } from '@/lib/store';
-import { useSnapPointsRef } from '@/lib/snap-context';
+import { useRef, useMemo, useEffect } from "react";
+import { useFrame } from "@react-three/fiber";
+import * as THREE from "three";
+import { useStore } from "@/lib/store";
+import { useSnapPointsRef } from "@/lib/snap-context";
 
 // ============================================================================
 // Constants
@@ -55,6 +55,14 @@ export function SnapGuidesRenderer() {
   // Dummy object for instanced mesh matrix updates
   const dummyObj = useMemo(() => new THREE.Object3D(), []);
 
+  // CRITICAL: Dispose geometry and material on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      planeGeometry.dispose();
+      planeMaterial.dispose();
+    };
+  }, [planeGeometry, planeMaterial]);
+
   // Update guides in render loop (no rerenders!)
   useFrame(() => {
     if (!showGuides) return;
@@ -80,10 +88,10 @@ export function SnapGuidesRenderer() {
 
         // Rotate plane to be perpendicular to the snap axis
         // PlaneGeometry is in XY plane by default, facing +Z
-        if (axis === 'X') {
+        if (axis === "X") {
           // Snap on X axis - plane perpendicular to X (in YZ plane)
           dummyObj.rotation.set(0, Math.PI / 2, 0);
-        } else if (axis === 'Y') {
+        } else if (axis === "Y") {
           // Snap on Y axis - plane perpendicular to Y (in XZ plane)
           dummyObj.rotation.set(Math.PI / 2, 0, 0);
         } else {

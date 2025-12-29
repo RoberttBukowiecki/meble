@@ -17,6 +17,8 @@ import { createCountertopSlice } from "./slices/countertopSlice";
 import { createCabinetPreferencesSlice } from "./slices/cabinetPreferencesSlice";
 import { createViewSlice } from "./slices/viewSlice";
 import { createProjectSlice } from "./slices/projectSlice";
+import { createWallOcclusionSlice } from "./slices/wallOcclusionSlice";
+import { createThreeSlice } from "./slices/threeSlice";
 import { HISTORY_MAX_LENGTH, HISTORY_MAX_MILESTONES } from "./history/constants";
 import type { StoreState } from "./types";
 
@@ -40,6 +42,8 @@ export const useStore = create<StoreState>()(
       ...createCabinetPreferencesSlice(...args),
       ...createViewSlice(...args),
       ...createProjectSlice(...args),
+      ...createWallOcclusionSlice(...args),
+      ...createThreeSlice(...args),
     }),
     {
       name: "e-meble-storage",
@@ -186,14 +190,35 @@ export const useStore = create<StoreState>()(
           setProjectData,
           resetProjectState,
           // Project transient state (don't persist - sync state is ephemeral)
-          // Note: currentProjectId and currentProjectName ARE persisted
+          // Note: currentProjectId, currentProjectName and currentProjectRevision ARE persisted
           // so we can restore the project after page reload
-          currentProjectRevision,
           syncState,
           isProjectLoading,
+          // Wall occlusion functions and transient state
+          // Note: wallOcclusionEnabled IS persisted (user preference)
+          toggleWallOcclusion,
+          setWallOcclusionEnabled,
+          occludingWallIds, // Transient - recalculated on each render
+          setOccludingWallIds,
+          // Three.js state (transient - set when Scene mounts)
+          threeRenderer,
+          threeScene,
+          setThreeState,
+          clearThreeState,
           ...rest
         } = state as any;
         return rest;
+      },
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          console.log("[Store] Hydrated from localStorage:", {
+            currentProjectId: state.currentProjectId,
+            currentProjectName: state.currentProjectName,
+            currentProjectRevision: state.currentProjectRevision,
+          });
+        } else {
+          console.log("[Store] Hydration failed or no persisted state");
+        }
       },
     }
   )

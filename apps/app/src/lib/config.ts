@@ -70,6 +70,7 @@ export const KEYBOARD_SHORTCUTS = {
   // Visibility shortcuts
   HIDE_SELECTED: "h", // Hide selected parts/groups
   TOGGLE_HIDE_FRONTS: "h", // Ctrl+H - Toggle cabinet front visibility
+  TOGGLE_WALL_OCCLUSION: "w", // Toggle wall transparency for occluding walls
 
   // Admin-only shortcuts (for testing)
   ADMIN_TEST_CREDITS_ANIMATION: "9", // Ctrl+9 - Test credits animation in sidebar
@@ -82,8 +83,9 @@ export const KEYBOARD_SHORTCUTS = {
 
 export const SCENE_CONFIG = {
   // Camera
-  // Increased distance for better overview of typical cabinets (720-800mm height)
-  CAMERA_INITIAL_POSITION: [1500, 1000, 1500] as [number, number, number],
+  // Front-right view at ~40° from above - good for viewing cabinet fronts
+  // X: slight offset to the right, Y: elevated for top-down angle, Z: front view
+  CAMERA_INITIAL_POSITION: [500, 1800, 2000] as [number, number, number],
   CAMERA_FOV: 50,
 
   // Grid
@@ -168,8 +170,8 @@ export const PART_CONFIG = {
 // ============================================================================
 
 export const DEFAULT_GRAPHICS_SETTINGS = {
-  quality: "high",
-  shadows: true,
+  quality: "low",
+  shadows: false,
   ambientOcclusion: false,
   lightingMode: "standard",
 } as const;

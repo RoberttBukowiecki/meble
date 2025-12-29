@@ -1,17 +1,8 @@
-import type { HistorySlice, StoreSlice } from '../types';
-import type { HistoryEntry, HistoryEntryType } from '@/types';
-import {
-  HISTORY_MAX_LENGTH,
-  HISTORY_MAX_MILESTONES,
-  HISTORY_LABELS,
-} from '../history/constants';
-import {
-  isEqual,
-  estimateByteSize,
-  inferKindFromType,
-  generateId,
-} from '../history/utils';
-import { applyHistoryEntry } from '../history/apply';
+import type { HistorySlice, StoreSlice } from "../types";
+import type { HistoryEntry, HistoryEntryType } from "@/types";
+import { HISTORY_MAX_LENGTH, HISTORY_MAX_MILESTONES, HISTORY_LABELS } from "../history/constants";
+import { isEqual, estimateByteSize, inferKindFromType, generateId } from "../history/utils";
+import { applyHistoryEntry } from "../history/apply";
 
 /**
  * History slice implementation
@@ -128,6 +119,9 @@ export const createHistorySlice: StoreSlice<HistorySlice> = (set, get) => ({
       milestoneStack: newMilestoneStack,
       approxByteSize,
     });
+
+    // Mark project as dirty when any change is recorded in history
+    get().markAsDirty();
   },
 
   // Undo operation
@@ -138,7 +132,7 @@ export const createHistorySlice: StoreSlice<HistorySlice> = (set, get) => ({
     const entry = undoStack[undoStack.length - 1];
 
     // Apply reverse operation
-    applyHistoryEntry(entry, 'undo', get, set);
+    applyHistoryEntry(entry, "undo", get, set);
 
     // Move entry to redo stack
     set({
@@ -148,7 +142,7 @@ export const createHistorySlice: StoreSlice<HistorySlice> = (set, get) => ({
 
     // Trigger collision detection if available
     const state = get();
-    if ('detectCollisions' in state && typeof state.detectCollisions === 'function') {
+    if ("detectCollisions" in state && typeof state.detectCollisions === "function") {
       // Debounced collision detection will be called by the slice operations
     }
   },
@@ -161,7 +155,7 @@ export const createHistorySlice: StoreSlice<HistorySlice> = (set, get) => ({
     const entry = redoStack[redoStack.length - 1];
 
     // Apply forward operation
-    applyHistoryEntry(entry, 'redo', get, set);
+    applyHistoryEntry(entry, "redo", get, set);
 
     // Move entry back to undo stack
     set({
@@ -171,7 +165,7 @@ export const createHistorySlice: StoreSlice<HistorySlice> = (set, get) => ({
 
     // Trigger collision detection if available
     const state = get();
-    if ('detectCollisions' in state && typeof state.detectCollisions === 'function') {
+    if ("detectCollisions" in state && typeof state.detectCollisions === "function") {
       // Debounced collision detection will be called by the slice operations
     }
   },
@@ -219,10 +213,7 @@ export const createHistorySlice: StoreSlice<HistorySlice> = (set, get) => ({
   },
 
   // Run a mutator with automatic history recording
-  runWithHistory: <T>(
-    entryBuilder: (result: T) => HistoryEntry,
-    mutator: () => T
-  ): T => {
+  runWithHistory: <T>(entryBuilder: (result: T) => HistoryEntry, mutator: () => T): T => {
     const result = mutator();
     const entry = entryBuilder(result);
     get().pushEntry(entry);

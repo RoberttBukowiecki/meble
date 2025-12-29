@@ -16,7 +16,6 @@ import {
   getCabinetTransform,
   getDefaultBackMaterial,
   triggerDebouncedCollisionDetection,
-  triggerDebouncedCountertopRegeneration,
 } from "../utils";
 import type { CabinetSlice, StoreSlice } from "../types";
 import { HISTORY_LABELS } from "../history/constants";
@@ -388,6 +387,10 @@ export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
     });
 
     triggerDebouncedCollisionDetection(get);
+
+    // Mark countertop groups as outdated when cabinet params change
+    // User can manually regenerate to update dimensions
+    get().markGroupsForCabinetAsOutdated(id);
   },
 
   updateCabinetTransform: (
@@ -490,13 +493,24 @@ export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
 
     triggerDebouncedCollisionDetection(get);
 
-    // Regenerate countertops with updated gap distances after cabinet move
-    triggerDebouncedCountertopRegeneration(get, id);
+    // Mark countertop groups as outdated after cabinet move
+    // User can manually regenerate to update dimensions
+    get().markGroupsForCabinetAsOutdated(id);
   },
 
   removeCabinet: (id: string, skipHistory = false) => {
     const cabinet = get().cabinets.find((c) => c.id === id);
     if (!cabinet) return;
+
+    // Check if this cabinet is part of any countertop group BEFORE removal
+    // We need to store this info to regenerate countertops after removal
+    const affectedGroup = get().countertopGroups.find(
+      (group) =>
+        group.furnitureId === cabinet.furnitureId &&
+        group.segments.some((seg) => seg.cabinetIds.includes(id))
+    );
+    const countertopMaterialId = affectedGroup?.materialId;
+    const furnitureId = cabinet.furnitureId;
 
     const parts = get().parts.filter((p) => cabinet.partIds.includes(p.id));
     const cabinetIndex = get().cabinets.findIndex((c) => c.id === id);
@@ -525,30 +539,18 @@ export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
       const cabinet = state.cabinets.find((c) => c.id === id);
       if (!cabinet) return state;
 
-      // Remove countertop groups that contain this cabinet
-      const updatedCountertopGroups = state.countertopGroups
-        .map((group) => {
-          // Remove this cabinet from all segments
-          const updatedSegments = group.segments
-            .map((seg) => ({
-              ...seg,
-              cabinetIds: seg.cabinetIds.filter((cId) => cId !== id),
-            }))
-            .filter((seg) => seg.cabinetIds.length > 0); // Remove empty segments
-
-          if (updatedSegments.length === 0) {
-            return null; // Mark group for removal
-          }
-          return { ...group, segments: updatedSegments };
-        })
-        .filter((g): g is NonNullable<typeof g> => g !== null);
+      // Remove countertop groups for this furniture - they will be regenerated
+      // to properly handle adjacency after cabinet removal
+      const remainingCountertopGroups = state.countertopGroups.filter(
+        (g) => g.furnitureId !== cabinet.furnitureId
+      );
 
       return {
         cabinets: state.cabinets.filter((c) => c.id !== id),
         parts: state.parts.filter((p) => !cabinet.partIds.includes(p.id)),
         selectedCabinetId: state.selectedCabinetId === id ? null : state.selectedCabinetId,
-        countertopGroups: updatedCountertopGroups,
-        selectedCountertopGroupId: updatedCountertopGroups.some(
+        countertopGroups: remainingCountertopGroups,
+        selectedCountertopGroupId: remainingCountertopGroups.some(
           (g) => g.id === state.selectedCountertopGroupId
         )
           ? state.selectedCountertopGroupId
@@ -557,6 +559,12 @@ export const createCabinetSlice: StoreSlice<CabinetSlice> = (set, get) => ({
     });
 
     triggerDebouncedCollisionDetection(get);
+
+    // Regenerate countertops for this furniture to properly handle adjacency
+    // This will detect which remaining cabinets are still adjacent and create correct groups
+    if (countertopMaterialId) {
+      get().generateCountertopsForFurniture(furnitureId, countertopMaterialId);
+    }
   },
 
   duplicateCabinet: (id: string, skipHistory = false) => {

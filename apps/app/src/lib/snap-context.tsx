@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * Snap Context
@@ -10,6 +10,7 @@
  * Pattern:
  * - SnapSettings are persisted in Zustand store
  * - Active snap points are stored in refs (no rerenders on update)
+ * - Wall snap geometry is cached and updated when room/walls change
  * - Components read snap state in useFrame callback (R3F render loop)
  */
 
@@ -20,12 +21,21 @@ import {
   useCallback,
   type ReactNode,
   type MutableRefObject,
-} from 'react';
-import type { SnapPoint } from '@/types';
+} from "react";
+import type { SnapPoint } from "@/types";
+import type { WallSnapCache } from "@/types/wall-snap";
 
 // ============================================================================
 // Types
 // ============================================================================
+
+/** Default wall snap cache */
+const DEFAULT_WALL_SNAP_CACHE: WallSnapCache = {
+  roomId: null,
+  surfaces: [],
+  corners: [],
+  version: 0,
+};
 
 interface SnapContextValue {
   /** Ref holding current active snap points (updated without rerender) */
@@ -39,6 +49,12 @@ interface SnapContextValue {
 
   /** Clear snap points (call on drag end) */
   clearSnapPoints: () => void;
+
+  /** Ref holding wall snap geometry cache */
+  wallSnapCacheRef: MutableRefObject<WallSnapCache>;
+
+  /** Update wall snap cache (call when room/walls change) */
+  updateWallSnapCache: (cache: WallSnapCache) => void;
 }
 
 // ============================================================================
@@ -64,6 +80,7 @@ interface SnapProviderProps {
 export function SnapProvider({ children }: SnapProviderProps) {
   const snapPointsRef = useRef<SnapPoint[]>([]);
   const versionRef = useRef(0);
+  const wallSnapCacheRef = useRef<WallSnapCache>(DEFAULT_WALL_SNAP_CACHE);
 
   const setSnapPoints = useCallback((points: SnapPoint[]) => {
     snapPointsRef.current = points;
@@ -77,6 +94,10 @@ export function SnapProvider({ children }: SnapProviderProps) {
     }
   }, []);
 
+  const updateWallSnapCache = useCallback((cache: WallSnapCache) => {
+    wallSnapCacheRef.current = cache;
+  }, []);
+
   return (
     <SnapContext.Provider
       value={{
@@ -84,6 +105,8 @@ export function SnapProvider({ children }: SnapProviderProps) {
         versionRef,
         setSnapPoints,
         clearSnapPoints,
+        wallSnapCacheRef,
+        updateWallSnapCache,
       }}
     >
       {children}
@@ -103,7 +126,7 @@ export function SnapProvider({ children }: SnapProviderProps) {
 export function useSnapContext(): SnapContextValue {
   const context = useContext(SnapContext);
   if (!context) {
-    throw new Error('useSnapContext must be used within a SnapProvider');
+    throw new Error("useSnapContext must be used within a SnapProvider");
   }
   return context;
 }
@@ -128,4 +151,15 @@ export function useSnapPoints() {
 export function useSnapPointsRef() {
   const { snapPointsRef, versionRef } = useSnapContext();
   return { snapPointsRef, versionRef };
+}
+
+/**
+ * useWallSnapCache
+ *
+ * Returns the wall snap cache ref and updater.
+ * Use this in WallSnapCacheUpdater to update cache when room/walls change.
+ */
+export function useWallSnapCache() {
+  const { wallSnapCacheRef, updateWallSnapCache } = useSnapContext();
+  return { wallSnapCacheRef, updateWallSnapCache };
 }

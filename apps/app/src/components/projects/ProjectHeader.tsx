@@ -49,16 +49,23 @@ export function ProjectHeader({
 }: ProjectHeaderProps) {
   const [isSaving, setIsSaving] = useState(false);
 
-  const { currentProjectId, currentProjectName, syncState, saveProject, updateProjectName } =
-    useStore(
-      useShallow((state) => ({
-        currentProjectId: state.currentProjectId,
-        currentProjectName: state.currentProjectName,
-        syncState: state.syncState,
-        saveProject: state.saveProject,
-        updateProjectName: state.updateProjectName,
-      }))
-    );
+  const {
+    currentProjectId,
+    currentProjectName,
+    syncState,
+    isProjectLoading,
+    saveProject,
+    updateProjectName,
+  } = useStore(
+    useShallow((state) => ({
+      currentProjectId: state.currentProjectId,
+      currentProjectName: state.currentProjectName,
+      syncState: state.syncState,
+      isProjectLoading: state.isProjectLoading,
+      saveProject: state.saveProject,
+      updateProjectName: state.updateProjectName,
+    }))
+  );
 
   // Don't render if no project is loaded
   if (!currentProjectId) {
@@ -66,7 +73,7 @@ export function ProjectHeader({
   }
 
   const handleSave = async () => {
-    if (isSaving || syncState.status === "synced") return;
+    if (isSaving || isProjectLoading || syncState.status === "synced") return;
 
     setIsSaving(true);
     try {
@@ -89,7 +96,9 @@ export function ProjectHeader({
     }
   };
 
-  const canSave = syncState.status === "local_only" || syncState.status === "error";
+  // Disable save while project is loading to prevent race condition with stale revision
+  const canSave =
+    !isProjectLoading && (syncState.status === "local_only" || syncState.status === "error");
 
   return (
     <div className={cn("flex items-center gap-2", className)}>

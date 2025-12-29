@@ -18,13 +18,15 @@ import { useStore, useCountertopGroups, useSelectedCountertopGroup } from "@/lib
 import { Button, Badge, ScrollArea } from "@meble/ui";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@meble/ui";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@meble/ui";
-import { Download, Scan, Layers } from "lucide-react";
+import { Download, Scan, Layers, LayoutGrid, AlertTriangle, RefreshCw } from "lucide-react";
 
 import { GroupListItem } from "./GroupListItem";
 import { SegmentTable } from "./SegmentTable";
 import { CornerTreatmentSection } from "./CornerTreatmentSection";
 import { CncOperationsSection } from "./CncOperationsSection";
 import { GapSection } from "./GapSection";
+import { CountertopLayoutDiagram } from "@/components/countertop";
+import { COUNTERTOP_THICKNESS_OPTIONS } from "@/lib/config";
 
 export function CountertopPanel() {
   const groups = useCountertopGroups();
@@ -36,6 +38,7 @@ export function CountertopPanel() {
     selectCountertopGroup,
     removeCountertopGroup,
     generateCountertopsForFurniture,
+    regenerateCountertopGroup,
     updateCountertopGroup,
     exportCountertopGroupCsv,
   } = useStore(
@@ -45,6 +48,7 @@ export function CountertopPanel() {
       selectCountertopGroup: state.selectCountertopGroup,
       removeCountertopGroup: state.removeCountertopGroup,
       generateCountertopsForFurniture: state.generateCountertopsForFurniture,
+      regenerateCountertopGroup: state.regenerateCountertopGroup,
       updateCountertopGroup: state.updateCountertopGroup,
       exportCountertopGroupCsv: state.exportCountertopGroupCsv,
     }))
@@ -147,131 +151,181 @@ export function CountertopPanel() {
 
           {/* Selected Group Details */}
           {selectedGroup && (
-            <Accordion
-              type="multiple"
-              defaultValue={["gaps", "segments", "corners", "cnc"]}
-              className="mt-4"
-            >
-              {/* Gap Management - show if there are gaps */}
-              {selectedGroup.gaps && selectedGroup.gaps.length > 0 && (
-                <AccordionItem
-                  value="gaps"
-                  className="border rounded-lg px-3 mb-2 border-orange-500/30 bg-orange-500/5"
-                >
+            <>
+              {/* Outdated Warning Banner */}
+              {selectedGroup.isOutdated && (
+                <div className="mt-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-amber-700">Blat wymaga aktualizacji</p>
+                      <p className="text-xs text-amber-600/80 mt-0.5">
+                        Szafki w tej grupie zostały zmodyfikowane. Kliknij &quot;Odśwież&quot; aby
+                        zaktualizować wymiary blatu.
+                      </p>
+                      <p className="text-[10px] text-amber-600/60 mt-1">
+                        Uwaga: Ręczne zmiany wymiarów zostaną nadpisane.
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs border-amber-500/50 hover:bg-amber-500/10 shrink-0"
+                      onClick={() => regenerateCountertopGroup(selectedGroup.id)}
+                    >
+                      <RefreshCw className="h-3 w-3 mr-1" />
+                      Odśwież
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              <Accordion
+                type="multiple"
+                defaultValue={["layout", "gaps", "segments", "corners", "cnc"]}
+                className="mt-4"
+              >
+                {/* 2D Layout Diagram */}
+                <AccordionItem value="layout" className="border rounded-lg px-3 mb-2">
                   <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
                     <span className="flex items-center gap-2">
-                      Przerwy między szafkami
-                      <Badge
-                        variant="outline"
-                        className="text-[10px] px-1.5 h-4 border-orange-500/50 text-orange-600"
-                      >
-                        {selectedGroup.gaps.length}
+                      <LayoutGrid className="h-3.5 w-3.5" />
+                      Podgląd układu
+                    </span>
+                  </AccordionTrigger>
+                  <AccordionContent className="pb-3 pt-0">
+                    <CountertopLayoutDiagram
+                      group={selectedGroup}
+                      width={320}
+                      height={200}
+                      showEdgeLabels
+                      showCornerMarkers
+                      interactive
+                    />
+                  </AccordionContent>
+                </AccordionItem>
+
+                {/* Gap Management - show if there are gaps */}
+                {selectedGroup.gaps && selectedGroup.gaps.length > 0 && (
+                  <AccordionItem
+                    value="gaps"
+                    className="border rounded-lg px-3 mb-2 border-orange-500/30 bg-orange-500/5"
+                  >
+                    <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
+                      <span className="flex items-center gap-2">
+                        Przerwy między szafkami
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] px-1.5 h-4 border-orange-500/50 text-orange-600"
+                        >
+                          {selectedGroup.gaps.length}
+                        </Badge>
+                      </span>
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-3 pt-0">
+                      <GapSection group={selectedGroup} />
+                    </AccordionContent>
+                  </AccordionItem>
+                )}
+                {/* Material & Thickness */}
+                <AccordionItem value="material" className="border rounded-lg px-3 mb-2">
+                  <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
+                    Materiał i grubość
+                  </AccordionTrigger>
+                  <AccordionContent className="pb-3 pt-0">
+                    <div className="space-y-3">
+                      <div className="space-y-1.5">
+                        <label className="text-xs text-muted-foreground">Materiał</label>
+                        <Select
+                          value={selectedGroup.materialId}
+                          onValueChange={(val) =>
+                            updateCountertopGroup(selectedGroup.id, { materialId: val })
+                          }
+                        >
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {materialOptions.map((mat) => (
+                              <SelectItem key={mat.id} value={mat.id} className="text-xs">
+                                {mat.name} ({mat.thickness}mm)
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs text-muted-foreground">Grubość (mm)</label>
+                        <Select
+                          value={String(selectedGroup.thickness)}
+                          onValueChange={(val) =>
+                            updateCountertopGroup(selectedGroup.id, { thickness: Number(val) })
+                          }
+                        >
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {COUNTERTOP_THICKNESS_OPTIONS.map((option) => (
+                              <SelectItem
+                                key={option.value}
+                                value={String(option.value)}
+                                className="text-xs"
+                              >
+                                {option.labelPl}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                {/* Segments Table */}
+                <AccordionItem value="segments" className="border rounded-lg px-3 mb-2">
+                  <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
+                    <span className="flex items-center gap-2">
+                      Segmenty
+                      <Badge variant="secondary" className="text-[10px] px-1.5 h-4">
+                        {selectedGroup.segments.length}
                       </Badge>
                     </span>
                   </AccordionTrigger>
                   <AccordionContent className="pb-3 pt-0">
-                    <GapSection group={selectedGroup} />
+                    <SegmentTable segments={selectedGroup.segments} groupId={selectedGroup.id} />
                   </AccordionContent>
                 </AccordionItem>
-              )}
-              {/* Material & Thickness */}
-              <AccordionItem value="material" className="border rounded-lg px-3 mb-2">
-                <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
-                  Materiał i grubość
-                </AccordionTrigger>
-                <AccordionContent className="pb-3 pt-0">
-                  <div className="space-y-3">
-                    <div className="space-y-1.5">
-                      <label className="text-xs text-muted-foreground">Materiał</label>
-                      <Select
-                        value={selectedGroup.materialId}
-                        onValueChange={(val) =>
-                          updateCountertopGroup(selectedGroup.id, { materialId: val })
-                        }
-                      >
-                        <SelectTrigger className="h-8 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {materialOptions.map((mat) => (
-                            <SelectItem key={mat.id} value={mat.id} className="text-xs">
-                              {mat.name} ({mat.thickness}mm)
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-xs text-muted-foreground">Grubość (mm)</label>
-                      <Select
-                        value={String(selectedGroup.thickness)}
-                        onValueChange={(val) =>
-                          updateCountertopGroup(selectedGroup.id, { thickness: Number(val) })
-                        }
-                      >
-                        <SelectTrigger className="h-8 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="28" className="text-xs">
-                            28 mm
-                          </SelectItem>
-                          <SelectItem value="38" className="text-xs">
-                            38 mm
-                          </SelectItem>
-                          <SelectItem value="40" className="text-xs">
-                            40 mm
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
 
-              {/* Segments Table */}
-              <AccordionItem value="segments" className="border rounded-lg px-3 mb-2">
-                <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
-                  <span className="flex items-center gap-2">
-                    Segmenty
-                    <Badge variant="secondary" className="text-[10px] px-1.5 h-4">
-                      {selectedGroup.segments.length}
-                    </Badge>
-                  </span>
-                </AccordionTrigger>
-                <AccordionContent className="pb-3 pt-0">
-                  <SegmentTable segments={selectedGroup.segments} groupId={selectedGroup.id} />
-                </AccordionContent>
-              </AccordionItem>
+                {/* Corner Treatments */}
+                {(selectedGroup.layoutType === "L_SHAPE" ||
+                  selectedGroup.layoutType === "U_SHAPE") && (
+                  <AccordionItem value="corners" className="border rounded-lg px-3 mb-2">
+                    <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
+                      Narożniki
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-3 pt-0">
+                      <CornerTreatmentSection group={selectedGroup} />
+                    </AccordionContent>
+                  </AccordionItem>
+                )}
 
-              {/* Corner Treatments */}
-              {(selectedGroup.layoutType === "L_SHAPE" ||
-                selectedGroup.layoutType === "U_SHAPE") && (
-                <AccordionItem value="corners" className="border rounded-lg px-3 mb-2">
+                {/* CNC Operations */}
+                <AccordionItem value="cnc" className="border rounded-lg px-3 mb-2">
                   <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
-                    Narożniki
+                    <span className="flex items-center gap-2">
+                      Operacje CNC
+                      <Badge variant="secondary" className="text-[10px] px-1.5 h-4">
+                        {selectedGroup.segments.reduce((sum, s) => sum + s.cncOperations.length, 0)}
+                      </Badge>
+                    </span>
                   </AccordionTrigger>
                   <AccordionContent className="pb-3 pt-0">
-                    <CornerTreatmentSection group={selectedGroup} />
+                    <CncOperationsSection group={selectedGroup} />
                   </AccordionContent>
                 </AccordionItem>
-              )}
-
-              {/* CNC Operations */}
-              <AccordionItem value="cnc" className="border rounded-lg px-3 mb-2">
-                <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
-                  <span className="flex items-center gap-2">
-                    Operacje CNC
-                    <Badge variant="secondary" className="text-[10px] px-1.5 h-4">
-                      {selectedGroup.segments.reduce((sum, s) => sum + s.cncOperations.length, 0)}
-                    </Badge>
-                  </span>
-                </AccordionTrigger>
-                <AccordionContent className="pb-3 pt-0">
-                  <CncOperationsSection group={selectedGroup} />
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
+              </Accordion>
+            </>
           )}
         </div>
       </ScrollArea>

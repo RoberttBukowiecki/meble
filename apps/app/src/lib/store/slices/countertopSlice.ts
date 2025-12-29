@@ -28,6 +28,7 @@ import type {
 import type { Cabinet, Part, Material, KitchenCabinetParams } from "@/types";
 import { CountertopDomain } from "@/lib/domain/countertop";
 import { getCabinetBounds } from "@/lib/domain/countertop/helpers";
+import { CABINET_GAP_CONFIG } from "@/lib/config";
 import type { StoreSlice } from "../types";
 import { HISTORY_LABELS } from "../history/constants";
 import { generateId, inferKindFromType } from "../history/utils";
@@ -172,6 +173,14 @@ export interface CountertopSlice {
     mode: CabinetGapMode,
     skipHistory?: boolean
   ) => void;
+
+  // Outdated state management
+  /** Mark a countertop group as outdated (needs regeneration) */
+  markGroupAsOutdated: (groupId: string) => void;
+  /** Mark all countertop groups containing a specific cabinet as outdated */
+  markGroupsForCabinetAsOutdated: (cabinetId: string) => void;
+  /** Clear the outdated flag for a group (called after regeneration) */
+  clearOutdatedFlag: (groupId: string) => void;
 }
 
 export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => ({
@@ -521,9 +530,20 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
     const cabinets = get().cabinets.filter((c) => cabinetIds.includes(c.id));
     const parts = get().parts;
 
-    const newSegments = CountertopDomain.generateSegmentsFromCabinets(cabinets, parts, {
-      thickness: group.thickness,
-    });
+    // Preserve existing gaps with user-set modes
+    const existingGaps = group.gaps || [];
+
+    // Regenerate gaps to detect any new/removed gaps while preserving user choices
+    const updatedGaps = CountertopDomain.detectGapsInCabinets(cabinets, parts, existingGaps);
+
+    const newSegments = CountertopDomain.generateSegmentsFromCabinets(
+      cabinets,
+      parts,
+      {
+        thickness: group.thickness,
+      },
+      updatedGaps
+    );
 
     const layoutType = CountertopDomain.detectLayoutType(cabinets, parts);
     const newJoints = CountertopDomain.generateJointsForLayout(newSegments, layoutType);
@@ -538,6 +558,8 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
               segments: newSegments,
               joints: newJoints,
               corners: newCorners,
+              gaps: updatedGaps,
+              isOutdated: false, // Clear outdated flag after regeneration
               updatedAt: new Date(),
             }
           : g
@@ -1179,6 +1201,14 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
     const gap = group.gaps.find((g) => g.id === gapId);
     if (!gap) return;
 
+    // Validate: cannot set BRIDGE mode if gap exceeds MAX_BRIDGE_GAP
+    if (mode === "BRIDGE" && gap.distance > CABINET_GAP_CONFIG.MAX_BRIDGE_GAP) {
+      console.warn(
+        `Cannot set BRIDGE mode for gap ${gapId}: distance (${gap.distance}mm) exceeds MAX_BRIDGE_GAP (${CABINET_GAP_CONFIG.MAX_BRIDGE_GAP}mm)`
+      );
+      return;
+    }
+
     const beforeSnapshot = { group: { ...group } };
 
     // Update gap mode
@@ -1232,5 +1262,38 @@ export const createCountertopSlice: StoreSlice<CountertopSlice> = (set, get) => 
         },
       });
     }
+  },
+
+  // ==========================================================================
+  // Outdated State Management
+  // ==========================================================================
+
+  markGroupAsOutdated: (groupId: string) => {
+    set((state) => ({
+      countertopGroups: state.countertopGroups.map((g) =>
+        g.id === groupId ? { ...g, isOutdated: true } : g
+      ),
+    }));
+  },
+
+  markGroupsForCabinetAsOutdated: (cabinetId: string) => {
+    set((state) => ({
+      countertopGroups: state.countertopGroups.map((g) => {
+        // Check if this group contains the cabinet
+        const containsCabinet = g.segments.some((s) => s.cabinetIds.includes(cabinetId));
+        if (containsCabinet) {
+          return { ...g, isOutdated: true };
+        }
+        return g;
+      }),
+    }));
+  },
+
+  clearOutdatedFlag: (groupId: string) => {
+    set((state) => ({
+      countertopGroups: state.countertopGroups.map((g) =>
+        g.id === groupId ? { ...g, isOutdated: false } : g
+      ),
+    }));
   },
 });

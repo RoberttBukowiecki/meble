@@ -23,9 +23,20 @@ interface NewProjectDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreated?: (projectId: string) => void;
+  /**
+   * Mode of the dialog:
+   * - "new": Create a new empty project (default)
+   * - "saveAs": Save current project data with a new name
+   */
+  mode?: "new" | "saveAs";
 }
 
-export function NewProjectDialog({ open, onOpenChange, onCreated }: NewProjectDialogProps) {
+export function NewProjectDialog({
+  open,
+  onOpenChange,
+  onCreated,
+  mode = "new",
+}: NewProjectDialogProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [isCreating, setIsCreating] = useState(false);
@@ -37,6 +48,8 @@ export function NewProjectDialog({ open, onOpenChange, onCreated }: NewProjectDi
       saveProjectAs: state.saveProjectAs,
     }))
   );
+
+  const isSaveAs = mode === "saveAs";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,7 +63,10 @@ export function NewProjectDialog({ open, onOpenChange, onCreated }: NewProjectDi
     setIsCreating(true);
 
     try {
-      const projectId = await createNewProject(name.trim());
+      // Use saveProjectAs when in "saveAs" mode to preserve current project data
+      const projectId = isSaveAs
+        ? await saveProjectAs(name.trim())
+        : await createNewProject(name.trim());
 
       if (projectId) {
         onOpenChange(false);
@@ -59,10 +75,14 @@ export function NewProjectDialog({ open, onOpenChange, onCreated }: NewProjectDi
         setName("");
         setDescription("");
       } else {
-        setError("Nie udało się utworzyć projektu");
+        setError(isSaveAs ? "Nie udało się zapisać projektu" : "Nie udało się utworzyć projektu");
       }
     } catch (err) {
-      setError("Wystąpił błąd podczas tworzenia projektu");
+      setError(
+        isSaveAs
+          ? "Wystąpił błąd podczas zapisywania projektu"
+          : "Wystąpił błąd podczas tworzenia projektu"
+      );
     } finally {
       setIsCreating(false);
     }
@@ -82,7 +102,7 @@ export function NewProjectDialog({ open, onOpenChange, onCreated }: NewProjectDi
       <DialogContent className="sm:max-w-md">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Nowy projekt</DialogTitle>
+            <DialogTitle>{isSaveAs ? "Zapisz jako" : "Nowy projekt"}</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
@@ -130,8 +150,10 @@ export function NewProjectDialog({ open, onOpenChange, onCreated }: NewProjectDi
               {isCreating ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Tworzenie...
+                  {isSaveAs ? "Zapisywanie..." : "Tworzenie..."}
                 </>
+              ) : isSaveAs ? (
+                "Zapisz"
               ) : (
                 "Utwórz projekt"
               )}

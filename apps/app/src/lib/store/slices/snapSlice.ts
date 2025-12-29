@@ -1,5 +1,5 @@
-import type { SnapSettings, SnapVersion } from '@/types';
-import type { StoreSlice } from '../types';
+import type { SnapSettings, SnapVersion } from "@/types";
+import type { StoreSlice } from "../types";
 
 /**
  * Default snap settings
@@ -7,20 +7,24 @@ import type { StoreSlice } from '../types';
  */
 const DEFAULT_SNAP_SETTINGS: SnapSettings = {
   // Core settings
-  distance: 20,           // 20mm snap threshold
-  collisionOffset: 1.0,   // 1mm gap between snapped faces
+  distance: 20, // 20mm snap threshold
+  collisionOffset: 1.0, // 1mm gap between snapped faces
 
   // Snap types (all enabled by default)
-  faceSnap: true,         // Face-to-face connection (opposite normals)
-  edgeSnap: true,         // Parallel face alignment
-  tJointSnap: true,       // T-joint (perpendicular normals)
+  faceSnap: true, // Face-to-face connection (opposite normals)
+  edgeSnap: true, // Parallel face alignment
+  tJointSnap: true, // T-joint (perpendicular normals)
 
   // Visualization
-  showGuides: true,       // Show snap guide lines
-  debug: false,           // Debug visualization off by default
+  showGuides: true, // Show snap guide lines
+  debug: false, // Debug visualization off by default
 
   // Version
-  version: 'v3',          // V3 is the primary snap system
+  version: "v3", // V3 is the primary snap system
+
+  // Wall snapping
+  wallSnap: true, // Snap to wall inner surfaces
+  cornerSnap: true, // Snap to interior corners (two walls)
 };
 
 /**

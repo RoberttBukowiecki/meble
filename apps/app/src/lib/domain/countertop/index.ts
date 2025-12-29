@@ -488,23 +488,61 @@ export const CountertopDomain = {
       ? { ...COUNTERTOP_DEFAULTS.EDGE_BANDING, ...options.defaultEdgeBanding }
       : { ...COUNTERTOP_DEFAULTS.EDGE_BANDING };
 
-    const createSegmentFromBounds = (
+    /**
+     * Calculate segment dimensions from cabinet LOCAL params (not world bounds)
+     * This ensures countertop dimensions don't change when cabinets are rotated
+     */
+    const createSegmentFromCabinets = (
       name: string,
       group: Cabinet[],
-      overhang: CountertopOverhang
+      overhang: CountertopOverhang,
+      bridgeGaps?: CabinetGap[]
     ) => {
-      const bounds = group.map((c) => getCabinetBounds(c, parts));
-      const minX = Math.min(...bounds.map((b) => b.min[0]));
-      const maxX = Math.max(...bounds.map((b) => b.max[0]));
-      const minZ = Math.min(...bounds.map((b) => b.min[2]));
-      const maxZ = Math.max(...bounds.map((b) => b.max[2]));
+      // Calculate LOCAL dimensions from cabinet params (rotation-invariant!)
+      let totalWidth = 0;
+      let maxDepth = 0;
+
+      for (const cabinet of group) {
+        const params = cabinet.params as {
+          width?: number;
+          depth?: number;
+          cornerConfig?: { W: number; D: number };
+        };
+
+        // Handle corner cabinets
+        if (cabinet.type === "CORNER_INTERNAL" || cabinet.type === "CORNER_EXTERNAL") {
+          const cc = params.cornerConfig;
+          if (cc) {
+            // For corner cabinets, use both W and D as they form an L-shape
+            // The countertop for corner cabinet itself is handled by splitting
+            totalWidth += cc.W;
+            maxDepth = Math.max(maxDepth, cc.D);
+          }
+        } else {
+          // Regular cabinets
+          totalWidth += params.width || 600;
+          maxDepth = Math.max(maxDepth, params.depth || 560);
+        }
+      }
+
+      // Add BRIDGE gap distances to the total width
+      // This ensures the countertop spans over the gaps
+      if (bridgeGaps && bridgeGaps.length > 0) {
+        const groupCabinetIds = new Set(group.map((c) => c.id));
+        for (const gap of bridgeGaps) {
+          // Only include gaps where both cabinets are in this group
+          if (groupCabinetIds.has(gap.cabinetAId) && groupCabinetIds.has(gap.cabinetBId)) {
+            totalWidth += gap.distance;
+          }
+        }
+      }
 
       return CountertopDomain.createSegment(
         name,
         group.map((c) => c.id),
         {
-          length: maxX - minX + overhang.left + overhang.right,
-          width: maxZ - minZ + overhang.front + overhang.back,
+          length: totalWidth + overhang.left + overhang.right,
+          width: maxDepth + overhang.front + overhang.back,
         },
         {
           thickness: options?.thickness,
@@ -514,8 +552,9 @@ export const CountertopDomain = {
       );
     };
 
-    // Check for SPLIT gaps first - these override layout-based splitting
+    // Separate SPLIT and BRIDGE gaps
     const splitGaps = gaps?.filter((g) => g.mode === "SPLIT") ?? [];
+    const bridgeGaps = gaps?.filter((g) => g.mode === "BRIDGE") ?? [];
 
     // If there are SPLIT gaps, we need to split cabinets into sub-groups
     if (splitGaps.length > 0 && cabinets.length > 1) {
@@ -556,16 +595,21 @@ export const CountertopDomain = {
       // Don't forget the last group
       subGroups.push(currentGroup);
 
-      // Generate segment for each sub-group
+      // Generate segment for each sub-group, passing BRIDGE gaps for width calculation
       const segmentNames = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
       return subGroups.map((group, i) =>
-        createSegmentFromBounds(`Blat ${segmentNames[i] || i + 1}`, group, defaultOverhang)
+        createSegmentFromCabinets(
+          `Blat ${segmentNames[i] || i + 1}`,
+          group,
+          defaultOverhang,
+          bridgeGaps
+        )
       );
     }
 
     // For STRAIGHT layout with no SPLIT gaps, use single segment
     if (layoutType === "STRAIGHT") {
-      return [createSegmentFromBounds("Blat I", cabinets, defaultOverhang)];
+      return [createSegmentFromCabinets("Blat I", cabinets, defaultOverhang, bridgeGaps)];
     }
 
     // Find actual direction change points for L_SHAPE and U_SHAPE
@@ -576,7 +620,7 @@ export const CountertopDomain = {
       if (changeIndices.length === 0) {
         // No direction change detected - treat as single segment
         // This can happen if cabinets are detected as L but actually aligned
-        return [createSegmentFromBounds("Blat I", cabinets, defaultOverhang)];
+        return [createSegmentFromCabinets("Blat I", cabinets, defaultOverhang, bridgeGaps)];
       }
 
       // Use first direction change point to split
@@ -586,15 +630,15 @@ export const CountertopDomain = {
 
       const segments: CountertopSegment[] = [];
       if (group1.length > 0) {
-        segments.push(createSegmentFromBounds("Blat I", group1, defaultOverhang));
+        segments.push(createSegmentFromCabinets("Blat I", group1, defaultOverhang, bridgeGaps));
       }
       if (group2.length > 0) {
-        segments.push(createSegmentFromBounds("Blat II", group2, defaultOverhang));
+        segments.push(createSegmentFromCabinets("Blat II", group2, defaultOverhang, bridgeGaps));
       }
 
       // Ensure we have at least one segment
       if (segments.length === 0) {
-        return [createSegmentFromBounds("Blat I", cabinets, defaultOverhang)];
+        return [createSegmentFromCabinets("Blat I", cabinets, defaultOverhang, bridgeGaps)];
       }
 
       return segments;
@@ -611,16 +655,18 @@ export const CountertopDomain = {
 
           const segments: CountertopSegment[] = [];
           if (group1.length > 0) {
-            segments.push(createSegmentFromBounds("Blat I", group1, defaultOverhang));
+            segments.push(createSegmentFromCabinets("Blat I", group1, defaultOverhang, bridgeGaps));
           }
           if (group2.length > 0) {
-            segments.push(createSegmentFromBounds("Blat II", group2, defaultOverhang));
+            segments.push(
+              createSegmentFromCabinets("Blat II", group2, defaultOverhang, bridgeGaps)
+            );
           }
           return segments.length > 0
             ? segments
-            : [createSegmentFromBounds("Blat I", cabinets, defaultOverhang)];
+            : [createSegmentFromCabinets("Blat I", cabinets, defaultOverhang, bridgeGaps)];
         }
-        return [createSegmentFromBounds("Blat I", cabinets, defaultOverhang)];
+        return [createSegmentFromCabinets("Blat I", cabinets, defaultOverhang, bridgeGaps)];
       }
 
       // Use first two direction change points to create 3 segments
@@ -636,7 +682,7 @@ export const CountertopDomain = {
 
       return groups
         .filter((g) => g.length > 0)
-        .map((g, i) => createSegmentFromBounds(names[i], g, defaultOverhang));
+        .map((g, i) => createSegmentFromCabinets(names[i], g, defaultOverhang, bridgeGaps));
     }
 
     return [];

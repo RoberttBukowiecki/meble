@@ -118,7 +118,11 @@ export async function getProject(
 ): Promise<{ data: (Project & { projectData: ProjectData }) | null; error: Error | null }> {
   const supabase = getSupabaseBrowserClient();
 
-  const { data, error } = await supabase.from("projects").select("*").eq("id", projectId).single();
+  const { data, error } = await supabase
+    .from("projects")
+    .select("*")
+    .eq("id", projectId)
+    .maybeSingle();
 
   if (error) {
     return { data: null, error: new Error(error.message) };
@@ -190,11 +194,13 @@ export async function createProject(data: {
 
 /**
  * Save project data with optimistic locking
+ * @param thumbnailUrl - Optional thumbnail URL to save with the project
  */
 export async function saveProjectData(
   projectId: string,
   expectedRevision: number,
-  projectData: ProjectData
+  projectData: ProjectData,
+  thumbnailUrl?: string
 ): Promise<SaveResult> {
   const supabase = getSupabaseBrowserClient();
 
@@ -208,14 +214,32 @@ export async function saveProjectData(
     };
   }
 
+  // Build update payload
+  const updatePayload: Record<string, unknown> = {
+    project_data: projectData,
+  };
+
+  // Include thumbnail URL if provided
+  if (thumbnailUrl) {
+    updatePayload.thumbnail_url = thumbnailUrl;
+  }
+
   // Attempt update with revision check (optimistic locking)
+  console.log("[saveProjectData] Attempting update with revision:", expectedRevision);
+
   const { data, error } = await supabase
     .from("projects")
-    .update({ project_data: projectData })
+    .update(updatePayload)
     .eq("id", projectId)
     .eq("revision", expectedRevision)
     .select()
     .single();
+
+  console.log(
+    "[saveProjectData] Update result - data:",
+    data ? { id: data.id, revision: data.revision } : null
+  );
+  console.log("[saveProjectData] Update result - error:", error);
 
   if (error) {
     // Check if it's a "no rows updated" error (revision mismatch = conflict)
@@ -242,7 +266,12 @@ export async function saveProjectData(
     return { success: false, error: "UNKNOWN", message: error.message };
   }
 
-  return { success: true, project: toProject(data) };
+  const resultProject = toProject(data);
+  console.log(
+    "[saveProjectData] Success! Returning project with revision:",
+    resultProject.revision
+  );
+  return { success: true, project: resultProject };
 }
 
 /**

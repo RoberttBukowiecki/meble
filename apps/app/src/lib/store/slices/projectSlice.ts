@@ -25,6 +25,21 @@ import {
   updateProjectMetadata,
   estimateProjectSize,
 } from "@/lib/supabase/projects";
+import { generateAndUploadThumbnail } from "@/lib/thumbnail";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { withRetry, isNetworkError } from "@/lib/retry";
+
+// Retry configuration for save operations
+const SAVE_RETRY_OPTIONS = {
+  maxAttempts: 3,
+  initialDelay: 1000,
+  maxDelay: 5000,
+  backoffMultiplier: 2,
+  isRetryable: (error: unknown) => {
+    // Only retry network errors, not conflicts or validation errors
+    return isNetworkError(error);
+  },
+};
 
 // =============================================================================
 // Types
@@ -134,6 +149,15 @@ export const createProjectSlice: StateCreator<StoreState, StoreMutators, [], Pro
   },
 
   markAsSaved: (revision: number) => {
+    const prevRevision = get().currentProjectRevision;
+    const projectId = get().currentProjectId;
+    console.log(
+      "[Project] markAsSaved called with revision:",
+      revision,
+      "(was:",
+      prevRevision,
+      ")"
+    );
     set({
       currentProjectRevision: revision,
       syncState: {
@@ -144,6 +168,28 @@ export const createProjectSlice: StateCreator<StoreState, StoreMutators, [], Pro
         errorMessage: undefined,
       },
     });
+    console.log(
+      "[Project] State updated, currentProjectRevision is now:",
+      get().currentProjectRevision
+    );
+
+    // Broadcast save to other tabs via BroadcastChannel
+    if (typeof BroadcastChannel !== "undefined" && projectId) {
+      try {
+        const channel = new BroadcastChannel("e-meble-project-sync");
+        channel.postMessage({
+          type: "PROJECT_SAVED",
+          projectId,
+          revision,
+          tabId: `store-${Date.now()}`,
+          timestamp: Date.now(),
+        });
+        channel.close();
+      } catch (err) {
+        // BroadcastChannel not supported or error - ignore
+        console.debug("[Project] BroadcastChannel not available for sync");
+      }
+    }
   },
 
   setSyncStatus: (status: SyncStatus) => {
@@ -169,6 +215,17 @@ export const createProjectSlice: StateCreator<StoreState, StoreMutators, [], Pro
     try {
       const { data, error } = await getProject(projectId);
 
+      console.log("[Project] Loading project:", projectId);
+      console.log("[Project] Loaded project metadata:", {
+        name: data?.name,
+        revision: data?.revision,
+      });
+      console.log("[Project] Loaded data:", {
+        parts: data?.projectData?.parts?.length ?? 0,
+        cabinets: data?.projectData?.cabinets?.length ?? 0,
+        rooms: data?.projectData?.rooms?.length ?? 0,
+      });
+
       if (error || !data) {
         console.error("Failed to load project:", error);
         set({ isProjectLoading: false });
@@ -191,7 +248,8 @@ export const createProjectSlice: StateCreator<StoreState, StoreMutators, [], Pro
   },
 
   saveProject: async (): Promise<SaveResult> => {
-    const { currentProjectId, currentProjectRevision, syncState } = get();
+    const { currentProjectId, currentProjectRevision, syncState, threeRenderer, threeScene } =
+      get();
 
     if (!currentProjectId) {
       return { success: false, error: "NOT_FOUND", message: "No project to save" };
@@ -204,7 +262,95 @@ export const createProjectSlice: StateCreator<StoreState, StoreMutators, [], Pro
 
     try {
       const projectData = get().getProjectData();
-      const result = await saveProjectData(currentProjectId, currentProjectRevision, projectData);
+
+      console.log("[Project] Saving project:", currentProjectId);
+      console.log("[Project] Saving data:", {
+        parts: projectData.parts?.length ?? 0,
+        cabinets: projectData.cabinets?.length ?? 0,
+        rooms: projectData.rooms?.length ?? 0,
+      });
+
+      // Generate thumbnail if Three.js state is available
+      let thumbnailUrl: string | undefined;
+      console.log("[Thumbnail] threeRenderer:", !!threeRenderer, "threeScene:", !!threeScene);
+
+      if (threeRenderer && threeScene) {
+        // Get current user ID for storage path
+        const supabase = getSupabaseBrowserClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        console.log("[Thumbnail] user:", user?.id);
+
+        if (user) {
+          const thumbnailResult = await generateAndUploadThumbnail(
+            threeRenderer,
+            threeScene,
+            user.id,
+            currentProjectId
+          );
+
+          console.log("[Thumbnail] result:", thumbnailResult);
+
+          if (thumbnailResult.success && thumbnailResult.url) {
+            thumbnailUrl = thumbnailResult.url;
+          }
+          // If thumbnail generation fails, we still proceed with saving the project
+          // The thumbnail is optional and shouldn't block the save
+        }
+      } else {
+        console.log("[Thumbnail] Skipped - Three.js state not available");
+      }
+
+      console.log("[Project] Calling saveProjectData with revision:", currentProjectRevision);
+
+      // Use retry logic for network resilience
+      const retryResult = await withRetry(
+        async () => {
+          const result = await saveProjectData(
+            currentProjectId,
+            currentProjectRevision,
+            projectData,
+            thumbnailUrl
+          );
+
+          // If it's a conflict or other non-network error, don't retry
+          if (!result.success && result.error !== "NETWORK") {
+            // Return the result as-is, don't throw
+            return result;
+          }
+
+          // If network error, throw to trigger retry
+          if (!result.success && result.error === "NETWORK") {
+            throw new Error(result.message || "Network error");
+          }
+
+          return result;
+        },
+        {
+          ...SAVE_RETRY_OPTIONS,
+          onRetry: (attempt, error, delay) => {
+            console.log(`[Project] Save retry ${attempt} in ${delay}ms:`, error);
+            // Keep syncing status during retries
+          },
+        }
+      );
+
+      // Handle retry result
+      let result: SaveResult;
+      if (retryResult.success && retryResult.data) {
+        result = retryResult.data;
+      } else {
+        // All retries failed
+        result = {
+          success: false,
+          error: "NETWORK",
+          message: `Nie udało się zapisać po ${retryResult.attempts} próbach. Sprawdź połączenie internetowe.`,
+        };
+      }
+
+      console.log("[Project] saveProjectData result:", result);
 
       if (result.success) {
         get().markAsSaved(result.project.revision);
@@ -231,6 +377,7 @@ export const createProjectSlice: StateCreator<StoreState, StoreMutators, [], Pro
       return result;
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error";
+      console.error("[Project] Unexpected save error:", err);
       set({
         syncState: {
           ...get().syncState,

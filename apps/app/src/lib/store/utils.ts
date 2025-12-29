@@ -3,10 +3,8 @@ import type { Material, Part, ProjectState } from "@/types";
 import { isBodyPartRole } from "@/types/cabinet";
 
 let collisionDetectionTimeout: NodeJS.Timeout | null = null;
-let countertopRegenerationTimeout: NodeJS.Timeout | null = null;
 
 const COLLISION_DETECTION_DEBOUNCE_MS = 100;
-const COUNTERTOP_REGENERATION_DEBOUNCE_MS = 500; // Longer debounce for countertop regeneration
 
 /**
  * Default construction rotations for cabinet parts.
@@ -150,45 +148,6 @@ export function triggerDebouncedCollisionDetection(getState: () => ProjectState)
     state.detectCollisions();
     collisionDetectionTimeout = null;
   }, COLLISION_DETECTION_DEBOUNCE_MS);
-}
-
-/**
- * Debounced countertop regeneration after cabinet transform
- * Preserves user gap mode choices while updating gap distances
- */
-export function triggerDebouncedCountertopRegeneration(
-  getState: () => ProjectState,
-  cabinetId: string
-): void {
-  if (countertopRegenerationTimeout) {
-    clearTimeout(countertopRegenerationTimeout);
-  }
-
-  countertopRegenerationTimeout = setTimeout(() => {
-    const state = getState();
-    const cabinet = state.cabinets.find((c) => c.id === cabinetId);
-    if (!cabinet) return;
-
-    // Only regenerate for kitchen cabinets with countertop enabled
-    if (cabinet.type !== "KITCHEN") return;
-    const params = cabinet.params as {
-      countertopConfig?: { hasCountertop?: boolean; materialId?: string };
-    };
-    if (!params.countertopConfig?.hasCountertop) return;
-
-    // Find countertop material
-    let materialId = params.countertopConfig.materialId;
-    if (!materialId) {
-      const countertopMaterials = state.materials.filter((m) => m.category === "countertop");
-      materialId = countertopMaterials[0]?.id || state.materials[0]?.id;
-    }
-
-    if (materialId) {
-      state.generateCountertopsForFurniture(cabinet.furnitureId, materialId);
-    }
-
-    countertopRegenerationTimeout = null;
-  }, COUNTERTOP_REGENERATION_DEBOUNCE_MS);
 }
 
 export function getDefaultMaterials(materials: Material[]) {

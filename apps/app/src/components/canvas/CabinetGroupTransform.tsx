@@ -19,9 +19,10 @@ import type { CountertopSegment, CountertopGroup } from "@/types/countertop";
 import { isBodyPartRole } from "@/types/cabinet";
 import { CabinetTransformDomain } from "@/lib/domain";
 import { SCENE_CONFIG, PART_CONFIG, MATERIAL_CONFIG, COUNTERTOP_DEFAULTS } from "@/lib/config";
-import { useSnapContext } from "@/lib/snap-context";
+import { useSnapContext, useWallSnapCache } from "@/lib/snap-context";
 import { useDimensionContext } from "@/lib/dimension-context";
 import { calculateCabinetSnapV2 } from "@/lib/snapping-v2";
+import { calculateCabinetWallSnap, createWallSnapBounds } from "@/lib/wall-snapping";
 import { calculateDimensions } from "@/lib/dimension-calculator";
 import { getCabinetBoundingBoxWithOffset, getOtherBoundingBoxes } from "@/lib/bounding-box-utils";
 import { useTransformAxisConstraints } from "@/hooks/useOrthographicConstraints";
@@ -317,6 +318,7 @@ export function CabinetGroupTransform({
   space?: TransformSpace;
 }) {
   const { setSnapPoints, clearSnapPoints } = useSnapContext();
+  const { wallSnapCacheRef } = useWallSnapCache();
   const { setDimensionLines, clearDimensionLines, setActiveAxis } = useDimensionContext();
 
   // Get transform mode from store for axis constraints
@@ -438,6 +440,11 @@ export function CabinetGroupTransform({
     return sum;
   }, [parts]);
 
+  // Get cabinet rotation from worldTransform for "local" space to work correctly
+  const cabinetRotation = useMemo((): [number, number, number] => {
+    return currentCabinet?.worldTransform?.rotation ?? [0, 0, 0];
+  }, [currentCabinet?.worldTransform?.rotation]);
+
   const rotationSnap =
     transformMode === "rotate" && isShiftPressed
       ? THREE.MathUtils.degToRad(SCENE_CONFIG.ROTATION_SNAP_DEGREES)
@@ -512,7 +519,47 @@ export function CabinetGroupTransform({
             group.position.copy(pivotPoint);
             setSnapPoints(snapResult.snapPoints);
           } else {
-            clearSnapPoints();
+            // No cabinet snap found - try wall snap
+            const wallCache = wallSnapCacheRef.current;
+            if (
+              snapSettings.wallSnap &&
+              wallCache.surfaces.length > 0 &&
+              (axis === "X" || axis === "Z")
+            ) {
+              // Get cabinet bounding box for wall snap
+              const cabinetBounds = getCabinetBoundingBoxWithOffset(cabinetId, allParts, [
+                groupTranslation.x,
+                groupTranslation.y,
+                groupTranslation.z,
+              ]);
+
+              if (cabinetBounds) {
+                const wallBounds = createWallSnapBounds(cabinetBounds.min, cabinetBounds.max);
+
+                const wallSnapResult = calculateCabinetWallSnap(
+                  wallBounds,
+                  wallCache.surfaces,
+                  wallCache.corners,
+                  axis,
+                  snapSettings
+                );
+
+                if (wallSnapResult.snapped) {
+                  const axisIndex = axis === "X" ? 0 : 2;
+                  if (axisIndex === 0) pivotPoint.x += wallSnapResult.snapOffset[0];
+                  else pivotPoint.z += wallSnapResult.snapOffset[2];
+
+                  group.position.copy(pivotPoint);
+                  clearSnapPoints();
+                } else {
+                  clearSnapPoints();
+                }
+              } else {
+                clearSnapPoints();
+              }
+            } else {
+              clearSnapPoints();
+            }
           }
         }
 
@@ -602,6 +649,7 @@ export function CabinetGroupTransform({
     setDimensionLines,
     setActiveAxis,
     getDragAxis,
+    wallSnapCacheRef,
   ]);
 
   const handleTransformStart = useCallback(() => {
@@ -613,10 +661,17 @@ export function CabinetGroupTransform({
     initialCabinetCenter.current.copy(cabinetCenter);
 
     target.position.copy(initialCabinetCenter.current);
-    target.rotation.set(0, 0, 0);
+
+    // For rotate mode: reset to identity so delta rotation is easy to calculate
+    // For translate mode: keep cabinet rotation so "local" space axes align with cabinet
+    if (transformMode === "rotate") {
+      target.rotation.set(0, 0, 0);
+    } else {
+      target.rotation.set(cabinetRotation[0], cabinetRotation[1], cabinetRotation[2]);
+    }
     target.updateMatrixWorld();
 
-    // Save initial group quaternion (should be identity)
+    // Save initial group quaternion
     initialGroupQuaternion.current.copy(target.quaternion);
 
     // Capture initial state for each part
@@ -678,6 +733,8 @@ export function CabinetGroupTransform({
     cabinetCenter,
     target,
     allCabinets,
+    transformMode,
+    cabinetRotation,
   ]);
 
   const handleTransformEnd = useCallback(() => {
@@ -782,13 +839,13 @@ export function CabinetGroupTransform({
     updateControlsSpace,
   ]);
 
-  // Reset target rotation when cabinet changes to prevent state carryover
+  // Sync target rotation with cabinet rotation when cabinet changes
   useEffect(() => {
-    if (target) {
-      target.rotation.set(0, 0, 0);
+    if (target && !isDraggingRef.current) {
+      target.rotation.set(cabinetRotation[0], cabinetRotation[1], cabinetRotation[2]);
       target.updateMatrixWorld();
     }
-  }, [target, cabinetId]);
+  }, [target, cabinetId, cabinetRotation]);
 
   // Get current preview state
   const isShowingPreview = isDraggingRef.current && previewTransformsRef.current.size > 0;
@@ -853,8 +910,8 @@ export function CabinetGroupTransform({
         />
       )}
 
-      {/* Proxy group for controls - explicit rotation={[0,0,0]} to prevent state carryover */}
-      <group ref={setTarget} position={cabinetCenter} rotation={[0, 0, 0]} />
+      {/* Proxy group for controls - use cabinet rotation so "local" space aligns with cabinet */}
+      <group ref={setTarget} position={cabinetCenter} rotation={cabinetRotation} />
 
       {/* Conditionally render controls when target is ready */}
       {target && (transformMode === "translate" || transformMode === "rotate") && (

@@ -8,10 +8,11 @@ import * as THREE from "three";
 import type { Part, TransformSpace } from "@/types";
 import { pickTransform } from "@/lib/store/history/utils";
 import { SCENE_CONFIG, PART_CONFIG, MATERIAL_CONFIG } from "@/lib/config";
-import { useSnapContext } from "@/lib/snap-context";
+import { useSnapContext, useWallSnapCache } from "@/lib/snap-context";
 import { useDimensionContext } from "@/lib/dimension-context";
 import { calculatePartSnapV2 } from "@/lib/snapping-v2";
 import { calculatePartSnapV3 } from "@/lib/snapping-v3";
+import { calculateWallSnap, createWallSnapBounds } from "@/lib/wall-snapping";
 import { calculateDimensions } from "@/lib/dimension-calculator";
 import { getPartBoundingBoxAtPosition, getOtherBoundingBoxes } from "@/lib/bounding-box-utils";
 import { useTransformAxisConstraints } from "@/hooks/useOrthographicConstraints";
@@ -46,6 +47,56 @@ function detectMovementAxis(
   return "Z";
 }
 
+/**
+ * Transform local axis to world axis based on object rotation.
+ * TransformControls returns axis in local space, but we need world space for snapping.
+ */
+function localAxisToWorldAxis(
+  localAxis: "X" | "Y" | "Z",
+  rotation: [number, number, number]
+): "X" | "Y" | "Z" {
+  // Get the local axis direction
+  const localDir: [number, number, number] =
+    localAxis === "X" ? [1, 0, 0] : localAxis === "Y" ? [0, 1, 0] : [0, 0, 1];
+
+  // Apply rotation to get world direction
+  const [rx, ry, rz] = rotation;
+  const cx = Math.cos(rx),
+    sx = Math.sin(rx);
+  const cy = Math.cos(ry),
+    sy = Math.sin(ry);
+  const cz = Math.cos(rz),
+    sz = Math.sin(rz);
+
+  let [x, y, z] = localDir;
+
+  // Rotate Z first
+  const x1 = x * cz - y * sz;
+  const y1 = x * sz + y * cz;
+  x = x1;
+  y = y1;
+
+  // Rotate Y second
+  const x2 = x * cy + z * sy;
+  const z1 = -x * sy + z * cy;
+  x = x2;
+  z = z1;
+
+  // Rotate X last
+  const y2 = y * cx - z * sx;
+  const z2 = y * sx + z * cx;
+  y = y2;
+  z = z2;
+
+  // Find dominant world axis
+  const ax = Math.abs(x),
+    ay = Math.abs(y),
+    az = Math.abs(z);
+  if (ax >= ay && ax >= az) return "X";
+  if (ay >= ax && ay >= az) return "Y";
+  return "Z";
+}
+
 export function PartTransformControls({
   part,
   mode,
@@ -55,6 +106,7 @@ export function PartTransformControls({
 }: PartTransformControlsProps) {
   const [target, setTarget] = useState<THREE.Group | null>(null);
   const { setSnapPoints, clearSnapPoints } = useSnapContext();
+  const { wallSnapCacheRef } = useWallSnapCache();
   const { setDimensionLines, clearDimensionLines, setActiveAxis } = useDimensionContext();
 
   // Get axis constraints for orthographic view
@@ -130,24 +182,18 @@ export function PartTransformControls({
     if (!target || !isDraggingRef.current) return;
 
     const position = target.position.toArray() as [number, number, number];
-    const currentRotation = target.rotation.toArray().slice(0, 3) as [number, number, number];
-
-    // Debug: Check if rotation is being preserved during drag (log only first few times)
-    if (Math.random() < 0.02) {
-      // Log ~2% of frames to avoid spam
-      console.log(
-        "[Transform] During drag - target rotation:",
-        currentRotation.map((r) => ((r * 180) / Math.PI).toFixed(1))
-      );
-    }
 
     // Only process for translate mode
     if (mode === "translate") {
-      const axis = getDragAxis();
+      const localAxis = getDragAxis();
+
+      // Transform local axis to world axis based on object rotation
+      // TransformControls returns axis in local space when space="world" but object is rotated
+      const worldAxis = localAxis ? localAxisToWorldAxis(localAxis, part.rotation) : null;
 
       // If no specific axis detected, try to determine from movement
       const originalPos = initialTransformRef.current?.position || part.position;
-      const effectiveAxis = axis || detectMovementAxis(originalPos, position);
+      const effectiveAxis = worldAxis || detectMovementAxis(originalPos, position);
 
       if (effectiveAxis) {
         // Apply snap when enabled
@@ -184,7 +230,38 @@ export function PartTransformControls({
             target.position.set(position[0], position[1], position[2]);
             setSnapPoints(snapResult.snapPoints);
           } else {
-            clearSnapPoints();
+            // No part snap found - try wall snap
+            const wallCache = wallSnapCacheRef.current;
+            if (
+              snapSettings.wallSnap &&
+              wallCache.surfaces.length > 0 &&
+              (effectiveAxis === "X" || effectiveAxis === "Z")
+            ) {
+              // Get bounding box for wall snap
+              const bounds = getPartBoundingBoxAtPosition(part, position);
+              const wallBounds = createWallSnapBounds(bounds.min, bounds.max);
+
+              const wallSnapResult = calculateWallSnap(
+                wallBounds,
+                wallCache.surfaces,
+                wallCache.corners,
+                effectiveAxis,
+                snapSettings
+              );
+
+              if (wallSnapResult.snapped) {
+                const axisIndex = effectiveAxis === "X" ? 0 : 2;
+                position[axisIndex] += wallSnapResult.snapOffset[axisIndex];
+                target.position.set(position[0], position[1], position[2]);
+                // Convert wall snap to SnapPoint format for visualization
+                // For now, just clear - wall snap guides will be added later
+                clearSnapPoints();
+              } else {
+                clearSnapPoints();
+              }
+            } else {
+              clearSnapPoints();
+            }
           }
         }
 
@@ -239,22 +316,12 @@ export function PartTransformControls({
     setDimensionLines,
     setActiveAxis,
     getDragAxis,
+    wallSnapCacheRef,
   ]);
 
   const handleTransformStart = useCallback(() => {
     isDraggingRef.current = true;
     initialTransformRef.current = pickTransform(part);
-
-    // Debug: log rotation being used
-    console.log("[Transform] Part rotation (radians):", part.rotation);
-    console.log(
-      "[Transform] Part rotation (degrees):",
-      part.rotation.map((r) => ((r * 180) / Math.PI).toFixed(1))
-    );
-    console.log("[Transform] Part dimensions:", [part.width, part.height, part.depth]);
-    if (target) {
-      console.log("[Transform] Target rotation (euler):", target.rotation.toArray().slice(0, 3));
-    }
 
     beginBatch("TRANSFORM_PART", {
       targetId: part.id,
@@ -263,7 +330,7 @@ export function PartTransformControls({
 
     setTransformingPartId(part.id); // Hide original Part3D, show preview
     onTransformStart();
-  }, [part, target, beginBatch, onTransformStart, setTransformingPartId]);
+  }, [part, beginBatch, onTransformStart, setTransformingPartId]);
 
   const handleTransformEnd = useCallback(() => {
     isDraggingRef.current = false;

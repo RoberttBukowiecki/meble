@@ -8,105 +8,18 @@
  * - Click to select cabinet, double-click to select countertop group
  */
 
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useEffect } from "react";
 import { Edges } from "@react-three/drei";
 import { useShallow } from "zustand/react/shallow";
 import * as THREE from "three";
-import { Euler, Quaternion, Vector3, Shape, ExtrudeGeometry } from "three";
+import { Euler, Quaternion, Vector3 } from "three";
 import type { ThreeEvent } from "@react-three/fiber";
 import { useStore, useMaterial } from "@/lib/store";
 import { useMaterialTexture } from "@/hooks";
 import { MATERIAL_CONFIG } from "@/lib/config";
-import type { CountertopGroup, CountertopSegment, CncOperation } from "@/types/countertop";
-import type { KitchenCabinetParams } from "@/types";
+import type { CountertopGroup, CountertopSegment } from "@/types/countertop";
 import { getCabinetBounds } from "@/lib/domain/countertop/helpers";
-import { CabinetTransformDomain } from "@/lib/domain";
-
-// ============================================================================
-// Geometry Helpers
-// ============================================================================
-
-/**
- * Creates a rounded rectangle path for a cutout
- */
-function createRoundedRectPath(
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  radius: number
-): THREE.Path {
-  const path = new THREE.Path();
-  const r = Math.min(radius, width / 2, height / 2);
-
-  path.moveTo(x + r, y);
-  path.lineTo(x + width - r, y);
-  path.quadraticCurveTo(x + width, y, x + width, y + r);
-  path.lineTo(x + width, y + height - r);
-  path.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
-  path.lineTo(x + r, y + height);
-  path.quadraticCurveTo(x, y + height, x, y + height - r);
-  path.lineTo(x, y + r);
-  path.quadraticCurveTo(x, y, x + r, y);
-
-  return path;
-}
-
-/**
- * Creates a countertop shape with cutouts
- */
-function createCountertopShape(width: number, depth: number, cutouts: CncOperation[]): THREE.Shape {
-  // Main countertop shape (centered at origin)
-  const shape = new THREE.Shape();
-  const halfW = width / 2;
-  const halfD = depth / 2;
-
-  shape.moveTo(-halfW, -halfD);
-  shape.lineTo(halfW, -halfD);
-  shape.lineTo(halfW, halfD);
-  shape.lineTo(-halfW, halfD);
-  shape.closePath();
-
-  // Add cutout holes
-  // NOTE: The ExtrudeGeometry is rotated -90° around X axis, which inverts Y axis.
-  // In Shape coords: Y+ = "up" in 2D
-  // After rotation: original Y+ becomes Z- (towards camera = front)
-  // Therefore, cutout.position.y (distance from front edge) must be inverted
-  // to get correct Shape Y coordinate.
-  for (const cutout of cutouts) {
-    if (
-      cutout.type === "RECTANGULAR_CUTOUT" &&
-      cutout.dimensions.width &&
-      cutout.dimensions.height
-    ) {
-      const cutW = cutout.dimensions.width;
-      const cutH = cutout.dimensions.height;
-      const radius = cutout.dimensions.radius ?? 10;
-
-      // Cutout position is from left-front corner, convert to centered coordinates
-      // X axis: position.x from left edge -> shapeX = position.x - halfW (correct)
-      // Y axis: position.y from front edge -> after rotation, front = shapeY+, so:
-      //         shapeY = halfD - position.y (inverted!)
-      // Bottom-left corner of cutout rectangle:
-      const cutX = cutout.position.x - halfW - cutW / 2;
-      const cutY = halfD - cutout.position.y - cutH / 2;
-
-      const holePath = createRoundedRectPath(cutX, cutY, cutW, cutH, radius);
-      shape.holes.push(holePath);
-    } else if (cutout.type === "CIRCULAR_HOLE" && cutout.dimensions.diameter) {
-      const r = cutout.dimensions.diameter / 2;
-      // Same logic: X is correct, Y must be inverted
-      const cx = cutout.position.x - halfW;
-      const cy = halfD - cutout.position.y;
-
-      const holePath = new THREE.Path();
-      holePath.absarc(cx, cy, r, 0, Math.PI * 2, true);
-      shape.holes.push(holePath);
-    }
-  }
-
-  return shape;
-}
+import { createCountertopGeometry } from "@/lib/countertopGeometry";
 
 // ============================================================================
 // Components
@@ -151,12 +64,17 @@ function CountertopSegment3D({ segment, group, isSelected }: CountertopSegment3D
   );
 
   // Calculate transform based on cabinet positions - reactive to part changes
+  // IMPORTANT: Use segment.length and segment.width directly - they include:
+  // - Cabinet dimensions
+  // - Overhangs
+  // - Bridge gaps (if any)
+  // These are the "source of truth" from the domain model
   const { position, rotation, dimensions } = useMemo(() => {
     if (segmentCabinets.length === 0) {
       return {
         position: [0, 0, 0] as [number, number, number],
         rotation: [0, 0, 0] as [number, number, number],
-        dimensions: { width: 100, height: materialThickness, depth: 100 },
+        dimensions: { width: segment.length, height: materialThickness, depth: segment.width },
       };
     }
 
@@ -167,15 +85,11 @@ function CountertopSegment3D({ segment, group, isSelected }: CountertopSegment3D
       new Euler(cabinetRotation[0], cabinetRotation[1], cabinetRotation[2])
     );
 
-    // Calculate LOCAL dimensions from cabinet params (rotation-invariant!)
-    // Sum widths for all cabinets, use max depth
-    let totalLocalWidth = 0;
-    let maxLocalDepth = 0;
-    for (const cabinet of segmentCabinets) {
-      const params = cabinet.params as KitchenCabinetParams;
-      totalLocalWidth += params.width;
-      maxLocalDepth = Math.max(maxLocalDepth, params.depth);
-    }
+    // Use segment dimensions directly (includes overhangs and bridge gaps)
+    // segment.length = countertop width (X axis in local space)
+    // segment.width = countertop depth (Z axis in local space)
+    const countertopWidth = segment.length;
+    const countertopDepth = segment.width;
 
     // Get world bounds for positioning (topY and center)
     let minX = Infinity,
@@ -191,10 +105,6 @@ function CountertopSegment3D({ segment, group, isSelected }: CountertopSegment3D
       maxZ = Math.max(maxZ, bounds.max[2]);
       maxY = Math.max(maxY, bounds.max[1]);
     }
-
-    // Use LOCAL dimensions for countertop size (don't change with rotation!)
-    const countertopWidth = totalLocalWidth + segment.overhang.left + segment.overhang.right;
-    const countertopDepth = maxLocalDepth + segment.overhang.front + segment.overhang.back;
 
     // Calculate world position from bounds center
     const centerX = (minX + maxX) / 2;
@@ -219,41 +129,25 @@ function CountertopSegment3D({ segment, group, isSelected }: CountertopSegment3D
       ],
       rotation: cabinetRotation as [number, number, number],
       dimensions: {
-        width: countertopWidth, // LOCAL X axis dimension (rotation-invariant)
+        width: countertopWidth, // segment.length - includes overhangs and bridge gaps
         height: materialThickness, // Y axis - use material thickness
-        depth: countertopDepth, // LOCAL Z axis dimension (rotation-invariant)
+        depth: countertopDepth, // segment.width - includes overhangs
       },
     };
   }, [segment, segmentCabinets, parts, materialThickness]); // parts dependency ensures updates when cabinet moves
 
-  // Create geometry with cutouts
-  const geometry = useMemo(() => {
-    const hasCutouts = segment.cncOperations.length > 0;
+  // Create geometry with cutouts using extracted utility
+  const geometry = useMemo(
+    () => createCountertopGeometry(dimensions, segment.cncOperations),
+    [dimensions, segment.cncOperations]
+  );
 
-    if (!hasCutouts) {
-      // No cutouts - use simple box geometry
-      return new THREE.BoxGeometry(dimensions.width, dimensions.height, dimensions.depth);
-    }
-
-    // Create extruded shape with cutouts
-    const shape = createCountertopShape(dimensions.width, dimensions.depth, segment.cncOperations);
-
-    const extrudeSettings: THREE.ExtrudeGeometryOptions = {
-      depth: dimensions.height,
-      bevelEnabled: false,
+  // Cleanup geometry on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      geometry.dispose();
     };
-
-    const extrudeGeom = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-
-    // Rotate geometry so extrusion is along Y axis (up) instead of Z
-    // After rotation, extrusion goes from Y=0 upward to Y=height
-    extrudeGeom.rotateX(-Math.PI / 2);
-    // Center vertically to match BoxGeometry (which is centered at origin: -height/2 to +height/2)
-    // Must translate DOWN by height/2 so geometry goes from -height/2 to +height/2
-    extrudeGeom.translate(0, -dimensions.height / 2, 0);
-
-    return extrudeGeom;
-  }, [dimensions, segment.cncOperations]);
+  }, [geometry]);
 
   const color = material?.color || MATERIAL_CONFIG.DEFAULT_MATERIAL_COLOR;
 

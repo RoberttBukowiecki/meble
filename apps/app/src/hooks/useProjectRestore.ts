@@ -33,29 +33,26 @@ export function useProjectRestore() {
     if (currentProjectId) {
       // But user is not authenticated, clear the project state
       if (!isAuthenticated) {
-        if (process.env.NODE_ENV === "development") {
-          console.debug("[ProjectRestore] User not authenticated, clearing project state");
-        }
+        console.log("[ProjectRestore] User not authenticated, clearing project state");
         resetProjectState();
         hasAttemptedRestore.current = true;
         return;
       }
 
       // User is authenticated, load the project
-      if (process.env.NODE_ENV === "development") {
-        console.debug("[ProjectRestore] Restoring project:", currentProjectId);
-      }
+      console.log("[ProjectRestore] Restoring project:", currentProjectId);
       hasAttemptedRestore.current = true;
 
       loadProject(currentProjectId).then((success) => {
-        if (!success) {
-          if (process.env.NODE_ENV === "development") {
-            console.debug("[ProjectRestore] Failed to restore project, clearing state");
-          }
+        if (success) {
+          console.log("[ProjectRestore] Project restored successfully");
+        } else {
+          console.log("[ProjectRestore] Failed to restore project, clearing state");
           resetProjectState();
         }
       });
     } else {
+      console.log("[ProjectRestore] No project to restore");
       hasAttemptedRestore.current = true;
     }
   }, [authLoading, isAuthenticated, currentProjectId, loadProject, resetProjectState]);

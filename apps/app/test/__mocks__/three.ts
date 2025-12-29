@@ -74,8 +74,27 @@ export class Vector3 {
     return this;
   }
 
-  applyQuaternion(_q: Quaternion) {
-    // Simplified - just return this without transformation
+  applyQuaternion(q: Quaternion) {
+    // Proper quaternion rotation implementation
+    const x = this.x,
+      y = this.y,
+      z = this.z;
+    const qx = q.x,
+      qy = q.y,
+      qz = q.z,
+      qw = q.w;
+
+    // Calculate quat * vector
+    const ix = qw * x + qy * z - qz * y;
+    const iy = qw * y + qz * x - qx * z;
+    const iz = qw * z + qx * y - qy * x;
+    const iw = -qx * x - qy * y - qz * z;
+
+    // Calculate result * inverse quat
+    this.x = ix * qw + iw * -qx + iy * -qz - iz * -qy;
+    this.y = iy * qw + iw * -qy + iz * -qx - ix * -qz;
+    this.z = iz * qw + iw * -qz + ix * -qy - iy * -qx;
+
     return this;
   }
 

@@ -8,8 +8,10 @@ This document outlines the implementation plan for missing countertop features, 
 
 ### Already Implemented
 
-- Core types and domain logic
-- Store with all CRUD operations
+**Core functionality:**
+
+- Core types and domain logic (`types/countertop.ts`)
+- Store with all CRUD operations (`countertopSlice.ts`)
 - Basic CountertopPanel with SegmentTable
 - CornerTreatmentSection (dropdowns)
 - CncOperationsSection (basic list + preset dialog)
@@ -17,13 +19,33 @@ This document outlines the implementation plan for missing countertop features, 
 - Auto-detection of adjacent cabinets
 - CSV export
 
+**Gap detection and handling (recently added):**
+
+- `CabinetGap` and `CabinetGapMode` types (`BRIDGE` | `SPLIT`)
+- `detectGapsInCabinets()` - detects gaps between cabinets
+- `getCabinetGapInfo()` - returns gap distance and axis
+- `CABINET_GAP_CONFIG` with configurable thresholds:
+  - `TOUCH_THRESHOLD`: 5mm (considered touching)
+  - `AUTO_SPLIT_THRESHOLD`: 200mm (auto-split if gap > this)
+  - `MAX_BRIDGE_GAP`: 500mm (max gap that can be bridged)
+- Gap mode preservation via `existingGaps` parameter
+- `updateGapMode()` store action
+
+**Direction change detection (recently added):**
+
+- `findDirectionChangeIndices()` - detects where cabinet direction changes >45°
+- Support for `CORNER_INTERNAL` and `CORNER_EXTERNAL` cabinet types
+- Automatic segment splitting at direction change points
+- Proper L-shape and U-shape segment generation
+
 ### Missing Features
 
 1. **CountertopLayoutDiagram** - Interactive 2D SVG editor
 2. **Enhanced CncOperationModal** - Visual position picker
 3. **Joint Type Selector UI** - Choose between MITER_45, BUTT, etc.
-4. **Visual dimension editing** - Drag handles for overhang
-5. **DXF Export** (optional, future)
+4. **Gap Mode UI** - Toggle between BRIDGE/SPLIT in 2D diagram
+5. **Visual dimension editing** - Drag handles for overhang
+6. **DXF Export** (optional, future)
 
 ---
 
@@ -106,6 +128,8 @@ CountertopLayoutDiagram/
 ├── JointLine.tsx                  # Joint between segments (miter, butt, etc.)
 ├── JointDetailPopover.tsx         # Popover showing joint type details
 ├── MiterCutPath.tsx               # SVG path for 45° miter cut visualization
+├── GapIndicator.tsx               # Gap between cabinets (BRIDGE/SPLIT toggle)
+├── GapModePopover.tsx             # Popover for changing gap mode
 └── types.ts                       # Local types
 ```
 
@@ -758,6 +782,195 @@ function DistanceLine({
 
 ---
 
+## Feature 1d: Gap Mode UI
+
+### Description
+
+When cabinets have gaps between them, users need to decide whether the countertop should:
+
+- **BRIDGE**: Single countertop spans over the gap (empty space underneath)
+- **SPLIT**: Separate countertops for cabinets on each side of the gap
+
+This UI allows users to toggle the gap mode visually in the 2D diagram.
+
+### Visual Reference
+
+```
+BRIDGE Mode (default for gaps < 200mm):
+┌─────────────┐   ┌─────────────┐
+│  Cabinet A  │◄──►│  Cabinet B  │
+└─────────────┘ 80mm └─────────────┘
+        ↓                ↓
+┌─────────────────────────────────┐
+│      Single Countertop          │  ← Countertop bridges the gap
+│      (with unsupported area)    │
+└─────────────────────────────────┘
+
+SPLIT Mode (default for gaps > 200mm):
+┌─────────────┐       ┌─────────────┐
+│  Cabinet A  │       │  Cabinet B  │
+└─────────────┘ 300mm └─────────────┘
+        ↓                   ↓
+┌─────────────┐       ┌─────────────┐
+│ Countertop I│       │Countertop II│  ← Separate countertops
+└─────────────┘       └─────────────┘
+```
+
+### Gap Indicator Component
+
+```typescript
+interface GapIndicatorProps {
+  gap: CabinetGap;
+  isSelected: boolean;
+  onSelect: () => void;
+  onModeChange: (mode: CabinetGapMode) => void;
+}
+
+function GapIndicator({
+  gap,
+  isSelected,
+  onSelect,
+  onModeChange,
+}: GapIndicatorProps) {
+  const isBridge = gap.mode === "BRIDGE";
+
+  return (
+    <g
+      className={cn("cursor-pointer", isSelected && "filter drop-shadow-md")}
+      onClick={onSelect}
+    >
+      {/* Gap area visualization */}
+      <rect
+        x={gap.position.x}
+        y={gap.position.y}
+        width={gap.distance}
+        height={gap.axis === "X" ? segmentWidth : gap.distance}
+        className={cn(
+          "stroke-2 stroke-dashed",
+          isBridge
+            ? "fill-amber-100/50 stroke-amber-500"
+            : "fill-destructive/20 stroke-destructive"
+        )}
+      />
+
+      {/* Gap distance label */}
+      <text
+        x={gap.position.x + gap.distance / 2}
+        y={gap.position.y + 10}
+        textAnchor="middle"
+        className="text-[10px] fill-muted-foreground"
+      >
+        {gap.distance}mm
+      </text>
+
+      {/* Mode indicator icon */}
+      <g transform={`translate(${gap.position.x + gap.distance / 2}, ${gap.position.y + 30})`}>
+        {isBridge ? (
+          <BridgeIcon className="h-4 w-4 text-amber-500" />
+        ) : (
+          <SplitIcon className="h-4 w-4 text-destructive" />
+        )}
+      </g>
+
+      {/* Click area for mode toggle */}
+      {isSelected && (
+        <GapModePopover gap={gap} onModeChange={onModeChange} />
+      )}
+    </g>
+  );
+}
+```
+
+### Gap Mode Popover
+
+```typescript
+function GapModePopover({
+  gap,
+  onModeChange,
+}: {
+  gap: CabinetGap;
+  onModeChange: (mode: CabinetGapMode) => void;
+}) {
+  return (
+    <Popover>
+      <PopoverContent className="w-56">
+        <div className="space-y-3">
+          <h4 className="font-medium text-sm">Obsługa przerwy</h4>
+          <p className="text-xs text-muted-foreground">
+            Odległość: {gap.distance}mm
+          </p>
+
+          <RadioGroup
+            value={gap.mode}
+            onValueChange={(value) => onModeChange(value as CabinetGapMode)}
+          >
+            <div className="flex items-start gap-2">
+              <RadioGroupItem value="BRIDGE" id="bridge" />
+              <div>
+                <Label htmlFor="bridge" className="text-sm">Mostek</Label>
+                <p className="text-xs text-muted-foreground">
+                  Jeden blat przechodzi nad przerwą
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-2">
+              <RadioGroupItem value="SPLIT" id="split" />
+              <div>
+                <Label htmlFor="split" className="text-sm">Podział</Label>
+                <p className="text-xs text-muted-foreground">
+                  Osobne blaty po obu stronach
+                </p>
+              </div>
+            </div>
+          </RadioGroup>
+
+          {gap.distance > 200 && gap.mode === "BRIDGE" && (
+            <Alert variant="warning" className="text-xs">
+              <AlertTriangle className="h-3 w-3" />
+              <AlertDescription>
+                Duża przerwa ({gap.distance}mm) może wymagać dodatkowego wsparcia
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+```
+
+### Gap Visual Styles
+
+```typescript
+const GAP_STYLES = {
+  BRIDGE: {
+    fill: "hsl(var(--amber-100) / 0.5)",
+    stroke: "hsl(var(--amber-500))",
+    strokeDasharray: "4 4",
+    icon: "bridge-icon",
+    label: "Mostek",
+    description: "Blat przechodzi nad przerwą",
+  },
+  SPLIT: {
+    fill: "hsl(var(--destructive) / 0.2)",
+    stroke: "hsl(var(--destructive))",
+    strokeDasharray: "8 4",
+    icon: "split-icon",
+    label: "Podział",
+    description: "Osobne blaty",
+  },
+};
+
+const GAP_THRESHOLDS = {
+  TOUCH: 5, // Gaps ≤5mm are ignored (touching)
+  AUTO_SPLIT: 200, // Gaps >200mm default to SPLIT
+  MAX_BRIDGE: 500, // Gaps >500mm cannot be bridged
+};
+```
+
+---
+
 ### Interactive Joint Editing
 
 When user clicks on a joint line:
@@ -1325,6 +1538,7 @@ CSV export covers most use cases. DXF is for advanced users with CNC machines.
 5. Add corner markers (1-6)
 6. Add dimension annotations
 7. Add CNC operation markers (rectangles, circles)
+8. Add gap indicators between cabinets (using existing `gaps` data)
 
 **✅ Phase 1 Tests (required before Phase 2):**
 
@@ -1338,11 +1552,21 @@ CountertopLayoutDiagram/
 │   ├── positions segments correctly for each layout type
 │   ├── shows edge labels A, B, C, D in correct positions
 │   ├── shows corner markers 1-4 for STRAIGHT, 1-6 for L_SHAPE
-│   └── renders CNC operations on correct segments
+│   ├── renders CNC operations on correct segments
+│   ├── renders gap indicators when group has gaps
+│   ├── gap indicator shows correct distance
+│   └── gap indicator shows correct mode (BRIDGE/SPLIT)
+├── GapIndicator.test.tsx
+│   ├── renders BRIDGE mode with amber styling
+│   ├── renders SPLIT mode with destructive styling
+│   ├── shows distance label in mm
+│   ├── clicking gap calls onSelect
+│   └── gap mode can be changed via popover
 └── utils.test.ts
     ├── calculateViewBox returns correct bounds
     ├── getSegmentTransform returns correct position/rotation
-    └── transformToSegmentSpace converts coordinates correctly
+    ├── transformToSegmentSpace converts coordinates correctly
+    └── calculateGapPosition returns correct SVG coordinates
 ```
 
 ---
@@ -1566,6 +1790,7 @@ export const createMockCountertopGroup = (
   segments: [createMockSegment()],
   joints: [],
   corners: [],
+  gaps: [], // NEW: gap support
   thickness: 38,
   createdAt: new Date(),
   updatedAt: new Date(),
@@ -1596,6 +1821,37 @@ export const createMockJoint = (overrides?: Partial<CountertopJoint>): Counterto
   notchDepth: 650,
   ...overrides,
 });
+
+// NEW: Gap mock utility
+export const createMockGap = (overrides?: Partial<CabinetGap>): CabinetGap => ({
+  id: "gap-1",
+  cabinetAId: "cabinet-1",
+  cabinetBId: "cabinet-2",
+  distance: 100,
+  axis: "X",
+  mode: "BRIDGE",
+  ...overrides,
+});
+
+// NEW: Create group with gaps
+export const createGroupWithGaps = (
+  gapDistance: number = 150,
+  mode: CabinetGapMode = "BRIDGE"
+): CountertopGroup =>
+  createMockCountertopGroup({
+    segments: [
+      createMockSegment({ id: "segment-1", name: "Blat I", cabinetIds: ["cabinet-1"] }),
+      ...(mode === "SPLIT"
+        ? [createMockSegment({ id: "segment-2", name: "Blat II", cabinetIds: ["cabinet-2"] })]
+        : []),
+    ],
+    gaps: [
+      createMockGap({
+        distance: gapDistance,
+        mode,
+      }),
+    ],
+  });
 
 export const createLShapeGroup = (): CountertopGroup =>
   createMockCountertopGroup({
@@ -1629,6 +1885,9 @@ apps/app/src/components/
 │   │   ├── CncOperationMarker.tsx
 │   │   ├── DimensionAnnotation.tsx
 │   │   ├── JointLine.tsx
+│   │   ├── JointDetailPopover.tsx
+│   │   ├── GapIndicator.tsx           # NEW: Gap visualization
+│   │   ├── GapModePopover.tsx         # NEW: Gap mode selector
 │   │   ├── OverhangHandle.tsx
 │   │   ├── hooks.ts
 │   │   ├── utils.ts
@@ -1695,6 +1954,19 @@ apps/app/src/components/
 - [ ] Responsive to container size
 - [ ] Segment selection works
 - [ ] Corner selection works
+- [ ] Gap indicators shown between cabinets with gaps
+- [ ] Gap mode (BRIDGE/SPLIT) visually distinguishable
+- [ ] Gap distance displayed in mm
+
+### Gap Mode UI
+
+- [ ] Gap indicators visible when group has gaps
+- [ ] BRIDGE mode shown with amber/warning styling
+- [ ] SPLIT mode shown with destructive/red styling
+- [ ] Clicking gap opens mode selector popover
+- [ ] Changing gap mode updates store and regenerates segments
+- [ ] Warning shown for large gaps (>200mm) in BRIDGE mode
+- [ ] Large gaps (>500mm) cannot be set to BRIDGE
 
 ### Enhanced CNC Modal
 

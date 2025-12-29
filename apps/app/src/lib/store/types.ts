@@ -15,6 +15,8 @@ import type { CountertopSlice } from "./slices/countertopSlice";
 import type { CabinetPreferencesSlice } from "./slices/cabinetPreferencesSlice";
 import type { ViewSlice } from "./slices/viewSlice";
 import type { ProjectSlice } from "./slices/projectSlice";
+import type { WallOcclusionSlice } from "./slices/wallOcclusionSlice";
+import type { ThreeSlice } from "./slices/threeSlice";
 
 export type StoreState = ProjectState &
   HistorySlice &
@@ -26,7 +28,9 @@ export type StoreState = ProjectState &
   CountertopSlice &
   CabinetPreferencesSlice &
   ViewSlice &
-  ProjectSlice;
+  ProjectSlice &
+  WallOcclusionSlice &
+  ThreeSlice;
 export type StoreMutators = [["zustand/persist", unknown]];
 export type StoreSlice<T> = StateCreator<StoreState, StoreMutators, [], T>;
 

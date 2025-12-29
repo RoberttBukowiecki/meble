@@ -10,14 +10,14 @@
  * - Stability (hysteresis to prevent jumping)
  */
 
-import type { Part } from '@/types';
-import { type Vec3 } from './obb';
+import type { Part } from "@/types";
+import { type Vec3 } from "./obb";
 import {
   calculateSnapV3,
   type SnapV3Input,
   type SnapV3Result,
   type SnapV3Settings,
-} from './snapping-v3';
+} from "./snapping-v3";
 
 // ============================================================================
 // Test Utilities
@@ -25,18 +25,18 @@ import {
 
 function createPart(overrides: Partial<Part>): Part {
   return {
-    id: 'test',
-    name: 'Test Part',
-    furnitureId: 'f1',
-    shapeType: 'RECT',
-    shapeParams: { type: 'RECT', x: 0, y: 0 },
+    id: "test",
+    name: "Test Part",
+    furnitureId: "f1",
+    shapeType: "RECT",
+    shapeParams: { type: "RECT", x: 0, y: 0 },
     width: 100,
     height: 100,
     depth: 18,
     position: [0, 0, 0],
     rotation: [0, 0, 0],
-    materialId: 'm1',
-    edgeBanding: { type: 'RECT', top: false, bottom: false, left: false, right: false },
+    materialId: "m1",
+    edgeBanding: { type: "RECT", top: false, bottom: false, left: false, right: false },
     createdAt: new Date(),
     updatedAt: new Date(),
     ...overrides,
@@ -56,12 +56,12 @@ const defaultSettings: SnapV3Settings = {
 // Face-to-Face Connection Tests
 // ============================================================================
 
-describe('Snap V3: Face-to-face connection', () => {
-  describe('X axis snapping', () => {
-    it('snaps right face to left face (X axis, +direction)', () => {
+describe("Snap V3: Face-to-face connection", () => {
+  describe("X axis snapping", () => {
+    it("snaps right face to left face (X axis, +direction)", () => {
       // Moving part's right face (+X) should snap to target's left face (-X)
       const movingPart = createPart({
-        id: 'moving',
+        id: "moving",
         width: 100,
         height: 100,
         depth: 18,
@@ -70,7 +70,7 @@ describe('Snap V3: Face-to-face connection', () => {
       });
 
       const targetPart = createPart({
-        id: 'target',
+        id: "target",
         width: 100,
         height: 100,
         depth: 18,
@@ -85,7 +85,7 @@ describe('Snap V3: Face-to-face connection', () => {
       const input: SnapV3Input = {
         movingPart,
         targetParts: [targetPart],
-        dragAxis: 'X',
+        dragAxis: "X",
         movementDirection: 1, // Moving in +X direction
         currentOffset: [15, 0, 0], // Currently dragged 15mm to the right
       };
@@ -93,17 +93,17 @@ describe('Snap V3: Face-to-face connection', () => {
       const result = calculateSnapV3(input, defaultSettings);
 
       expect(result.snapped).toBe(true);
-      expect(result.axis).toBe('X');
+      expect(result.axis).toBe("X");
       // Moving part should move so right face (X=50+offset) touches target left face (X=70) with 1mm gap
       // Right face at new position: 50 + offset = 70 - 1 = 69
       // offset = 19
       expect(result.offset).toBeCloseTo(19, 0);
     });
 
-    it('snaps left face to right face (X axis, -direction)', () => {
+    it("snaps left face to right face (X axis, -direction)", () => {
       // Moving part's left face (-X) should snap to target's right face (+X)
       const movingPart = createPart({
-        id: 'moving',
+        id: "moving",
         width: 100,
         height: 100,
         depth: 18,
@@ -112,7 +112,7 @@ describe('Snap V3: Face-to-face connection', () => {
       });
 
       const targetPart = createPart({
-        id: 'target',
+        id: "target",
         width: 100,
         height: 100,
         depth: 18,
@@ -127,7 +127,7 @@ describe('Snap V3: Face-to-face connection', () => {
       const input: SnapV3Input = {
         movingPart,
         targetParts: [targetPart],
-        dragAxis: 'X',
+        dragAxis: "X",
         movementDirection: -1, // Moving in -X direction
         currentOffset: [-40, 0, 0], // Currently dragged 40mm to the left
       };
@@ -135,28 +135,28 @@ describe('Snap V3: Face-to-face connection', () => {
       const result = calculateSnapV3(input, defaultSettings);
 
       expect(result.snapped).toBe(true);
-      expect(result.axis).toBe('X');
+      expect(result.axis).toBe("X");
       // Moving part should move so left face touches target right face with 1mm gap
       // Left face at new position: 150 + offset = 100 + 1 = 101
       // offset = -49
       expect(result.offset).toBeCloseTo(-49, 0);
     });
 
-    it('does NOT snap when moving opposite to snap direction', () => {
+    it("does NOT snap when moving opposite to snap direction", () => {
       const movingPart = createPart({
-        id: 'moving',
+        id: "moving",
         position: [0, 0, 0],
       });
 
       const targetPart = createPart({
-        id: 'target',
+        id: "target",
         position: [120, 0, 0], // Target to the right
       });
 
       const input: SnapV3Input = {
         movingPart,
         targetParts: [targetPart],
-        dragAxis: 'X',
+        dragAxis: "X",
         movementDirection: -1, // Moving LEFT, away from target
         currentOffset: [-10, 0, 0],
       };
@@ -167,11 +167,11 @@ describe('Snap V3: Face-to-face connection', () => {
     });
   });
 
-  describe('Y axis snapping', () => {
-    it('snaps top face to bottom face (Y axis, +direction)', () => {
+  describe("Y axis snapping", () => {
+    it("snaps top face to bottom face (Y axis, +direction)", () => {
       // Moving part's top face (+Y) should snap to target's bottom face (-Y)
       const movingPart = createPart({
-        id: 'moving',
+        id: "moving",
         width: 100,
         height: 100,
         depth: 18,
@@ -180,7 +180,7 @@ describe('Snap V3: Face-to-face connection', () => {
       });
 
       const targetPart = createPart({
-        id: 'target',
+        id: "target",
         width: 100,
         height: 100,
         depth: 18,
@@ -195,7 +195,7 @@ describe('Snap V3: Face-to-face connection', () => {
       const input: SnapV3Input = {
         movingPart,
         targetParts: [targetPart],
-        dragAxis: 'Y',
+        dragAxis: "Y",
         movementDirection: 1, // Moving up
         currentOffset: [0, 15, 0],
       };
@@ -203,18 +203,18 @@ describe('Snap V3: Face-to-face connection', () => {
       const result = calculateSnapV3(input, defaultSettings);
 
       expect(result.snapped).toBe(true);
-      expect(result.axis).toBe('Y');
+      expect(result.axis).toBe("Y");
       expect(result.offset).toBeCloseTo(19, 0); // 70 - 50 - 1 = 19
     });
 
-    it('snaps bottom face to top face (Y axis, -direction)', () => {
+    it("snaps bottom face to top face (Y axis, -direction)", () => {
       const movingPart = createPart({
-        id: 'moving',
+        id: "moving",
         position: [0, 150, 0],
       });
 
       const targetPart = createPart({
-        id: 'target',
+        id: "target",
         position: [0, 50, 0], // Target is below
       });
 
@@ -225,7 +225,7 @@ describe('Snap V3: Face-to-face connection', () => {
       const input: SnapV3Input = {
         movingPart,
         targetParts: [targetPart],
-        dragAxis: 'Y',
+        dragAxis: "Y",
         movementDirection: -1, // Moving down
         currentOffset: [0, -10, 0],
       };
@@ -233,21 +233,21 @@ describe('Snap V3: Face-to-face connection', () => {
       const result = calculateSnapV3(input, defaultSettings);
 
       expect(result.snapped).toBe(true);
-      expect(result.axis).toBe('Y');
+      expect(result.axis).toBe("Y");
       // Bottom at 100, target top at 100 - should snap with 1mm gap
       expect(result.offset).toBeCloseTo(1, 0); // Move up 1mm to create gap
     });
   });
 
-  describe('Z axis snapping', () => {
-    it('snaps front face to back face (Z axis, +direction)', () => {
+  describe("Z axis snapping", () => {
+    it("snaps front face to back face (Z axis, +direction)", () => {
       const movingPart = createPart({
-        id: 'moving',
+        id: "moving",
         position: [0, 0, 0],
       });
 
       const targetPart = createPart({
-        id: 'target',
+        id: "target",
         position: [0, 0, 120], // Target is in front
       });
 
@@ -258,7 +258,7 @@ describe('Snap V3: Face-to-face connection', () => {
       const input: SnapV3Input = {
         movingPart,
         targetParts: [targetPart],
-        dragAxis: 'Z',
+        dragAxis: "Z",
         movementDirection: 1,
         currentOffset: [0, 0, 90], // Moved 90mm forward
       };
@@ -270,24 +270,24 @@ describe('Snap V3: Face-to-face connection', () => {
       const result = calculateSnapV3(input, defaultSettings);
 
       expect(result.snapped).toBe(true);
-      expect(result.axis).toBe('Z');
+      expect(result.axis).toBe("Z");
     });
 
-    it('snaps back face to front face (Z axis, -direction)', () => {
+    it("snaps back face to front face (Z axis, -direction)", () => {
       const movingPart = createPart({
-        id: 'moving',
+        id: "moving",
         position: [0, 0, 200],
       });
 
       const targetPart = createPart({
-        id: 'target',
+        id: "target",
         position: [0, 0, 50],
       });
 
       const input: SnapV3Input = {
         movingPart,
         targetParts: [targetPart],
-        dragAxis: 'Z',
+        dragAxis: "Z",
         movementDirection: -1,
         currentOffset: [0, 0, -120],
       };
@@ -295,7 +295,7 @@ describe('Snap V3: Face-to-face connection', () => {
       const result = calculateSnapV3(input, defaultSettings);
 
       expect(result.snapped).toBe(true);
-      expect(result.axis).toBe('Z');
+      expect(result.axis).toBe("Z");
     });
   });
 });
@@ -304,23 +304,23 @@ describe('Snap V3: Face-to-face connection', () => {
 // Alignment Snap Tests (Parallel Faces)
 // ============================================================================
 
-describe('Snap V3: Alignment snap (parallel faces)', () => {
-  it('aligns two front faces to same plane', () => {
+describe("Snap V3: Alignment snap (parallel faces)", () => {
+  it("aligns two front faces to same plane", () => {
     // Two parts side by side, front faces should align
     const movingPart = createPart({
-      id: 'moving',
+      id: "moving",
       position: [0, 0, 5], // Slightly offset in Z
     });
 
     const targetPart = createPart({
-      id: 'target',
+      id: "target",
       position: [150, 0, 0], // Next to moving part in X
     });
 
     const input: SnapV3Input = {
       movingPart,
       targetParts: [targetPart],
-      dragAxis: 'Z',
+      dragAxis: "Z",
       movementDirection: -1, // Moving back toward Z=0
       currentOffset: [0, 0, -3],
     };
@@ -328,27 +328,27 @@ describe('Snap V3: Alignment snap (parallel faces)', () => {
     const result = calculateSnapV3(input, defaultSettings);
 
     expect(result.snapped).toBe(true);
-    expect(result.axis).toBe('Z');
+    expect(result.axis).toBe("Z");
     // Moving part front face at Z=9+offset, target front at Z=9
     // Should align: offset = -5 to bring moving front to Z=9
     expect(result.offset).toBeCloseTo(-5, 0);
   });
 
-  it('aligns two top faces to same height', () => {
+  it("aligns two top faces to same height", () => {
     const movingPart = createPart({
-      id: 'moving',
+      id: "moving",
       position: [0, 53, 0], // Slightly higher
     });
 
     const targetPart = createPart({
-      id: 'target',
+      id: "target",
       position: [150, 50, 0],
     });
 
     const input: SnapV3Input = {
       movingPart,
       targetParts: [targetPart],
-      dragAxis: 'Y',
+      dragAxis: "Y",
       movementDirection: -1,
       currentOffset: [0, -2, 0],
     };
@@ -361,10 +361,10 @@ describe('Snap V3: Alignment snap (parallel faces)', () => {
     expect(result.offset).toBeCloseTo(-3, 0);
   });
 
-  it('rejects alignment that would cause collision', () => {
+  it("rejects alignment that would cause collision", () => {
     // Two parts that would overlap if aligned
     const movingPart = createPart({
-      id: 'moving',
+      id: "moving",
       width: 100,
       height: 100,
       depth: 18,
@@ -372,7 +372,7 @@ describe('Snap V3: Alignment snap (parallel faces)', () => {
     });
 
     const targetPart = createPart({
-      id: 'target',
+      id: "target",
       width: 100,
       height: 100,
       depth: 18,
@@ -382,7 +382,7 @@ describe('Snap V3: Alignment snap (parallel faces)', () => {
     const input: SnapV3Input = {
       movingPart,
       targetParts: [targetPart],
-      dragAxis: 'Z',
+      dragAxis: "Z",
       movementDirection: -1,
       currentOffset: [0, 0, -3],
     };
@@ -402,11 +402,11 @@ describe('Snap V3: Alignment snap (parallel faces)', () => {
 // Rotated Parts Tests
 // ============================================================================
 
-describe('Snap V3: Rotated parts', () => {
-  it('handles 90° Y-rotated part', () => {
+describe("Snap V3: Rotated parts", () => {
+  it("handles 90° Y-rotated part", () => {
     // Part rotated 90° around Y axis - its width now extends in Z
     const movingPart = createPart({
-      id: 'moving',
+      id: "moving",
       width: 100,
       height: 100,
       depth: 18,
@@ -415,7 +415,7 @@ describe('Snap V3: Rotated parts', () => {
     });
 
     const targetPart = createPart({
-      id: 'target',
+      id: "target",
       width: 100,
       height: 100,
       depth: 18,
@@ -430,7 +430,7 @@ describe('Snap V3: Rotated parts', () => {
     const input: SnapV3Input = {
       movingPart,
       targetParts: [targetPart],
-      dragAxis: 'Z',
+      dragAxis: "Z",
       movementDirection: 1,
       currentOffset: [0, 0, 50],
     };
@@ -440,10 +440,10 @@ describe('Snap V3: Rotated parts', () => {
     expect(result.snapped).toBe(true);
   });
 
-  it('handles 90° X-rotated part (lying flat)', () => {
+  it("handles 90° X-rotated part (lying flat)", () => {
     // Part rotated 90° around X - represents lying flat panel
     const movingPart = createPart({
-      id: 'moving',
+      id: "moving",
       width: 600,
       height: 400,
       depth: 18,
@@ -452,7 +452,7 @@ describe('Snap V3: Rotated parts', () => {
     });
 
     const targetPart = createPart({
-      id: 'target',
+      id: "target",
       width: 600,
       height: 400,
       depth: 18,
@@ -468,7 +468,7 @@ describe('Snap V3: Rotated parts', () => {
     const input: SnapV3Input = {
       movingPart,
       targetParts: [targetPart],
-      dragAxis: 'Y',
+      dragAxis: "Y",
       movementDirection: 1,
       currentOffset: [0, 2, 0],
     };
@@ -476,18 +476,18 @@ describe('Snap V3: Rotated parts', () => {
     const result = calculateSnapV3(input, defaultSettings);
 
     expect(result.snapped).toBe(true);
-    expect(result.axis).toBe('Y');
+    expect(result.axis).toBe("Y");
   });
 
-  it('handles 180° rotated part', () => {
+  it("handles 180° rotated part", () => {
     const movingPart = createPart({
-      id: 'moving',
+      id: "moving",
       position: [0, 0, 0],
       rotation: [0, Math.PI, 0], // 180° around Y
     });
 
     const targetPart = createPart({
-      id: 'target',
+      id: "target",
       position: [120, 0, 0],
       rotation: [0, 0, 0],
     });
@@ -495,7 +495,7 @@ describe('Snap V3: Rotated parts', () => {
     const input: SnapV3Input = {
       movingPart,
       targetParts: [targetPart],
-      dragAxis: 'X',
+      dragAxis: "X",
       movementDirection: 1,
       currentOffset: [15, 0, 0],
     };
@@ -510,7 +510,7 @@ describe('Snap V3: Rotated parts', () => {
   // SKIPPED: This test has compound rotations whose expected behavior
   // needs to be recalculated based on correct XYZ Euler rotation math.
   // The core snap functionality works per user feedback.
-  it.skip('works with both parts rotated differently', () => {
+  it.skip("works with both parts rotated differently", () => {
     // Test needs rewriting with correct rotation expectations
   });
 });
@@ -519,12 +519,12 @@ describe('Snap V3: Rotated parts', () => {
 // Large Face to Small Face Tests
 // ============================================================================
 
-describe('Snap V3: Large face to small face', () => {
-  it('snaps shelf edge (18mm) to cabinet side (400mm)', () => {
+describe("Snap V3: Large face to small face", () => {
+  it("snaps shelf edge (18mm) to cabinet side (400mm)", () => {
     // Shelf: lying flat (rotated 90° around X)
     // After rotation: width extends in X, height extends in Z, depth extends in Y
     const shelf = createPart({
-      id: 'shelf',
+      id: "shelf",
       width: 600,
       height: 400,
       depth: 18,
@@ -535,7 +535,7 @@ describe('Snap V3: Large face to small face', () => {
     // Side panel: 18mm thick vertical panel next to shelf
     // Position it close enough to snap
     const sidePanel = createPart({
-      id: 'side',
+      id: "side",
       width: 18,
       height: 600,
       depth: 400,
@@ -550,7 +550,7 @@ describe('Snap V3: Large face to small face', () => {
     const input: SnapV3Input = {
       movingPart: shelf,
       targetParts: [sidePanel],
-      dragAxis: 'X',
+      dragAxis: "X",
       movementDirection: -1, // Moving shelf left
       currentOffset: [-5, 0, 0], // Slight drag left
     };
@@ -560,57 +560,53 @@ describe('Snap V3: Large face to small face', () => {
     expect(result.snapped).toBe(true);
   });
 
-  it('has no bias toward larger faces', () => {
-    // Two targets: one with large face close, one with small face very close
+  it("has no bias toward larger faces", () => {
+    // Two targets: one with large face farther, one with small face closer
+    // Both targets are in front of the moving part (in +X direction)
     const movingPart = createPart({
-      id: 'moving',
+      id: "moving",
       width: 100,
       height: 100,
       depth: 18,
-      position: [0, 0, 0],
+      position: [0, 0, 0], // Right face at X=50
     });
 
-    // Large target far away
+    // Large target farther away (left face at X=80)
     const largeTarget = createPart({
-      id: 'large',
+      id: "large",
       width: 500,
       height: 500,
       depth: 18,
-      position: [80, 0, 0], // Right face at X=70, left at X=-430
+      position: [330, 0, 0], // Left face at 330-250=80
     });
 
-    // Small target very close
+    // Small target closer (left face at X=60)
     const smallTarget = createPart({
-      id: 'small',
+      id: "small",
       width: 50,
       height: 50,
       depth: 18,
-      position: [65, 0, 0], // Left face at X=40
+      position: [85, 0, 0], // Left face at 85-25=60
     });
 
     const input: SnapV3Input = {
       movingPart,
       targetParts: [largeTarget, smallTarget],
-      dragAxis: 'X',
-      movementDirection: 1,
-      currentOffset: [5, 0, 0],
+      dragAxis: "X",
+      movementDirection: 1, // Moving right
+      currentOffset: [5, 0, 0], // Right face now at X=55
     };
 
     const result = calculateSnapV3(input, defaultSettings);
 
     expect(result.snapped).toBe(true);
-    // Should snap to closest face, which is small target's left face
-    // Moving right face at X=55, small target left face at X=40
-    // Wait, that doesn't make sense - let me recalculate
-    // Moving right face at 50+5=55
-    // Small target center at 65, left face at 65-25=40
-    // Large target center at 80, left face at 80-250=-170
-
-    // Actually closest opposite face would be small target left at 40
-    // But that's behind moving part (moving in +X direction)
-    // So we need targets in front of us
-
-    // Let me fix the test setup
+    // Should snap to closest face in movement direction
+    // Moving right face at X=55, moving toward:
+    // - Small target left face at X=60 (5mm away)
+    // - Large target left face at X=80 (25mm away)
+    // Should snap to the closer one (small target), not the larger one
+    // Snap offset should be ~10 to bring right face to X=60 (with 1mm gap: X=59)
+    expect(result.offset).toBeCloseTo(9, 0); // Move 9mm to get right face at 59 (1mm gap from 60)
   });
 });
 
@@ -618,23 +614,23 @@ describe('Snap V3: Large face to small face', () => {
 // Movement Direction Tests
 // ============================================================================
 
-describe('Snap V3: Movement direction', () => {
-  it('only snaps in movement direction', () => {
+describe("Snap V3: Movement direction", () => {
+  it("only snaps in movement direction", () => {
     // Position parts with clear gaps so snap requires movement in expected direction
     const movingPart = createPart({
-      id: 'moving',
+      id: "moving",
       width: 100,
       position: [0, 0, 0], // Center at origin, extends -50 to +50
     });
 
     const targetLeft = createPart({
-      id: 'left',
+      id: "left",
       width: 100,
       position: [-120, 0, 0], // Left face at -170, right face at -70
     });
 
     const targetRight = createPart({
-      id: 'right',
+      id: "right",
       width: 100,
       position: [120, 0, 0], // Left face at 70, right face at 170
     });
@@ -645,7 +641,7 @@ describe('Snap V3: Movement direction', () => {
     const inputRight: SnapV3Input = {
       movingPart,
       targetParts: [targetLeft, targetRight],
-      dragAxis: 'X',
+      dragAxis: "X",
       movementDirection: 1,
       currentOffset: [10, 0, 0], // Dragging 10mm right
     };
@@ -660,7 +656,7 @@ describe('Snap V3: Movement direction', () => {
     const inputLeft: SnapV3Input = {
       movingPart,
       targetParts: [targetLeft, targetRight],
-      dragAxis: 'X',
+      dragAxis: "X",
       movementDirection: -1,
       currentOffset: [-10, 0, 0], // Dragging 10mm left
     };
@@ -672,22 +668,22 @@ describe('Snap V3: Movement direction', () => {
     expect(resultLeft.offset).toBeLessThan(0);
   });
 
-  it('ignores faces behind movement', () => {
+  it("ignores faces behind movement", () => {
     const movingPart = createPart({
-      id: 'moving',
+      id: "moving",
       position: [0, 0, 0],
     });
 
     // Only target is behind the movement direction
     const targetBehind = createPart({
-      id: 'behind',
+      id: "behind",
       position: [-100, 0, 0], // To the left
     });
 
     const input: SnapV3Input = {
       movingPart,
       targetParts: [targetBehind],
-      dragAxis: 'X',
+      dragAxis: "X",
       movementDirection: 1, // Moving right, but target is left
       currentOffset: [5, 0, 0],
     };
@@ -697,19 +693,19 @@ describe('Snap V3: Movement direction', () => {
     expect(result.snapped).toBe(false);
   });
 
-  it('respects user intent on each axis', () => {
+  it("respects user intent on each axis", () => {
     const movingPart = createPart({
-      id: 'moving',
+      id: "moving",
       position: [0, 0, 0],
     });
 
     const targetUp = createPart({
-      id: 'up',
+      id: "up",
       position: [0, 120, 0],
     });
 
     const targetDown = createPart({
-      id: 'down',
+      id: "down",
       position: [0, -120, 0],
     });
 
@@ -717,7 +713,7 @@ describe('Snap V3: Movement direction', () => {
     const inputUp: SnapV3Input = {
       movingPart,
       targetParts: [targetUp, targetDown],
-      dragAxis: 'Y',
+      dragAxis: "Y",
       movementDirection: 1,
       currentOffset: [0, 15, 0],
     };
@@ -730,7 +726,7 @@ describe('Snap V3: Movement direction', () => {
     const inputDown: SnapV3Input = {
       movingPart,
       targetParts: [targetUp, targetDown],
-      dragAxis: 'Y',
+      dragAxis: "Y",
       movementDirection: -1,
       currentOffset: [0, -15, 0],
     };
@@ -745,10 +741,10 @@ describe('Snap V3: Movement direction', () => {
 // Collision Prevention Tests
 // ============================================================================
 
-describe('Snap V3: Collision prevention', () => {
-  it('rejects snap causing penetration', () => {
+describe("Snap V3: Collision prevention", () => {
+  it("rejects snap causing penetration", () => {
     const movingPart = createPart({
-      id: 'moving',
+      id: "moving",
       width: 100,
       height: 100,
       depth: 100,
@@ -756,7 +752,7 @@ describe('Snap V3: Collision prevention', () => {
     });
 
     const targetPart = createPart({
-      id: 'target',
+      id: "target",
       width: 100,
       height: 100,
       depth: 100,
@@ -767,7 +763,7 @@ describe('Snap V3: Collision prevention', () => {
     const input: SnapV3Input = {
       movingPart,
       targetParts: [targetPart],
-      dragAxis: 'X',
+      dragAxis: "X",
       movementDirection: 1,
       currentOffset: [5, 0, 0],
     };
@@ -784,21 +780,21 @@ describe('Snap V3: Collision prevention', () => {
     }
   });
 
-  it('allows touching (1mm gap)', () => {
+  it("allows touching (1mm gap)", () => {
     const movingPart = createPart({
-      id: 'moving',
+      id: "moving",
       position: [0, 0, 0],
     });
 
     const targetPart = createPart({
-      id: 'target',
+      id: "target",
       position: [120, 0, 0], // Well separated
     });
 
     const input: SnapV3Input = {
       movingPart,
       targetParts: [targetPart],
-      dragAxis: 'X',
+      dragAxis: "X",
       movementDirection: 1,
       currentOffset: [15, 0, 0],
     };
@@ -813,10 +809,10 @@ describe('Snap V3: Collision prevention', () => {
     expect(result.offset).toBeCloseTo(19, 0);
   });
 
-  it('works with rotated collision shapes', () => {
+  it("works with rotated collision shapes", () => {
     // Rotated part that might have complex collision
     const movingPart = createPart({
-      id: 'moving',
+      id: "moving",
       width: 200,
       height: 100,
       depth: 18,
@@ -825,7 +821,7 @@ describe('Snap V3: Collision prevention', () => {
     });
 
     const targetPart = createPart({
-      id: 'target',
+      id: "target",
       width: 100,
       height: 100,
       depth: 18,
@@ -836,7 +832,7 @@ describe('Snap V3: Collision prevention', () => {
     const input: SnapV3Input = {
       movingPart,
       targetParts: [targetPart],
-      dragAxis: 'X',
+      dragAxis: "X",
       movementDirection: 1,
       currentOffset: [50, 0, 0],
     };
@@ -855,15 +851,15 @@ describe('Snap V3: Collision prevention', () => {
 // Stability Tests (Hysteresis)
 // ============================================================================
 
-describe('Snap V3: Stability', () => {
-  it('maintains snap within hysteresis margin', () => {
+describe("Snap V3: Stability", () => {
+  it("maintains snap within hysteresis margin", () => {
     const movingPart = createPart({
-      id: 'moving',
+      id: "moving",
       position: [0, 0, 0],
     });
 
     const targetPart = createPart({
-      id: 'target',
+      id: "target",
       position: [120, 0, 0],
     });
 
@@ -871,7 +867,7 @@ describe('Snap V3: Stability', () => {
     const input1: SnapV3Input = {
       movingPart,
       targetParts: [targetPart],
-      dragAxis: 'X',
+      dragAxis: "X",
       movementDirection: 1,
       currentOffset: [15, 0, 0],
       previousSnap: undefined,
@@ -884,7 +880,7 @@ describe('Snap V3: Stability', () => {
     const input2: SnapV3Input = {
       movingPart,
       targetParts: [targetPart],
-      dragAxis: 'X',
+      dragAxis: "X",
       movementDirection: 1,
       currentOffset: [16, 0, 0], // Moved 1mm (within hysteresis)
       previousSnap: {
@@ -899,14 +895,14 @@ describe('Snap V3: Stability', () => {
     expect(result2.offset).toBeCloseTo(result1.offset, 0); // Same snap maintained
   });
 
-  it('releases snap when moved far enough', () => {
+  it("releases snap when moved far enough", () => {
     const movingPart = createPart({
-      id: 'moving',
+      id: "moving",
       position: [0, 0, 0],
     });
 
     const targetPart = createPart({
-      id: 'target',
+      id: "target",
       position: [120, 0, 0],
     });
 
@@ -914,7 +910,7 @@ describe('Snap V3: Stability', () => {
     const input1: SnapV3Input = {
       movingPart,
       targetParts: [targetPart],
-      dragAxis: 'X',
+      dragAxis: "X",
       movementDirection: 1,
       currentOffset: [15, 0, 0],
     };
@@ -926,7 +922,7 @@ describe('Snap V3: Stability', () => {
     const input2: SnapV3Input = {
       movingPart,
       targetParts: [targetPart],
-      dragAxis: 'X',
+      dragAxis: "X",
       movementDirection: -1, // Now moving away
       currentOffset: [-30, 0, 0], // Moved far in opposite direction
       previousSnap: {
@@ -948,27 +944,27 @@ describe('Snap V3: Stability', () => {
 // Multiple Targets Tests
 // ============================================================================
 
-describe('Snap V3: Multiple targets', () => {
-  it('snaps to closest target in movement direction', () => {
+describe("Snap V3: Multiple targets", () => {
+  it("snaps to closest target in movement direction", () => {
     const movingPart = createPart({
-      id: 'moving',
+      id: "moving",
       position: [0, 0, 0],
     });
 
     const farTarget = createPart({
-      id: 'far',
+      id: "far",
       position: [200, 0, 0],
     });
 
     const closeTarget = createPart({
-      id: 'close',
+      id: "close",
       position: [115, 0, 0], // Closer
     });
 
     const input: SnapV3Input = {
       movingPart,
       targetParts: [farTarget, closeTarget],
-      dragAxis: 'X',
+      dragAxis: "X",
       movementDirection: 1,
       currentOffset: [10, 0, 0],
     };
@@ -983,21 +979,21 @@ describe('Snap V3: Multiple targets', () => {
     expect(result.offset).toBeCloseTo(14, 0);
   });
 
-  it('ignores targets outside snap distance', () => {
+  it("ignores targets outside snap distance", () => {
     const movingPart = createPart({
-      id: 'moving',
+      id: "moving",
       position: [0, 0, 0],
     });
 
     const farTarget = createPart({
-      id: 'far',
+      id: "far",
       position: [500, 0, 0], // Very far
     });
 
     const input: SnapV3Input = {
       movingPart,
       targetParts: [farTarget],
-      dragAxis: 'X',
+      dragAxis: "X",
       movementDirection: 1,
       currentOffset: [10, 0, 0],
     };
@@ -1013,22 +1009,22 @@ describe('Snap V3: Multiple targets', () => {
 // Edge Cases
 // ============================================================================
 
-describe('Snap V3: Edge cases', () => {
-  it('handles zero-size offset', () => {
+describe("Snap V3: Edge cases", () => {
+  it("handles zero-size offset", () => {
     const movingPart = createPart({
-      id: 'moving',
+      id: "moving",
       position: [0, 0, 0],
     });
 
     const targetPart = createPart({
-      id: 'target',
+      id: "target",
       position: [111, 0, 0], // Left face at 61
     });
 
     const input: SnapV3Input = {
       movingPart,
       targetParts: [targetPart],
-      dragAxis: 'X',
+      dragAxis: "X",
       movementDirection: 1,
       currentOffset: [0, 0, 0],
     };
@@ -1041,9 +1037,9 @@ describe('Snap V3: Edge cases', () => {
     expect(result.offset).toBeCloseTo(10, 0); // 61 - 50 - 1 = 10
   });
 
-  it('handles very thin parts (1mm)', () => {
+  it("handles very thin parts (1mm)", () => {
     const movingPart = createPart({
-      id: 'moving',
+      id: "moving",
       width: 100,
       height: 100,
       depth: 1,
@@ -1054,7 +1050,7 @@ describe('Snap V3: Edge cases', () => {
     // Moving right face at X = 50
     // Target should have left face near 50+gap
     const targetPart = createPart({
-      id: 'target',
+      id: "target",
       width: 100,
       height: 100,
       depth: 1,
@@ -1064,7 +1060,7 @@ describe('Snap V3: Edge cases', () => {
     const input: SnapV3Input = {
       movingPart,
       targetParts: [targetPart],
-      dragAxis: 'X',
+      dragAxis: "X",
       movementDirection: 1,
       currentOffset: [10, 0, 0], // Dragging toward target
     };
@@ -1076,16 +1072,16 @@ describe('Snap V3: Edge cases', () => {
     expect(result.offset).toBeCloseTo(14, 0); // 65 - 50 - 1 = 14
   });
 
-  it('handles no target parts', () => {
+  it("handles no target parts", () => {
     const movingPart = createPart({
-      id: 'moving',
+      id: "moving",
       position: [0, 0, 0],
     });
 
     const input: SnapV3Input = {
       movingPart,
       targetParts: [],
-      dragAxis: 'X',
+      dragAxis: "X",
       movementDirection: 1,
       currentOffset: [10, 0, 0],
     };
@@ -1100,18 +1096,18 @@ describe('Snap V3: Edge cases', () => {
 // User's Exact Scenario
 // ============================================================================
 
-describe('Snap V3: User scenario reproduction', () => {
+describe("Snap V3: User scenario reproduction", () => {
   // SKIPPED: This test has compound rotations whose expected behavior
   // needs to be recalculated based on correct XYZ Euler rotation math.
   // The core snap functionality works per user feedback.
-  it.skip('correctly snaps the user reported problematic scenario', () => {
+  it.skip("correctly snaps the user reported problematic scenario", () => {
     // Test needs rewriting with correct rotation expectations
   });
 
-  it('prevents collision when parts would overlap', () => {
+  it("prevents collision when parts would overlap", () => {
     // Two parts that could collide if snap is wrong
     const movingPart = createPart({
-      id: 'moving',
+      id: "moving",
       width: 100,
       height: 100,
       depth: 18,
@@ -1119,7 +1115,7 @@ describe('Snap V3: User scenario reproduction', () => {
     });
 
     const targetPart = createPart({
-      id: 'target',
+      id: "target",
       width: 100,
       height: 100,
       depth: 18,
@@ -1129,7 +1125,7 @@ describe('Snap V3: User scenario reproduction', () => {
     const input: SnapV3Input = {
       movingPart,
       targetParts: [targetPart],
-      dragAxis: 'X',
+      dragAxis: "X",
       movementDirection: 1,
       currentOffset: [5, 0, 0],
     };
@@ -1149,7 +1145,7 @@ describe('Snap V3: User scenario reproduction', () => {
 // T-Joint Snapping Tests
 // ============================================================================
 
-describe('Snap V3: T-joint snapping (perpendicular normals)', () => {
+describe("Snap V3: T-joint snapping (perpendicular normals)", () => {
   const settingsWithTJoint: SnapV3Settings = {
     ...defaultSettings,
     enableTJointSnap: true,
@@ -1160,12 +1156,12 @@ describe('Snap V3: T-joint snapping (perpendicular normals)', () => {
     enableTJointSnap: false,
   };
 
-  it('snaps perpendicular faces when T-joint is enabled', () => {
+  it("snaps perpendicular faces when T-joint is enabled", () => {
     // Simple scenario with non-rotated parts to test T-joint logic
     // Part 1: vertical panel (standing), width in X, height in Y
     // Face normals: +X [1,0,0], -X [-1,0,0], +Y [0,1,0], -Y [0,-1,0], +Z [0,0,1], -Z [0,0,-1]
     const part1 = createPart({
-      id: 'part1',
+      id: "part1",
       width: 200,
       height: 300,
       depth: 18,
@@ -1179,7 +1175,7 @@ describe('Snap V3: T-joint snapping (perpendicular normals)', () => {
     // After rotation: width stays X, height becomes Z, depth becomes Y
     // Face normals change accordingly
     const part2 = createPart({
-      id: 'part2',
+      id: "part2",
       width: 100,
       height: 200,
       depth: 18,
@@ -1200,7 +1196,7 @@ describe('Snap V3: T-joint snapping (perpendicular normals)', () => {
     const input: SnapV3Input = {
       movingPart: part2,
       targetParts: [part1],
-      dragAxis: 'X',
+      dragAxis: "X",
       movementDirection: -1, // Moving part2 toward part1 (left)
       currentOffset: [-10, 0, 0], // Currently 10mm left
     };
@@ -1214,7 +1210,7 @@ describe('Snap V3: T-joint snapping (perpendicular normals)', () => {
 
     // Actually, let's position parts closer
     const part2Close = createPart({
-      id: 'part2',
+      id: "part2",
       width: 100,
       height: 200,
       depth: 18,
@@ -1225,7 +1221,7 @@ describe('Snap V3: T-joint snapping (perpendicular normals)', () => {
     const inputClose: SnapV3Input = {
       movingPart: part2Close,
       targetParts: [part1],
-      dragAxis: 'X',
+      dragAxis: "X",
       movementDirection: -1,
       currentOffset: [-10, 0, 0], // Left edge at 55, snap target at 100
     };
@@ -1246,12 +1242,12 @@ describe('Snap V3: T-joint snapping (perpendicular normals)', () => {
     // For a simpler test, let's just verify the algorithm doesn't crash
     // and returns a valid result
     expect(result).toBeDefined();
-    expect(result.axis).toBe('X');
+    expect(result.axis).toBe("X");
   });
 
-  it('does not snap perpendicular faces when T-joint is disabled', () => {
+  it("does not snap perpendicular faces when T-joint is disabled", () => {
     const part1 = createPart({
-      id: 'part1',
+      id: "part1",
       width: 600,
       height: 400,
       depth: 18,
@@ -1260,7 +1256,7 @@ describe('Snap V3: T-joint snapping (perpendicular normals)', () => {
     });
 
     const part2 = createPart({
-      id: 'part2',
+      id: "part2",
       width: 600,
       height: 400,
       depth: 18,
@@ -1271,7 +1267,7 @@ describe('Snap V3: T-joint snapping (perpendicular normals)', () => {
     const input: SnapV3Input = {
       movingPart: part2,
       targetParts: [part1],
-      dragAxis: 'X',
+      dragAxis: "X",
       movementDirection: -1,
       currentOffset: [-10, 0, 0],
     };
@@ -1280,13 +1276,13 @@ describe('Snap V3: T-joint snapping (perpendicular normals)', () => {
 
     // Without T-joint enabled, perpendicular faces should NOT snap
     // unless they have opposite normals (connection) or parallel normals (alignment)
-    expect(result.snapType).not.toBe('tjoint');
+    expect(result.snapType).not.toBe("tjoint");
   });
 
-  it('T-joint snaps edge of moving part to target face', () => {
+  it("T-joint snaps edge of moving part to target face", () => {
     // Shelf lying flat
     const shelf = createPart({
-      id: 'shelf',
+      id: "shelf",
       width: 400,
       height: 300,
       depth: 18,
@@ -1296,7 +1292,7 @@ describe('Snap V3: T-joint snapping (perpendicular normals)', () => {
 
     // Side panel standing vertically
     const sidePanel = createPart({
-      id: 'side',
+      id: "side",
       width: 18,
       height: 300,
       depth: 400,
@@ -1311,7 +1307,7 @@ describe('Snap V3: T-joint snapping (perpendicular normals)', () => {
     const input: SnapV3Input = {
       movingPart: shelf,
       targetParts: [sidePanel],
-      dragAxis: 'X',
+      dragAxis: "X",
       movementDirection: 1, // Moving shelf right toward side panel
       currentOffset: [5, 0, 0],
     };
@@ -1322,10 +1318,10 @@ describe('Snap V3: T-joint snapping (perpendicular normals)', () => {
     // Should snap shelf's right edge to side panel's left face
   });
 
-  it('prioritizes connection snap over T-joint when both are available', () => {
+  it("prioritizes connection snap over T-joint when both are available", () => {
     // Setup where both connection and T-joint are possible
     const movingPart = createPart({
-      id: 'moving',
+      id: "moving",
       width: 100,
       height: 100,
       depth: 18,
@@ -1334,7 +1330,7 @@ describe('Snap V3: T-joint snapping (perpendicular normals)', () => {
 
     // Target with opposite face (connection snap candidate)
     const connectionTarget = createPart({
-      id: 'connection',
+      id: "connection",
       width: 100,
       height: 100,
       depth: 18,
@@ -1344,7 +1340,7 @@ describe('Snap V3: T-joint snapping (perpendicular normals)', () => {
     const input: SnapV3Input = {
       movingPart,
       targetParts: [connectionTarget],
-      dragAxis: 'X',
+      dragAxis: "X",
       movementDirection: 1,
       currentOffset: [10, 0, 0],
     };
@@ -1353,13 +1349,13 @@ describe('Snap V3: T-joint snapping (perpendicular normals)', () => {
 
     expect(result.snapped).toBe(true);
     // Connection snap should be found (not T-joint) since faces have opposite normals
-    expect(result.snapType).toBe('connection');
+    expect(result.snapType).toBe("connection");
   });
 
-  it('handles T-joint between rotated parts', () => {
+  it("handles T-joint between rotated parts", () => {
     // User's exact scenario: Part 9 and Part 10
     const part9 = createPart({
-      id: 'part9',
+      id: "part9",
       width: 600,
       height: 400,
       depth: 18,
@@ -1368,7 +1364,7 @@ describe('Snap V3: T-joint snapping (perpendicular normals)', () => {
     });
 
     const part10 = createPart({
-      id: 'part10',
+      id: "part10",
       width: 600,
       height: 400,
       depth: 18,
@@ -1383,7 +1379,7 @@ describe('Snap V3: T-joint snapping (perpendicular normals)', () => {
     const input: SnapV3Input = {
       movingPart: part10,
       targetParts: [part9],
-      dragAxis: 'X',
+      dragAxis: "X",
       movementDirection: -1, // Moving part10 left toward part9
       currentOffset: [-100, 0, 0],
     };
@@ -1391,9 +1387,9 @@ describe('Snap V3: T-joint snapping (perpendicular normals)', () => {
     const result = calculateSnapV3(input, settingsWithTJoint);
 
     // T-joint snap should be found for these perpendicular faces
-    if (result.snapped && result.snapType === 'tjoint') {
+    if (result.snapped && result.snapType === "tjoint") {
       // Verify the snap type is T-joint
-      expect(result.snapType).toBe('tjoint');
+      expect(result.snapType).toBe("tjoint");
     }
   });
 });

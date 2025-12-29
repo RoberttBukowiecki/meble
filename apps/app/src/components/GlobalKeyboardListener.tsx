@@ -295,6 +295,13 @@ export function GlobalKeyboardListener() {
         return;
       }
 
+      // W = Toggle wall occlusion (smart transparent walls)
+      if (matchesShortcut(KEYBOARD_SHORTCUTS.TOGGLE_WALL_OCCLUSION, key)) {
+        event.preventDefault();
+        useStore.getState().toggleWallOcclusion();
+        return;
+      }
+
       // ============================================================================
       // Admin-only shortcuts (for testing)
       // ============================================================================

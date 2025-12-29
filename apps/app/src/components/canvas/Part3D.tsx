@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * 3D representation of a furniture part
@@ -6,18 +6,18 @@
  * Supports multiselect with Cmd/Ctrl+click and Shift+click
  */
 
-import { useRef, useMemo } from 'react';
-import * as THREE from 'three';
-import { Mesh } from 'three';
-import { ThreeEvent } from '@react-three/fiber';
-import { Edges } from '@react-three/drei';
-import { useShallow } from 'zustand/react/shallow';
-import { useMaterial, useStore, useIsPartHidden } from '@/lib/store';
-import { useMaterialTexture } from '@/hooks';
-import { PART_CONFIG, MATERIAL_CONFIG } from '@/lib/config';
-import type { Part, ShapeParamsLShape, ShapeParamsTrapezoid, ShapeParamsPolygon } from '@/types';
-import { isPartColliding, isGroupColliding, getGroupId } from '@/lib/collisionDetection';
-import { Handle3D } from './Handle3D';
+import { useRef, useMemo, useEffect } from "react";
+import * as THREE from "three";
+import { Mesh } from "three";
+import { ThreeEvent } from "@react-three/fiber";
+import { Edges } from "@react-three/drei";
+import { useShallow } from "zustand/react/shallow";
+import { useMaterial, useStore, useIsPartHidden } from "@/lib/store";
+import { useMaterialTexture } from "@/hooks";
+import { PART_CONFIG, MATERIAL_CONFIG } from "@/lib/config";
+import type { Part, ShapeParamsLShape, ShapeParamsTrapezoid, ShapeParamsPolygon } from "@/types";
+import { isPartColliding, isGroupColliding, getGroupId } from "@/lib/collisionDetection";
+import { Handle3D } from "./Handle3D";
 
 // ============================================================================
 // GEOMETRY CREATION FUNCTIONS
@@ -31,12 +31,12 @@ function createLShapeGeometry(params: ShapeParamsLShape, depth: number): THREE.B
 
   // Create 2D shape (centered)
   const shape = new THREE.Shape();
-  shape.moveTo(-x / 2, -y / 2);           // Start at bottom-left
-  shape.lineTo(x / 2, -y / 2);            // Bottom edge
-  shape.lineTo(x / 2, y / 2 - cutY);      // Right edge (partial)
+  shape.moveTo(-x / 2, -y / 2); // Start at bottom-left
+  shape.lineTo(x / 2, -y / 2); // Bottom edge
+  shape.lineTo(x / 2, y / 2 - cutY); // Right edge (partial)
   shape.lineTo(x / 2 - cutX, y / 2 - cutY); // Inner horizontal
-  shape.lineTo(x / 2 - cutX, y / 2);      // Inner vertical
-  shape.lineTo(-x / 2, y / 2);            // Top edge
+  shape.lineTo(x / 2 - cutX, y / 2); // Inner vertical
+  shape.lineTo(-x / 2, y / 2); // Top edge
   shape.closePath();
 
   // Extrude to 3D
@@ -54,13 +54,16 @@ function createLShapeGeometry(params: ShapeParamsLShape, depth: number): THREE.B
 /**
  * Create trapezoid geometry from ShapeParamsTrapezoid
  */
-function createTrapezoidGeometry(params: ShapeParamsTrapezoid, depth: number): THREE.BufferGeometry {
+function createTrapezoidGeometry(
+  params: ShapeParamsTrapezoid,
+  depth: number
+): THREE.BufferGeometry {
   const { frontX, backX, y, skosSide } = params;
 
   const shape = new THREE.Shape();
   const halfY = y / 2;
 
-  if (skosSide === 'left') {
+  if (skosSide === "left") {
     const diff = backX - frontX;
     shape.moveTo(-frontX / 2 + diff / 2, -halfY);
     shape.lineTo(frontX / 2 + diff / 2, -halfY);
@@ -97,10 +100,10 @@ function createPolygonGeometry(params: ShapeParamsPolygon, depth: number): THREE
 
   // Calculate bounding box center for proper centering
   // This is more accurate than vertex centroid for shapes with asymmetric vertex distribution
-  const minX = Math.min(...points.map(p => p[0]));
-  const maxX = Math.max(...points.map(p => p[0]));
-  const minY = Math.min(...points.map(p => p[1]));
-  const maxY = Math.max(...points.map(p => p[1]));
+  const minX = Math.min(...points.map((p) => p[0]));
+  const maxX = Math.max(...points.map((p) => p[0]));
+  const minY = Math.min(...points.map((p) => p[1]));
+  const maxY = Math.max(...points.map((p) => p[1]));
   const cx = (minX + maxX) / 2;
   const cy = (minY + maxY) / 2;
 
@@ -181,11 +184,13 @@ export function Part3D({ part }: Part3DProps) {
 
   // Check if this part should be hidden (front parts when cabinet.hideFronts is true)
   const isFrontPart =
-    part.cabinetMetadata?.role === 'DOOR' ||
-    part.cabinetMetadata?.role === 'DRAWER_FRONT' ||
-    part.cabinetMetadata?.role === 'SIDE_FRONT_LEFT' ||
-    part.cabinetMetadata?.role === 'SIDE_FRONT_RIGHT';
-  const parentCabinet = part.cabinetMetadata ? cabinets.find(c => c.id === part.cabinetMetadata?.cabinetId) : null;
+    part.cabinetMetadata?.role === "DOOR" ||
+    part.cabinetMetadata?.role === "DRAWER_FRONT" ||
+    part.cabinetMetadata?.role === "SIDE_FRONT_LEFT" ||
+    part.cabinetMetadata?.role === "SIDE_FRONT_RIGHT";
+  const parentCabinet = part.cabinetMetadata
+    ? cabinets.find((c) => c.id === part.cabinetMetadata?.cabinetId)
+    : null;
   const shouldHideFront = isFrontPart && parentCabinet?.hideFronts === true;
 
   // Selection states
@@ -195,7 +200,8 @@ export function Part3D({ part }: Part3DProps) {
 
   // Check if this part or its group is colliding
   const groupId = getGroupId(part);
-  const isColliding = isPartColliding(part.id, collisions) ||
+  const isColliding =
+    isPartColliding(part.id, collisions) ||
     (groupId ? isGroupColliding(groupId, collisions) : false);
 
   // Determine part color from material
@@ -205,7 +211,7 @@ export function Part3D({ part }: Part3DProps) {
 
   // Helper to get all part IDs for a cabinet
   const getCabinetPartIds = (cabinetId: string): string[] => {
-    const cabinet = cabinets.find(c => c.id === cabinetId);
+    const cabinet = cabinets.find((c) => c.id === cabinetId);
     return cabinet ? cabinet.partIds : [];
   };
 
@@ -232,7 +238,7 @@ export function Part3D({ part }: Part3DProps) {
       if (part.cabinetMetadata) {
         // Part belongs to cabinet → toggle ALL cabinet parts
         const cabinetPartIds = getCabinetPartIds(part.cabinetMetadata.cabinetId);
-        const anySelected = cabinetPartIds.some(id => selectedPartIds.has(id));
+        const anySelected = cabinetPartIds.some((id) => selectedPartIds.has(id));
 
         if (anySelected) {
           // Remove all cabinet parts from selection
@@ -270,27 +276,28 @@ export function Part3D({ part }: Part3DProps) {
     }, 300);
   };
 
-  const geometry = useMemo(() => {
+  // Create custom geometry for non-RECT shapes (with proper cleanup)
+  const customGeometry = useMemo(() => {
     switch (part.shapeType) {
-      case 'RECT': {
-        return <boxGeometry args={[part.width, part.height, part.depth]} />;
-      }
-      case 'L_SHAPE': {
-        const geom = createLShapeGeometry(part.shapeParams as ShapeParamsLShape, part.depth);
-        return <primitive object={geom} attach="geometry" />;
-      }
-      case 'TRAPEZOID': {
-        const geom = createTrapezoidGeometry(part.shapeParams as ShapeParamsTrapezoid, part.depth);
-        return <primitive object={geom} attach="geometry" />;
-      }
-      case 'POLYGON': {
-        const geom = createPolygonGeometry(part.shapeParams as ShapeParamsPolygon, part.depth);
-        return <primitive object={geom} attach="geometry" />;
-      }
+      case "L_SHAPE":
+        return createLShapeGeometry(part.shapeParams as ShapeParamsLShape, part.depth);
+      case "TRAPEZOID":
+        return createTrapezoidGeometry(part.shapeParams as ShapeParamsTrapezoid, part.depth);
+      case "POLYGON":
+        return createPolygonGeometry(part.shapeParams as ShapeParamsPolygon, part.depth);
       default:
-        return <boxGeometry args={[part.width, part.height, part.depth]} />;
+        return null;
     }
   }, [part.shapeType, part.width, part.height, part.depth, part.shapeParams]);
+
+  // CRITICAL: Dispose custom geometry on unmount or change to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (customGeometry) {
+        customGeometry.dispose();
+      }
+    };
+  }, [customGeometry]);
 
   // Hide this part when:
   // - Being transformed (preview mesh is shown instead)
@@ -306,7 +313,7 @@ export function Part3D({ part }: Part3DProps) {
     if (isMultiSelected) return PART_CONFIG.MULTISELECT_EMISSIVE_COLOR;
     if (isPartSelected) return PART_CONFIG.SELECTION_EMISSIVE_COLOR;
     if (isCabinetSelected) return PART_CONFIG.CABINET_SELECTION_EMISSIVE_COLOR;
-    return '#000000';
+    return "#000000";
   };
 
   const getEmissiveIntensity = () => {
@@ -327,18 +334,19 @@ export function Part3D({ part }: Part3DProps) {
   const showEdges = isColliding || isPartSelected || isCabinetSelected;
 
   // Check if this part is a door or drawer front with handle metadata
-  const isDoorOrDrawerFront = part.cabinetMetadata?.role === 'DOOR' || part.cabinetMetadata?.role === 'DRAWER_FRONT';
+  const isDoorOrDrawerFront =
+    part.cabinetMetadata?.role === "DOOR" || part.cabinetMetadata?.role === "DRAWER_FRONT";
   const handleMetadata = part.cabinetMetadata?.handleMetadata;
 
   return (
     <group position={part.position} rotation={part.rotation}>
-      <mesh
-        ref={meshRef}
-        onClick={handleClick}
-        castShadow
-        receiveShadow
-      >
-        {geometry}
+      <mesh ref={meshRef} onClick={handleClick} castShadow receiveShadow>
+        {/* Use boxGeometry for RECT (auto-disposed by R3F), primitive for custom shapes */}
+        {customGeometry ? (
+          <primitive object={customGeometry} attach="geometry" />
+        ) : (
+          <boxGeometry args={[part.width, part.height, part.depth]} />
+        )}
         <meshStandardMaterial
           color={color}
           map={diffuseMap}
@@ -349,9 +357,7 @@ export function Part3D({ part }: Part3DProps) {
           emissiveIntensity={getEmissiveIntensity()}
         />
 
-        {showEdges && (
-          <Edges color={getEdgeColor()} />
-        )}
+        {showEdges && <Edges color={getEdgeColor()} />}
       </mesh>
 
       {/* Render handle for door and drawer front parts */}

@@ -14,8 +14,8 @@
  * 4. Stability: Hysteresis to prevent snap jumping
  */
 
-import type { Part, Cabinet } from '@/types';
-import type { SnapSettings, SnapPoint, SnapResult } from '@/types/transform';
+import type { Part, Cabinet } from "@/types";
+import type { SnapSettings, SnapPoint, SnapResult } from "@/types/transform";
 import {
   type Vec3,
   type OBBFace,
@@ -25,7 +25,7 @@ import {
   vec3Add,
   vec3Dot,
   getPartCorners,
-} from './obb';
+} from "./obb";
 
 // ============================================================================
 // SECTION 1: TYPES & INTERFACES
@@ -55,7 +55,7 @@ export interface SnapV3Settings {
 export interface SnapV3Input {
   movingPart: Part;
   targetParts: Part[];
-  dragAxis: 'X' | 'Y' | 'Z';
+  dragAxis: "X" | "Y" | "Z";
   movementDirection: 1 | -1;
   currentOffset: Vec3;
   previousSnap?: {
@@ -71,10 +71,10 @@ export interface SnapV3Input {
 export interface SnapV3Result {
   snapped: boolean;
   offset: number;
-  axis: 'X' | 'Y' | 'Z';
+  axis: "X" | "Y" | "Z";
   sourceFaceId?: string;
   targetFaceId?: string;
-  snapType?: 'connection' | 'alignment' | 'tjoint';
+  snapType?: "connection" | "alignment" | "tjoint";
   snapPlanePosition?: Vec3;
 }
 
@@ -88,7 +88,7 @@ export interface SnapV3Candidate {
   targetFaceId: string;
   snapOffset: number;
   distance: number;
-  type: 'connection' | 'alignment' | 'tjoint';
+  type: "connection" | "alignment" | "tjoint";
   targetPartId: string;
   snapPlanePosition: Vec3;
 }
@@ -100,7 +100,7 @@ export interface CrossAxisSnapResult {
   snapped: boolean;
   position: Vec3;
   snapPoints: SnapPoint[];
-  snappedAxes: Array<'X' | 'Y' | 'Z'>;
+  snappedAxes: Array<"X" | "Y" | "Z">;
 }
 
 /**
@@ -170,7 +170,7 @@ export interface SnapV3DebugInfo {
   selectedCandidate: SnapV3Candidate | null;
 
   // Context
-  dragAxis: 'X' | 'Y' | 'Z';
+  dragAxis: "X" | "Y" | "Z";
   movementDirection: 1 | -1;
   currentOffset: Vec3;
 
@@ -195,12 +195,10 @@ export function clearSnapV3Debug(): void {
 /**
  * Calculate snap for V3 system (core algorithm)
  */
-export function calculateSnapV3(
-  input: SnapV3Input,
-  settings: SnapV3Settings
-): SnapV3Result {
-  const { movingPart, targetParts, dragAxis, movementDirection, currentOffset, previousSnap } = input;
-  const axisIndex = dragAxis === 'X' ? 0 : dragAxis === 'Y' ? 1 : 2;
+export function calculateSnapV3(input: SnapV3Input, settings: SnapV3Settings): SnapV3Result {
+  const { movingPart, targetParts, dragAxis, movementDirection, currentOffset, previousSnap } =
+    input;
+  const axisIndex = dragAxis === "X" ? 0 : dragAxis === "Y" ? 1 : 2;
 
   // No targets - no snap
   if (targetParts.length === 0) {
@@ -226,8 +224,7 @@ export function calculateSnapV3(
   if (previousSnap) {
     const previousCandidate = candidates.find(
       (c) =>
-        c.sourceFaceId === previousSnap.sourceFaceId &&
-        c.targetFaceId === previousSnap.targetFaceId
+        c.sourceFaceId === previousSnap.sourceFaceId && c.targetFaceId === previousSnap.targetFaceId
     );
 
     if (previousCandidate) {
@@ -245,8 +242,14 @@ export function calculateSnapV3(
     }
   }
 
-  // Sort by distance from current position
+  // Sort by: 1) snap type priority (connection > alignment > tjoint), 2) distance
+  const typePriority = { connection: 0, alignment: 1, tjoint: 2 };
   candidates.sort((a, b) => {
+    // First sort by type priority
+    const priorityDiff = typePriority[a.type] - typePriority[b.type];
+    if (priorityDiff !== 0) return priorityDiff;
+
+    // Then by distance from current position
     const distA = Math.abs(a.snapOffset - currentOffset[axisIndex]);
     const distB = Math.abs(b.snapOffset - currentOffset[axisIndex]);
     return distA - distB;
@@ -275,13 +278,13 @@ export function calculateSnapV3(
 function generateCandidates(
   movingPart: Part,
   targetParts: Part[],
-  dragAxis: 'X' | 'Y' | 'Z',
+  dragAxis: "X" | "Y" | "Z",
   movementDirection: 1 | -1,
   currentOffset: Vec3,
   settings: SnapV3Settings
 ): SnapV3Candidate[] {
   const candidates: SnapV3Candidate[] = [];
-  const axisIndex = dragAxis === 'X' ? 0 : dragAxis === 'Y' ? 1 : 2;
+  const axisIndex = dragAxis === "X" ? 0 : dragAxis === "Y" ? 1 : 2;
 
   const movingOBB = createOBBFromPart(movingPart);
   const movingFaces = getOBBFaces(movingOBB);
@@ -349,6 +352,9 @@ function generateCandidates(
 
 /**
  * Check if two faces can form a connection snap (face-to-face)
+ *
+ * For rotated objects: The face normal determines which world axis this face
+ * can snap on. A face with normal [0,1,0] can only snap when dragging on Y axis.
  */
 function checkConnectionSnap(
   movingFace: OBBFace,
@@ -360,19 +366,21 @@ function checkConnectionSnap(
   currentOffset: Vec3,
   settings: SnapV3Settings
 ): SnapV3Candidate | null {
-  // 1. Check normals are opposite
+  // 1. Check normals are opposite (faces looking at each other)
   const dot = vec3Dot(movingFace.normal, targetFace.normal);
   if (dot > OPPOSITE_THRESHOLD) return null;
 
-  // 2. Check face is aligned with drag axis
+  // 2. Check face normal is aligned with drag axis
+  // For rotated objects, their faces have rotated normals - we check if
+  // the normal has significant component on the drag axis
   const normalOnAxis = movingFace.normal[axisIndex];
   if (Math.abs(normalOnAxis) < AXIS_ALIGNMENT_THRESHOLD) return null;
 
-  // 3. Face must point in movement direction
-  const facesMovementDir = (normalOnAxis > 0) === (movementDirection > 0);
+  // 3. Face must point in movement direction (or opposite for the target to receive)
+  const facesMovementDir = normalOnAxis > 0 === movementDirection > 0;
   if (!facesMovementDir) return null;
 
-  // 4. Calculate snap offset
+  // 4. Calculate snap offset on drag axis
   const snapOffset = calculateConnectionOffset(
     movingFace,
     targetFace,
@@ -380,9 +388,11 @@ function checkConnectionSnap(
     settings.collisionOffset
   );
 
-  // 5. Check direction validity
-  if (movementDirection > 0 && snapOffset < -settings.snapDistance) return null;
-  if (movementDirection < 0 && snapOffset > settings.snapDistance) return null;
+  // 5. Check direction validity - snap should be in direction of movement
+  // Allow small margin (hysteresisMargin) for snaps slightly in opposite direction
+  // This prevents accepting snaps that would move the part opposite to user intent
+  if (movementDirection > 0 && snapOffset < -settings.hysteresisMargin) return null;
+  if (movementDirection < 0 && snapOffset > settings.hysteresisMargin) return null;
 
   // 6. Check distance threshold
   const distance = Math.abs(snapOffset - currentOffset[axisIndex]);
@@ -402,7 +412,7 @@ function checkConnectionSnap(
     targetFaceId: getFaceId(targetPart.id, targetFace),
     snapOffset,
     distance,
-    type: 'connection',
+    type: "connection",
     targetPartId: targetPart.id,
     snapPlanePosition: [...targetFace.center],
   };
@@ -452,9 +462,10 @@ function checkAlignmentSnap(
   // 3. Calculate alignment offset
   const snapOffset = calculateAlignmentOffset(movingFace, targetFace, axisIndex);
 
-  // 4. Check direction validity
-  if (movementDirection > 0 && snapOffset < -settings.snapDistance) return null;
-  if (movementDirection < 0 && snapOffset > settings.snapDistance) return null;
+  // 4. Check direction validity - snap should be in direction of movement
+  // Allow small margin (hysteresisMargin) for snaps slightly in opposite direction
+  if (movementDirection > 0 && snapOffset < -settings.hysteresisMargin) return null;
+  if (movementDirection < 0 && snapOffset > settings.hysteresisMargin) return null;
 
   // 5. Check distance threshold
   const distance = Math.abs(snapOffset - currentOffset[axisIndex]);
@@ -474,7 +485,7 @@ function checkAlignmentSnap(
     targetFaceId: getFaceId(targetPart.id, targetFace),
     snapOffset,
     distance,
-    type: 'alignment',
+    type: "alignment",
     targetPartId: targetPart.id,
     snapPlanePosition: [...targetFace.center],
   };
@@ -525,9 +536,10 @@ function checkTJointSnap(
     settings.collisionOffset
   );
 
-  // 4. Check direction validity
-  if (movementDirection > 0 && snapOffset < -settings.snapDistance) return null;
-  if (movementDirection < 0 && snapOffset > settings.snapDistance) return null;
+  // 4. Check direction validity - snap should be in direction of movement
+  // Allow small margin (hysteresisMargin) for snaps slightly in opposite direction
+  if (movementDirection > 0 && snapOffset < -settings.hysteresisMargin) return null;
+  if (movementDirection < 0 && snapOffset > settings.hysteresisMargin) return null;
 
   // 5. Check distance threshold
   const distance = Math.abs(snapOffset - currentOffset[axisIndex]);
@@ -547,7 +559,7 @@ function checkTJointSnap(
     targetFaceId: getFaceId(targetPart.id, targetFace),
     snapOffset,
     distance,
-    type: 'tjoint',
+    type: "tjoint",
     targetPartId: targetPart.id,
     snapPlanePosition: [...targetFace.center],
   };
@@ -646,9 +658,12 @@ function getPartAABB(part: Part, offset: Vec3): AABB {
  */
 function doAABBsOverlap(a: AABB, b: AABB): boolean {
   return (
-    a.min[0] < b.max[0] && a.max[0] > b.min[0] &&
-    a.min[1] < b.max[1] && a.max[1] > b.min[1] &&
-    a.min[2] < b.max[2] && a.max[2] > b.min[2]
+    a.min[0] < b.max[0] &&
+    a.max[0] > b.min[0] &&
+    a.min[1] < b.max[1] &&
+    a.max[1] > b.min[1] &&
+    a.min[2] < b.max[2] &&
+    a.max[2] > b.min[2]
   );
 }
 
@@ -663,9 +678,9 @@ function getCrossAxisSnapDistance(
   movingAABB: AABB,
   targetAABB: AABB,
   baseDistance: number,
-  axis: 'X' | 'Y' | 'Z'
+  axis: "X" | "Y" | "Z"
 ): number {
-  const perpAxes = axis === 'X' ? [1, 2] : axis === 'Y' ? [0, 2] : [0, 1];
+  const perpAxes = axis === "X" ? [1, 2] : axis === "Y" ? [0, 2] : [0, 1];
 
   let overlapCount = 0;
   for (const perpAxis of perpAxes) {
@@ -729,7 +744,7 @@ export function calculatePartSnapV3CrossAxis(
   allParts: Part[],
   cabinets: Cabinet[],
   settings: SnapSettings,
-  dragAxis: 'X' | 'Y' | 'Z'
+  dragAxis: "X" | "Y" | "Z"
 ): CrossAxisSnapResult {
   // Filter target parts
   const targetParts = allParts.filter(
@@ -759,15 +774,19 @@ export function calculatePartSnapV3CrossAxis(
   };
 
   const movingAABB = getPartAABB(movingPart, currentOffset);
-  const crossAxisTargets = findCrossAxisTargets(movingAABB, targetParts, settings.distance * CROSS_AXIS_DISTANCE_MULTIPLIER);
+  const crossAxisTargets = findCrossAxisTargets(
+    movingAABB,
+    targetParts,
+    settings.distance * CROSS_AXIS_DISTANCE_MULTIPLIER
+  );
 
-  const axes: Array<'X' | 'Y' | 'Z'> = ['X', 'Y', 'Z'];
+  const axes: Array<"X" | "Y" | "Z"> = ["X", "Y", "Z"];
   const snappedPosition: Vec3 = [...currentPosition];
   const snapPoints: SnapPoint[] = [];
-  const snappedAxes: Array<'X' | 'Y' | 'Z'> = [];
+  const snappedAxes: Array<"X" | "Y" | "Z"> = [];
 
   for (const axis of axes) {
-    const axisIndex = axis === 'X' ? 0 : axis === 'Y' ? 1 : 2;
+    const axisIndex = axis === "X" ? 0 : axis === "Y" ? 1 : 2;
     const isCrossAxis = axis !== dragAxis;
 
     // For cross axes, filter by overlap
@@ -828,9 +847,9 @@ export function calculatePartSnapV3CrossAxis(
       if (bestResult.sourceFaceId && bestResult.targetFaceId) {
         snapPoints.push({
           id: `v3-${axis}-${bestResult.sourceFaceId}`,
-          type: bestResult.snapType === 'connection' ? 'face' : 'edge',
+          type: bestResult.snapType === "connection" ? "face" : "edge",
           position: bestResult.snapPlanePosition || [...snappedPosition],
-          normal: axis === 'X' ? [1, 0, 0] : axis === 'Y' ? [0, 1, 0] : [0, 0, 1],
+          normal: axis === "X" ? [1, 0, 0] : axis === "Y" ? [0, 1, 0] : [0, 0, 1],
           partId: movingPart.id,
           strength: 1,
           axis,
@@ -860,9 +879,9 @@ export function calculatePartSnapV3(
   allParts: Part[],
   cabinets: Cabinet[],
   settings: SnapSettings,
-  dragAxis: 'X' | 'Y' | 'Z'
+  dragAxis: "X" | "Y" | "Z"
 ): SnapResult {
-  const axisIndex = dragAxis === 'X' ? 0 : dragAxis === 'Y' ? 1 : 2;
+  const axisIndex = dragAxis === "X" ? 0 : dragAxis === "Y" ? 1 : 2;
 
   const currentOffset: Vec3 = [
     currentPosition[0] - movingPart.position[0],
@@ -935,9 +954,9 @@ export function calculatePartSnapV3(
     leadingFaces,
     targetParts: targetPartsDebug,
     allCandidates,
-    connectionCandidates: allCandidates.filter((c) => c.type === 'connection'),
-    alignmentCandidates: allCandidates.filter((c) => c.type === 'alignment'),
-    tjointCandidates: allCandidates.filter((c) => c.type === 'tjoint'),
+    connectionCandidates: allCandidates.filter((c) => c.type === "connection"),
+    alignmentCandidates: allCandidates.filter((c) => c.type === "alignment"),
+    tjointCandidates: allCandidates.filter((c) => c.type === "tjoint"),
     selectedCandidate: result.snapped
       ? allCandidates.find(
           (c) => c.sourceFaceId === result.sourceFaceId && c.targetFaceId === result.targetFaceId
@@ -958,19 +977,20 @@ export function calculatePartSnapV3(
   const snappedPosition: Vec3 = [...currentPosition];
   snappedPosition[axisIndex] = movingPart.position[axisIndex] + result.offset;
 
-  const snapPoints: SnapPoint[] = result.sourceFaceId && result.targetFaceId
-    ? [
-        {
-          id: `v3-${result.sourceFaceId}-${result.targetFaceId}`,
-          type: result.snapType === 'connection' ? 'face' : 'edge',
-          position: result.snapPlanePosition || snappedPosition,
-          normal: dragAxis === 'X' ? [1, 0, 0] : dragAxis === 'Y' ? [0, 1, 0] : [0, 0, 1],
-          partId: movingPart.id,
-          strength: 1,
-          axis: dragAxis,
-        },
-      ]
-    : [];
+  const snapPoints: SnapPoint[] =
+    result.sourceFaceId && result.targetFaceId
+      ? [
+          {
+            id: `v3-${result.sourceFaceId}-${result.targetFaceId}`,
+            type: result.snapType === "connection" ? "face" : "edge",
+            position: result.snapPlanePosition || snappedPosition,
+            normal: dragAxis === "X" ? [1, 0, 0] : dragAxis === "Y" ? [0, 1, 0] : [0, 0, 1],
+            partId: movingPart.id,
+            strength: 1,
+            axis: dragAxis,
+          },
+        ]
+      : [];
 
   return { snapped: true, position: snappedPosition, snapPoints };
 }

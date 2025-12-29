@@ -294,3 +294,13 @@ export {
   DEFAULT_SYNC_STATE,
   EMPTY_PROJECT_DATA,
 } from "./project";
+
+// Wall snap types
+export type {
+  WallInnerSurface,
+  WallCorner,
+  WallSnapCandidate,
+  WallSnapResult,
+  WallSnapCache,
+  WallSnapBounds,
+} from "./wall-snap";

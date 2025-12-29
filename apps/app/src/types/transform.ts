@@ -111,6 +111,10 @@ export interface SnapSettings {
 
   // Version
   version: SnapVersion; // v2 for cabinet groups, v3 for parts (default: v3)
+
+  // Wall snapping
+  wallSnap: boolean; // Enable snapping to wall inner surfaces (default: true)
+  cornerSnap: boolean; // Enable snapping to interior corners (default: true)
 }
 
 /**
