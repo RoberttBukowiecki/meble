@@ -9,20 +9,15 @@
  * - Typically shallower depth
  */
 
-import {
-  CabinetParams,
-  CabinetMaterials,
-  Material,
-  WallCabinetParams,
-} from '@/types';
-import { GeneratedPart } from './types';
-import { DEFAULT_DOOR_CONFIG, DEFAULT_HANGER_CUTOUT_CONFIG } from '../config';
-import { generateBackPanelWithCutouts } from './backPanel';
-import { generateDoors } from './doors';
-import { generateFoldingDoors } from './foldingDoors';
-import { generateSideFronts } from './sideFronts';
-import { generateDecorativePanels } from './decorativePanels';
-import { generateInterior, hasInteriorContent } from './interior';
+import { CabinetParams, CabinetMaterials, Material, WallCabinetParams } from "@/types";
+import { GeneratedPart } from "./types";
+import { DEFAULT_DOOR_CONFIG, DEFAULT_HANGER_CUTOUT_CONFIG } from "../config";
+import { generateBackPanelWithCutouts } from "./backPanel";
+import { generateDoors } from "./doors";
+import { generateFoldingDoors } from "./foldingDoors";
+import { generateSideFronts } from "./sideFronts";
+import { generateDecorativePanels } from "./decorativePanels";
+import { generateInterior, hasInteriorContent } from "./interior";
 
 /**
  * Generate all parts for a wall-mounted cabinet
@@ -35,8 +30,8 @@ export function generateWallCabinet(
   bodyMaterial: Material,
   backMaterial?: Material
 ): GeneratedPart[] {
-  if (params.type !== 'WALL') {
-    throw new Error('Invalid params type for wall cabinet generator');
+  if (params.type !== "WALL") {
+    throw new Error("Invalid params type for wall cabinet generator");
   }
 
   const parts: GeneratedPart[] = [];
@@ -61,7 +56,7 @@ export function generateWallCabinet(
   const legOffset = 0;
 
   // Calculate panel dimensions based on placement type
-  const isInset = topBottomPlacement === 'inset';
+  const isInset = topBottomPlacement === "inset";
   const sideHeight = isInset ? height : Math.max(height - thickness * 2, 0);
   const topBottomPanelWidth = isInset ? width - thickness * 2 : width;
   const shelfWidth = width - thickness * 2;
@@ -72,50 +67,56 @@ export function generateWallCabinet(
   const bottomPanelY = thickness / 2 + legOffset;
 
   // Generate body parts
-  parts.push(...generateBodyParts({
-    cabinetId,
-    furnitureId,
-    width,
-    depth,
-    thickness,
-    sideHeight,
-    topBottomPanelWidth,
-    sideCenterY,
-    topPanelY,
-    bottomPanelY,
-    materialId: materials.bodyMaterialId,
-  }));
+  parts.push(
+    ...generateBodyParts({
+      cabinetId,
+      furnitureId,
+      width,
+      depth,
+      thickness,
+      sideHeight,
+      topBottomPanelWidth,
+      sideCenterY,
+      topPanelY,
+      bottomPanelY,
+      materialId: materials.bodyMaterialId,
+    })
+  );
 
   // Generate interior (shelves or zone-based)
-  parts.push(...generateInteriorParts({
-    cabinetId,
-    furnitureId,
-    width,
-    height,
-    depth,
-    thickness,
-    shelfCount,
-    shelfWidth,
-    legOffset,
-    materials,
-    interiorConfig: wallParams.interiorConfig,
-  }));
-
-  // Generate doors
-  if (hasDoors) {
-    parts.push(...generateDoorParts({
+  parts.push(
+    ...generateInteriorParts({
       cabinetId,
       furnitureId,
       width,
       height,
       depth,
       thickness,
+      shelfCount,
+      shelfWidth,
       legOffset,
-      frontMaterialId: materials.frontMaterialId,
-      doorConfig: wallParams.doorConfig ?? DEFAULT_DOOR_CONFIG,
-      handleConfig: wallParams.handleConfig,
-      foldingDoorConfig,
-    }));
+      materials,
+      interiorConfig: wallParams.interiorConfig,
+    })
+  );
+
+  // Generate doors
+  if (hasDoors) {
+    parts.push(
+      ...generateDoorParts({
+        cabinetId,
+        furnitureId,
+        width,
+        height,
+        depth,
+        thickness,
+        legOffset,
+        frontMaterialId: materials.frontMaterialId,
+        doorConfig: wallParams.doorConfig ?? DEFAULT_DOOR_CONFIG,
+        handleConfig: wallParams.handleConfig,
+        foldingDoorConfig,
+      })
+    );
   }
 
   // Generate back panel with cutouts
@@ -131,7 +132,7 @@ export function generateWallCabinet(
       backMaterialId: materials.backMaterialId || backMaterial.id,
       backMaterialThickness: backMaterial.thickness,
       overlapRatio: backOverlapRatio ?? 0.667,
-      mountType: backMountType ?? 'overlap',
+      mountType: backMountType ?? "overlap",
       topBottomPlacement,
       legOffset,
       hangerCutouts: cutoutConfig,
@@ -214,67 +215,67 @@ function generateBodyParts(config: BodyPartsConfig): GeneratedPart[] {
   return [
     // Bottom panel
     {
-      name: 'Dno',
+      name: "Dno",
       furnitureId,
       group: cabinetId,
-      shapeType: 'RECT',
-      shapeParams: { type: 'RECT', x: topBottomPanelWidth, y: depth },
+      shapeType: "RECT",
+      shapeParams: { type: "RECT", x: topBottomPanelWidth, y: depth },
       width: topBottomPanelWidth,
       height: depth,
       depth: thickness,
       position: [0, bottomPanelY, 0],
       rotation: [-Math.PI / 2, 0, 0],
       materialId,
-      edgeBanding: { type: 'RECT', top: true, bottom: true, left: true, right: true },
-      cabinetMetadata: { cabinetId, role: 'BOTTOM' },
+      edgeBanding: { type: "RECT", top: true, bottom: true, left: true, right: true },
+      cabinetMetadata: { cabinetId, role: "BOTTOM" },
     },
     // Left side panel
     {
-      name: 'Bok lewy',
+      name: "Bok lewy",
       furnitureId,
       group: cabinetId,
-      shapeType: 'RECT',
-      shapeParams: { type: 'RECT', x: depth, y: sideHeight },
+      shapeType: "RECT",
+      shapeParams: { type: "RECT", x: depth, y: sideHeight },
       width: depth,
       height: sideHeight,
       depth: thickness,
       position: [-width / 2 + thickness / 2, sideCenterY, 0],
       rotation: [0, Math.PI / 2, 0],
       materialId,
-      edgeBanding: { type: 'RECT', top: true, bottom: false, left: true, right: true },
-      cabinetMetadata: { cabinetId, role: 'LEFT_SIDE' },
+      edgeBanding: { type: "RECT", top: true, bottom: false, left: true, right: true },
+      cabinetMetadata: { cabinetId, role: "LEFT_SIDE" },
     },
     // Right side panel
     {
-      name: 'Bok prawy',
+      name: "Bok prawy",
       furnitureId,
       group: cabinetId,
-      shapeType: 'RECT',
-      shapeParams: { type: 'RECT', x: depth, y: sideHeight },
+      shapeType: "RECT",
+      shapeParams: { type: "RECT", x: depth, y: sideHeight },
       width: depth,
       height: sideHeight,
       depth: thickness,
       position: [width / 2 - thickness / 2, sideCenterY, 0],
       rotation: [0, Math.PI / 2, 0],
       materialId,
-      edgeBanding: { type: 'RECT', top: true, bottom: false, left: true, right: true },
-      cabinetMetadata: { cabinetId, role: 'RIGHT_SIDE' },
+      edgeBanding: { type: "RECT", top: true, bottom: false, left: true, right: true },
+      cabinetMetadata: { cabinetId, role: "RIGHT_SIDE" },
     },
     // Top panel
     {
-      name: 'Góra',
+      name: "Góra",
       furnitureId,
       group: cabinetId,
-      shapeType: 'RECT',
-      shapeParams: { type: 'RECT', x: topBottomPanelWidth, y: depth },
+      shapeType: "RECT",
+      shapeParams: { type: "RECT", x: topBottomPanelWidth, y: depth },
       width: topBottomPanelWidth,
       height: depth,
       depth: thickness,
       position: [0, topPanelY, 0],
       rotation: [-Math.PI / 2, 0, 0],
       materialId,
-      edgeBanding: { type: 'RECT', top: true, bottom: true, left: true, right: true },
-      cabinetMetadata: { cabinetId, role: 'TOP' },
+      edgeBanding: { type: "RECT", top: true, bottom: true, left: true, right: true },
+      cabinetMetadata: { cabinetId, role: "TOP" },
     },
   ];
 }
@@ -290,7 +291,7 @@ interface InteriorPartsConfig {
   shelfWidth: number;
   legOffset: number;
   materials: CabinetMaterials;
-  interiorConfig?: WallCabinetParams['interiorConfig'];
+  interiorConfig?: WallCabinetParams["interiorConfig"];
 }
 
 function generateInteriorParts(config: InteriorPartsConfig): GeneratedPart[] {
@@ -321,6 +322,7 @@ function generateInteriorParts(config: InteriorPartsConfig): GeneratedPart[] {
       bodyThickness: thickness,
       frontThickness: thickness,
       interiorConfig,
+      legOffset,
     });
   }
 
@@ -336,16 +338,16 @@ function generateInteriorParts(config: InteriorPartsConfig): GeneratedPart[] {
       name: `Półka ${i + 1}`,
       furnitureId,
       group: cabinetId,
-      shapeType: 'RECT',
-      shapeParams: { type: 'RECT', x: shelfWidth, y: depth - shelfSetback },
+      shapeType: "RECT",
+      shapeParams: { type: "RECT", x: shelfWidth, y: depth - shelfSetback },
       width: shelfWidth,
       height: depth - shelfSetback,
       depth: thickness,
       position: [0, shelfY, -shelfSetback / 2],
       rotation: [-Math.PI / 2, 0, 0],
       materialId: materials.bodyMaterialId,
-      edgeBanding: { type: 'RECT', top: true, bottom: false, left: false, right: false },
-      cabinetMetadata: { cabinetId, role: 'SHELF', index: i },
+      edgeBanding: { type: "RECT", top: true, bottom: false, left: false, right: false },
+      cabinetMetadata: { cabinetId, role: "SHELF", index: i },
     });
   }
 
@@ -361,9 +363,9 @@ interface DoorPartsConfig {
   thickness: number;
   legOffset: number;
   frontMaterialId: string;
-  doorConfig: WallCabinetParams['doorConfig'];
-  handleConfig: WallCabinetParams['handleConfig'];
-  foldingDoorConfig: WallCabinetParams['foldingDoorConfig'];
+  doorConfig: WallCabinetParams["doorConfig"];
+  handleConfig: WallCabinetParams["handleConfig"];
+  foldingDoorConfig: WallCabinetParams["foldingDoorConfig"];
 }
 
 function generateDoorParts(config: DoorPartsConfig): GeneratedPart[] {

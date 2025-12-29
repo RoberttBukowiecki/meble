@@ -105,8 +105,11 @@ export interface WallSnapResult {
   /** The snap offset to apply [x, y, z] */
   snapOffset: [number, number, number];
 
-  /** Axis that was snapped */
-  axis?: "X" | "Z";
+  /** Axis that was snapped (single or combined for corners) */
+  axis?: "X" | "Z" | "XZ";
+
+  /** Which individual axes were snapped (for multi-axis) */
+  snappedAxes?: Array<"X" | "Z">;
 
   /** Wall ID if snapped to wall */
   snappedToWall?: string;

@@ -3,8 +3,8 @@
  * Handles >200 parts efficiently using grid-based spatial partitioning
  */
 
-import { Box3, Vector3, Mesh, Object3D } from 'three';
-import type { Part, Collision } from '@/types';
+import { Box3, Vector3, Mesh, Object3D } from "three";
+import type { Part, Collision } from "@/types";
 
 // ============================================================================
 // Configuration
@@ -19,16 +19,11 @@ import type { Part, Collision } from '@/types';
 const GRID_CELL_SIZE = 1000;
 
 /**
- * Minimum overlap threshold (in mm) to consider a collision
- * This handles floating-point precision issues
- *
- * We use VERY STRICT thresholds and OBB (not AABB) to avoid false positives:
- * - SAME_GROUP: Parts in a cabinet should NOT collide (designed to fit together)
- *   We skip collision detection entirely for same-group parts
- * - DIFFERENT_GROUP: Actual collisions between separate furniture pieces
- *   Maximum 0.5mm threshold as required
+ * Default collision threshold (in mm)
+ * This can be overridden by passing collisionMargin from settings
+ * Using a small default to only detect actual overlaps
  */
-const COLLISION_THRESHOLD = 0.5; // mm - maximum allowed threshold
+const DEFAULT_COLLISION_THRESHOLD = 0.01; // mm - only actual overlaps by default
 
 // ============================================================================
 // Helper Functions
@@ -123,7 +118,7 @@ export function createBoundingBox(part: Part): Box3 {
 
   // Transform corners to world space
   tempMesh.updateMatrixWorld(true);
-  const transformedCorners = corners.map(corner => corner.applyMatrix4(tempMesh.matrixWorld));
+  const transformedCorners = corners.map((corner) => corner.applyMatrix4(tempMesh.matrixWorld));
 
   // Create bounding box from transformed corners
   const box = new Box3();
@@ -143,9 +138,10 @@ export function createBoundingBox(part: Part): Box3 {
  *
  * @param part1 - First part
  * @param part2 - Second part
+ * @param threshold - Collision threshold in mm
  * @returns True if parts collide
  */
-function partsCollide(part1: Part, part2: Part): boolean {
+function partsCollide(part1: Part, part2: Part, threshold: number): boolean {
   // Check if parts are in the same group/cabinet
   const groupId1 = getGroupId(part1);
   const groupId2 = getGroupId(part2);
@@ -157,7 +153,7 @@ function partsCollide(part1: Part, part2: Part): boolean {
   }
 
   // Use OBB collision detection for different groups (accurate for rotated objects)
-  return obbCollision(part1, part2, COLLISION_THRESHOLD);
+  return obbCollision(part1, part2, threshold);
 }
 
 /**
@@ -169,13 +165,15 @@ function partsCollide(part1: Part, part2: Part): boolean {
  */
 function boxesIntersectAABB(box1: Box3, box2: Box3, threshold: number): boolean {
   // Add threshold to handle floating-point precision
-  return box1.intersectsBox(box2) &&
-    (box1.max.x - box2.min.x > threshold) &&
-    (box2.max.x - box1.min.x > threshold) &&
-    (box1.max.y - box2.min.y > threshold) &&
-    (box2.max.y - box1.min.y > threshold) &&
-    (box1.max.z - box2.min.z > threshold) &&
-    (box2.max.z - box1.min.z > threshold);
+  return (
+    box1.intersectsBox(box2) &&
+    box1.max.x - box2.min.x > threshold &&
+    box2.max.x - box1.min.x > threshold &&
+    box1.max.y - box2.min.y > threshold &&
+    box2.max.y - box1.min.y > threshold &&
+    box1.max.z - box2.min.z > threshold &&
+    box2.max.z - box1.min.z > threshold
+  );
 }
 
 /**
@@ -225,14 +223,29 @@ function obbCollision(part1: Part, part2: Part, threshold: number): boolean {
     ...axes1,
     ...axes2,
     // Cross products
-    ...axes1.flatMap(a1 => axes2.map(a2 => {
-      const cross = new Vector3().crossVectors(a1, a2);
-      return cross.lengthSq() > 0.001 ? cross.normalize() : null;
-    })).filter(Boolean) as Vector3[]
+    ...(axes1
+      .flatMap((a1) =>
+        axes2.map((a2) => {
+          const cross = new Vector3().crossVectors(a1, a2);
+          return cross.lengthSq() > 0.001 ? cross.normalize() : null;
+        })
+      )
+      .filter(Boolean) as Vector3[]),
   ];
 
   for (const axis of allAxes) {
-    if (!testSeparatingAxis(center1, halfExtents1, axes1, center2, halfExtents2, axes2, axis, threshold)) {
+    if (
+      !testSeparatingAxis(
+        center1,
+        halfExtents1,
+        axes1,
+        center2,
+        halfExtents2,
+        axes2,
+        axis,
+        threshold
+      )
+    ) {
       return false; // Found separating axis - no collision
     }
   }
@@ -258,13 +271,15 @@ function testSeparatingAxis(
   const centerDist = Math.abs(center2.clone().sub(center1).dot(axis));
 
   // Project half-extents onto axis
-  const r1 = Math.abs(halfExtents1.x * axes1[0].dot(axis)) +
-             Math.abs(halfExtents1.y * axes1[1].dot(axis)) +
-             Math.abs(halfExtents1.z * axes1[2].dot(axis));
+  const r1 =
+    Math.abs(halfExtents1.x * axes1[0].dot(axis)) +
+    Math.abs(halfExtents1.y * axes1[1].dot(axis)) +
+    Math.abs(halfExtents1.z * axes1[2].dot(axis));
 
-  const r2 = Math.abs(halfExtents2.x * axes2[0].dot(axis)) +
-             Math.abs(halfExtents2.y * axes2[1].dot(axis)) +
-             Math.abs(halfExtents2.z * axes2[2].dot(axis));
+  const r2 =
+    Math.abs(halfExtents2.x * axes2[0].dot(axis)) +
+    Math.abs(halfExtents2.y * axes2[1].dot(axis)) +
+    Math.abs(halfExtents2.z * axes2[2].dot(axis));
 
   // Check if projections overlap (with threshold)
   return centerDist <= r1 + r2 + threshold;
@@ -342,9 +357,16 @@ class SpatialGrid {
  * Detect all collisions in the current furniture
  * Uses spatial partitioning for O(n log n) average case performance
  * @param parts - Array of parts to check for collisions
+ * @param ignoreCabinetId - Optional cabinet ID to ignore
+ * @param collisionThreshold - Optional collision threshold in mm (default: 0.01mm)
  * @returns Array of collisions found
  */
-export function detectCollisions(parts: Part[], ignoreCabinetId?: string): Collision[] {
+export function detectCollisions(
+  parts: Part[],
+  ignoreCabinetId?: string,
+  collisionThreshold?: number
+): Collision[] {
+  const threshold = collisionThreshold ?? DEFAULT_COLLISION_THRESHOLD;
   const collisions: Collision[] = [];
   const grid = new SpatialGrid();
   const partBoxes = new Map<string, Box3>();
@@ -365,13 +387,13 @@ export function detectCollisions(parts: Part[], ignoreCabinetId?: string): Colli
 
     for (const { part: otherPart, box: otherBox } of potentialCollisions) {
       // Create a unique pair key to avoid checking the same pair twice
-      const pairKey = [part.id, otherPart.id].sort().join(',');
+      const pairKey = [part.id, otherPart.id].sort().join(",");
 
       if (!checkedPairs.has(pairKey)) {
         checkedPairs.add(pairKey);
 
         // Check if parts actually collide
-        if (partsCollide(part, otherPart)) {
+        if (partsCollide(part, otherPart, threshold)) {
           collisions.push({
             partId1: part.id,
             partId2: otherPart.id,
@@ -393,7 +415,7 @@ export function detectCollisions(parts: Part[], ignoreCabinetId?: string): Colli
  * @returns True if the part is colliding
  */
 export function isPartColliding(partId: string, collisions: Collision[]): boolean {
-  return collisions.some(c => c.partId1 === partId || c.partId2 === partId);
+  return collisions.some((c) => c.partId1 === partId || c.partId2 === partId);
 }
 
 /**
@@ -403,7 +425,7 @@ export function isPartColliding(partId: string, collisions: Collision[]): boolea
  * @returns True if any part in the group is colliding
  */
 export function isGroupColliding(groupId: string, collisions: Collision[]): boolean {
-  return collisions.some(c => c.groupId1 === groupId || c.groupId2 === groupId);
+  return collisions.some((c) => c.groupId1 === groupId || c.groupId2 === groupId);
 }
 
 /**

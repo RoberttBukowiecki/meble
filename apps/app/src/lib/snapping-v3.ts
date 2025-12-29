@@ -15,7 +15,15 @@
  */
 
 import type { Part, Cabinet } from "@/types";
-import type { SnapSettings, SnapPoint, SnapResult } from "@/types/transform";
+import type {
+  SnapSettings,
+  SnapPoint,
+  SnapResult,
+  DragAxes,
+  MultiAxisSnapResult,
+  AxisSnapDetail,
+} from "@/types/transform";
+import { parseAxes } from "@/lib/transform-utils";
 import {
   type Vec3,
   type OBBFace,
@@ -37,8 +45,10 @@ import {
 export interface SnapV3Settings {
   /** Maximum distance to snap (mm) */
   snapDistance: number;
-  /** Gap between touching faces (mm) */
-  collisionOffset: number;
+  /** Gap between snapped faces (mm) - used for snap offset calculation */
+  snapGap: number;
+  /** Margin for collision detection (mm) - used to prevent overlaps */
+  collisionMargin: number;
   /** Distance to maintain current snap (mm) */
   hysteresisMargin: number;
   /** Enable face-to-face connection snaps (opposite normals) */
@@ -380,13 +390,8 @@ function checkConnectionSnap(
   const facesMovementDir = normalOnAxis > 0 === movementDirection > 0;
   if (!facesMovementDir) return null;
 
-  // 4. Calculate snap offset on drag axis
-  const snapOffset = calculateConnectionOffset(
-    movingFace,
-    targetFace,
-    axisIndex,
-    settings.collisionOffset
-  );
+  // 4. Calculate snap offset on drag axis (using snapGap for face separation)
+  const snapOffset = calculateConnectionOffset(movingFace, targetFace, axisIndex, settings.snapGap);
 
   // 5. Check direction validity - snap should be in direction of movement
   // Allow small margin (hysteresisMargin) for snaps slightly in opposite direction
@@ -398,10 +403,10 @@ function checkConnectionSnap(
   const distance = Math.abs(snapOffset - currentOffset[axisIndex]);
   if (distance > settings.snapDistance) return null;
 
-  // 7. Check collision
+  // 7. Check collision (using collisionMargin for overlap detection)
   const offsetVec: Vec3 = [0, 0, 0];
   offsetVec[axisIndex] = snapOffset;
-  if (wouldCauseCollision(movingPart, targetPart, offsetVec, settings.collisionOffset, axisIndex)) {
+  if (wouldCauseCollision(movingPart, targetPart, offsetVec, settings.collisionMargin, axisIndex)) {
     return null;
   }
 
@@ -419,19 +424,19 @@ function checkConnectionSnap(
 }
 
 /**
- * Calculate offset to bring faces together
+ * Calculate offset to bring faces together with a gap
  */
 function calculateConnectionOffset(
   movingFace: OBBFace,
   targetFace: OBBFace,
   axisIndex: number,
-  collisionOffset: number
+  snapGap: number
 ): number {
   const sourcePos = movingFace.center[axisIndex];
   const targetPos = targetFace.center[axisIndex];
   const diff = targetPos - sourcePos;
   const normalSign = movingFace.normal[axisIndex] > 0 ? 1 : -1;
-  return diff - collisionOffset * normalSign;
+  return diff - snapGap * normalSign;
 }
 
 // ============================================================================
@@ -471,10 +476,10 @@ function checkAlignmentSnap(
   const distance = Math.abs(snapOffset - currentOffset[axisIndex]);
   if (distance > settings.snapDistance) return null;
 
-  // 6. Check collision
+  // 6. Check collision (using collisionMargin for overlap detection)
   const offsetVec: Vec3 = [0, 0, 0];
   offsetVec[axisIndex] = snapOffset;
-  if (wouldCauseCollision(movingPart, targetPart, offsetVec, settings.collisionOffset, axisIndex)) {
+  if (wouldCauseCollision(movingPart, targetPart, offsetVec, settings.collisionMargin, axisIndex)) {
     return null;
   }
 
@@ -527,13 +532,13 @@ function checkTJointSnap(
   const targetNormalOnAxis = Math.abs(targetFace.normal[axisIndex]);
   if (targetNormalOnAxis < AXIS_ALIGNMENT_THRESHOLD) return null;
 
-  // 3. Calculate T-joint offset
+  // 3. Calculate T-joint offset (using snapGap for edge separation)
   const snapOffset = calculateTJointOffset(
     movingFace,
     targetFace,
     axisIndex,
     movementDirection,
-    settings.collisionOffset
+    settings.snapGap
   );
 
   // 4. Check direction validity - snap should be in direction of movement
@@ -545,10 +550,10 @@ function checkTJointSnap(
   const distance = Math.abs(snapOffset - currentOffset[axisIndex]);
   if (distance > settings.snapDistance) return null;
 
-  // 6. Check collision
+  // 6. Check collision (using collisionMargin for overlap detection)
   const offsetVec: Vec3 = [0, 0, 0];
   offsetVec[axisIndex] = snapOffset;
-  if (wouldCauseCollision(movingPart, targetPart, offsetVec, settings.collisionOffset, axisIndex)) {
+  if (wouldCauseCollision(movingPart, targetPart, offsetVec, settings.collisionMargin, axisIndex)) {
     return null;
   }
 
@@ -566,14 +571,14 @@ function checkTJointSnap(
 }
 
 /**
- * Calculate offset for T-joint snap
+ * Calculate offset for T-joint snap (edge to face)
  */
 function calculateTJointOffset(
   movingFace: OBBFace,
   targetFace: OBBFace,
   axisIndex: number,
   movementDirection: 1 | -1,
-  collisionOffset: number
+  snapGap: number
 ): number {
   const targetPos = targetFace.center[axisIndex];
   const targetNormalSign = targetFace.normal[axisIndex] > 0 ? 1 : -1;
@@ -588,7 +593,7 @@ function calculateTJointOffset(
 
   // Use edge based on movement direction
   const sourceEdge = movementDirection > 0 ? sourceMax : sourceMin;
-  const targetWithGap = targetPos - collisionOffset * targetNormalSign;
+  const targetWithGap = targetPos - snapGap * targetNormalSign;
 
   return targetWithGap - sourceEdge;
 }
@@ -598,13 +603,14 @@ function calculateTJointOffset(
 // ============================================================================
 
 /**
- * Check if snap would cause collision
+ * Check if snap would cause collision (overlap)
+ * Uses collisionMargin to allow small gaps between parts
  */
 function wouldCauseCollision(
   movingPart: Part,
   targetPart: Part,
   offset: Vec3,
-  collisionOffset: number,
+  collisionMargin: number,
   snapAxisIndex?: number
 ): boolean {
   const movingAABB = getPartAABB(movingPart, offset);
@@ -613,9 +619,9 @@ function wouldCauseCollision(
   // Apply tolerance only on snap axis
   const tolerance: Vec3 = [0, 0, 0];
   if (snapAxisIndex !== undefined) {
-    tolerance[snapAxisIndex] = collisionOffset;
+    tolerance[snapAxisIndex] = collisionMargin;
   } else {
-    tolerance[0] = tolerance[1] = tolerance[2] = collisionOffset;
+    tolerance[0] = tolerance[1] = tolerance[2] = collisionMargin;
   }
 
   const shrunkMoving: AABB = {
@@ -766,7 +772,8 @@ export function calculatePartSnapV3CrossAxis(
 
   const v3Settings: SnapV3Settings = {
     snapDistance: settings.distance,
-    collisionOffset: settings.collisionOffset,
+    snapGap: settings.snapGap ?? settings.collisionOffset ?? 0.1,
+    collisionMargin: settings.collisionMargin ?? 0.3,
     hysteresisMargin: 2,
     enableConnectionSnap: settings.faceSnap,
     enableAlignmentSnap: settings.edgeSnap,
@@ -900,7 +907,8 @@ export function calculatePartSnapV3(
 
   const v3Settings: SnapV3Settings = {
     snapDistance: settings.distance,
-    collisionOffset: settings.collisionOffset,
+    snapGap: settings.snapGap ?? settings.collisionOffset ?? 0.1,
+    collisionMargin: settings.collisionMargin ?? 0.3,
     hysteresisMargin: 2,
     enableConnectionSnap: settings.faceSnap,
     enableAlignmentSnap: settings.edgeSnap,
@@ -996,6 +1004,143 @@ export function calculatePartSnapV3(
 }
 
 // ============================================================================
+// SECTION 8.1: MULTI-AXIS SNAP (PLANAR DRAG)
+// ============================================================================
+
+/**
+ * Calculate snap for multiple axes simultaneously (planar drag).
+ *
+ * This function handles scenarios where the user drags on a plane (XY, XZ, YZ)
+ * or all axes (XYZ). Each axis is snapped independently and results are combined.
+ *
+ * @param movingPart - The part being moved
+ * @param currentPosition - Current position during drag
+ * @param allParts - All parts in the scene
+ * @param cabinets - All cabinets in the scene
+ * @param settings - Snap settings
+ * @param dragAxes - Active axes (e.g., "XZ" for floor plane drag)
+ * @returns Combined snap result for all axes
+ */
+export function calculateMultiAxisSnap(
+  movingPart: Part,
+  currentPosition: Vec3,
+  allParts: Part[],
+  cabinets: Cabinet[],
+  settings: SnapSettings,
+  dragAxes: DragAxes
+): MultiAxisSnapResult {
+  const axes = parseAxes(dragAxes);
+
+  // Filter target parts (exclude self and cabinet siblings)
+  const targetParts = allParts.filter(
+    (p) =>
+      p.id !== movingPart.id &&
+      (!movingPart.cabinetMetadata?.cabinetId ||
+        p.cabinetMetadata?.cabinetId !== movingPart.cabinetMetadata.cabinetId)
+  );
+
+  // Initialize result
+  const snappedPosition: Vec3 = [...currentPosition];
+  const snapPoints: SnapPoint[] = [];
+  const snappedAxes: Array<"X" | "Y" | "Z"> = [];
+  const axisResults = new Map<"X" | "Y" | "Z", AxisSnapDetail>();
+
+  // Current offset from original position
+  const currentOffset: Vec3 = [
+    currentPosition[0] - movingPart.position[0],
+    currentPosition[1] - movingPart.position[1],
+    currentPosition[2] - movingPart.position[2],
+  ];
+
+  // V3 settings
+  const v3Settings: SnapV3Settings = {
+    snapDistance: settings.distance,
+    snapGap: settings.snapGap ?? settings.collisionOffset ?? 0.1,
+    collisionMargin: settings.collisionMargin ?? 0.3,
+    hysteresisMargin: 2,
+    enableConnectionSnap: settings.faceSnap,
+    enableAlignmentSnap: settings.edgeSnap,
+    enableTJointSnap: settings.tJointSnap ?? true,
+  };
+
+  // Process each axis independently
+  for (const axis of axes) {
+    const axisIndex = axis === "X" ? 0 : axis === "Y" ? 1 : 2;
+
+    // Determine movement direction on this axis
+    const movementDirection: 1 | -1 = currentOffset[axisIndex] >= 0 ? 1 : -1;
+
+    // For multi-axis drag, we need to check both directions
+    // because user might be moving diagonally
+    const directions: Array<1 | -1> = [1, -1];
+    let bestResult: SnapV3Result | null = null;
+    let bestDistance = Infinity;
+
+    for (const direction of directions) {
+      const result = calculateSnapV3(
+        {
+          movingPart,
+          targetParts,
+          dragAxis: axis,
+          movementDirection: direction,
+          currentOffset,
+        },
+        v3Settings
+      );
+
+      if (result.snapped) {
+        const snapPos = movingPart.position[axisIndex] + result.offset;
+        const distance = Math.abs(snapPos - currentPosition[axisIndex]);
+
+        if (distance < bestDistance && distance <= settings.distance) {
+          bestDistance = distance;
+          bestResult = result;
+        }
+      }
+    }
+
+    // Store axis result
+    if (bestResult && bestResult.snapped) {
+      snappedPosition[axisIndex] = movingPart.position[axisIndex] + bestResult.offset;
+      snappedAxes.push(axis);
+
+      axisResults.set(axis, {
+        snapped: true,
+        offset: bestResult.offset,
+        snapType: bestResult.snapType,
+        targetId: bestResult.targetFaceId,
+      });
+
+      // Add snap point for visualization
+      if (bestResult.sourceFaceId && bestResult.targetFaceId) {
+        snapPoints.push({
+          id: `v3-multi-${axis}-${bestResult.sourceFaceId}`,
+          type: bestResult.snapType === "connection" ? "face" : "edge",
+          position: bestResult.snapPlanePosition || [...snappedPosition],
+          normal: axis === "X" ? [1, 0, 0] : axis === "Y" ? [0, 1, 0] : [0, 0, 1],
+          partId: movingPart.id,
+          strength: 1,
+          axis,
+        });
+      }
+    } else {
+      axisResults.set(axis, {
+        snapped: false,
+        offset: 0,
+      });
+    }
+  }
+
+  return {
+    snapped: snappedAxes.length > 0,
+    position: snappedPosition,
+    snapPoints,
+    snappedAxes,
+    axisResults,
+  };
+}
+
+// ============================================================================
 // SECTION 9: UTILITIES
 // ============================================================================
 
@@ -1024,4 +1169,5 @@ export {
   getFaceId,
   findCrossAxisTargets,
   getCrossAxisSnapDistance,
+  parseAxes,
 };

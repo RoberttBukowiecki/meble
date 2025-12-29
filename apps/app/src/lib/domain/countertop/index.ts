@@ -378,6 +378,8 @@ export const CountertopDomain = {
   /**
    * Detect gaps between cabinets in a group
    * Returns array of gaps with their distances and default modes
+   * IMPORTANT: Only detects gaps between ADJACENT cabinets (consecutive in sorted order)
+   * This prevents creating gaps between cabinets that have other cabinets between them
    */
   detectGapsInCabinets: (
     cabinets: Cabinet[],
@@ -394,35 +396,45 @@ export const CountertopDomain = {
       boundsMap.set(cabinet.id, getCabinetBounds(cabinet, parts));
     }
 
-    // Check all pairs
-    for (let i = 0; i < cabinets.length; i++) {
-      for (let j = i + 1; j < cabinets.length; j++) {
-        const boundsA = boundsMap.get(cabinets[i].id)!;
-        const boundsB = boundsMap.get(cabinets[j].id)!;
+    // Sort cabinets by position (X then Z) to find adjacent pairs
+    const sortedCabinets = [...cabinets].sort((a, b) => {
+      const boundsA = boundsMap.get(a.id)!;
+      const boundsB = boundsMap.get(b.id)!;
+      const xDiff = boundsA.center[0] - boundsB.center[0];
+      // Use small threshold to handle floating point precision
+      if (Math.abs(xDiff) > 10) return xDiff;
+      return boundsA.center[2] - boundsB.center[2];
+    });
 
-        const gapInfo = getCabinetGapInfo(boundsA, boundsB, CABINET_GAP_CONFIG.MAX_BRIDGE_GAP);
+    // Only check CONSECUTIVE pairs in sorted order (adjacent cabinets)
+    for (let i = 0; i < sortedCabinets.length - 1; i++) {
+      const cabinetA = sortedCabinets[i];
+      const cabinetB = sortedCabinets[i + 1];
+      const boundsA = boundsMap.get(cabinetA.id)!;
+      const boundsB = boundsMap.get(cabinetB.id)!;
 
-        if (gapInfo && gapInfo.gap > CABINET_GAP_CONFIG.TOUCH_THRESHOLD) {
-          // Check if there's an existing gap with user-set mode
-          const existingGap = existingGaps?.find(
-            (g) =>
-              (g.cabinetAId === cabinets[i].id && g.cabinetBId === cabinets[j].id) ||
-              (g.cabinetAId === cabinets[j].id && g.cabinetBId === cabinets[i].id)
-          );
+      const gapInfo = getCabinetGapInfo(boundsA, boundsB, CABINET_GAP_CONFIG.MAX_BRIDGE_GAP);
 
-          // Determine default mode based on gap size
-          const defaultMode: CabinetGapMode =
-            gapInfo.gap > CABINET_GAP_CONFIG.AUTO_SPLIT_THRESHOLD ? "SPLIT" : "BRIDGE";
+      if (gapInfo && gapInfo.gap > CABINET_GAP_CONFIG.TOUCH_THRESHOLD) {
+        // Check if there's an existing gap with user-set mode
+        const existingGap = existingGaps?.find(
+          (g) =>
+            (g.cabinetAId === cabinetA.id && g.cabinetBId === cabinetB.id) ||
+            (g.cabinetAId === cabinetB.id && g.cabinetBId === cabinetA.id)
+        );
 
-          gaps.push({
-            id: existingGap?.id ?? generateGapId(),
-            cabinetAId: cabinets[i].id,
-            cabinetBId: cabinets[j].id,
-            distance: Math.round(gapInfo.gap),
-            axis: gapInfo.axis,
-            mode: existingGap?.mode ?? defaultMode,
-          });
-        }
+        // Determine default mode based on gap size
+        const defaultMode: CabinetGapMode =
+          gapInfo.gap > CABINET_GAP_CONFIG.AUTO_SPLIT_THRESHOLD ? "SPLIT" : "BRIDGE";
+
+        gaps.push({
+          id: existingGap?.id ?? generateGapId(),
+          cabinetAId: cabinetA.id,
+          cabinetBId: cabinetB.id,
+          distance: Math.round(gapInfo.gap),
+          axis: gapInfo.axis,
+          mode: existingGap?.mode ?? defaultMode,
+        });
       }
     }
 
@@ -480,7 +492,20 @@ export const CountertopDomain = {
   ): CountertopSegment[] => {
     if (cabinets.length === 0) return [];
 
-    const layoutType = CountertopDomain.detectLayoutType(cabinets, parts);
+    // IMPORTANT: Sort cabinets by position first!
+    // This ensures consistent ordering for layout detection and segment generation.
+    // Without sorting, cabinets might be in arbitrary order (e.g., order of creation),
+    // which breaks direction detection and causes wrong layout types.
+    const boundsMap = new Map(cabinets.map((c) => [c.id, getCabinetBounds(c, parts)]));
+    const sortedCabinets = [...cabinets].sort((a, b) => {
+      const boundsA = boundsMap.get(a.id)!;
+      const boundsB = boundsMap.get(b.id)!;
+      const xDiff = boundsA.center[0] - boundsB.center[0];
+      if (Math.abs(xDiff) > 10) return xDiff;
+      return boundsA.center[2] - boundsB.center[2];
+    });
+
+    const layoutType = CountertopDomain.detectLayoutType(sortedCabinets, parts);
     const defaultOverhang = options?.defaultOverhang
       ? { ...COUNTERTOP_DEFAULTS.OVERHANG, ...options.defaultOverhang }
       : { ...COUNTERTOP_DEFAULTS.OVERHANG };
@@ -557,18 +582,9 @@ export const CountertopDomain = {
     const bridgeGaps = gaps?.filter((g) => g.mode === "BRIDGE") ?? [];
 
     // If there are SPLIT gaps, we need to split cabinets into sub-groups
-    if (splitGaps.length > 0 && cabinets.length > 1) {
-      // Sort cabinets by position (X then Z) to maintain order
-      const boundsMap = new Map(cabinets.map((c) => [c.id, getCabinetBounds(c, parts)]));
-      const sortedCabinets = [...cabinets].sort((a, b) => {
-        const boundsA = boundsMap.get(a.id)!;
-        const boundsB = boundsMap.get(b.id)!;
-        const xDiff = boundsA.center[0] - boundsB.center[0];
-        if (Math.abs(xDiff) > 10) return xDiff;
-        return boundsA.center[2] - boundsB.center[2];
-      });
-
+    if (splitGaps.length > 0 && sortedCabinets.length > 1) {
       // Build sub-groups by finding cabinets that are NOT separated by SPLIT gaps
+      // Note: sortedCabinets is already sorted at the beginning of the function
       const subGroups: Cabinet[][] = [];
       let currentGroup: Cabinet[] = [sortedCabinets[0]];
 
@@ -609,24 +625,24 @@ export const CountertopDomain = {
 
     // For STRAIGHT layout with no SPLIT gaps, use single segment
     if (layoutType === "STRAIGHT") {
-      return [createSegmentFromCabinets("Blat I", cabinets, defaultOverhang, bridgeGaps)];
+      return [createSegmentFromCabinets("Blat I", sortedCabinets, defaultOverhang, bridgeGaps)];
     }
 
     // Find actual direction change points for L_SHAPE and U_SHAPE
-    const changeIndices = findDirectionChangeIndices(cabinets, parts);
+    const changeIndices = findDirectionChangeIndices(sortedCabinets, parts);
 
     if (layoutType === "L_SHAPE") {
       // L-shape should have 1 direction change
       if (changeIndices.length === 0) {
         // No direction change detected - treat as single segment
         // This can happen if cabinets are detected as L but actually aligned
-        return [createSegmentFromCabinets("Blat I", cabinets, defaultOverhang, bridgeGaps)];
+        return [createSegmentFromCabinets("Blat I", sortedCabinets, defaultOverhang, bridgeGaps)];
       }
 
       // Use first direction change point to split
       const splitIndex = changeIndices[0];
-      const group1 = cabinets.slice(0, splitIndex);
-      const group2 = cabinets.slice(splitIndex);
+      const group1 = sortedCabinets.slice(0, splitIndex);
+      const group2 = sortedCabinets.slice(splitIndex);
 
       const segments: CountertopSegment[] = [];
       if (group1.length > 0) {
@@ -638,7 +654,7 @@ export const CountertopDomain = {
 
       // Ensure we have at least one segment
       if (segments.length === 0) {
-        return [createSegmentFromCabinets("Blat I", cabinets, defaultOverhang, bridgeGaps)];
+        return [createSegmentFromCabinets("Blat I", sortedCabinets, defaultOverhang, bridgeGaps)];
       }
 
       return segments;
@@ -650,8 +666,8 @@ export const CountertopDomain = {
         // Not enough direction changes - fall back to L or straight logic
         if (changeIndices.length === 1) {
           const splitIndex = changeIndices[0];
-          const group1 = cabinets.slice(0, splitIndex);
-          const group2 = cabinets.slice(splitIndex);
+          const group1 = sortedCabinets.slice(0, splitIndex);
+          const group2 = sortedCabinets.slice(splitIndex);
 
           const segments: CountertopSegment[] = [];
           if (group1.length > 0) {
@@ -664,9 +680,9 @@ export const CountertopDomain = {
           }
           return segments.length > 0
             ? segments
-            : [createSegmentFromCabinets("Blat I", cabinets, defaultOverhang, bridgeGaps)];
+            : [createSegmentFromCabinets("Blat I", sortedCabinets, defaultOverhang, bridgeGaps)];
         }
-        return [createSegmentFromCabinets("Blat I", cabinets, defaultOverhang, bridgeGaps)];
+        return [createSegmentFromCabinets("Blat I", sortedCabinets, defaultOverhang, bridgeGaps)];
       }
 
       // Use first two direction change points to create 3 segments
@@ -674,9 +690,9 @@ export const CountertopDomain = {
       const split2 = changeIndices[1];
 
       const groups = [
-        cabinets.slice(0, split1),
-        cabinets.slice(split1, split2),
-        cabinets.slice(split2),
+        sortedCabinets.slice(0, split1),
+        sortedCabinets.slice(split1, split2),
+        sortedCabinets.slice(split2),
       ];
       const names = ["Blat I", "Blat II", "Blat III"];
 

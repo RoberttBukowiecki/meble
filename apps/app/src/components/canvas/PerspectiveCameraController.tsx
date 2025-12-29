@@ -30,6 +30,7 @@ export function PerspectiveCameraController({
   const controlsRef = useRef<OrbitControlsType>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera>(null);
   const hasRestoredRef = useRef(false);
+  const isInitializedRef = useRef(false);
   const { camera } = useThree();
 
   const {
@@ -93,6 +94,17 @@ export function PerspectiveCameraController({
     if (cameraMode === "perspective" && controlsRef.current) {
       const pos = camera.position;
       const target = controlsRef.current.target;
+
+      // Skip saving if camera position is at origin [0,0,0] - this means camera
+      // hasn't been properly initialized yet (Three.js default position)
+      const distanceFromOrigin = Math.sqrt(pos.x * pos.x + pos.y * pos.y + pos.z * pos.z);
+      if (distanceFromOrigin < 100) {
+        // Camera too close to origin - not initialized properly, skip saving
+        return;
+      }
+
+      // Mark as initialized once we have a valid position
+      isInitializedRef.current = true;
 
       // Only save if there's actual change (avoid unnecessary store updates)
       const currentPos: [number, number, number] = [pos.x, pos.y, pos.z];

@@ -36,6 +36,7 @@ type CabinetTestState = CabinetSlice & {
   pushEntry: jest.Mock;
   detectCollisions: jest.Mock;
   generateCountertopsForFurniture: jest.Mock;
+  markGroupsForCabinetAsOutdated: jest.Mock;
 };
 
 const baseMaterials: Material[] = [
@@ -85,6 +86,7 @@ const createCabinetStore = (initial: Partial<CabinetTestState> = {}) =>
     pushEntry: jest.fn(),
     detectCollisions: jest.fn(),
     generateCountertopsForFurniture: jest.fn(),
+    markGroupsForCabinetAsOutdated: jest.fn(),
     ...initial,
   }));
 

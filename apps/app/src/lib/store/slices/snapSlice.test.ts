@@ -1,31 +1,32 @@
-import { create } from 'zustand';
-import type { StateCreator } from 'zustand';
-import { createSnapSlice, type SnapSlice } from './snapSlice';
+import { create } from "zustand";
+import type { StateCreator } from "zustand";
+import { createSnapSlice, type SnapSlice } from "./snapSlice";
 
 const createSnapStore = () =>
-  create<SnapSlice>()(
-    createSnapSlice as unknown as StateCreator<SnapSlice, [], [], SnapSlice>
-  );
+  create<SnapSlice>()(createSnapSlice as unknown as StateCreator<SnapSlice, [], [], SnapSlice>);
 
-describe('snapSlice', () => {
-  it('initializes with default snap settings', () => {
+describe("snapSlice", () => {
+  it("initializes with default snap settings", () => {
     const store = createSnapStore();
     const state = store.getState();
 
     expect(state.snapEnabled).toBe(true);
     expect(state.snapSettings).toEqual({
       distance: 20,
+      snapGap: 0.1,
+      collisionMargin: 0.01,
       showGuides: true,
       debug: false,
       edgeSnap: true,
       faceSnap: true,
       tJointSnap: true,
-      collisionOffset: 1,
-      version: 'v3', // V3 is default - movement-aware face-to-face snapping
+      version: "v3", // V3 is default - movement-aware face-to-face snapping
+      wallSnap: true,
+      cornerSnap: true,
     });
   });
 
-  it('toggles snap flag', () => {
+  it("toggles snap flag", () => {
     const store = createSnapStore();
 
     store.getState().toggleSnap();
@@ -35,7 +36,7 @@ describe('snapSlice', () => {
     expect(store.getState().snapEnabled).toBe(true);
   });
 
-  it('sets snap enabled explicitly', () => {
+  it("sets snap enabled explicitly", () => {
     const store = createSnapStore();
 
     store.getState().setSnapEnabled(false);
@@ -45,42 +46,45 @@ describe('snapSlice', () => {
     expect(store.getState().snapEnabled).toBe(true);
   });
 
-  it('merges partial snap settings updates', () => {
+  it("merges partial snap settings updates", () => {
     const store = createSnapStore();
 
     store.getState().updateSnapSettings({ distance: 35, debug: true });
 
     expect(store.getState().snapSettings).toEqual({
       distance: 35,
+      snapGap: 0.1,
+      collisionMargin: 0.01,
       showGuides: true,
       debug: true,
       edgeSnap: true,
       faceSnap: true,
       tJointSnap: true,
-      collisionOffset: 1,
-      version: 'v3',
+      version: "v3",
+      wallSnap: true,
+      cornerSnap: true,
     });
   });
 
-  it('sets snap version to v2', () => {
+  it("sets snap version to v2", () => {
     const store = createSnapStore();
 
-    store.getState().setSnapVersion('v2');
-    expect(store.getState().snapSettings.version).toBe('v2');
+    store.getState().setSnapVersion("v2");
+    expect(store.getState().snapSettings.version).toBe("v2");
   });
 
-  it('sets snap version to v3', () => {
+  it("sets snap version to v3", () => {
     const store = createSnapStore();
 
-    store.getState().setSnapVersion('v2');
-    store.getState().setSnapVersion('v3');
-    expect(store.getState().snapSettings.version).toBe('v3');
+    store.getState().setSnapVersion("v2");
+    store.getState().setSnapVersion("v3");
+    expect(store.getState().snapSettings.version).toBe("v3");
   });
 
-  it('updates snap version via updateSnapSettings', () => {
+  it("updates snap version via updateSnapSettings", () => {
     const store = createSnapStore();
 
-    store.getState().updateSnapSettings({ version: 'v2' });
-    expect(store.getState().snapSettings.version).toBe('v2');
+    store.getState().updateSnapSettings({ version: "v2" });
+    expect(store.getState().snapSettings.version).toBe("v2");
   });
 });

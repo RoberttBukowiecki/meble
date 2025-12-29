@@ -25,10 +25,6 @@ import {
   AlertDescription,
   Separator,
   Badge,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
 } from "@meble/ui";
 import { track, AnalyticsEvent } from "@meble/analytics";
 import { useShallow } from "zustand/react/shallow";
@@ -101,62 +97,198 @@ import { LegsConfigDialog, getLegsSummary, hasLegs } from "./LegsConfigDialog";
 import { CountertopConfigDialog, getCountertopSummary } from "./CountertopConfigDialog";
 import type { CabinetCountertopConfig } from "@/types";
 import { cn } from "@/lib/utils";
+import { CabinetIllustration } from "./CabinetIllustrations";
 
 interface CabinetTemplateDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   furnitureId: string;
 }
-type Step = "select" | "configure" | "materials";
+type Step = "category" | "select" | "configure" | "materials";
+type Category = "kitchen" | "furniture" | null;
+
+/**
+ * Feature tags for cabinet templates
+ */
+const FeatureTag = ({
+  children,
+  variant = "default",
+}: {
+  children: React.ReactNode;
+  variant?: "default" | "highlight";
+}) => (
+  <span
+    className={cn(
+      "inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium",
+      variant === "highlight"
+        ? "bg-primary/15 text-primary dark:bg-primary/25"
+        : "bg-muted text-muted-foreground"
+    )}
+  >
+    {children}
+  </span>
+);
 
 interface TemplateCardProps {
   type: CabinetType;
   title: string;
   description: string;
-  icon: React.ReactNode;
+  features?: string[];
+  highlightFeature?: string;
+  colorScheme?: "warm" | "cool";
   onClick: () => void;
 }
 
-const TemplateCard = ({ type, title, description, icon, onClick }: TemplateCardProps) => (
-  <Card
-    onClick={onClick}
-    className={cn(
-      "cursor-pointer group relative overflow-hidden",
-      "border border-border/60 bg-gradient-to-br from-card to-card/80",
-      "hover:border-primary/60 hover:shadow-lg hover:shadow-primary/5",
-      "transition-all duration-300 ease-out",
-      "hover:-translate-y-0.5"
-    )}
-  >
-    {/* Subtle gradient overlay on hover */}
-    <div className="absolute inset-0 bg-gradient-to-br from-primary/0 to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+const TemplateCard = ({
+  type,
+  title,
+  description,
+  features = [],
+  highlightFeature,
+  colorScheme = "warm",
+  onClick,
+}: TemplateCardProps) => {
+  const isWarm = colorScheme === "warm";
 
-    <CardHeader className="p-4 relative z-10">
-      <div className="flex items-start gap-3 mb-2">
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "group relative w-full text-left overflow-hidden rounded-xl",
+        "border-2 transition-all duration-300 ease-out",
+        "hover:-translate-y-0.5 hover:shadow-xl",
+        "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+        isWarm
+          ? [
+              "bg-gradient-to-br from-amber-50/80 via-orange-50/50 to-yellow-50/30",
+              "dark:from-amber-950/30 dark:via-orange-950/20 dark:to-yellow-950/10",
+              "border-amber-200/50 dark:border-amber-800/30",
+              "hover:border-amber-400 dark:hover:border-amber-600",
+              "hover:shadow-amber-500/10",
+            ]
+          : [
+              "bg-gradient-to-br from-slate-50/80 via-zinc-50/50 to-stone-50/30",
+              "dark:from-slate-950/30 dark:via-zinc-950/20 dark:to-stone-950/10",
+              "border-slate-200/50 dark:border-slate-800/30",
+              "hover:border-slate-400 dark:hover:border-slate-600",
+              "hover:shadow-slate-500/10",
+            ]
+      )}
+    >
+      {/* Blueprint grid pattern overlay */}
+      <div
+        className={cn(
+          "absolute inset-0 opacity-[0.015] dark:opacity-[0.03]",
+          "bg-[linear-gradient(to_right,currentColor_1px,transparent_1px),linear-gradient(to_bottom,currentColor_1px,transparent_1px)]",
+          "bg-[size:16px_16px]"
+        )}
+      />
+
+      {/* Hover glow */}
+      <div
+        className={cn(
+          "absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500",
+          isWarm
+            ? "bg-gradient-to-br from-amber-400/5 to-orange-400/10"
+            : "bg-gradient-to-br from-slate-400/5 to-zinc-400/10"
+        )}
+      />
+
+      <div className="relative z-10 flex gap-4 p-4">
+        {/* Illustration */}
         <div
           className={cn(
-            "p-2.5 rounded-lg",
-            "bg-gradient-to-br from-primary/10 to-primary/5",
-            "text-primary",
-            "group-hover:from-primary/15 group-hover:to-primary/10",
-            "group-hover:scale-105",
-            "transition-all duration-300"
+            "flex-shrink-0 w-20 h-[70px] rounded-lg flex items-center justify-center",
+            "transition-all duration-300",
+            isWarm
+              ? [
+                  "bg-gradient-to-br from-amber-100 to-orange-100",
+                  "dark:from-amber-900/40 dark:to-orange-900/30",
+                  "text-amber-700 dark:text-amber-300",
+                  "group-hover:from-amber-200 group-hover:to-orange-200",
+                  "dark:group-hover:from-amber-800/50 dark:group-hover:to-orange-800/40",
+                ]
+              : [
+                  "bg-gradient-to-br from-slate-100 to-zinc-100",
+                  "dark:from-slate-900/40 dark:to-zinc-900/30",
+                  "text-slate-600 dark:text-slate-300",
+                  "group-hover:from-slate-200 group-hover:to-zinc-200",
+                  "dark:group-hover:from-slate-800/50 dark:group-hover:to-zinc-800/40",
+                ]
           )}
         >
-          {icon}
+          <CabinetIllustration type={type} className="w-full h-full p-1" />
         </div>
-        <div className="flex-1 min-w-0">
-          <CardTitle className="text-sm font-semibold tracking-tight group-hover:text-primary transition-colors duration-200">
+
+        {/* Content */}
+        <div className="flex-1 min-w-0 py-0.5">
+          <h3
+            className={cn(
+              "text-sm font-bold tracking-tight mb-1 transition-colors duration-200",
+              isWarm
+                ? "text-amber-950 dark:text-amber-100 group-hover:text-amber-700 dark:group-hover:text-amber-50"
+                : "text-slate-900 dark:text-slate-100 group-hover:text-slate-700 dark:group-hover:text-slate-50"
+            )}
+          >
             {title}
-          </CardTitle>
-          <CardDescription className="text-xs mt-1 leading-relaxed text-muted-foreground/80">
+          </h3>
+
+          <p
+            className={cn(
+              "text-xs leading-relaxed mb-2 line-clamp-2",
+              isWarm
+                ? "text-amber-800/60 dark:text-amber-200/50"
+                : "text-slate-600/60 dark:text-slate-300/50"
+            )}
+          >
             {description}
-          </CardDescription>
+          </p>
+
+          {/* Feature tags */}
+          {(features.length > 0 || highlightFeature) && (
+            <div className="flex flex-wrap gap-1.5">
+              {highlightFeature && <FeatureTag variant="highlight">{highlightFeature}</FeatureTag>}
+              {features.map((feature, i) => (
+                <FeatureTag key={i}>{feature}</FeatureTag>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Arrow */}
+        <div
+          className={cn(
+            "flex-shrink-0 self-center w-8 h-8 rounded-full flex items-center justify-center",
+            "transition-all duration-300",
+            isWarm
+              ? [
+                  "bg-amber-100 dark:bg-amber-900/30",
+                  "text-amber-500 dark:text-amber-400",
+                  "group-hover:bg-amber-500 group-hover:text-white",
+                  "dark:group-hover:bg-amber-600",
+                ]
+              : [
+                  "bg-slate-100 dark:bg-slate-900/30",
+                  "text-slate-400 dark:text-slate-500",
+                  "group-hover:bg-slate-600 group-hover:text-white",
+                  "dark:group-hover:bg-slate-500",
+                ]
+          )}
+        >
+          <svg
+            className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2.5}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
         </div>
       </div>
-    </CardHeader>
-  </Card>
-);
+    </button>
+  );
+};
 
 interface ConfigRowProps {
   title: string;
@@ -1198,7 +1330,8 @@ export function CabinetTemplateDialog({
   onOpenChange,
   furnitureId,
 }: CabinetTemplateDialogProps) {
-  const [step, setStep] = useState<Step>("select");
+  const [step, setStep] = useState<Step>("category");
+  const [selectedCategory, setSelectedCategory] = useState<Category>(null);
   const [selectedType, setSelectedType] = useState<CabinetType | null>(null);
   const [params, setParams] = useState<Partial<CabinetParams>>({});
   const [materials, setMaterials] = useState<Partial<CabinetMaterials>>({});
@@ -1294,7 +1427,8 @@ export function CabinetTemplateDialog({
 
     onOpenChange(false);
     // Reset state
-    setStep("select");
+    setStep("category");
+    setSelectedCategory(null);
     setSelectedType(null);
     setParams({});
     setMaterials({});
@@ -1321,18 +1455,24 @@ export function CabinetTemplateDialog({
     });
   };
 
+  const handleSelectCategory = (category: Category) => {
+    setSelectedCategory(category);
+    setStep("select");
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-full max-w-[calc(100vw-2rem)] md:max-w-3xl max-h-[85vh] md:max-h-[90vh] flex flex-col p-0 gap-0">
         <DialogHeader className="flex-shrink-0 px-6 py-6 border-b">
           <DialogTitle className="text-xl">
-            {step === "select" && "Wybierz typ szafki"}
+            {step === "category" && "Co chcesz zaprojektować?"}
+            {step === "select" && (selectedCategory === "kitchen" ? "Szafki kuchenne" : "Meble")}
             {step === "configure" && "Konfiguracja parametrów"}
             {step === "materials" && "Wybór materiałów"}
           </DialogTitle>
           <DialogDescription>
-            {step === "select" &&
-              "Wybierz jeden z dostępnych szablonów, aby rozpocząć konfigurację."}
+            {step === "category" && "Wybierz kategorię mebla, który chcesz dodać do projektu."}
+            {step === "select" && "Wybierz typ szafki, aby rozpocząć konfigurację."}
             {step === "configure" && "Dostosuj wymiary i wyposażenie szafki."}
             {step === "materials" && "Wybierz materiały dla korpusu i frontów."}
           </DialogDescription>
@@ -1340,148 +1480,244 @@ export function CabinetTemplateDialog({
 
         {/* Scrollable content area */}
         <div className="flex-1 overflow-y-auto px-6 py-6">
-          {/* Step 1: Template Selection with Categories */}
-          {step === "select" && (
-            <Tabs defaultValue="kitchen" className="w-full">
-              <TabsList className="w-full grid grid-cols-2 mb-6 h-12 p-1 bg-muted/50 rounded-xl">
-                <TabsTrigger
-                  value="kitchen"
+          {/* Step 0: Category Selection */}
+          {step === "category" && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Kitchen Category Card */}
+              <button
+                onClick={() => handleSelectCategory("kitchen")}
+                className={cn(
+                  "group relative overflow-hidden rounded-2xl p-6 text-left",
+                  "bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50",
+                  "dark:from-amber-950/40 dark:via-orange-950/30 dark:to-yellow-950/20",
+                  "border-2 border-amber-200/60 dark:border-amber-800/40",
+                  "hover:border-amber-400 dark:hover:border-amber-600",
+                  "hover:shadow-xl hover:shadow-amber-500/10",
+                  "transition-all duration-300 ease-out",
+                  "hover:-translate-y-1"
+                )}
+              >
+                {/* Decorative pattern */}
+                <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05]">
+                  <div className="absolute top-4 right-4 w-32 h-32 border-2 border-current rounded-full" />
+                  <div className="absolute bottom-4 left-4 w-20 h-20 border-2 border-current rounded-full" />
+                  <div className="absolute top-1/2 right-1/4 w-12 h-12 border-2 border-current rounded-full" />
+                </div>
+
+                {/* Glow effect on hover */}
+                <div className="absolute inset-0 bg-gradient-to-br from-amber-400/0 to-orange-400/0 group-hover:from-amber-400/10 group-hover:to-orange-400/5 transition-all duration-500" />
+
+                <div className="relative z-10">
+                  {/* Icon */}
+                  <div
+                    className={cn(
+                      "inline-flex items-center justify-center w-14 h-14 rounded-xl mb-4",
+                      "bg-gradient-to-br from-amber-500 to-orange-600",
+                      "text-white shadow-lg shadow-amber-500/25",
+                      "group-hover:scale-110 group-hover:shadow-xl group-hover:shadow-amber-500/30",
+                      "transition-all duration-300"
+                    )}
+                  >
+                    <ChefHat className="w-7 h-7" />
+                  </div>
+
+                  {/* Title */}
+                  <h3 className="text-xl font-bold text-amber-950 dark:text-amber-100 mb-2 group-hover:text-amber-800 dark:group-hover:text-amber-50 transition-colors">
+                    Kuchnia
+                  </h3>
+
+                  {/* Description */}
+                  <p className="text-sm text-amber-800/70 dark:text-amber-200/60 mb-4 leading-relaxed">
+                    Szafki dolne, wiszące i narożne do kompletnej zabudowy kuchennej
+                  </p>
+
+                  {/* Templates count */}
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={cn(
+                        "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold",
+                        "bg-amber-500/15 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300"
+                      )}
+                    >
+                      <Box className="w-3.5 h-3.5" />3 szablony
+                    </span>
+                  </div>
+                </div>
+
+                {/* Arrow indicator */}
+                <div
                   className={cn(
-                    "flex items-center gap-2 rounded-lg font-medium",
-                    "data-[state=active]:bg-background data-[state=active]:shadow-sm",
-                    "data-[state=active]:text-primary",
-                    "transition-all duration-200"
+                    "absolute bottom-6 right-6 w-10 h-10 rounded-full",
+                    "bg-amber-500/10 dark:bg-amber-500/20",
+                    "flex items-center justify-center",
+                    "group-hover:bg-amber-500 group-hover:text-white",
+                    "transition-all duration-300"
                   )}
                 >
-                  <ChefHat className="w-4 h-4" />
-                  <span>Kuchnia</span>
-                  <Badge
-                    variant="secondary"
-                    className="ml-1 text-[10px] px-1.5 py-0 h-5 bg-primary/10 text-primary border-0"
+                  <ArrowLeftRight className="w-5 h-5 text-amber-600 dark:text-amber-400 group-hover:text-white rotate-45 transition-colors" />
+                </div>
+              </button>
+
+              {/* Furniture Category Card */}
+              <button
+                onClick={() => handleSelectCategory("furniture")}
+                className={cn(
+                  "group relative overflow-hidden rounded-2xl p-6 text-left",
+                  "bg-gradient-to-br from-slate-50 via-zinc-50 to-stone-50",
+                  "dark:from-slate-950/40 dark:via-zinc-950/30 dark:to-stone-950/20",
+                  "border-2 border-slate-200/60 dark:border-slate-800/40",
+                  "hover:border-slate-400 dark:hover:border-slate-600",
+                  "hover:shadow-xl hover:shadow-slate-500/10",
+                  "transition-all duration-300 ease-out",
+                  "hover:-translate-y-1"
+                )}
+              >
+                {/* Decorative pattern */}
+                <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05]">
+                  <div className="absolute top-4 right-4 w-32 h-32 border-2 border-current rounded-lg rotate-12" />
+                  <div className="absolute bottom-4 left-4 w-20 h-20 border-2 border-current rounded-lg -rotate-6" />
+                  <div className="absolute top-1/2 right-1/4 w-12 h-12 border-2 border-current rounded-lg rotate-45" />
+                </div>
+
+                {/* Glow effect on hover */}
+                <div className="absolute inset-0 bg-gradient-to-br from-slate-400/0 to-zinc-400/0 group-hover:from-slate-400/10 group-hover:to-zinc-400/5 transition-all duration-500" />
+
+                <div className="relative z-10">
+                  {/* Icon */}
+                  <div
+                    className={cn(
+                      "inline-flex items-center justify-center w-14 h-14 rounded-xl mb-4",
+                      "bg-gradient-to-br from-slate-600 to-zinc-700",
+                      "text-white shadow-lg shadow-slate-500/25",
+                      "group-hover:scale-110 group-hover:shadow-xl group-hover:shadow-slate-500/30",
+                      "transition-all duration-300"
+                    )}
                   >
-                    3
-                  </Badge>
-                </TabsTrigger>
-                <TabsTrigger
-                  value="furniture"
+                    <Armchair className="w-7 h-7" />
+                  </div>
+
+                  {/* Title */}
+                  <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2 group-hover:text-slate-700 dark:group-hover:text-slate-50 transition-colors">
+                    Meble
+                  </h3>
+
+                  {/* Description */}
+                  <p className="text-sm text-slate-600/70 dark:text-slate-300/60 mb-4 leading-relaxed">
+                    Szafy, regały i komody do salonu, sypialni i biura
+                  </p>
+
+                  {/* Templates count */}
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={cn(
+                        "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold",
+                        "bg-slate-500/15 text-slate-700 dark:bg-slate-500/20 dark:text-slate-300"
+                      )}
+                    >
+                      <Warehouse className="w-3.5 h-3.5" />3 szablony
+                    </span>
+                  </div>
+                </div>
+
+                {/* Arrow indicator */}
+                <div
                   className={cn(
-                    "flex items-center gap-2 rounded-lg font-medium",
-                    "data-[state=active]:bg-background data-[state=active]:shadow-sm",
-                    "data-[state=active]:text-primary",
-                    "transition-all duration-200"
+                    "absolute bottom-6 right-6 w-10 h-10 rounded-full",
+                    "bg-slate-500/10 dark:bg-slate-500/20",
+                    "flex items-center justify-center",
+                    "group-hover:bg-slate-600 group-hover:text-white",
+                    "transition-all duration-300"
                   )}
                 >
-                  <Armchair className="w-4 h-4" />
-                  <span>Meble</span>
-                  <Badge
-                    variant="secondary"
-                    className="ml-1 text-[10px] px-1.5 py-0 h-5 bg-muted-foreground/10 text-muted-foreground border-0"
-                  >
-                    3
-                  </Badge>
-                </TabsTrigger>
-              </TabsList>
-
-              {/* Kitchen Category */}
-              <TabsContent value="kitchen" className="mt-0 space-y-6">
-                {/* Category description */}
-                <div className="flex items-center gap-3 px-1">
-                  <div className="h-px flex-1 bg-gradient-to-r from-border to-transparent" />
-                  <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-                    Szafki kuchenne
-                  </span>
-                  <div className="h-px flex-1 bg-gradient-to-l from-border to-transparent" />
+                  <ArrowLeftRight className="w-5 h-5 text-slate-500 dark:text-slate-400 group-hover:text-white rotate-45 transition-colors" />
                 </div>
+              </button>
+            </div>
+          )}
 
-                <div className="grid grid-cols-1 gap-3">
-                  {/* Kitchen Base Cabinet */}
-                  <TemplateCard
-                    type="KITCHEN"
-                    title="Szafka kuchenna dolna"
-                    description="Uniwersalna szafka stojąca z możliwością konfiguracji drzwi, szuflad i półek. Idealna jako podstawa zabudowy kuchennej."
-                    icon={<Box className="w-5 h-5" />}
-                    onClick={() => handleSelectType("KITCHEN")}
-                  />
+          {/* Step 1: Template Selection */}
+          {step === "select" && selectedCategory === "kitchen" && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 gap-3">
+                <TemplateCard
+                  type="KITCHEN"
+                  title="Szafka kuchenna dolna"
+                  description="Uniwersalna szafka stojąca z możliwością konfiguracji drzwi, szuflad i półek."
+                  highlightFeature="Popularna"
+                  features={["Blat", "Nóżki", "Fronty"]}
+                  colorScheme="warm"
+                  onClick={() => handleSelectType("KITCHEN")}
+                />
+                <TemplateCard
+                  type="CORNER_INTERNAL"
+                  title="Szafka narożna"
+                  description="Szafka L-kształtna do wewnętrznych narożników. Maksymalne wykorzystanie przestrzeni."
+                  features={["Kształt L", "2 fronty"]}
+                  colorScheme="warm"
+                  onClick={() => handleSelectType("CORNER_INTERNAL")}
+                />
+                <TemplateCard
+                  type="WALL"
+                  title="Szafka wisząca"
+                  description="Szafka ścienna z wycięciami na zawieszki. Opcja frontu łamanego."
+                  features={["Zawieszki", "Front łamany"]}
+                  colorScheme="warm"
+                  onClick={() => handleSelectType("WALL")}
+                />
+              </div>
 
-                  {/* Corner Cabinet */}
-                  <TemplateCard
-                    type="CORNER_INTERNAL"
-                    title="Szafka narożna"
-                    description="Szafka L-kształtna do wewnętrznych narożników. Maksymalne wykorzystanie przestrzeni w rogach kuchni."
-                    icon={<CornerUpRight className="w-5 h-5" />}
-                    onClick={() => handleSelectType("CORNER_INTERNAL")}
-                  />
+              <div className="bg-amber-50/50 dark:bg-amber-950/20 rounded-lg p-3 border border-dashed border-amber-200/50 dark:border-amber-800/30">
+                <p className="text-xs text-amber-800/70 dark:text-amber-200/60">
+                  <span className="font-medium text-amber-900/80 dark:text-amber-100/80">
+                    Wskazówka:
+                  </span>{" "}
+                  Zacznij od szafek dolnych, następnie dodaj szafki wiszące. Szafki narożne pozwolą
+                  wykorzystać każdy centymetr przestrzeni.
+                </p>
+              </div>
+            </div>
+          )}
 
-                  {/* Wall Cabinet */}
-                  <TemplateCard
-                    type="WALL"
-                    title="Szafka wisząca"
-                    description="Szafka ścienna z wycięciami na zawieszki. Opcja frontu łamanego do podnoszenia."
-                    icon={<SquareStack className="w-5 h-5" />}
-                    onClick={() => handleSelectType("WALL")}
-                  />
-                </div>
+          {step === "select" && selectedCategory === "furniture" && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 gap-3">
+                <TemplateCard
+                  type="WARDROBE"
+                  title="Szafa ubraniowa"
+                  description="Wysoka szafa z drzwiami skrzydłowymi. Konfigurowalne półki i drążek na ubrania."
+                  features={["Drzwi", "Drążek", "Półki"]}
+                  colorScheme="cool"
+                  onClick={() => handleSelectType("WARDROBE")}
+                />
+                <TemplateCard
+                  type="BOOKSHELF"
+                  title="Regał"
+                  description="Otwarty regał z dowolną liczbą półek. Idealny do salonu, biura lub pokoju dziecięcego."
+                  highlightFeature="Otwarty"
+                  features={["Bez frontów", "Półki"]}
+                  colorScheme="cool"
+                  onClick={() => handleSelectType("BOOKSHELF")}
+                />
+                <TemplateCard
+                  type="DRAWER"
+                  title="Kontener szufladowy"
+                  description="Szafka dedykowana pod szuflady. Do biurka, garderoby lub jako komoda."
+                  features={["Szuflady", "Prowadnice"]}
+                  colorScheme="cool"
+                  onClick={() => handleSelectType("DRAWER")}
+                />
+              </div>
 
-                {/* Quick tip for kitchen */}
-                <div className="bg-muted/30 rounded-lg p-3 border border-dashed border-border/50">
-                  <p className="text-xs text-muted-foreground">
-                    <span className="font-medium text-foreground/70">Wskazówka:</span> Zacznij od
-                    szafek dolnych, następnie dodaj szafki wiszące. Szafki narożne pozwolą
-                    wykorzystać każdy centymetr przestrzeni.
-                  </p>
-                </div>
-              </TabsContent>
-
-              {/* Furniture Category */}
-              <TabsContent value="furniture" className="mt-0 space-y-6">
-                {/* Category description */}
-                <div className="flex items-center gap-3 px-1">
-                  <div className="h-px flex-1 bg-gradient-to-r from-border to-transparent" />
-                  <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-                    Pozostałe meble
-                  </span>
-                  <div className="h-px flex-1 bg-gradient-to-l from-border to-transparent" />
-                </div>
-
-                <div className="grid grid-cols-1 gap-3">
-                  {/* Wardrobe */}
-                  <TemplateCard
-                    type="WARDROBE"
-                    title="Szafa ubraniowa"
-                    description="Wysoka szafa z drzwiami skrzydłowymi. Konfigurowalne półki i drążek na ubrania."
-                    icon={<Warehouse className="w-5 h-5" />}
-                    onClick={() => handleSelectType("WARDROBE")}
-                  />
-
-                  {/* Bookshelf */}
-                  <TemplateCard
-                    type="BOOKSHELF"
-                    title="Regał"
-                    description="Otwarty regał z dowolną liczbą półek. Idealny do salonu, biura lub pokoju dziecięcego."
-                    icon={<Library className="w-5 h-5" />}
-                    onClick={() => handleSelectType("BOOKSHELF")}
-                  />
-
-                  {/* Drawer Cabinet */}
-                  <TemplateCard
-                    type="DRAWER"
-                    title="Kontener szufladowy"
-                    description="Szafka dedykowana pod szuflady. Do biurka, garderoby lub jako komoda."
-                    icon={<Layers className="w-5 h-5" />}
-                    onClick={() => handleSelectType("DRAWER")}
-                  />
-                </div>
-
-                {/* Quick tip for furniture */}
-                <div className="bg-muted/30 rounded-lg p-3 border border-dashed border-border/50">
-                  <p className="text-xs text-muted-foreground">
-                    <span className="font-medium text-foreground/70">Wskazówka:</span> Każdy mebel
-                    można dostosować pod indywidualne wymiary i wyposażenie. Po utworzeniu
-                    skonfiguruj wnętrze według potrzeb.
-                  </p>
-                </div>
-              </TabsContent>
-            </Tabs>
+              <div className="bg-slate-50/50 dark:bg-slate-950/20 rounded-lg p-3 border border-dashed border-slate-200/50 dark:border-slate-800/30">
+                <p className="text-xs text-slate-600/70 dark:text-slate-300/60">
+                  <span className="font-medium text-slate-700/80 dark:text-slate-200/80">
+                    Wskazówka:
+                  </span>{" "}
+                  Każdy mebel można dostosować pod indywidualne wymiary i wyposażenie. Po utworzeniu
+                  skonfiguruj wnętrze według potrzeb.
+                </p>
+              </div>
+            </div>
           )}
 
           {/* Step 2: Parameter Configuration */}
@@ -1605,11 +1841,18 @@ export function CabinetTemplateDialog({
         </div>
 
         {/* Footer */}
-        {step !== "select" && (
+        {step !== "category" && (
           <div className="flex-shrink-0 border-t bg-muted/20 px-4 md:px-6 py-3 md:py-4 flex flex-col-reverse sm:flex-row justify-between gap-2">
             <Button
               variant="outline"
-              onClick={() => setStep(step === "materials" ? "configure" : "select")}
+              onClick={() => {
+                if (step === "materials") setStep("configure");
+                else if (step === "configure") setStep("select");
+                else if (step === "select") {
+                  setStep("category");
+                  setSelectedCategory(null);
+                }
+              }}
               className="w-full sm:w-auto"
             >
               Wstecz

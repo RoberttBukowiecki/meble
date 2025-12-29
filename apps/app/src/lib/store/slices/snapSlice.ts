@@ -8,7 +8,8 @@ import type { StoreSlice } from "../types";
 const DEFAULT_SNAP_SETTINGS: SnapSettings = {
   // Core settings
   distance: 20, // 20mm snap threshold
-  collisionOffset: 1.0, // 1mm gap between snapped faces
+  snapGap: 0.1, // 0.1mm gap between snapped faces
+  collisionMargin: 0.01, // 0.01mm margin for collision detection (can be negative)
 
   // Snap types (all enabled by default)
   faceSnap: true, // Face-to-face connection (opposite normals)
@@ -51,7 +52,7 @@ export interface SnapSlice {
  * Creates the snap slice for the Zustand store
  * Handles snap settings only - active snap state is in SnapContext
  */
-export const createSnapSlice: StoreSlice<SnapSlice> = (set) => ({
+export const createSnapSlice: StoreSlice<SnapSlice> = (set, get) => ({
   // Initial state
   snapEnabled: true,
   snapSettings: DEFAULT_SNAP_SETTINGS,
@@ -71,6 +72,17 @@ export const createSnapSlice: StoreSlice<SnapSlice> = (set) => ({
     set((state) => ({
       snapSettings: { ...state.snapSettings, ...settings },
     }));
+
+    // If collisionMargin changed, recalculate collisions
+    if (settings.collisionMargin !== undefined) {
+      // Use setTimeout to ensure state is updated before detecting collisions
+      setTimeout(() => {
+        const state = get();
+        if (state.detectCollisions) {
+          state.detectCollisions();
+        }
+      }, 0);
+    }
   },
 
   // Set snap version (v1, v2, v3, v4, or v5)

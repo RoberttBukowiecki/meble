@@ -100,6 +100,14 @@ export const getCabinetBounds = (cabinet: Cabinet, parts: Part[]): CabinetBounds
 };
 
 /**
+ * Alignment tolerance for cabinet adjacency checks (mm)
+ * Cabinets don't need to be perfectly aligned - this allows for small positioning errors
+ * and floating point precision issues. 50mm is generous enough to handle most cases
+ * while still preventing cabinets that are clearly not aligned from being grouped.
+ */
+const ALIGNMENT_TOLERANCE = 50;
+
+/**
  * Check if two cabinets are adjacent (close enough to share a countertop)
  */
 export const areCabinetsAdjacent = (
@@ -119,9 +127,10 @@ export const areCabinetsAdjacent = (
     Math.max(boundsA.min[2], boundsB.min[2]) - Math.min(boundsA.max[2], boundsB.max[2])
   );
 
-  // Cabinets must be adjacent (small gap) in one direction and overlapping in the other
-  const adjacentInX = gapX <= threshold && gapZ === 0;
-  const adjacentInZ = gapZ <= threshold && gapX === 0;
+  // Cabinets must be adjacent (small gap) in one direction and mostly aligned in the other
+  // Use tolerance instead of strict === 0 to handle small positioning differences
+  const adjacentInX = gapX <= threshold && gapZ <= ALIGNMENT_TOLERANCE;
+  const adjacentInZ = gapZ <= threshold && gapX <= ALIGNMENT_TOLERANCE;
 
   // Also check if top surfaces are at similar height (within threshold)
   const heightDiff = Math.abs(boundsA.max[1] - boundsB.max[1]);
@@ -160,13 +169,14 @@ export const getCabinetGapInfo = (
 
   if (!similarHeight) return null;
 
-  // Adjacent in X axis (side by side, aligned in Z)
-  if (gapX <= maxGap && gapZ === 0) {
+  // Adjacent in X axis (side by side, mostly aligned in Z)
+  // Use tolerance instead of strict === 0 to handle small positioning differences
+  if (gapX <= maxGap && gapZ <= ALIGNMENT_TOLERANCE) {
     return { adjacent: true, gap: gapX, axis: "X" };
   }
 
-  // Adjacent in Z axis (front-back, aligned in X)
-  if (gapZ <= maxGap && gapX === 0) {
+  // Adjacent in Z axis (front-back, mostly aligned in X)
+  if (gapZ <= maxGap && gapX <= ALIGNMENT_TOLERANCE) {
     return { adjacent: true, gap: gapZ, axis: "Z" };
   }
 

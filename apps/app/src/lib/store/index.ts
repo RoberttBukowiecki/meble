@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { isDev } from "@/lib/env";
 import { createSelectionSlice } from "./slices/selectionSlice";
 import { createMaterialsSlice } from "./slices/materialsSlice";
 import { createFurnitureSlice } from "./slices/furnitureSlice";
@@ -209,15 +210,36 @@ export const useStore = create<StoreState>()(
         } = state as any;
         return rest;
       },
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState as Partial<StoreState>;
+
+        // Deep merge snapSettings to ensure new defaults are applied
+        const mergedSnapSettings = {
+          ...currentState.snapSettings,
+          ...persisted.snapSettings,
+          // Ensure new fields have defaults if not in persisted state
+          snapGap: persisted.snapSettings?.snapGap ?? currentState.snapSettings.snapGap,
+          collisionMargin:
+            persisted.snapSettings?.collisionMargin ?? currentState.snapSettings.collisionMargin,
+        };
+
+        return {
+          ...currentState,
+          ...persisted,
+          snapSettings: mergedSnapSettings,
+        };
+      },
       onRehydrateStorage: () => (state) => {
-        if (state) {
-          console.log("[Store] Hydrated from localStorage:", {
-            currentProjectId: state.currentProjectId,
-            currentProjectName: state.currentProjectName,
-            currentProjectRevision: state.currentProjectRevision,
-          });
-        } else {
-          console.log("[Store] Hydration failed or no persisted state");
+        if (isDev()) {
+          if (state) {
+            console.log("[Store] Hydrated from localStorage:", {
+              currentProjectId: state.currentProjectId,
+              currentProjectName: state.currentProjectName,
+              currentProjectRevision: state.currentProjectRevision,
+            });
+          } else {
+            console.log("[Store] Hydration failed or no persisted state");
+          }
         }
       },
     }
@@ -325,4 +347,71 @@ export const useCountertopGroupForCabinet = (cabinetId: string | undefined) => {
  */
 export const useCabinetPreferences = () => {
   return useStore((state) => state.cabinetPreferences);
+};
+
+// =============================================================================
+// Project Selectors (optimized to minimize re-renders)
+// =============================================================================
+
+/**
+ * PERFORMANCE: Get only sync status (primitive value)
+ * Components that only need status won't re-render when other syncState fields change.
+ */
+export const useSyncStatus = () => {
+  return useStore((state) => state.syncState.status);
+};
+
+/**
+ * PERFORMANCE: Check if there are unsaved changes
+ * Returns a primitive boolean instead of the full syncState object.
+ */
+export const useHasUnsavedChanges = () => {
+  return useStore(
+    (state) =>
+      state.currentProjectId !== null &&
+      !state.isProjectLoading &&
+      (state.syncState.status === "local_only" || state.syncState.status === "error")
+  );
+};
+
+/**
+ * PERFORMANCE: Check if project is in conflict state
+ */
+export const useHasConflict = () => {
+  return useStore((state) => state.syncState.status === "conflict");
+};
+
+/**
+ * PERFORMANCE: Check if project is currently syncing
+ */
+export const useIsSyncing = () => {
+  return useStore((state) => state.syncState.status === "syncing");
+};
+
+/**
+ * Get current project ID only
+ */
+export const useCurrentProjectId = () => {
+  return useStore((state) => state.currentProjectId);
+};
+
+/**
+ * Get current project name only
+ */
+export const useCurrentProjectName = () => {
+  return useStore((state) => state.currentProjectName);
+};
+
+/**
+ * Check if a project is loaded
+ */
+export const useHasProject = () => {
+  return useStore((state) => state.currentProjectId !== null);
+};
+
+/**
+ * Check if project is loading
+ */
+export const useIsProjectLoading = () => {
+  return useStore((state) => state.isProjectLoading);
 };

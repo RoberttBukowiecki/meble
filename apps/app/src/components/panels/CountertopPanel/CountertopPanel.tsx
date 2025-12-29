@@ -25,7 +25,7 @@ import { SegmentTable } from "./SegmentTable";
 import { CornerTreatmentSection } from "./CornerTreatmentSection";
 import { CncOperationsSection } from "./CncOperationsSection";
 import { GapSection } from "./GapSection";
-import { CountertopLayoutDiagram } from "@/components/countertop";
+import { CountertopEditorDialog } from "@/components/countertop/CountertopEditorDialog";
 import { COUNTERTOP_THICKNESS_OPTIONS } from "@/lib/config";
 
 export function CountertopPanel() {
@@ -180,31 +180,20 @@ export function CountertopPanel() {
                 </div>
               )}
 
+              {/* 2D Layout Preview - click to open full editor */}
+              <div className="mt-4 mb-2">
+                <div className="flex items-center gap-2 mb-2">
+                  <LayoutGrid className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs font-medium">Podgląd układu</span>
+                </div>
+                <CountertopEditorDialog group={selectedGroup} />
+              </div>
+
               <Accordion
                 type="multiple"
-                defaultValue={["layout", "gaps", "segments", "corners", "cnc"]}
-                className="mt-4"
+                defaultValue={["gaps", "segments", "corners", "cnc"]}
+                className="mt-2"
               >
-                {/* 2D Layout Diagram */}
-                <AccordionItem value="layout" className="border rounded-lg px-3 mb-2">
-                  <AccordionTrigger className="py-2 text-xs font-medium hover:no-underline">
-                    <span className="flex items-center gap-2">
-                      <LayoutGrid className="h-3.5 w-3.5" />
-                      Podgląd układu
-                    </span>
-                  </AccordionTrigger>
-                  <AccordionContent className="pb-3 pt-0">
-                    <CountertopLayoutDiagram
-                      group={selectedGroup}
-                      width={320}
-                      height={200}
-                      showEdgeLabels
-                      showCornerMarkers
-                      interactive
-                    />
-                  </AccordionContent>
-                </AccordionItem>
-
                 {/* Gap Management - show if there are gaps */}
                 {selectedGroup.gaps && selectedGroup.gaps.length > 0 && (
                   <AccordionItem

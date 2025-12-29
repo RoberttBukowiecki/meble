@@ -33,8 +33,24 @@
     --ring: 222.2 84% 4.9%;
  
     --radius: 0.5rem;
+
+    /* Zone type colors for interior configurator */
+    --zone-empty: 0 0% 60%;
+    --zone-shelves: 210 60% 50%;
+    --zone-drawers: 35 80% 50%;
+    --zone-nested: 280 50% 50%;
+
+    /* Semantic colors */
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 45 93% 47%;
+    --warning-foreground: 0 0% 0%;
+
+    --info: 217 91% 60%;
+    --info-foreground: 0 0% 100%;
   }
- 
+
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
@@ -63,6 +79,22 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 215 20.2% 65.1%;
+
+    /* Zone type colors for interior configurator (dark mode) */
+    --zone-empty: 0 0% 50%;
+    --zone-shelves: 210 70% 60%;
+    --zone-drawers: 35 90% 55%;
+    --zone-nested: 280 60% 60%;
+
+    /* Semantic colors (dark mode) */
+    --success: 142 69% 58%;
+    --success-foreground: 142 76% 10%;
+
+    --warning: 45 93% 58%;
+    --warning-foreground: 45 93% 10%;
+
+    --info: 217 91% 70%;
+    --info-foreground: 217 91% 10%;
   }
 }
  
@@ -82,5 +114,114 @@
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     user-select: none;
+  }
+}
+
+/* ============================================================================
+   Interior Configurator Animations
+   ============================================================================ */
+
+@layer utilities {
+  /* Zone fade-in animation for new zones */
+  .animate-zone-enter {
+    animation: zone-enter 0.3s ease-out forwards;
+  }
+
+  @keyframes zone-enter {
+    0% {
+      opacity: 0;
+      transform: scaleY(0.8);
+    }
+    100% {
+      opacity: 1;
+      transform: scaleY(1);
+    }
+  }
+
+  /* Zone exit animation */
+  .animate-zone-exit {
+    animation: zone-exit 0.2s ease-in forwards;
+  }
+
+  @keyframes zone-exit {
+    0% {
+      opacity: 1;
+      transform: scaleY(1);
+    }
+    100% {
+      opacity: 0;
+      transform: scaleY(0.8);
+    }
+  }
+
+  /* Zone type change pulse */
+  .animate-zone-type-change {
+    animation: zone-type-pulse 0.4s ease-out;
+  }
+
+  @keyframes zone-type-pulse {
+    0% {
+      box-shadow: 0 0 0 0 hsl(var(--primary) / 0.4);
+    }
+    50% {
+      box-shadow: 0 0 0 8px hsl(var(--primary) / 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 hsl(var(--primary) / 0);
+    }
+  }
+
+  /* Zone selection highlight */
+  .animate-zone-select {
+    animation: zone-select 0.2s ease-out;
+  }
+
+  @keyframes zone-select {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.02);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  /* Divider button appear */
+  .animate-divider-button {
+    animation: divider-button-appear 0.15s ease-out forwards;
+  }
+
+  @keyframes divider-button-appear {
+    0% {
+      opacity: 0;
+      transform: scale(0.5);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  /* Smooth height transition for zones */
+  .transition-zone-size {
+    transition: flex 0.15s ease-out;
+  }
+
+  /* Breadcrumb navigation slide */
+  .animate-breadcrumb-slide {
+    animation: breadcrumb-slide 0.2s ease-out;
+  }
+
+  @keyframes breadcrumb-slide {
+    0% {
+      opacity: 0;
+      transform: translateX(-8px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(0);
+    }
   }
 }

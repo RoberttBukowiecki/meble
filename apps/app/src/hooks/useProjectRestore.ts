@@ -3,16 +3,22 @@
  *
  * If there's a persisted currentProjectId, automatically loads
  * the project data from the server.
+ *
+ * IMPORTANT: This hook waits for Zustand store hydration to complete
+ * before checking currentProjectId. Without this, the hook would see
+ * null (initial state) instead of the persisted value.
  */
 
 import { useEffect, useRef } from "react";
 import { useStore } from "@/lib/store";
 import { useShallow } from "zustand/react/shallow";
 import { useAuth } from "@/providers/AuthProvider";
+import { useHydration } from "./useHydration";
 
 export function useProjectRestore() {
   const hasAttemptedRestore = useRef(false);
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const isHydrated = useHydration();
 
   const { currentProjectId, loadProject, resetProjectState } = useStore(
     useShallow((state) => ({
@@ -23,6 +29,10 @@ export function useProjectRestore() {
   );
 
   useEffect(() => {
+    // Wait for store to hydrate from localStorage
+    // Without this, currentProjectId would be null (initial state)
+    if (!isHydrated) return;
+
     // Wait for auth to finish loading
     if (authLoading) return;
 
@@ -55,5 +65,5 @@ export function useProjectRestore() {
       console.log("[ProjectRestore] No project to restore");
       hasAttemptedRestore.current = true;
     }
-  }, [authLoading, isAuthenticated, currentProjectId, loadProject, resetProjectState]);
+  }, [isHydrated, authLoading, isAuthenticated, currentProjectId, loadProject, resetProjectState]);
 }

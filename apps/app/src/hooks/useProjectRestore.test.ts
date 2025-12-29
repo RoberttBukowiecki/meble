@@ -7,6 +7,7 @@ import { renderHook, waitFor } from "@testing-library/react";
 // Suppress console.debug output in tests
 beforeAll(() => {
   jest.spyOn(console, "debug").mockImplementation(() => {});
+  jest.spyOn(console, "log").mockImplementation(() => {});
 });
 
 afterAll(() => {
@@ -38,6 +39,13 @@ jest.mock("@/providers/AuthProvider", () => ({
   }),
 }));
 
+// Mock hydration hook
+let mockIsHydrated = true;
+
+jest.mock("./useHydration", () => ({
+  useHydration: () => mockIsHydrated,
+}));
+
 // Import after mocks
 import { useProjectRestore } from "./useProjectRestore";
 
@@ -47,6 +55,7 @@ describe("useProjectRestore", () => {
     mockCurrentProjectId = null;
     mockIsAuthenticated = false;
     mockAuthLoading = true;
+    mockIsHydrated = true;
   });
 
   it("waits for auth to finish loading before attempting restore", () => {
@@ -130,5 +139,32 @@ describe("useProjectRestore", () => {
     rerender();
 
     expect(mockLoadProject).toHaveBeenCalledTimes(1);
+  });
+
+  it("waits for store hydration before checking project ID", () => {
+    mockCurrentProjectId = "project-123";
+    mockAuthLoading = false;
+    mockIsAuthenticated = true;
+    mockIsHydrated = false; // Store not hydrated yet
+
+    renderHook(() => useProjectRestore());
+
+    // Should not attempt anything while store is hydrating
+    expect(mockLoadProject).not.toHaveBeenCalled();
+    expect(mockResetProjectState).not.toHaveBeenCalled();
+  });
+
+  it("loads project after hydration completes", async () => {
+    mockCurrentProjectId = "project-123";
+    mockAuthLoading = false;
+    mockIsAuthenticated = true;
+    mockIsHydrated = true; // Store is hydrated
+    mockLoadProject.mockResolvedValue(true);
+
+    renderHook(() => useProjectRestore());
+
+    await waitFor(() => {
+      expect(mockLoadProject).toHaveBeenCalledWith("project-123");
+    });
   });
 });

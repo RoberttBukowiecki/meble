@@ -45,7 +45,8 @@ function createPart(overrides: Partial<Part>): Part {
 
 const defaultSettings: SnapV3Settings = {
   snapDistance: 20,
-  collisionOffset: 1,
+  snapGap: 1, // Keep at 1mm for test expectations
+  collisionMargin: 1, // Keep at 1mm for test expectations
   hysteresisMargin: 2,
   enableConnectionSnap: true,
   enableAlignmentSnap: true,
@@ -1391,5 +1392,296 @@ describe("Snap V3: T-joint snapping (perpendicular normals)", () => {
       // Verify the snap type is T-joint
       expect(result.snapType).toBe("tjoint");
     }
+  });
+});
+
+// ============================================================================
+// Multi-Axis Snap Tests (Planar Drag)
+// ============================================================================
+
+import { calculateMultiAxisSnap } from "./snapping-v3";
+import type { SnapSettings } from "@/types/transform";
+
+describe("Snap V3: Multi-axis snap (planar drag)", () => {
+  const defaultSnapSettings: SnapSettings = {
+    distance: 20,
+    snapGap: 1,
+    collisionMargin: 0.3,
+    faceSnap: true,
+    edgeSnap: true,
+    tJointSnap: true,
+    showGuides: true,
+    debug: false,
+    version: "v3",
+    wallSnap: false,
+    cornerSnap: false,
+  };
+
+  it("snaps on XZ plane to two different targets", () => {
+    // Moving part - position represents where it was BEFORE drag started
+    // Parts are 100x100x18, so half-width = 50
+    const movingPart = createPart({
+      id: "moving",
+      width: 100,
+      height: 100,
+      depth: 18,
+      position: [0, 0, 0],
+    });
+
+    // Target on X axis - left face at X = 101 - 50 = 51
+    // Moving part right face at X = 0 + 50 = 50
+    // Gap = 1mm (within snap distance of 20mm)
+    const targetX = createPart({
+      id: "targetX",
+      width: 100,
+      height: 100,
+      depth: 18,
+      position: [101, 0, 0],
+    });
+
+    // Target on Z axis - back face at Z = 10 - 9 = 1
+    // Moving part front face at Z = 0 + 9 = 9
+    // Need to move closer - target at Z=19
+    const targetZ = createPart({
+      id: "targetZ",
+      width: 100,
+      height: 100,
+      depth: 18,
+      position: [0, 0, 19],
+    });
+
+    // Current position during drag - moving slightly toward both targets
+    const result = calculateMultiAxisSnap(
+      movingPart,
+      [5, 0, 5], // Moved 5mm right and 5mm forward
+      [targetX, targetZ],
+      [],
+      defaultSnapSettings,
+      "XZ"
+    );
+
+    expect(result.snapped).toBe(true);
+    expect(result.snappedAxes.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("snaps on XY plane", () => {
+    const movingPart = createPart({
+      id: "moving",
+      width: 100,
+      height: 100,
+      depth: 18,
+      position: [0, 0, 0],
+    });
+
+    // Target above - bottom face at Y = 101 - 50 = 51
+    // Moving part top face at Y = 0 + 50 = 50
+    const targetY = createPart({
+      id: "targetY",
+      width: 100,
+      height: 100,
+      depth: 18,
+      position: [0, 101, 0],
+    });
+
+    // Target to the right - left face at X = 101 - 50 = 51
+    const targetX = createPart({
+      id: "targetX",
+      width: 100,
+      height: 100,
+      depth: 18,
+      position: [101, 0, 0],
+    });
+
+    const result = calculateMultiAxisSnap(
+      movingPart,
+      [5, 5, 0], // Moved slightly toward both
+      [targetX, targetY],
+      [],
+      defaultSnapSettings,
+      "XY"
+    );
+
+    expect(result.snapped).toBe(true);
+  });
+
+  it("returns partial snap when only one axis finds target", () => {
+    const movingPart = createPart({
+      id: "moving",
+      width: 100,
+      height: 100,
+      depth: 18,
+      position: [0, 0, 0],
+    });
+
+    // Only target on X axis - close enough to snap
+    const targetX = createPart({
+      id: "targetX",
+      width: 100,
+      height: 100,
+      depth: 18,
+      position: [101, 0, 0], // Gap of 1mm on X
+    });
+
+    const result = calculateMultiAxisSnap(
+      movingPart,
+      [5, 0, 100], // Moved 5mm on X (toward target), 100mm on Z (no target there)
+      [targetX],
+      [],
+      defaultSnapSettings,
+      "XZ"
+    );
+
+    expect(result.snapped).toBe(true);
+    expect(result.snappedAxes).toContain("X");
+    expect(result.snappedAxes).not.toContain("Z");
+  });
+
+  it("returns no snap when all axes are out of range", () => {
+    const movingPart = createPart({
+      id: "moving",
+      width: 100,
+      height: 100,
+      depth: 18,
+      position: [0, 0, 0],
+    });
+
+    // Target very far away
+    const farTarget = createPart({
+      id: "far",
+      width: 100,
+      height: 100,
+      depth: 18,
+      position: [500, 0, 500],
+    });
+
+    const result = calculateMultiAxisSnap(
+      movingPart,
+      [10, 0, 10],
+      [farTarget],
+      [],
+      defaultSnapSettings,
+      "XZ"
+    );
+
+    expect(result.snapped).toBe(false);
+    expect(result.snappedAxes).toHaveLength(0);
+  });
+
+  it("handles XYZ (all axes) drag", () => {
+    const movingPart = createPart({
+      id: "moving",
+      width: 100,
+      height: 100,
+      depth: 18,
+      position: [0, 0, 0],
+    });
+
+    // Targets positioned 1mm from moving part on each axis
+    const targetX = createPart({
+      id: "targetX",
+      width: 100,
+      height: 100,
+      depth: 18,
+      position: [101, 0, 0],
+    });
+
+    const targetY = createPart({
+      id: "targetY",
+      width: 100,
+      height: 100,
+      depth: 18,
+      position: [0, 101, 0],
+    });
+
+    const targetZ = createPart({
+      id: "targetZ",
+      width: 100,
+      height: 100,
+      depth: 18,
+      position: [0, 0, 19], // depth=18, so back face at Z=10
+    });
+
+    const result = calculateMultiAxisSnap(
+      movingPart,
+      [5, 5, 5], // Moving toward all targets
+      [targetX, targetY, targetZ],
+      [],
+      defaultSnapSettings,
+      "XYZ"
+    );
+
+    expect(result.snapped).toBe(true);
+    // Should snap on at least one axis
+    expect(result.snappedAxes.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("provides correct snap points for visualization", () => {
+    const movingPart = createPart({
+      id: "moving",
+      width: 100,
+      height: 100,
+      depth: 18,
+      position: [0, 0, 0],
+    });
+
+    const targetX = createPart({
+      id: "targetX",
+      width: 100,
+      height: 100,
+      depth: 18,
+      position: [101, 0, 0], // 1mm gap
+    });
+
+    const result = calculateMultiAxisSnap(
+      movingPart,
+      [5, 0, 0], // Moving toward target
+      [targetX],
+      [],
+      defaultSnapSettings,
+      "XZ"
+    );
+
+    if (result.snapped && result.snappedAxes.includes("X")) {
+      // Should have snap point for X axis
+      const xSnapPoint = result.snapPoints.find((p) => p.axis === "X");
+      expect(xSnapPoint).toBeDefined();
+      expect(xSnapPoint?.normal).toEqual([1, 0, 0]);
+    }
+  });
+
+  it("returns axisResults map with details for each axis", () => {
+    const movingPart = createPart({
+      id: "moving",
+      width: 100,
+      height: 100,
+      depth: 18,
+      position: [0, 0, 0],
+    });
+
+    const targetX = createPart({
+      id: "targetX",
+      width: 100,
+      height: 100,
+      depth: 18,
+      position: [101, 0, 0], // 1mm gap
+    });
+
+    const result = calculateMultiAxisSnap(
+      movingPart,
+      [5, 0, 5], // Moving on XZ
+      [targetX],
+      [],
+      defaultSnapSettings,
+      "XZ"
+    );
+
+    // Should have entries for both X and Z
+    expect(result.axisResults.has("X")).toBe(true);
+    expect(result.axisResults.has("Z")).toBe(true);
+
+    const xResult = result.axisResults.get("X");
+    expect(xResult).toBeDefined();
+    expect(typeof xResult?.snapped).toBe("boolean");
+    expect(typeof xResult?.offset).toBe("number");
   });
 });

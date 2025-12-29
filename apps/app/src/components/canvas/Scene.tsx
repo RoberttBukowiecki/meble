@@ -52,6 +52,8 @@ import { PerspectiveCameraController } from "./PerspectiveCameraController";
 import { ViewModePanel } from "./ViewModePanel";
 import { ThreeStateProvider } from "./ThreeStateProvider";
 import { ORTHOGRAPHIC_VIEW_CONFIGS } from "@/types";
+import { useSceneTheme } from "@/hooks/useSceneTheme";
+import { ProjectLoadingOverlay } from "@/components/ui/ProjectLoadingOverlay";
 
 interface SceneProps {
   onOpenMobileSidebar?: () => void;
@@ -62,6 +64,7 @@ export function Scene({ onOpenMobileSidebar, isMobile }: SceneProps) {
   const parts = useSelectedFurnitureParts();
   const selectedPart = useSelectedPart();
   const isMultiSelect = useIsMultiSelectActive();
+  const { sceneTheme } = useSceneTheme();
   const {
     isTransforming,
     transformMode,
@@ -97,6 +100,8 @@ export function Scene({ onOpenMobileSidebar, isMobile }: SceneProps) {
     orthographicTarget,
     setOrthographicZoom,
     setOrthographicTarget,
+    // Project loading state
+    isProjectLoading,
   } = useStore(
     useShallow((state) => ({
       isTransforming: state.isTransforming,
@@ -133,6 +138,7 @@ export function Scene({ onOpenMobileSidebar, isMobile }: SceneProps) {
       orthographicTarget: state.orthographicTarget,
       setOrthographicZoom: state.setOrthographicZoom,
       setOrthographicTarget: state.setOrthographicTarget,
+      isProjectLoading: state.isProjectLoading,
     }))
   );
 
@@ -356,10 +362,10 @@ export function Scene({ onOpenMobileSidebar, isMobile }: SceneProps) {
                 args={[SCENE_CONFIG.GRID_SIZE, SCENE_CONFIG.GRID_SIZE]}
                 cellSize={SCENE_CONFIG.GRID_CELL_SIZE}
                 cellThickness={0.5}
-                cellColor="#6b7280"
+                cellColor={sceneTheme.GRID_CELL_COLOR}
                 sectionSize={500}
                 sectionThickness={1}
-                sectionColor="#374151"
+                sectionColor={sceneTheme.GRID_SECTION_COLOR}
                 fadeDistance={SCENE_CONFIG.GRID_FADE_DISTANCE}
                 followCamera={false}
                 infiniteGrid={false}
@@ -494,6 +500,9 @@ export function Scene({ onOpenMobileSidebar, isMobile }: SceneProps) {
 
       {/* Collision warning overlay */}
       <CollisionWarning />
+
+      {/* Project loading overlay */}
+      <ProjectLoadingOverlay isLoading={isProjectLoading} />
     </div>
   );
 }

@@ -45,6 +45,13 @@ export function SnapControlPanel() {
     [updateSnapSettings]
   );
 
+  const handleSnapGapChange = useCallback(
+    (value: number[]) => {
+      updateSnapSettings({ snapGap: value[0] });
+    },
+    [updateSnapSettings]
+  );
+
   const handleVersionChange = useCallback(
     (version: string) => {
       updateSnapSettings({ version: version as SnapVersion });
@@ -155,6 +162,24 @@ export function SnapControlPanel() {
               min={5}
               max={50}
               step={5}
+              className="w-full"
+            />
+          </div>
+
+          {/* Snap Gap Slider */}
+          <div className="px-2 py-2">
+            <div className="mb-2 flex items-center justify-between text-sm">
+              <span>Odstęp między częściami</span>
+              <span className="text-muted-foreground">
+                {snapSettings.snapGap?.toFixed(1) ?? 0.1}mm
+              </span>
+            </div>
+            <Slider
+              value={[snapSettings.snapGap ?? 0.1]}
+              onValueChange={handleSnapGapChange}
+              min={0}
+              max={2}
+              step={0.1}
               className="w-full"
             />
           </div>

@@ -13,6 +13,7 @@ import type {
   WallSnapCandidate,
 } from "@/types/wall-snap";
 import type { SnapSettings } from "@/types/transform";
+import { SNAP_CONFIG } from "@/lib/config";
 
 // ============================================================================
 // Types
@@ -75,10 +76,10 @@ function isDragAxisRelevantForWall(dragAxis: DragAxis, wallNormal: [number, numb
   const normalZ = Math.abs(wallNormal[1]);
 
   // If dragging X, wall must have significant X normal component
-  if (dragAxis === "X" && normalX < 0.3) return false;
+  if (dragAxis === "X" && normalX < SNAP_CONFIG.WALL_NORMAL_RELEVANCE_THRESHOLD) return false;
 
   // If dragging Z, wall must have significant Z normal component
-  if (dragAxis === "Z" && normalZ < 0.3) return false;
+  if (dragAxis === "Z" && normalZ < SNAP_CONFIG.WALL_NORMAL_RELEVANCE_THRESHOLD) return false;
 
   return true;
 }
@@ -148,10 +149,11 @@ function checkWallSurfaceSnap(
   const snapOffset: [number, number, number] = [0, 0, 0];
   const axisIndex = dragAxis === "X" ? 0 : 2;
 
-  // Offset = wall position - object edge + collision offset
+  // Offset = wall position - object edge + snap gap
   // Direction depends on which side of wall we're on
   const direction = surface.normal[dragAxis === "X" ? 0 : 1] > 0 ? 1 : -1;
-  snapOffset[axisIndex] = wallPosition - objectEdge + direction * settings.collisionOffset;
+  const snapGap = settings.snapGap ?? settings.collisionOffset ?? 0.1;
+  snapOffset[axisIndex] = wallPosition - objectEdge + direction * snapGap;
 
   // Visual guide (vertical line at snap point)
   const guideX = dragAxis === "X" ? wallPosition : bounds.center[0];
@@ -214,7 +216,7 @@ function checkCornerSnap(
     Math.abs(halfDepth * corner.wall2Normal[1]);
 
   // Corner snap threshold is slightly larger
-  const cornerThreshold = settings.distance * 1.5;
+  const cornerThreshold = settings.distance * SNAP_CONFIG.CORNER_SNAP_THRESHOLD_MULTIPLIER;
 
   // Must be close to BOTH walls
   if (effectiveDistToWall1 > cornerThreshold || effectiveDistToWall2 > cornerThreshold) {
@@ -235,14 +237,15 @@ function checkCornerSnap(
     Math.abs(halfWidth * corner.wall2Normal[0]) + Math.abs(halfDepth * corner.wall2Normal[1]);
 
   // Target center position
+  const snapGap = settings.snapGap ?? settings.collisionOffset ?? 0.1;
   const targetCenterX =
     corner.point[0] +
-    corner.wall1Normal[0] * (halfSizeAlongN1 + settings.collisionOffset) +
-    corner.wall2Normal[0] * (halfSizeAlongN2 + settings.collisionOffset);
+    corner.wall1Normal[0] * (halfSizeAlongN1 + snapGap) +
+    corner.wall2Normal[0] * (halfSizeAlongN2 + snapGap);
   const targetCenterZ =
     corner.point[1] +
-    corner.wall1Normal[1] * (halfSizeAlongN1 + settings.collisionOffset) +
-    corner.wall2Normal[1] * (halfSizeAlongN2 + settings.collisionOffset);
+    corner.wall1Normal[1] * (halfSizeAlongN1 + snapGap) +
+    corner.wall2Normal[1] * (halfSizeAlongN2 + snapGap);
 
   const snapOffset: [number, number, number] = [
     targetCenterX - bounds.center[0],
@@ -384,5 +387,113 @@ export function createWallSnapBounds(
     min,
     max,
     center: [(min[0] + max[0]) / 2, (min[1] + max[1]) / 2, (min[2] + max[2]) / 2],
+  };
+}
+
+// ============================================================================
+// Multi-Axis Wall Snap (Planar Drag)
+// ============================================================================
+
+/**
+ * Calculate wall snap for multi-axis drag (planar drag on XZ plane).
+ * Prioritizes corner snaps which provide alignment to both walls simultaneously.
+ *
+ * @param bounds - Object bounding box
+ * @param surfaces - Pre-computed wall inner surfaces
+ * @param corners - Pre-computed wall corners
+ * @param settings - Snap settings
+ * @returns Snap result with combined X and Z offsets
+ */
+export function calculateMultiAxisWallSnap(
+  bounds: WallSnapBounds,
+  surfaces: WallInnerSurface[],
+  corners: WallCorner[],
+  settings: SnapSettings & { wallSnap?: boolean; cornerSnap?: boolean }
+): WallSnapResult {
+  // Default result (no snap)
+  const noSnapResult: WallSnapResult = {
+    snapped: false,
+    snapOffset: [0, 0, 0],
+    visualGuides: [],
+  };
+
+  // Early exit if wall snap disabled
+  if (!settings.wallSnap) {
+    return noSnapResult;
+  }
+
+  // Step 1: Try corner snap first (provides both X and Z)
+  if (settings.cornerSnap !== false) {
+    const cornerCandidates: WallSnapCandidate[] = [];
+
+    for (const corner of corners) {
+      const candidate = checkCornerSnap(bounds, corner, settings);
+      if (candidate) {
+        cornerCandidates.push(candidate);
+      }
+    }
+
+    // Sort by distance and take the closest corner
+    if (cornerCandidates.length > 0) {
+      cornerCandidates.sort((a, b) => a.distance - b.distance);
+      const bestCorner = cornerCandidates[0];
+
+      // Corner snap within threshold - use it (snaps both X and Z)
+      if (bestCorner.distance < settings.distance * SNAP_CONFIG.CORNER_SNAP_THRESHOLD_MULTIPLIER) {
+        return {
+          snapped: true,
+          snapOffset: bestCorner.snapOffset,
+          axis: "XZ",
+          snappedAxes: ["X", "Z"],
+          snappedToCorner: bestCorner.cornerId,
+          visualGuides: [
+            {
+              type: "corner",
+              start: bestCorner.visualGuide.start,
+              end: bestCorner.visualGuide.end,
+            },
+          ],
+        };
+      }
+    }
+  }
+
+  // Step 2: Try individual wall snaps on each axis independently
+  const xResult = calculateWallSnap(bounds, surfaces, corners, "X", {
+    ...settings,
+    cornerSnap: false, // Already checked corners above
+  });
+  const zResult = calculateWallSnap(bounds, surfaces, corners, "Z", {
+    ...settings,
+    cornerSnap: false, // Already checked corners above
+  });
+
+  // Combine results from both axes
+  const combinedOffset: [number, number, number] = [
+    xResult.snapped ? xResult.snapOffset[0] : 0,
+    0,
+    zResult.snapped ? zResult.snapOffset[2] : 0,
+  ];
+
+  const snappedAxes: Array<"X" | "Z"> = [];
+  if (xResult.snapped) snappedAxes.push("X");
+  if (zResult.snapped) snappedAxes.push("Z");
+
+  const visualGuides: WallSnapResult["visualGuides"] = [
+    ...xResult.visualGuides,
+    ...zResult.visualGuides,
+  ];
+
+  if (snappedAxes.length === 0) {
+    return noSnapResult;
+  }
+
+  return {
+    snapped: true,
+    snapOffset: combinedOffset,
+    axis: snappedAxes.length === 2 ? "XZ" : snappedAxes[0],
+    snappedAxes,
+    snappedToWall: xResult.snappedToWall || zResult.snappedToWall,
+    visualGuides,
   };
 }

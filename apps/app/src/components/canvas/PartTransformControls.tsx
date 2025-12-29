@@ -6,13 +6,24 @@ import { useStore, useMaterial } from "@/lib/store";
 import { useShallow } from "zustand/react/shallow";
 import * as THREE from "three";
 import type { Part, TransformSpace } from "@/types";
+import type { DragAxes } from "@/types/transform";
 import { pickTransform } from "@/lib/store/history/utils";
 import { SCENE_CONFIG, PART_CONFIG, MATERIAL_CONFIG } from "@/lib/config";
+import {
+  getDragAxesFromControls,
+  isPlanarDrag,
+  detectMovementAxis,
+  localAxisToWorldAxis,
+} from "@/lib/transform-utils";
 import { useSnapContext, useWallSnapCache } from "@/lib/snap-context";
 import { useDimensionContext } from "@/lib/dimension-context";
 import { calculatePartSnapV2 } from "@/lib/snapping-v2";
-import { calculatePartSnapV3 } from "@/lib/snapping-v3";
-import { calculateWallSnap, createWallSnapBounds } from "@/lib/wall-snapping";
+import { calculatePartSnapV3, calculateMultiAxisSnap } from "@/lib/snapping-v3";
+import {
+  calculateWallSnap,
+  calculateMultiAxisWallSnap,
+  createWallSnapBounds,
+} from "@/lib/wall-snapping";
 import { calculateDimensions } from "@/lib/dimension-calculator";
 import { getPartBoundingBoxAtPosition, getOtherBoundingBoxes } from "@/lib/bounding-box-utils";
 import { useTransformAxisConstraints } from "@/hooks/useOrthographicConstraints";
@@ -24,77 +35,6 @@ interface PartTransformControlsProps {
   space?: TransformSpace;
   onTransformStart: () => void;
   onTransformEnd: () => void;
-}
-
-/**
- * Detect which axis has the most movement (fallback when TransformControls axis is not available)
- */
-function detectMovementAxis(
-  originalPos: [number, number, number],
-  currentPos: [number, number, number]
-): "X" | "Y" | "Z" | null {
-  const dx = Math.abs(currentPos[0] - originalPos[0]);
-  const dy = Math.abs(currentPos[1] - originalPos[1]);
-  const dz = Math.abs(currentPos[2] - originalPos[2]);
-
-  const maxDelta = Math.max(dx, dy, dz);
-
-  // Only detect if there's meaningful movement (> 1mm)
-  if (maxDelta < 1) return null;
-
-  if (dx === maxDelta) return "X";
-  if (dy === maxDelta) return "Y";
-  return "Z";
-}
-
-/**
- * Transform local axis to world axis based on object rotation.
- * TransformControls returns axis in local space, but we need world space for snapping.
- */
-function localAxisToWorldAxis(
-  localAxis: "X" | "Y" | "Z",
-  rotation: [number, number, number]
-): "X" | "Y" | "Z" {
-  // Get the local axis direction
-  const localDir: [number, number, number] =
-    localAxis === "X" ? [1, 0, 0] : localAxis === "Y" ? [0, 1, 0] : [0, 0, 1];
-
-  // Apply rotation to get world direction
-  const [rx, ry, rz] = rotation;
-  const cx = Math.cos(rx),
-    sx = Math.sin(rx);
-  const cy = Math.cos(ry),
-    sy = Math.sin(ry);
-  const cz = Math.cos(rz),
-    sz = Math.sin(rz);
-
-  let [x, y, z] = localDir;
-
-  // Rotate Z first
-  const x1 = x * cz - y * sz;
-  const y1 = x * sz + y * cz;
-  x = x1;
-  y = y1;
-
-  // Rotate Y second
-  const x2 = x * cy + z * sy;
-  const z1 = -x * sy + z * cy;
-  x = x2;
-  z = z1;
-
-  // Rotate X last
-  const y2 = y * cx - z * sx;
-  const z2 = y * sx + z * cx;
-  y = y2;
-  z = z2;
-
-  // Find dominant world axis
-  const ax = Math.abs(x),
-    ay = Math.abs(y),
-    az = Math.abs(z);
-  if (ax >= ay && ax >= az) return "X";
-  if (ay >= ax && ay >= az) return "Y";
-  return "Z";
 }
 
 export function PartTransformControls({
@@ -167,115 +107,197 @@ export function PartTransformControls({
       ? THREE.MathUtils.degToRad(SCENE_CONFIG.ROTATION_SNAP_DEGREES)
       : undefined;
 
-  // Get current drag axis from TransformControls
-  const getDragAxis = useCallback((): "X" | "Y" | "Z" | null => {
-    const controls = controlsRef.current;
-    if (!controls) return null;
-    const axis = (controls as unknown as { axis: string | null }).axis;
-    if (axis === "X" || axis === "Y" || axis === "Z") return axis;
-    return null;
-  }, []);
-
   // Handle transform changes - called on every frame during drag
   // PERFORMANCE: No store updates during drag, only snap logic
-  const handleChange = useCallback(() => {
+  const handleChange = () => {
     if (!target || !isDraggingRef.current) return;
 
     const position = target.position.toArray() as [number, number, number];
 
     // Only process for translate mode
     if (mode === "translate") {
-      const localAxis = getDragAxis();
-
-      // Transform local axis to world axis based on object rotation
-      // TransformControls returns axis in local space when space="world" but object is rotated
-      const worldAxis = localAxis ? localAxisToWorldAxis(localAxis, part.rotation) : null;
-
-      // If no specific axis detected, try to determine from movement
+      const dragAxes = getDragAxesFromControls(controlsRef.current);
       const originalPos = initialTransformRef.current?.position || part.position;
-      const effectiveAxis = worldAxis || detectMovementAxis(originalPos, position);
 
-      if (effectiveAxis) {
+      // Determine effective axes for snapping
+      let effectiveAxes: DragAxes | null = dragAxes;
+
+      // For single-axis drag, transform local to world axis if rotated
+      if (dragAxes && dragAxes.length === 1) {
+        const worldAxis = localAxisToWorldAxis(dragAxes as "X" | "Y" | "Z", part.rotation);
+        effectiveAxes = worldAxis;
+      }
+
+      // Fallback: detect axis from movement if TransformControls doesn't report it
+      if (!effectiveAxes) {
+        const detectedAxis = detectMovementAxis(originalPos, position);
+        effectiveAxes = detectedAxis;
+      }
+
+      if (effectiveAxes) {
+        const isMultiAxis = isPlanarDrag(effectiveAxes);
+
         // Apply snap when enabled
         if (snapEnabled) {
-          let snapResult;
+          let hasSnapped = false;
 
-          // Select snap algorithm based on version
-          if (snapSettings.version === "v2") {
-            // V2: Group bounding box based snapping (for cabinet arrangement)
-            snapResult = calculatePartSnapV2(
-              part,
-              position,
-              parts,
-              cabinets,
-              snapSettings,
-              effectiveAxis
-            );
-          } else {
-            // V3: Movement-aware face-to-face snapping (default, recommended)
-            snapResult = calculatePartSnapV3(
-              part,
-              position,
-              parts,
-              cabinets,
-              snapSettings,
-              effectiveAxis
-            );
-          }
-
-          if (snapResult.snapped && snapResult.snapPoints.length > 0) {
-            // Apply snap only on the drag axis to prevent unwanted position jumps
-            const axisIndex = effectiveAxis === "X" ? 0 : effectiveAxis === "Y" ? 1 : 2;
-            position[axisIndex] = snapResult.position[axisIndex];
-            target.position.set(position[0], position[1], position[2]);
-            setSnapPoints(snapResult.snapPoints);
-          } else {
-            // No part snap found - try wall snap
+          if (isMultiAxis) {
+            // ===== MULTI-AXIS SNAP (planar drag) =====
             const wallCache = wallSnapCacheRef.current;
+            const hasWallCache = wallCache.surfaces.length > 0;
+
+            // Step 1: Try corner snap first (highest priority for XZ drag)
             if (
+              effectiveAxes === "XZ" &&
               snapSettings.wallSnap &&
-              wallCache.surfaces.length > 0 &&
-              (effectiveAxis === "X" || effectiveAxis === "Z")
+              snapSettings.cornerSnap &&
+              hasWallCache
             ) {
-              // Get bounding box for wall snap
               const bounds = getPartBoundingBoxAtPosition(part, position);
               const wallBounds = createWallSnapBounds(bounds.min, bounds.max);
 
-              const wallSnapResult = calculateWallSnap(
+              const wallSnapResult = calculateMultiAxisWallSnap(
                 wallBounds,
                 wallCache.surfaces,
                 wallCache.corners,
-                effectiveAxis,
+                snapSettings
+              );
+
+              // If corner snap found, use it and skip part snap
+              if (wallSnapResult.snapped && wallSnapResult.snappedToCorner) {
+                position[0] += wallSnapResult.snapOffset[0];
+                position[2] += wallSnapResult.snapOffset[2];
+                target.position.set(position[0], position[1], position[2]);
+                clearSnapPoints(); // TODO: Add corner visualization
+                hasSnapped = true;
+              }
+            }
+
+            // Step 2: If no corner snap, try multi-axis part snap
+            if (!hasSnapped) {
+              const multiAxisResult = calculateMultiAxisSnap(
+                part,
+                position,
+                parts,
+                cabinets,
+                snapSettings,
+                effectiveAxes
+              );
+
+              if (multiAxisResult.snapped) {
+                // Apply snapped position for all snapped axes
+                for (const axis of multiAxisResult.snappedAxes) {
+                  const axisIndex = axis === "X" ? 0 : axis === "Y" ? 1 : 2;
+                  position[axisIndex] = multiAxisResult.position[axisIndex];
+                }
+                target.position.set(position[0], position[1], position[2]);
+                setSnapPoints(multiAxisResult.snapPoints);
+                hasSnapped = true;
+              }
+            }
+
+            // Step 3: If still no snap, try individual wall snaps
+            if (!hasSnapped && snapSettings.wallSnap && hasWallCache) {
+              const bounds = getPartBoundingBoxAtPosition(part, position);
+              const wallBounds = createWallSnapBounds(bounds.min, bounds.max);
+
+              const wallSnapResult = calculateMultiAxisWallSnap(
+                wallBounds,
+                wallCache.surfaces,
+                wallCache.corners,
                 snapSettings
               );
 
               if (wallSnapResult.snapped) {
-                const axisIndex = effectiveAxis === "X" ? 0 : 2;
-                position[axisIndex] += wallSnapResult.snapOffset[axisIndex];
+                if (wallSnapResult.snappedAxes?.includes("X")) {
+                  position[0] += wallSnapResult.snapOffset[0];
+                }
+                if (wallSnapResult.snappedAxes?.includes("Z")) {
+                  position[2] += wallSnapResult.snapOffset[2];
+                }
                 target.position.set(position[0], position[1], position[2]);
-                // Convert wall snap to SnapPoint format for visualization
-                // For now, just clear - wall snap guides will be added later
                 clearSnapPoints();
+                hasSnapped = true;
+              }
+            }
+
+            if (!hasSnapped) {
+              clearSnapPoints();
+            }
+          } else {
+            // ===== SINGLE-AXIS SNAP (original logic) =====
+            const singleAxis = effectiveAxes as "X" | "Y" | "Z";
+            let snapResult;
+
+            // Select snap algorithm based on version
+            if (snapSettings.version === "v2") {
+              snapResult = calculatePartSnapV2(
+                part,
+                position,
+                parts,
+                cabinets,
+                snapSettings,
+                singleAxis
+              );
+            } else {
+              snapResult = calculatePartSnapV3(
+                part,
+                position,
+                parts,
+                cabinets,
+                snapSettings,
+                singleAxis
+              );
+            }
+
+            if (snapResult.snapped && snapResult.snapPoints.length > 0) {
+              const axisIndex = singleAxis === "X" ? 0 : singleAxis === "Y" ? 1 : 2;
+              position[axisIndex] = snapResult.position[axisIndex];
+              target.position.set(position[0], position[1], position[2]);
+              setSnapPoints(snapResult.snapPoints);
+            } else {
+              // No part snap - try wall snap
+              const wallCache = wallSnapCacheRef.current;
+              if (
+                snapSettings.wallSnap &&
+                wallCache.surfaces.length > 0 &&
+                (singleAxis === "X" || singleAxis === "Z")
+              ) {
+                const bounds = getPartBoundingBoxAtPosition(part, position);
+                const wallBounds = createWallSnapBounds(bounds.min, bounds.max);
+
+                const wallSnapResult = calculateWallSnap(
+                  wallBounds,
+                  wallCache.surfaces,
+                  wallCache.corners,
+                  singleAxis,
+                  snapSettings
+                );
+
+                if (wallSnapResult.snapped) {
+                  const axisIndex = singleAxis === "X" ? 0 : 2;
+                  position[axisIndex] += wallSnapResult.snapOffset[axisIndex];
+                  target.position.set(position[0], position[1], position[2]);
+                  clearSnapPoints();
+                } else {
+                  clearSnapPoints();
+                }
               } else {
                 clearSnapPoints();
               }
-            } else {
-              clearSnapPoints();
             }
           }
         }
 
         // Calculate dimension lines (independent of snap)
         if (dimensionSettings?.enabled) {
-          setActiveAxis(effectiveAxis);
+          // For multi-axis, show dimensions for primary axis (first in string)
+          const primaryAxis = (effectiveAxes[0] as "X" | "Y" | "Z") || "X";
+          setActiveAxis(primaryAxis);
 
-          // Get current position (after snap if applied)
           const currentPosition = target.position.toArray() as [number, number, number];
-
-          // Get bounding box of the moving part at current position
           const movingBounds = getPartBoundingBoxAtPosition(part, currentPosition);
 
-          // Get bounding boxes of all other objects (excluding this part and its cabinet)
           const excludePartIds = new Set([part.id]);
           const excludeCabinetIds = part.cabinetMetadata?.cabinetId
             ? new Set([part.cabinetMetadata.cabinetId])
@@ -291,7 +313,7 @@ export function PartTransformControls({
           const dimensions = calculateDimensions(
             movingBounds,
             otherBounds,
-            effectiveAxis,
+            primaryAxis,
             dimensionSettings
           );
 
@@ -302,22 +324,7 @@ export function PartTransformControls({
 
     // PERFORMANCE: NO store update here - preview mesh follows target directly
     // Store will be updated on mouseUp
-  }, [
-    target,
-    part,
-    mode,
-    snapEnabled,
-    snapSettings,
-    dimensionSettings,
-    parts,
-    cabinets,
-    setSnapPoints,
-    clearSnapPoints,
-    setDimensionLines,
-    setActiveAxis,
-    getDragAxis,
-    wallSnapCacheRef,
-  ]);
+  };
 
   const handleTransformStart = useCallback(() => {
     isDraggingRef.current = true;

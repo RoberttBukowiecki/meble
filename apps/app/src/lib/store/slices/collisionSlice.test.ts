@@ -11,6 +11,7 @@ import { detectCollisions } from "../../collisionDetection";
 type CollisionTestState = CollisionSlice & {
   parts: { id: string; furnitureId: string }[];
   selectedFurnitureId: string;
+  snapSettings: { collisionMargin: number };
 };
 
 const createCollisionStore = () =>
@@ -18,6 +19,7 @@ const createCollisionStore = () =>
     ...createCollisionSlice(set as unknown as any, get as unknown as any, api as unknown as any),
     parts: [],
     selectedFurnitureId: "f-1",
+    snapSettings: { collisionMargin: 0.01 },
   }));
 
 describe("collisionSlice", () => {
@@ -41,7 +43,8 @@ describe("collisionSlice", () => {
         { id: "p1", furnitureId: "f-1" },
         { id: "p3", furnitureId: "f-1" },
       ],
-      undefined // selectedCabinetId
+      undefined, // selectedCabinetId
+      0.01 // collisionThreshold from snapSettings.collisionMargin
     );
     expect(store.getState().collisions).toEqual(collisionsMock);
   });

@@ -65,6 +65,10 @@ export interface ProjectData {
   openings: Opening[];
   lights: LightSource[];
   countertopGroups: CountertopGroup[];
+
+  // Camera state (optional for backward compatibility with existing projects)
+  cameraPosition?: [number, number, number];
+  cameraTarget?: [number, number, number];
 }
 
 // =============================================================================

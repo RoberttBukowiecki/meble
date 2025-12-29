@@ -1,5 +1,5 @@
-import type { CollisionSlice, StoreSlice } from '../types';
-import { detectCollisions as detectCollisionsFn } from '../../collisionDetection';
+import type { CollisionSlice, StoreSlice } from "../types";
+import { detectCollisions as detectCollisionsFn } from "../../collisionDetection";
 
 export const createCollisionSlice: StoreSlice<CollisionSlice> = (set, get) => ({
   collisions: [],
@@ -10,9 +10,13 @@ export const createCollisionSlice: StoreSlice<CollisionSlice> = (set, get) => ({
       (p) => p.furnitureId === state.selectedFurnitureId
     );
 
+    // Use collisionMargin from snap settings as the threshold
+    const collisionThreshold = state.snapSettings?.collisionMargin ?? 0.01;
+
     const collisions = detectCollisionsFn(
       selectedFurnitureParts,
-      state.selectedCabinetId || undefined
+      state.selectedCabinetId || undefined,
+      collisionThreshold
     );
 
     set({ collisions });

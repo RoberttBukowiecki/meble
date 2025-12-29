@@ -40,46 +40,50 @@ exports[`VIS-001: InteriorPreview SHELVES zone renders SHELVES zone with shelf l
     class="flex-1 flex justify-center items-center gap-3 py-2 min-h-0"
   >
     <div
-      class="border-4 border-muted-foreground/40 rounded-md bg-background p-1 flex flex-col-reverse gap-0.5 shadow-inner"
+      class="group/cabinet border-4 border-muted-foreground/40 rounded-md bg-background p-1 flex flex-col-reverse shadow-inner"
       style="min-height: 280px; max-width: 100%;"
     >
       <div
-        class="relative rounded transition-all cursor-pointer overflow-hidden flex flex-col border border-blue-300 dark:border-blue-700 hover:border-primary/40 bg-blue-50/50 dark:bg-blue-950/20"
-        data-testid="zone-shelves-zone"
-        style="flex: 1;"
+        class="contents"
       >
         <div
-          class="absolute inset-1 pointer-events-none"
+          class="relative rounded cursor-pointer overflow-hidden flex flex-col border transition-all duration-200 animate-zone-enter border-zone-shelves/50 hover:border-primary/40 bg-zone-shelves/10"
+          data-testid="zone-shelves-zone"
+          style="flex: 1;"
         >
           <div
-            class="absolute left-0 h-0.5 bg-blue-400/80 rounded-full w-full"
-            style="bottom: 0%;"
-          />
-          <div
-            class="absolute left-0 h-0.5 bg-blue-400/80 rounded-full w-full"
-            style="bottom: 33.33333333333333%;"
-          />
-          <div
-            class="absolute left-0 h-0.5 bg-blue-400/80 rounded-full w-full"
-            style="bottom: 66.66666666666666%;"
-          />
-        </div>
-        <div
-          class="absolute inset-0 flex items-center justify-center pointer-events-none"
-        >
-          <div
-            class="text-center px-1 py-0.5 rounded bg-background/70"
+            class="absolute inset-1 pointer-events-none"
           >
             <div
-              class="text-[9px] font-medium text-blue-600 dark:text-blue-400"
-            >
-              Półki
-            </div>
+              class="absolute left-0 h-0.5 bg-zone-shelves/80 rounded-full w-full"
+              style="bottom: 0%;"
+            />
             <div
-              class="text-[8px] text-muted-foreground"
+              class="absolute left-0 h-0.5 bg-zone-shelves/80 rounded-full w-full"
+              style="bottom: 33.33333333333333%;"
+            />
+            <div
+              class="absolute left-0 h-0.5 bg-zone-shelves/80 rounded-full w-full"
+              style="bottom: 66.66666666666666%;"
+            />
+          </div>
+          <div
+            class="absolute inset-0 flex items-center justify-center pointer-events-none"
+          >
+            <div
+              class="text-center px-1 py-0.5 rounded bg-background/70"
             >
-              3
-              ×
+              <div
+                class="text-[9px] font-medium text-zone-shelves"
+              >
+                Półki
+              </div>
+              <div
+                class="text-[8px] text-muted-foreground"
+              >
+                3
+                ×
+              </div>
             </div>
           </div>
         </div>
@@ -175,102 +179,106 @@ exports[`VIS-002: InteriorPreview DRAWERS zone renders DRAWERS zone with drawer 
     class="flex-1 flex justify-center items-center gap-3 py-2 min-h-0"
   >
     <div
-      class="border-4 border-muted-foreground/40 rounded-md bg-background p-1 flex flex-col-reverse gap-0.5 shadow-inner"
+      class="group/cabinet border-4 border-muted-foreground/40 rounded-md bg-background p-1 flex flex-col-reverse shadow-inner"
       style="min-height: 280px; max-width: 100%;"
     >
       <div
-        class="relative rounded transition-all cursor-pointer overflow-hidden flex flex-col border border-amber-300 dark:border-amber-700 hover:border-primary/40 bg-amber-50/50 dark:bg-amber-950/20"
-        data-testid="zone-drawers-zone"
-        style="flex: 1;"
+        class="contents"
       >
         <div
-          class="absolute inset-1 pointer-events-none flex flex-col-reverse gap-px"
+          class="relative rounded cursor-pointer overflow-hidden flex flex-col border transition-all duration-200 animate-zone-enter border-zone-drawers/50 hover:border-primary/40 bg-zone-drawers/10"
+          data-testid="zone-drawers-zone"
+          style="flex: 1;"
         >
           <div
-            class="rounded-sm border relative overflow-hidden border-amber-400/80 bg-amber-50/30 dark:bg-amber-900/20"
-            style="flex: 1;"
+            class="absolute inset-1 pointer-events-none flex flex-col-reverse gap-px"
           >
             <div
-              class="absolute left-0.5 right-0.5 bottom-0.5 flex flex-col-reverse"
-              style="height: 90%;"
+              class="rounded-sm border relative overflow-hidden border-zone-drawers/80 bg-zone-drawers/10"
+              style="flex: 1;"
             >
               <div
-                class="flex-1 border-t first:border-t-0 border-amber-300/60"
-              />
+                class="absolute left-0.5 right-0.5 bottom-0.5 flex flex-col-reverse"
+                style="height: 90%;"
+              >
+                <div
+                  class="flex-1 border-t first:border-t-0 border-zone-drawers/60"
+                />
+              </div>
+              <div
+                class="absolute inset-0 flex items-center justify-center"
+              >
+                <span
+                  class="text-[6px] font-medium px-0.5 bg-background/60 rounded text-zone-drawers"
+                >
+                  F
+                </span>
+              </div>
             </div>
             <div
-              class="absolute inset-0 flex items-center justify-center"
+              class="rounded-sm border relative overflow-hidden border-zone-drawers/80 bg-zone-drawers/10"
+              style="flex: 1;"
             >
-              <span
-                class="text-[6px] font-medium px-0.5 bg-background/60 rounded text-amber-700 dark:text-amber-300"
+              <div
+                class="absolute left-0.5 right-0.5 bottom-0.5 flex flex-col-reverse"
+                style="height: 90%;"
               >
-                F
-              </span>
+                <div
+                  class="flex-1 border-t first:border-t-0 border-zone-drawers/60"
+                />
+              </div>
+              <div
+                class="absolute inset-0 flex items-center justify-center"
+              >
+                <span
+                  class="text-[6px] font-medium px-0.5 bg-background/60 rounded text-zone-drawers"
+                >
+                  F
+                </span>
+              </div>
+            </div>
+            <div
+              class="rounded-sm border relative overflow-hidden border-zone-drawers/80 bg-zone-drawers/10"
+              style="flex: 1;"
+            >
+              <div
+                class="absolute left-0.5 right-0.5 bottom-0.5 flex flex-col-reverse"
+                style="height: 90%;"
+              >
+                <div
+                  class="flex-1 border-t first:border-t-0 border-zone-drawers/60"
+                />
+              </div>
+              <div
+                class="absolute inset-0 flex items-center justify-center"
+              >
+                <span
+                  class="text-[6px] font-medium px-0.5 bg-background/60 rounded text-zone-drawers"
+                >
+                  F
+                </span>
+              </div>
             </div>
           </div>
           <div
-            class="rounded-sm border relative overflow-hidden border-amber-400/80 bg-amber-50/30 dark:bg-amber-900/20"
-            style="flex: 1;"
+            class="absolute inset-0 flex items-center justify-center pointer-events-none"
           >
             <div
-              class="absolute left-0.5 right-0.5 bottom-0.5 flex flex-col-reverse"
-              style="height: 90%;"
+              class="text-center px-1 py-0.5 rounded bg-background/70"
             >
               <div
-                class="flex-1 border-t first:border-t-0 border-amber-300/60"
-              />
-            </div>
-            <div
-              class="absolute inset-0 flex items-center justify-center"
-            >
-              <span
-                class="text-[6px] font-medium px-0.5 bg-background/60 rounded text-amber-700 dark:text-amber-300"
+                class="text-[9px] font-medium text-zone-drawers"
               >
-                F
-              </span>
-            </div>
-          </div>
-          <div
-            class="rounded-sm border relative overflow-hidden border-amber-400/80 bg-amber-50/30 dark:bg-amber-900/20"
-            style="flex: 1;"
-          >
-            <div
-              class="absolute left-0.5 right-0.5 bottom-0.5 flex flex-col-reverse"
-              style="height: 90%;"
-            >
+                Szuflady
+              </div>
               <div
-                class="flex-1 border-t first:border-t-0 border-amber-300/60"
-              />
-            </div>
-            <div
-              class="absolute inset-0 flex items-center justify-center"
-            >
-              <span
-                class="text-[6px] font-medium px-0.5 bg-background/60 rounded text-amber-700 dark:text-amber-300"
+                class="text-[8px] text-muted-foreground"
               >
-                F
-              </span>
-            </div>
-          </div>
-        </div>
-        <div
-          class="absolute inset-0 flex items-center justify-center pointer-events-none"
-        >
-          <div
-            class="text-center px-1 py-0.5 rounded bg-background/70"
-          >
-            <div
-              class="text-[9px] font-medium text-amber-600 dark:text-amber-400"
-            >
-              Szuflady
-            </div>
-            <div
-              class="text-[8px] text-muted-foreground"
-            >
-              3
-              F/
-              3
-              B
+                3
+                F/
+                3
+                B
+              </div>
             </div>
           </div>
         </div>
@@ -366,214 +374,229 @@ exports[`VIS-003: InteriorPreview NESTED 2x2 renders NESTED 2x2 structure with a
     class="flex-1 flex justify-center items-center gap-3 py-2 min-h-0"
   >
     <div
-      class="border-4 border-muted-foreground/40 rounded-md bg-background p-1 flex flex-col-reverse gap-0.5 shadow-inner"
+      class="group/cabinet border-4 border-muted-foreground/40 rounded-md bg-background p-1 flex flex-col-reverse shadow-inner"
       style="min-height: 280px; max-width: 100%;"
     >
       <div
-        class="relative rounded transition-all cursor-pointer overflow-hidden flex flex-col border border-purple-300 dark:border-purple-700 hover:border-primary/40 bg-purple-50/30 dark:bg-purple-950/20"
-        data-testid="zone-row-2"
-        style="flex: 1;"
+        class="contents"
       >
         <div
-          class="absolute inset-1 flex flex-row"
+          class="relative rounded cursor-pointer overflow-hidden flex flex-col border transition-all duration-200 animate-zone-enter border-zone-nested/50 hover:border-primary/40 bg-zone-nested/10"
+          data-testid="zone-row-2"
+          style="flex: 1;"
         >
           <div
-            class="flex flex-row"
-            style="flex: 1;"
+            class="absolute inset-1 flex flex-row"
           >
             <div
-              class="relative rounded transition-all cursor-pointer overflow-hidden flex flex-col border border-muted-foreground/30 hover:border-primary/40 border-dashed bg-background/80"
-              data-testid="zone-cell-2-1"
+              class="flex flex-row"
               style="flex: 1;"
             >
               <div
-                class="absolute inset-0 flex items-center justify-center pointer-events-none"
+                class="relative rounded cursor-pointer overflow-hidden flex flex-col border transition-all duration-200 animate-zone-enter border-zone-empty/30 hover:border-primary/40 border-dashed bg-background/80"
+                data-testid="zone-cell-2-1"
+                style="flex: 1;"
               >
                 <div
-                  class="text-center px-1 py-0.5 rounded bg-background/70"
+                  class="absolute inset-0 flex items-center justify-center pointer-events-none"
                 >
                   <div
-                    class="text-[9px] font-medium text-muted-foreground"
-                  >
-                    Pusta
-                  </div>
-                </div>
-              </div>
-              <div
-                class="absolute text-[7px] font-mono bg-background/90 px-0.5 rounded shadow-sm bottom-0.5 left-1/2 -translate-x-1/2"
-              >
-                <span
-                  class="text-muted-foreground"
-                >
-                  282mm
-                </span>
-              </div>
-            </div>
-            <div
-              class="flex-shrink-0 w-0.5"
-            />
-          </div>
-          <div
-            class="flex flex-row"
-            style="flex: 1;"
-          >
-            <div
-              class="relative rounded transition-all cursor-pointer overflow-hidden flex flex-col border border-amber-300 dark:border-amber-700 hover:border-primary/40 bg-background/80"
-              data-testid="zone-cell-2-2"
-              style="flex: 1;"
-            >
-              <div
-                class="absolute inset-1 pointer-events-none flex flex-col-reverse gap-px"
-              >
-                <div
-                  class="rounded-sm border relative overflow-hidden border-amber-400/80 bg-amber-50/30 dark:bg-amber-900/20"
-                  style="flex: 1;"
-                >
-                  <div
-                    class="absolute left-0.5 right-0.5 bottom-0.5 flex flex-col-reverse"
-                    style="height: 90%;"
+                    class="text-center px-1 py-0.5 rounded bg-background/70"
                   >
                     <div
-                      class="flex-1 border-t first:border-t-0 border-amber-300/60"
-                    />
-                  </div>
-                  <div
-                    class="absolute inset-0 flex items-center justify-center"
-                  >
-                    <span
-                      class="text-[6px] font-medium px-0.5 bg-background/60 rounded text-amber-700 dark:text-amber-300"
+                      class="text-[9px] font-medium text-zone-empty"
                     >
-                      F
-                    </span>
+                      Pusta
+                    </div>
                   </div>
+                </div>
+                <div
+                  class="absolute text-[7px] font-mono bg-background/90 px-0.5 rounded shadow-sm bottom-0.5 left-1/2 -translate-x-1/2"
+                >
+                  <span
+                    class="text-muted-foreground"
+                  >
+                    282mm
+                  </span>
                 </div>
               </div>
               <div
-                class="absolute inset-0 flex items-center justify-center pointer-events-none"
+                class="flex-shrink-0 w-0.5"
+              />
+            </div>
+            <div
+              class="flex flex-row"
+              style="flex: 1;"
+            >
+              <div
+                class="relative rounded cursor-pointer overflow-hidden flex flex-col border transition-all duration-200 animate-zone-enter border-zone-drawers/50 hover:border-primary/40 bg-background/80"
+                data-testid="zone-cell-2-2"
+                style="flex: 1;"
               >
                 <div
-                  class="text-center px-1 py-0.5 rounded bg-background/70"
+                  class="absolute inset-1 pointer-events-none flex flex-col-reverse gap-px"
                 >
                   <div
-                    class="text-[9px] font-medium text-amber-600 dark:text-amber-400"
+                    class="rounded-sm border relative overflow-hidden border-zone-drawers/80 bg-zone-drawers/10"
+                    style="flex: 1;"
                   >
-                    Szuflady
-                  </div>
-                  <div
-                    class="text-[8px] text-muted-foreground"
-                  >
-                    1
-                    F/
-                    1
-                    B
+                    <div
+                      class="absolute left-0.5 right-0.5 bottom-0.5 flex flex-col-reverse"
+                      style="height: 90%;"
+                    >
+                      <div
+                        class="flex-1 border-t first:border-t-0 border-zone-drawers/60"
+                      />
+                    </div>
+                    <div
+                      class="absolute inset-0 flex items-center justify-center"
+                    >
+                      <span
+                        class="text-[6px] font-medium px-0.5 bg-background/60 rounded text-zone-drawers"
+                      >
+                        F
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div
-                class="absolute text-[7px] font-mono bg-background/90 px-0.5 rounded shadow-sm bottom-0.5 left-1/2 -translate-x-1/2"
-              >
-                <span
-                  class="text-muted-foreground"
+                <div
+                  class="absolute inset-0 flex items-center justify-center pointer-events-none"
                 >
-                  282mm
-                </span>
+                  <div
+                    class="text-center px-1 py-0.5 rounded bg-background/70"
+                  >
+                    <div
+                      class="text-[9px] font-medium text-zone-drawers"
+                    >
+                      Szuflady
+                    </div>
+                    <div
+                      class="text-[8px] text-muted-foreground"
+                    >
+                      1
+                      F/
+                      1
+                      B
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="absolute text-[7px] font-mono bg-background/90 px-0.5 rounded shadow-sm bottom-0.5 left-1/2 -translate-x-1/2"
+                >
+                  <span
+                    class="text-muted-foreground"
+                  >
+                    282mm
+                  </span>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-      <div
-        class="relative rounded transition-all cursor-pointer overflow-hidden flex flex-col border border-purple-300 dark:border-purple-700 hover:border-primary/40 bg-purple-50/30 dark:bg-purple-950/20"
-        data-testid="zone-row-1"
-        style="flex: 1;"
-      >
         <div
-          class="absolute inset-1 flex flex-row"
+          class="group/divider relative flex items-center justify-center flex-shrink-0 transition-all h-3 w-full -my-0.5 z-20"
         >
           <div
-            class="flex flex-row"
-            style="flex: 1;"
+            class="absolute transition-colors left-2 right-2 h-0.5 rounded-full bg-muted-foreground/30 group-hover/divider:bg-primary/50"
+          />
+        </div>
+      </div>
+      <div
+        class="contents"
+      >
+        <div
+          class="relative rounded cursor-pointer overflow-hidden flex flex-col border transition-all duration-200 animate-zone-enter border-zone-nested/50 hover:border-primary/40 bg-zone-nested/10"
+          data-testid="zone-row-1"
+          style="flex: 1;"
+        >
+          <div
+            class="absolute inset-1 flex flex-row"
           >
             <div
-              class="relative rounded transition-all cursor-pointer overflow-hidden flex flex-col border border-blue-300 dark:border-blue-700 hover:border-primary/40 bg-background/80"
-              data-testid="zone-cell-1-1"
+              class="flex flex-row"
               style="flex: 1;"
             >
               <div
-                class="absolute inset-1 pointer-events-none"
+                class="relative rounded cursor-pointer overflow-hidden flex flex-col border transition-all duration-200 animate-zone-enter border-zone-shelves/50 hover:border-primary/40 bg-background/80"
+                data-testid="zone-cell-1-1"
+                style="flex: 1;"
               >
                 <div
-                  class="absolute left-0 h-0.5 bg-blue-400/80 rounded-full w-full"
-                  style="bottom: 0%;"
-                />
-                <div
-                  class="absolute left-0 h-0.5 bg-blue-400/80 rounded-full w-full"
-                  style="bottom: 50%;"
-                />
-              </div>
-              <div
-                class="absolute inset-0 flex items-center justify-center pointer-events-none"
-              >
-                <div
-                  class="text-center px-1 py-0.5 rounded bg-background/70"
+                  class="absolute inset-1 pointer-events-none"
                 >
                   <div
-                    class="text-[9px] font-medium text-blue-600 dark:text-blue-400"
-                  >
-                    Półki
-                  </div>
+                    class="absolute left-0 h-0.5 bg-zone-shelves/80 rounded-full w-full"
+                    style="bottom: 0%;"
+                  />
                   <div
-                    class="text-[8px] text-muted-foreground"
+                    class="absolute left-0 h-0.5 bg-zone-shelves/80 rounded-full w-full"
+                    style="bottom: 50%;"
+                  />
+                </div>
+                <div
+                  class="absolute inset-0 flex items-center justify-center pointer-events-none"
+                >
+                  <div
+                    class="text-center px-1 py-0.5 rounded bg-background/70"
                   >
-                    2
-                    ×
+                    <div
+                      class="text-[9px] font-medium text-zone-shelves"
+                    >
+                      Półki
+                    </div>
+                    <div
+                      class="text-[8px] text-muted-foreground"
+                    >
+                      2
+                      ×
+                    </div>
                   </div>
+                </div>
+                <div
+                  class="absolute text-[7px] font-mono bg-background/90 px-0.5 rounded shadow-sm bottom-0.5 left-1/2 -translate-x-1/2"
+                >
+                  <span
+                    class="text-muted-foreground"
+                  >
+                    282mm
+                  </span>
                 </div>
               </div>
               <div
-                class="absolute text-[7px] font-mono bg-background/90 px-0.5 rounded shadow-sm bottom-0.5 left-1/2 -translate-x-1/2"
-              >
-                <span
-                  class="text-muted-foreground"
-                >
-                  282mm
-                </span>
-              </div>
+                class="flex-shrink-0 w-0.5"
+              />
             </div>
             <div
-              class="flex-shrink-0 w-0.5"
-            />
-          </div>
-          <div
-            class="flex flex-row"
-            style="flex: 1;"
-          >
-            <div
-              class="relative rounded transition-all cursor-pointer overflow-hidden flex flex-col border border-muted-foreground/30 hover:border-primary/40 border-dashed bg-background/80"
-              data-testid="zone-cell-1-2"
+              class="flex flex-row"
               style="flex: 1;"
             >
               <div
-                class="absolute inset-0 flex items-center justify-center pointer-events-none"
+                class="relative rounded cursor-pointer overflow-hidden flex flex-col border transition-all duration-200 animate-zone-enter border-zone-empty/30 hover:border-primary/40 border-dashed bg-background/80"
+                data-testid="zone-cell-1-2"
+                style="flex: 1;"
               >
                 <div
-                  class="text-center px-1 py-0.5 rounded bg-background/70"
+                  class="absolute inset-0 flex items-center justify-center pointer-events-none"
                 >
                   <div
-                    class="text-[9px] font-medium text-muted-foreground"
+                    class="text-center px-1 py-0.5 rounded bg-background/70"
                   >
-                    Pusta
+                    <div
+                      class="text-[9px] font-medium text-zone-empty"
+                    >
+                      Pusta
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div
-                class="absolute text-[7px] font-mono bg-background/90 px-0.5 rounded shadow-sm bottom-0.5 left-1/2 -translate-x-1/2"
-              >
-                <span
-                  class="text-muted-foreground"
+                <div
+                  class="absolute text-[7px] font-mono bg-background/90 px-0.5 rounded shadow-sm bottom-0.5 left-1/2 -translate-x-1/2"
                 >
-                  282mm
-                </span>
+                  <span
+                    class="text-muted-foreground"
+                  >
+                    282mm
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -712,7 +735,7 @@ exports[`VIS-003: InteriorPreview NESTED 2x2 renders NESTED 2x2 structure with a
 
 exports[`VIS-004: ZoneEditor SHELVES controls renders SHELVES zone editor with all controls 1`] = `
 <div
-  class="border rounded-lg p-5 space-y-5 bg-card shadow-sm"
+  class="border rounded-lg p-5 space-y-5 bg-card shadow-sm border-l-4 border-l-zone-shelves"
 >
   <div
     class="flex items-center justify-between pb-3 border-b"
@@ -768,12 +791,13 @@ exports[`VIS-004: ZoneEditor SHELVES controls renders SHELVES zone editor with a
       class="grid gap-2 grid-cols-4"
     >
       <button
-        class="items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground px-4 h-auto py-2 flex flex-col gap-1"
+        class="items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground px-4 h-auto py-3 flex flex-col gap-1.5 transition-all hover:border-primary/50"
+        title="Wolna przestrzeń"
         type="button"
       >
         <svg
           aria-hidden="true"
-          class="lucide lucide-box h-4 w-4"
+          class="lucide lucide-box h-5 w-5 text-zone-empty"
           fill="none"
           height="24"
           stroke="currentColor"
@@ -795,18 +819,19 @@ exports[`VIS-004: ZoneEditor SHELVES controls renders SHELVES zone editor with a
           />
         </svg>
         <span
-          class="text-xs"
+          class="text-xs font-medium"
         >
           Pusta
         </span>
       </button>
       <button
-        class="items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 px-4 h-auto py-2 flex flex-col gap-1 ring-2 ring-primary/20"
+        class="items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 px-4 h-auto py-3 flex flex-col gap-1.5 transition-all ring-2 ring-primary/20"
+        title="Półki na różnych wysokościach"
         type="button"
       >
         <svg
           aria-hidden="true"
-          class="lucide lucide-layers h-4 w-4"
+          class="lucide lucide-layers h-5 w-5 text-primary-foreground"
           fill="none"
           height="24"
           stroke="currentColor"
@@ -828,18 +853,19 @@ exports[`VIS-004: ZoneEditor SHELVES controls renders SHELVES zone editor with a
           />
         </svg>
         <span
-          class="text-xs"
+          class="text-xs font-medium"
         >
           Półki
         </span>
       </button>
       <button
-        class="items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground px-4 h-auto py-2 flex flex-col gap-1"
+        class="items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground px-4 h-auto py-3 flex flex-col gap-1.5 transition-all hover:border-primary/50"
+        title="Szuflady z frontami"
         type="button"
       >
         <svg
           aria-hidden="true"
-          class="lucide lucide-package h-4 w-4"
+          class="lucide lucide-package h-5 w-5 text-zone-drawers"
           fill="none"
           height="24"
           stroke="currentColor"
@@ -864,18 +890,19 @@ exports[`VIS-004: ZoneEditor SHELVES controls renders SHELVES zone editor with a
           />
         </svg>
         <span
-          class="text-xs"
+          class="text-xs font-medium"
         >
           Szuflady
         </span>
       </button>
       <button
-        class="items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground px-4 h-auto py-2 flex flex-col gap-1"
+        class="items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground px-4 h-auto py-3 flex flex-col gap-1.5 transition-all hover:border-primary/50"
+        title="Podziel na sekcje"
         type="button"
       >
         <svg
           aria-hidden="true"
-          class="lucide lucide-grid3x3 lucide-grid-3x3 h-4 w-4"
+          class="lucide lucide-grid3x3 lucide-grid-3x3 h-5 w-5 text-zone-nested"
           fill="none"
           height="24"
           stroke="currentColor"
@@ -907,7 +934,7 @@ exports[`VIS-004: ZoneEditor SHELVES controls renders SHELVES zone editor with a
           />
         </svg>
         <span
-          class="text-xs"
+          class="text-xs font-medium"
         >
           Podział
         </span>
@@ -918,7 +945,7 @@ exports[`VIS-004: ZoneEditor SHELVES controls renders SHELVES zone editor with a
     class="space-y-4 pt-3 border-t"
   >
     <h5
-      class="text-sm font-medium text-blue-600 dark:text-blue-400 flex items-center gap-2"
+      class="text-sm font-medium text-zone-shelves flex items-center gap-2"
     >
       <svg
         aria-hidden="true"
@@ -954,7 +981,7 @@ exports[`VIS-004: ZoneEditor SHELVES controls renders SHELVES zone editor with a
         Tryb
       </label>
       <div
-        class="grid gap-2 grid-cols-2"
+        class="grid grid-cols-2 gap-2"
       >
         <button
           class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 px-4 h-auto py-2 ring-2 ring-primary/20"
@@ -1080,7 +1107,7 @@ exports[`VIS-004: ZoneEditor SHELVES controls renders SHELVES zone editor with a
               mm)
             </span>
             <span
-              class="text-xs text-blue-600"
+              class="text-xs text-zone-shelves"
             >
               (korpus)
             </span>
@@ -1114,7 +1141,7 @@ exports[`VIS-004: ZoneEditor SHELVES controls renders SHELVES zone editor with a
         Głębokość półek
       </label>
       <div
-        class="grid gap-2 grid-cols-3"
+        class="grid grid-cols-2 gap-2"
       >
         <button
           class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 px-4 h-auto py-2 ring-2 ring-primary/20"
@@ -1149,19 +1176,20 @@ exports[`VIS-004: ZoneEditor SHELVES controls renders SHELVES zone editor with a
       </div>
     </div>
     <div
-      class="text-xs text-muted-foreground bg-muted/30 p-2 rounded"
+      class="text-xs text-muted-foreground bg-muted/30 p-2 rounded flex justify-between items-center"
     >
-      Rzeczywista głębokość:
-       
+      <span>
+        Rzeczywista głębokość:
+      </span>
       <span
-        class="font-mono font-medium text-foreground"
+        class="font-mono font-semibold text-foreground"
       >
         550
         mm
       </span>
     </div>
     <div
-      class="text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/20 p-2 rounded"
+      class="text-xs text-zone-shelves bg-zone-shelves/10 p-2 rounded"
     >
       Pierwsza półka na dole sekcji, kolejne rozmieszczone proporcjonalnie do góry.
     </div>
@@ -1171,7 +1199,7 @@ exports[`VIS-004: ZoneEditor SHELVES controls renders SHELVES zone editor with a
 
 exports[`VIS-005: ZoneEditor DRAWERS controls renders DRAWERS zone editor with all controls 1`] = `
 <div
-  class="border rounded-lg p-5 space-y-5 bg-card shadow-sm"
+  class="border rounded-lg p-5 space-y-5 bg-card shadow-sm border-l-4 border-l-zone-drawers"
 >
   <div
     class="flex items-center justify-between pb-3 border-b"
@@ -1227,12 +1255,13 @@ exports[`VIS-005: ZoneEditor DRAWERS controls renders DRAWERS zone editor with a
       class="grid gap-2 grid-cols-4"
     >
       <button
-        class="items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground px-4 h-auto py-2 flex flex-col gap-1"
+        class="items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground px-4 h-auto py-3 flex flex-col gap-1.5 transition-all hover:border-primary/50"
+        title="Wolna przestrzeń"
         type="button"
       >
         <svg
           aria-hidden="true"
-          class="lucide lucide-box h-4 w-4"
+          class="lucide lucide-box h-5 w-5 text-zone-empty"
           fill="none"
           height="24"
           stroke="currentColor"
@@ -1254,18 +1283,19 @@ exports[`VIS-005: ZoneEditor DRAWERS controls renders DRAWERS zone editor with a
           />
         </svg>
         <span
-          class="text-xs"
+          class="text-xs font-medium"
         >
           Pusta
         </span>
       </button>
       <button
-        class="items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground px-4 h-auto py-2 flex flex-col gap-1"
+        class="items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground px-4 h-auto py-3 flex flex-col gap-1.5 transition-all hover:border-primary/50"
+        title="Półki na różnych wysokościach"
         type="button"
       >
         <svg
           aria-hidden="true"
-          class="lucide lucide-layers h-4 w-4"
+          class="lucide lucide-layers h-5 w-5 text-zone-shelves"
           fill="none"
           height="24"
           stroke="currentColor"
@@ -1287,18 +1317,19 @@ exports[`VIS-005: ZoneEditor DRAWERS controls renders DRAWERS zone editor with a
           />
         </svg>
         <span
-          class="text-xs"
+          class="text-xs font-medium"
         >
           Półki
         </span>
       </button>
       <button
-        class="items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 px-4 h-auto py-2 flex flex-col gap-1 ring-2 ring-primary/20"
+        class="items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 px-4 h-auto py-3 flex flex-col gap-1.5 transition-all ring-2 ring-primary/20"
+        title="Szuflady z frontami"
         type="button"
       >
         <svg
           aria-hidden="true"
-          class="lucide lucide-package h-4 w-4"
+          class="lucide lucide-package h-5 w-5 text-primary-foreground"
           fill="none"
           height="24"
           stroke="currentColor"
@@ -1323,18 +1354,19 @@ exports[`VIS-005: ZoneEditor DRAWERS controls renders DRAWERS zone editor with a
           />
         </svg>
         <span
-          class="text-xs"
+          class="text-xs font-medium"
         >
           Szuflady
         </span>
       </button>
       <button
-        class="items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground px-4 h-auto py-2 flex flex-col gap-1"
+        class="items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground px-4 h-auto py-3 flex flex-col gap-1.5 transition-all hover:border-primary/50"
+        title="Podziel na sekcje"
         type="button"
       >
         <svg
           aria-hidden="true"
-          class="lucide lucide-grid3x3 lucide-grid-3x3 h-4 w-4"
+          class="lucide lucide-grid3x3 lucide-grid-3x3 h-5 w-5 text-zone-nested"
           fill="none"
           height="24"
           stroke="currentColor"
@@ -1366,7 +1398,7 @@ exports[`VIS-005: ZoneEditor DRAWERS controls renders DRAWERS zone editor with a
           />
         </svg>
         <span
-          class="text-xs"
+          class="text-xs font-medium"
         >
           Podział
         </span>
@@ -1377,7 +1409,7 @@ exports[`VIS-005: ZoneEditor DRAWERS controls renders DRAWERS zone editor with a
     class="space-y-4 pt-3 border-t"
   >
     <h5
-      class="text-sm font-medium text-amber-600 dark:text-amber-400 flex items-center gap-2"
+      class="text-sm font-medium text-zone-drawers flex items-center gap-2"
     >
       <svg
         aria-hidden="true"
@@ -1700,7 +1732,7 @@ exports[`VIS-005: ZoneEditor DRAWERS controls renders DRAWERS zone editor with a
               style="flex: 1;"
             >
               <div
-                class="absolute left-1 right-1 border border-dashed rounded-sm pointer-events-none border-amber-400/60 bg-amber-50/20 dark:bg-amber-950/20"
+                class="absolute left-1 right-1 border border-dashed rounded-sm pointer-events-none border-zone-drawers/60 bg-zone-drawers/5"
                 style="bottom: 4px; height: calc(100% - 8px);"
               >
                 <div
@@ -1711,7 +1743,7 @@ exports[`VIS-005: ZoneEditor DRAWERS controls renders DRAWERS zone editor with a
                     style="height: 100%;"
                   >
                     <div
-                      class="absolute right-0.5 top-1/2 -translate-y-1/2 text-[7px] font-mono whitespace-nowrap text-amber-600/80 dark:text-amber-400/80"
+                      class="absolute right-0.5 top-1/2 -translate-y-1/2 text-[7px] font-mono whitespace-nowrap text-zone-drawers/80"
                       style="writing-mode: vertical-rl; text-orientation: mixed;"
                     >
                       360
@@ -1741,7 +1773,7 @@ exports[`VIS-005: ZoneEditor DRAWERS controls renders DRAWERS zone editor with a
               style="flex: 1;"
             >
               <div
-                class="absolute left-1 right-1 border border-dashed rounded-sm pointer-events-none border-amber-400/60 bg-amber-50/20 dark:bg-amber-950/20"
+                class="absolute left-1 right-1 border border-dashed rounded-sm pointer-events-none border-zone-drawers/60 bg-zone-drawers/5"
                 style="bottom: 4px; height: calc(100% - 8px);"
               >
                 <div
@@ -1752,7 +1784,7 @@ exports[`VIS-005: ZoneEditor DRAWERS controls renders DRAWERS zone editor with a
                     style="height: 100%;"
                   >
                     <div
-                      class="absolute right-0.5 top-1/2 -translate-y-1/2 text-[7px] font-mono whitespace-nowrap text-amber-600/80 dark:text-amber-400/80"
+                      class="absolute right-0.5 top-1/2 -translate-y-1/2 text-[7px] font-mono whitespace-nowrap text-zone-drawers/80"
                       style="writing-mode: vertical-rl; text-orientation: mixed;"
                     >
                       360
@@ -1865,11 +1897,11 @@ exports[`VIS-005: ZoneEditor DRAWERS controls renders DRAWERS zone editor with a
               1
                
               <span
-                class="font-mono"
+                class="font-mono font-semibold text-foreground"
               >
-                (
+                = 
                 360
-                mm)
+                mm
               </span>
             </h6>
             <button
@@ -2005,9 +2037,9 @@ exports[`VIS-005: ZoneEditor DRAWERS controls renders DRAWERS zone editor with a
                 class="text-xs font-mono bg-muted px-1.5 py-0.5 rounded"
               >
                 100
-                % (
+                % = 
                 360
-                mm)
+                mm
               </span>
             </div>
             <span
@@ -2063,7 +2095,7 @@ exports[`VIS-005: ZoneEditor DRAWERS controls renders DRAWERS zone editor with a
                   Półki nad szufladą
                 </label>
                 <p
-                  class="text-[9px] text-blue-600 dark:text-blue-400"
+                  class="text-[9px] text-zone-shelves"
                 >
                   Zmniejsz wysokość szuflady aby dodać półki
                 </p>
@@ -2210,7 +2242,7 @@ exports[`VIS-005: ZoneEditor DRAWERS controls renders DRAWERS zone editor with a
         class="text-xs text-muted-foreground flex items-center gap-2"
       >
         <span
-          class="inline-block w-1.5 h-1.5 rounded-full bg-blue-500"
+          class="inline-block w-1.5 h-1.5 rounded-full bg-zone-shelves"
         />
         Luz boczny: 
         13
@@ -2264,7 +2296,7 @@ exports[`VIS-005: ZoneEditor DRAWERS controls renders DRAWERS zone editor with a
                 mm)
               </span>
               <span
-                class="text-xs text-blue-600"
+                class="text-xs text-zone-shelves"
               >
                 (korpus)
               </span>
@@ -2302,6 +2334,7 @@ exports[`VIS-005: ZoneEditor DRAWERS controls renders DRAWERS zone editor with a
           aria-controls="radix-_r_b_"
           aria-expanded="false"
           class="flex w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 ring-offset-background data-[placeholder]:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1 h-8 text-xs"
+          data-placeholder=""
           data-state="closed"
           dir="ltr"
           role="combobox"
@@ -2310,24 +2343,7 @@ exports[`VIS-005: ZoneEditor DRAWERS controls renders DRAWERS zone editor with a
           <span
             style="pointer-events: none;"
           >
-            <div
-              class="flex items-center gap-2"
-            >
-              <div
-                class="w-3 h-3 rounded-sm border"
-                style="background-color: rgb(255, 255, 255);"
-              />
-              <span>
-                Biała płyta 18mm
-              </span>
-              <span
-                class="text-muted-foreground text-xs"
-              >
-                (
-                18
-                mm)
-              </span>
-            </div>
+            Wybierz materiał
           </span>
           <svg
             aria-hidden="true"
@@ -2356,17 +2372,19 @@ exports[`VIS-005: ZoneEditor DRAWERS controls renders DRAWERS zone editor with a
         2
          frontów • 
         2
-         szuflad
+         
+        szuflad
       </span>
       <span
-        class="font-mono"
+        class="font-mono font-semibold text-foreground"
       >
+        = 
         538
          mm szer.
       </span>
     </div>
     <div
-      class="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 p-2 rounded"
+      class="text-xs text-zone-drawers bg-zone-drawers/10 p-2 rounded"
     >
       Pierwsza strefa (szuflada) na dole sekcji, kolejne układane do góry.
     </div>
@@ -2414,46 +2432,50 @@ exports[`Visual: Selection states renders aspect ratio correctly for tall cabine
     class="flex-1 flex justify-center items-center gap-3 py-2 min-h-0"
   >
     <div
-      class="border-4 border-muted-foreground/40 rounded-md bg-background p-1 flex flex-col-reverse gap-0.5 shadow-inner"
+      class="group/cabinet border-4 border-muted-foreground/40 rounded-md bg-background p-1 flex flex-col-reverse shadow-inner"
       style="min-height: 280px; max-width: 100%;"
     >
       <div
-        class="relative rounded transition-all cursor-pointer overflow-hidden flex flex-col border border-blue-300 dark:border-blue-700 hover:border-primary/40 bg-blue-50/50 dark:bg-blue-950/20"
-        data-testid="zone-shelves-zone"
-        style="flex: 1;"
+        class="contents"
       >
         <div
-          class="absolute inset-1 pointer-events-none"
+          class="relative rounded cursor-pointer overflow-hidden flex flex-col border transition-all duration-200 animate-zone-enter border-zone-shelves/50 hover:border-primary/40 bg-zone-shelves/10"
+          data-testid="zone-shelves-zone"
+          style="flex: 1;"
         >
           <div
-            class="absolute left-0 h-0.5 bg-blue-400/80 rounded-full w-full"
-            style="bottom: 0%;"
-          />
-          <div
-            class="absolute left-0 h-0.5 bg-blue-400/80 rounded-full w-full"
-            style="bottom: 33.33333333333333%;"
-          />
-          <div
-            class="absolute left-0 h-0.5 bg-blue-400/80 rounded-full w-full"
-            style="bottom: 66.66666666666666%;"
-          />
-        </div>
-        <div
-          class="absolute inset-0 flex items-center justify-center pointer-events-none"
-        >
-          <div
-            class="text-center px-1 py-0.5 rounded bg-background/70"
+            class="absolute inset-1 pointer-events-none"
           >
             <div
-              class="text-[9px] font-medium text-blue-600 dark:text-blue-400"
-            >
-              Półki
-            </div>
+              class="absolute left-0 h-0.5 bg-zone-shelves/80 rounded-full w-full"
+              style="bottom: 0%;"
+            />
             <div
-              class="text-[8px] text-muted-foreground"
+              class="absolute left-0 h-0.5 bg-zone-shelves/80 rounded-full w-full"
+              style="bottom: 33.33333333333333%;"
+            />
+            <div
+              class="absolute left-0 h-0.5 bg-zone-shelves/80 rounded-full w-full"
+              style="bottom: 66.66666666666666%;"
+            />
+          </div>
+          <div
+            class="absolute inset-0 flex items-center justify-center pointer-events-none"
+          >
+            <div
+              class="text-center px-1 py-0.5 rounded bg-background/70"
             >
-              3
-              ×
+              <div
+                class="text-[9px] font-medium text-zone-shelves"
+              >
+                Półki
+              </div>
+              <div
+                class="text-[8px] text-muted-foreground"
+              >
+                3
+                ×
+              </div>
             </div>
           </div>
         </div>
@@ -2549,46 +2571,50 @@ exports[`Visual: Selection states renders aspect ratio correctly for wide cabine
     class="flex-1 flex justify-center items-center gap-3 py-2 min-h-0"
   >
     <div
-      class="border-4 border-muted-foreground/40 rounded-md bg-background p-1 flex flex-col-reverse gap-0.5 shadow-inner"
+      class="group/cabinet border-4 border-muted-foreground/40 rounded-md bg-background p-1 flex flex-col-reverse shadow-inner"
       style="min-height: 280px; max-width: 100%;"
     >
       <div
-        class="relative rounded transition-all cursor-pointer overflow-hidden flex flex-col border border-blue-300 dark:border-blue-700 hover:border-primary/40 bg-blue-50/50 dark:bg-blue-950/20"
-        data-testid="zone-shelves-zone"
-        style="flex: 1;"
+        class="contents"
       >
         <div
-          class="absolute inset-1 pointer-events-none"
+          class="relative rounded cursor-pointer overflow-hidden flex flex-col border transition-all duration-200 animate-zone-enter border-zone-shelves/50 hover:border-primary/40 bg-zone-shelves/10"
+          data-testid="zone-shelves-zone"
+          style="flex: 1;"
         >
           <div
-            class="absolute left-0 h-0.5 bg-blue-400/80 rounded-full w-full"
-            style="bottom: 0%;"
-          />
-          <div
-            class="absolute left-0 h-0.5 bg-blue-400/80 rounded-full w-full"
-            style="bottom: 33.33333333333333%;"
-          />
-          <div
-            class="absolute left-0 h-0.5 bg-blue-400/80 rounded-full w-full"
-            style="bottom: 66.66666666666666%;"
-          />
-        </div>
-        <div
-          class="absolute inset-0 flex items-center justify-center pointer-events-none"
-        >
-          <div
-            class="text-center px-1 py-0.5 rounded bg-background/70"
+            class="absolute inset-1 pointer-events-none"
           >
             <div
-              class="text-[9px] font-medium text-blue-600 dark:text-blue-400"
-            >
-              Półki
-            </div>
+              class="absolute left-0 h-0.5 bg-zone-shelves/80 rounded-full w-full"
+              style="bottom: 0%;"
+            />
             <div
-              class="text-[8px] text-muted-foreground"
+              class="absolute left-0 h-0.5 bg-zone-shelves/80 rounded-full w-full"
+              style="bottom: 33.33333333333333%;"
+            />
+            <div
+              class="absolute left-0 h-0.5 bg-zone-shelves/80 rounded-full w-full"
+              style="bottom: 66.66666666666666%;"
+            />
+          </div>
+          <div
+            class="absolute inset-0 flex items-center justify-center pointer-events-none"
+          >
+            <div
+              class="text-center px-1 py-0.5 rounded bg-background/70"
             >
-              3
-              ×
+              <div
+                class="text-[9px] font-medium text-zone-shelves"
+              >
+                Półki
+              </div>
+              <div
+                class="text-[8px] text-muted-foreground"
+              >
+                3
+                ×
+              </div>
             </div>
           </div>
         </div>

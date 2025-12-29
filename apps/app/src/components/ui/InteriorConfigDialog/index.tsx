@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * Interior Configuration Dialog (Zone-based)
@@ -8,7 +8,7 @@
  * division acting like the old "sections" array.
  */
 
-import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -19,15 +19,18 @@ import {
   Button,
   Label,
   cn,
-} from '@meble/ui';
-import type { CabinetInteriorConfig, InteriorZone, Material } from '@/types';
-import { DEFAULT_SHELVES_CONFIG } from '@/types';
-import { Zone } from '@/lib/domain';
-import { INTERIOR_CONFIG, DEFAULT_BODY_THICKNESS } from '@/lib/config';
-import { generateZoneId } from '@/types';
-import { Plus, AlertTriangle, ChevronRight, ChevronLeft, ArrowLeft, ChevronUp, ChevronDown, Home } from 'lucide-react';
-import { InteriorPreview } from './InteriorPreview';
-import { ZoneEditor } from './ZoneEditor';
+} from "@meble/ui";
+import type { CabinetInteriorConfig, InteriorZone, Material } from "@/types";
+import { DEFAULT_SHELVES_CONFIG } from "@/types";
+import { Zone } from "@/lib/domain";
+import { INTERIOR_CONFIG, DEFAULT_BODY_THICKNESS } from "@/lib/config";
+import { generateZoneId } from "@/types";
+import { Plus, AlertTriangle } from "lucide-react";
+import { InteriorPreview } from "./InteriorPreview";
+import { ZoneEditor } from "./ZoneEditor";
+import { ZoneCard } from "./ZoneCard";
+import { ZoneBreadcrumb } from "./ZoneBreadcrumb";
+import { ZoneMinimap } from "./ZoneMinimap";
 
 // ============================================================================
 // Scroll Container with Fade Indicator
@@ -59,13 +62,13 @@ function ScrollContainer({ children, className }: ScrollContainerProps) {
     if (!el) return;
 
     checkScroll();
-    el.addEventListener('scroll', checkScroll, { passive: true });
+    el.addEventListener("scroll", checkScroll, { passive: true });
 
     const resizeObserver = new ResizeObserver(checkScroll);
     resizeObserver.observe(el);
 
     return () => {
-      el.removeEventListener('scroll', checkScroll);
+      el.removeEventListener("scroll", checkScroll);
       resizeObserver.disconnect();
     };
   }, [checkScroll]);
@@ -75,11 +78,11 @@ function ScrollContainer({ children, className }: ScrollContainerProps) {
   }, [children, checkScroll]);
 
   return (
-    <div className={cn('relative', className)}>
+    <div className={cn("relative", className)}>
       <div
         className={cn(
-          'absolute top-0 left-0 right-0 h-6 bg-gradient-to-b from-background to-transparent pointer-events-none z-10 transition-opacity duration-200',
-          canScrollUp ? 'opacity-100' : 'opacity-0'
+          "absolute top-0 left-0 right-0 h-6 bg-gradient-to-b from-background to-transparent pointer-events-none z-10 transition-opacity duration-200",
+          canScrollUp ? "opacity-100" : "opacity-0"
         )}
       />
 
@@ -89,8 +92,8 @@ function ScrollContainer({ children, className }: ScrollContainerProps) {
 
       <div
         className={cn(
-          'absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-background to-transparent pointer-events-none z-10 transition-opacity duration-200',
-          canScrollDown ? 'opacity-100' : 'opacity-0'
+          "absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-background to-transparent pointer-events-none z-10 transition-opacity duration-200",
+          canScrollDown ? "opacity-100" : "opacity-0"
         )}
       />
     </div>
@@ -131,7 +134,7 @@ interface InteriorConfigDialogProps {
   onDrawerBottomMaterialChange?: (materialId: string) => void;
 }
 
-type ConflictType = 'drawer-fronts-with-doors' | null;
+type ConflictType = "drawer-fronts-with-doors" | null;
 
 // ============================================================================
 // Helper Functions
@@ -140,19 +143,22 @@ type ConflictType = 'drawer-fronts-with-doors' | null;
 /**
  * Create a child zone with specified content type
  */
-function createChildZone(contentType: 'EMPTY' | 'SHELVES' | 'DRAWERS', depth: number): InteriorZone {
+function createChildZone(
+  contentType: "EMPTY" | "SHELVES" | "DRAWERS",
+  depth: number
+): InteriorZone {
   const zone: InteriorZone = {
     id: crypto.randomUUID(),
     contentType,
-    heightConfig: { mode: 'RATIO', ratio: 1 },
+    heightConfig: { mode: "RATIO", ratio: 1 },
     depth,
   };
 
-  if (contentType === 'SHELVES') {
+  if (contentType === "SHELVES") {
     zone.shelvesConfig = { ...DEFAULT_SHELVES_CONFIG };
-  } else if (contentType === 'DRAWERS') {
+  } else if (contentType === "DRAWERS") {
     zone.drawerConfig = {
-      slideType: 'SIDE_MOUNT',
+      slideType: "SIDE_MOUNT",
       zones: [
         { id: generateZoneId(), heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
         { id: generateZoneId(), heightRatio: 1, front: {}, boxes: [{ heightRatio: 1 }] },
@@ -170,11 +176,11 @@ function createDefaultConfig(): CabinetInteriorConfig {
   return {
     rootZone: {
       id: crypto.randomUUID(),
-      contentType: 'NESTED',
-      divisionDirection: 'HORIZONTAL',
-      heightConfig: { mode: 'RATIO', ratio: 1 },
+      contentType: "NESTED",
+      divisionDirection: "HORIZONTAL",
+      heightConfig: { mode: "RATIO", ratio: 1 },
       depth: 0,
-      children: [createChildZone('SHELVES', 1)],
+      children: [createChildZone("SHELVES", 1)],
     },
   };
 }
@@ -188,13 +194,16 @@ function normalizeConfig(config: CabinetInteriorConfig | undefined): CabinetInte
   }
 
   // If rootZone is already NESTED with HORIZONTAL, use as-is
-  if (config.rootZone.contentType === 'NESTED' && config.rootZone.divisionDirection === 'HORIZONTAL') {
+  if (
+    config.rootZone.contentType === "NESTED" &&
+    config.rootZone.divisionDirection === "HORIZONTAL"
+  ) {
     // Ensure there's at least one child
     if (!config.rootZone.children || config.rootZone.children.length === 0) {
       return {
         rootZone: {
           ...config.rootZone,
-          children: [createChildZone('SHELVES', 1)],
+          children: [createChildZone("SHELVES", 1)],
         },
       };
     }
@@ -205,9 +214,9 @@ function normalizeConfig(config: CabinetInteriorConfig | undefined): CabinetInte
   return {
     rootZone: {
       id: crypto.randomUUID(),
-      contentType: 'NESTED',
-      divisionDirection: 'HORIZONTAL',
-      heightConfig: { mode: 'RATIO', ratio: 1 },
+      contentType: "NESTED",
+      divisionDirection: "HORIZONTAL",
+      heightConfig: { mode: "RATIO", ratio: 1 },
       depth: 0,
       children: [{ ...config.rootZone, depth: 1 }],
     },
@@ -218,12 +227,12 @@ function normalizeConfig(config: CabinetInteriorConfig | undefined): CabinetInte
  * Check if any zone in tree has drawer fronts
  */
 function hasDrawerFronts(zone: InteriorZone): boolean {
-  if (zone.contentType === 'DRAWERS' && zone.drawerConfig) {
-    if (zone.drawerConfig.zones.some(z => z.front !== null)) {
+  if (zone.contentType === "DRAWERS" && zone.drawerConfig) {
+    if (zone.drawerConfig.zones.some((z) => z.front !== null)) {
       return true;
     }
   }
-  if (zone.contentType === 'NESTED' && zone.children) {
+  if (zone.contentType === "NESTED" && zone.children) {
     return zone.children.some(hasDrawerFronts);
   }
   return false;
@@ -233,16 +242,16 @@ function hasDrawerFronts(zone: InteriorZone): boolean {
  * Remove all drawer fronts from zone tree
  */
 function removeDrawerFronts(zone: InteriorZone): InteriorZone {
-  if (zone.contentType === 'DRAWERS' && zone.drawerConfig) {
+  if (zone.contentType === "DRAWERS" && zone.drawerConfig) {
     return {
       ...zone,
       drawerConfig: {
         ...zone.drawerConfig,
-        zones: zone.drawerConfig.zones.map(z => ({ ...z, front: null })),
+        zones: zone.drawerConfig.zones.map((z) => ({ ...z, front: null })),
       },
     };
   }
-  if (zone.contentType === 'NESTED' && zone.children) {
+  if (zone.contentType === "NESTED" && zone.children) {
     return {
       ...zone,
       children: zone.children.map(removeDrawerFronts),
@@ -283,14 +292,18 @@ function findZonePath(zone: InteriorZone, targetId: string, path: string[] = [])
 /**
  * Update a zone by ID recursively in the tree
  */
-function updateZoneById(zone: InteriorZone, id: string, updater: (z: InteriorZone) => InteriorZone): InteriorZone {
+function updateZoneById(
+  zone: InteriorZone,
+  id: string,
+  updater: (z: InteriorZone) => InteriorZone
+): InteriorZone {
   if (zone.id === id) {
     return updater(zone);
   }
   if (zone.children) {
     return {
       ...zone,
-      children: zone.children.map(child => updateZoneById(child, id, updater)),
+      children: zone.children.map((child) => updateZoneById(child, id, updater)),
     };
   }
   return zone;
@@ -301,16 +314,20 @@ function updateZoneById(zone: InteriorZone, id: string, updater: (z: InteriorZon
  */
 function deleteZoneById(zone: InteriorZone, id: string): InteriorZone {
   if (zone.children) {
-    const newChildren = zone.children.filter(child => child.id !== id);
+    const newChildren = zone.children.filter((child) => child.id !== id);
     // If a child was removed, update partitions count for VERTICAL divisions
     let newPartitions = zone.partitions;
-    if (newChildren.length !== zone.children.length && zone.divisionDirection === 'VERTICAL' && zone.partitions) {
+    if (
+      newChildren.length !== zone.children.length &&
+      zone.divisionDirection === "VERTICAL" &&
+      zone.partitions
+    ) {
       // Keep n-1 partitions for n children
       newPartitions = zone.partitions.slice(0, Math.max(0, newChildren.length - 1));
     }
     return {
       ...zone,
-      children: newChildren.map(child => deleteZoneById(child, id)),
+      children: newChildren.map((child) => deleteZoneById(child, id)),
       partitions: newPartitions,
     };
   }
@@ -359,14 +376,9 @@ export function InteriorConfigDialog({
   );
 
   // Get the top-level children zones (for preview display) - memoized to maintain stable reference
-  const zones = useMemo(
-    () => localConfig.rootZone.children ?? [],
-    [localConfig.rootZone.children]
-  );
+  const zones = useMemo(() => localConfig.rootZone.children ?? [], [localConfig.rootZone.children]);
 
-  const [selectedZoneId, setSelectedZoneId] = useState<string | null>(
-    zones[0]?.id ?? null
-  );
+  const [selectedZoneId, setSelectedZoneId] = useState<string | null>(zones[0]?.id ?? null);
 
   // Conflict resolution state
   const [conflictType, setConflictType] = useState<ConflictType>(null);
@@ -393,13 +405,13 @@ export function InteriorConfigDialog({
 
   // Find selected zone anywhere in the tree (supports nested navigation)
   const selectedZone = useMemo(
-    () => selectedZoneId ? findZoneById(localConfig.rootZone, selectedZoneId) : null,
+    () => (selectedZoneId ? findZoneById(localConfig.rootZone, selectedZoneId) : null),
     [localConfig.rootZone, selectedZoneId]
   );
 
   // Get path to selected zone for breadcrumb navigation
   const selectedZonePath = useMemo(
-    () => selectedZoneId ? findZonePath(localConfig.rootZone, selectedZoneId) : null,
+    () => (selectedZoneId ? findZonePath(localConfig.rootZone, selectedZoneId) : null),
     [localConfig.rootZone, selectedZoneId]
   );
 
@@ -414,13 +426,28 @@ export function InteriorConfigDialog({
   const isNestedSelection = selectedZonePath && selectedZonePath.length > 2;
 
   const handleAddZone = () => {
-    const newZone = createChildZone('EMPTY', 1);
+    const newZone = createChildZone("EMPTY", 1);
     setLocalConfig((prev) => ({
       rootZone: {
         ...prev.rootZone,
         children: [...(prev.rootZone.children ?? []), newZone],
       },
     }));
+    setSelectedZoneId(newZone.id);
+  };
+
+  const handleAddZoneAtIndex = (atIndex: number) => {
+    const newZone = createChildZone("EMPTY", 1);
+    setLocalConfig((prev) => {
+      const children = [...(prev.rootZone.children ?? [])];
+      children.splice(atIndex, 0, newZone);
+      return {
+        rootZone: {
+          ...prev.rootZone,
+          children,
+        },
+      };
+    });
     setSelectedZoneId(newZone.id);
   };
 
@@ -440,7 +467,7 @@ export function InteriorConfigDialog({
 
   // Navigate into a nested zone's children
   const handleEnterNestedZone = (zone: InteriorZone) => {
-    if (zone.contentType === 'NESTED' && zone.children && zone.children.length > 0) {
+    if (zone.contentType === "NESTED" && zone.children && zone.children.length > 0) {
       setSelectedZoneId(zone.children[0].id);
     }
   };
@@ -458,7 +485,7 @@ export function InteriorConfigDialog({
 
     // Show conflict dialog if adding fronts while doors exist
     if (hasDoors && willHaveFronts && !configHasDrawerFronts) {
-      setConflictType('drawer-fronts-with-doors');
+      setConflictType("drawer-fronts-with-doors");
     }
 
     // Use recursive update to handle zones at any depth
@@ -468,25 +495,25 @@ export function InteriorConfigDialog({
   };
 
   // Conflict resolution handlers
-  const handleConflictResolve = (action: 'convert-drawers' | 'remove-doors' | 'cancel') => {
-    if (action === 'convert-drawers') {
+  const handleConflictResolve = (action: "convert-drawers" | "remove-doors" | "cancel") => {
+    if (action === "convert-drawers") {
       setLocalConfig((prev) => ({
         rootZone: removeDrawerFronts(prev.rootZone),
       }));
-    } else if (action === 'remove-doors') {
+    } else if (action === "remove-doors") {
       onRemoveDoors?.();
     }
     setConflictType(null);
   };
 
-  const handleMoveZone = (zoneId: string, direction: 'up' | 'down') => {
+  const handleMoveZone = (zoneId: string, direction: "up" | "down") => {
     setLocalConfig((prev) => {
       const children = [...(prev.rootZone.children ?? [])];
       const index = children.findIndex((z) => z.id === zoneId);
       if (index === -1) return prev;
 
       // 'up' = higher in cabinet = higher index (since first zone is at bottom)
-      const newIndex = direction === 'up' ? index + 1 : index - 1;
+      const newIndex = direction === "up" ? index + 1 : index - 1;
       if (newIndex < 0 || newIndex >= children.length) return prev;
 
       [children[index], children[newIndex]] = [children[newIndex], children[index]];
@@ -497,7 +524,11 @@ export function InteriorConfigDialog({
   };
 
   // Move child within a nested zone
-  const handleMoveNestedChild = (parentId: string, childId: string, direction: 'up' | 'down' | 'left' | 'right') => {
+  const handleMoveNestedChild = (
+    parentId: string,
+    childId: string,
+    direction: "up" | "down" | "left" | "right"
+  ) => {
     setLocalConfig((prev) => {
       const parent = findZoneById(prev.rootZone, parentId);
       if (!parent?.children) return prev;
@@ -507,7 +538,7 @@ export function InteriorConfigDialog({
       if (index === -1) return prev;
 
       // For HORIZONTAL: up/down, for VERTICAL: left/right
-      const delta = (direction === 'up' || direction === 'right') ? 1 : -1;
+      const delta = direction === "up" || direction === "right" ? 1 : -1;
       const newIndex = index + delta;
       if (newIndex < 0 || newIndex >= children.length) return prev;
 
@@ -518,6 +549,20 @@ export function InteriorConfigDialog({
       };
     });
   };
+
+  // Handle zone resize (change height ratio)
+  const handleResizeZone = useCallback((zoneId: string, newRatio: number) => {
+    setLocalConfig((prev) => ({
+      rootZone: updateZoneById(prev.rootZone, zoneId, (zone) => ({
+        ...zone,
+        heightConfig: {
+          ...zone.heightConfig,
+          mode: "RATIO" as const,
+          ratio: newRatio,
+        },
+      })),
+    }));
+  }, []);
 
   const handleSave = () => {
     onConfigChange(localConfig);
@@ -535,7 +580,7 @@ export function InteriorConfigDialog({
     if (!selectedZone || !selectedZonePath || selectedZonePath.length <= 1) {
       // Top-level zones: use full interior height
       const ratio = zones.reduce((sum, z) => {
-        const r = z.heightConfig.mode === 'RATIO' ? (z.heightConfig.ratio ?? 1) : 1;
+        const r = z.heightConfig.mode === "RATIO" ? (z.heightConfig.ratio ?? 1) : 1;
         return sum + r;
       }, 0);
       return { totalRatio: ratio, interiorHeight: fullInteriorHeight };
@@ -553,44 +598,46 @@ export function InteriorConfigDialog({
 
       if (!grandparent?.children) continue;
 
-      const parent = grandparent.children.find(c => c.id === parentId);
+      const parent = grandparent.children.find((c) => c.id === parentId);
       if (!parent) continue;
 
       // Calculate this zone's allocated space based on grandparent's direction
-      if (grandparent.divisionDirection === 'HORIZONTAL') {
+      if (grandparent.divisionDirection === "HORIZONTAL") {
         // Horizontal division = heights are distributed
         const siblings = grandparent.children;
         const siblingTotalRatio = siblings.reduce((sum, s) => {
-          if (s.heightConfig.mode === 'EXACT' && s.heightConfig.exactMm) return sum;
+          if (s.heightConfig.mode === "EXACT" && s.heightConfig.exactMm) return sum;
           return sum + (s.heightConfig.ratio ?? 1);
         }, 0);
         const fixedTotal = siblings.reduce((sum, s) => {
-          if (s.heightConfig.mode === 'EXACT' && s.heightConfig.exactMm) return sum + s.heightConfig.exactMm;
+          if (s.heightConfig.mode === "EXACT" && s.heightConfig.exactMm)
+            return sum + s.heightConfig.exactMm;
           return sum;
         }, 0);
         const remainingHeight = currentHeight - fixedTotal;
 
-        if (parent.heightConfig.mode === 'EXACT' && parent.heightConfig.exactMm) {
+        if (parent.heightConfig.mode === "EXACT" && parent.heightConfig.exactMm) {
           currentHeight = parent.heightConfig.exactMm;
         } else {
           const ratio = parent.heightConfig.ratio ?? 1;
           currentHeight = Math.round((ratio / siblingTotalRatio) * remainingHeight);
         }
-      } else if (grandparent.divisionDirection === 'VERTICAL') {
+      } else if (grandparent.divisionDirection === "VERTICAL") {
         // Vertical division = widths are distributed, height stays same
         // But we also need to track width for nested VERTICAL divisions
         const siblings = grandparent.children;
         const siblingTotalRatio = siblings.reduce((sum, s) => {
-          if (s.widthConfig?.mode === 'FIXED' && s.widthConfig.fixedMm) return sum;
+          if (s.widthConfig?.mode === "FIXED" && s.widthConfig.fixedMm) return sum;
           return sum + (s.widthConfig?.ratio ?? 1);
         }, 0);
         const fixedTotal = siblings.reduce((sum, s) => {
-          if (s.widthConfig?.mode === 'FIXED' && s.widthConfig.fixedMm) return sum + s.widthConfig.fixedMm;
+          if (s.widthConfig?.mode === "FIXED" && s.widthConfig.fixedMm)
+            return sum + s.widthConfig.fixedMm;
           return sum;
         }, 0);
         const remainingWidth = currentWidth - fixedTotal;
 
-        if (parent.widthConfig?.mode === 'FIXED' && parent.widthConfig.fixedMm) {
+        if (parent.widthConfig?.mode === "FIXED" && parent.widthConfig.fixedMm) {
           currentWidth = parent.widthConfig.fixedMm;
         } else {
           const ratio = parent.widthConfig?.ratio ?? 1;
@@ -608,17 +655,24 @@ export function InteriorConfigDialog({
     }
 
     const siblingRatio = parent.children.reduce((sum, s) => {
-      if (parent.divisionDirection === 'HORIZONTAL') {
-        return sum + (s.heightConfig.mode === 'RATIO' ? (s.heightConfig.ratio ?? 1) : 1);
+      if (parent.divisionDirection === "HORIZONTAL") {
+        return sum + (s.heightConfig.mode === "RATIO" ? (s.heightConfig.ratio ?? 1) : 1);
       }
-      return sum + (s.widthConfig?.mode === 'PROPORTIONAL' ? (s.widthConfig.ratio ?? 1) : 1);
+      return sum + (s.widthConfig?.mode === "PROPORTIONAL" ? (s.widthConfig.ratio ?? 1) : 1);
     }, 0);
 
     return { totalRatio: siblingRatio, interiorHeight: currentHeight };
-  }, [selectedZone, selectedZonePath, localConfig.rootZone, zones, fullInteriorHeight, fullInteriorWidth]);
+  }, [
+    selectedZone,
+    selectedZonePath,
+    localConfig.rootZone,
+    zones,
+    fullInteriorHeight,
+    fullInteriorWidth,
+  ]);
 
   // Check for conflicts
-  const hasShelves = zones.some((z) => z.contentType === 'SHELVES');
+  const hasShelves = zones.some((z) => z.contentType === "SHELVES");
   const showDoorsDrawerWarning = hasDoors && configHasDrawerFronts;
   const showShelvesNeedCover = hasDoors && hasShelves && configHasDrawerFronts;
 
@@ -641,11 +695,25 @@ export function InteriorConfigDialog({
                     selectedZoneId={selectedZoneId}
                     onSelectZone={setSelectedZoneId}
                     onMoveZone={handleMoveZone}
+                    onAddZone={handleAddZoneAtIndex}
+                    onEnterZone={(zoneId) => {
+                      const zone = findZoneById(localConfig.rootZone, zoneId);
+                      if (zone) handleEnterNestedZone(zone);
+                    }}
+                    onResizeZone={handleResizeZone}
                     cabinetHeight={cabinetHeight}
                     cabinetWidth={cabinetWidth}
                     cabinetDepth={cabinetDepth}
                   />
                 </div>
+
+                {/* Minimap for deep navigation */}
+                <ZoneMinimap
+                  rootZone={localConfig.rootZone}
+                  selectedZoneId={selectedZoneId}
+                  selectedPath={selectedZonePath ?? []}
+                  onSelectZone={setSelectedZoneId}
+                />
 
                 {/* Add zone button */}
                 <Button
@@ -691,11 +759,15 @@ export function InteriorConfigDialog({
                         variant="outline"
                         size="sm"
                         className="w-full justify-start h-auto py-2 text-left"
-                        onClick={() => handleConflictResolve('convert-drawers')}
+                        onClick={() => handleConflictResolve("convert-drawers")}
                       >
                         <div>
-                          <div className="text-xs font-medium">Konwertuj na szuflady wewnętrzne</div>
-                          <div className="text-[10px] text-muted-foreground">Usuń fronty szuflad, zachowaj drzwi</div>
+                          <div className="text-xs font-medium">
+                            Konwertuj na szuflady wewnętrzne
+                          </div>
+                          <div className="text-[10px] text-muted-foreground">
+                            Usuń fronty szuflad, zachowaj drzwi
+                          </div>
                         </div>
                       </Button>
                       {onRemoveDoors && (
@@ -703,11 +775,13 @@ export function InteriorConfigDialog({
                           variant="outline"
                           size="sm"
                           className="w-full justify-start h-auto py-2 text-left"
-                          onClick={() => handleConflictResolve('remove-doors')}
+                          onClick={() => handleConflictResolve("remove-doors")}
                         >
                           <div>
                             <div className="text-xs font-medium">Usuń drzwi</div>
-                            <div className="text-[10px] text-muted-foreground">Zachowaj fronty szuflad</div>
+                            <div className="text-[10px] text-muted-foreground">
+                              Zachowaj fronty szuflad
+                            </div>
                           </div>
                         </Button>
                       )}
@@ -726,187 +800,84 @@ export function InteriorConfigDialog({
             <ScrollContainer className="flex-1">
               <div className="px-4 py-4 flex flex-col gap-4">
                 {/* Breadcrumb navigation - always show for context */}
-                <div className="flex items-center gap-2 pb-3 border-b bg-muted/20 -mx-4 px-4 -mt-4 pt-4 rounded-t-lg">
-                  {/* Home button */}
-                  <Button
-                    variant={!isNestedSelection ? "secondary" : "ghost"}
-                    size="sm"
-                    className="h-7 px-2 text-xs gap-1"
-                    onClick={() => setSelectedZoneId(zones[0]?.id ?? null)}
-                  >
-                    <Home className="h-3 w-3" />
-                    Szafka
-                  </Button>
-
-                  {/* Path breadcrumbs */}
-                  {selectedZonePath && selectedZonePath.length > 2 && (
-                    <>
-                      {selectedZonePath.slice(1).map((zoneId, idx) => {
-                        const zone = findZoneById(localConfig.rootZone, zoneId);
-                        const parentZone = idx > 0 ? findZoneById(localConfig.rootZone, selectedZonePath[idx]) : localConfig.rootZone;
-                        const isLast = idx === selectedZonePath.length - 2;
-                        const childIndex = parentZone?.children?.findIndex(c => c.id === zoneId) ?? -1;
-
-                        // Get label based on parent direction
-                        let label: string;
-                        if (zone?.contentType === 'NESTED') {
-                          label = zone.divisionDirection === 'VERTICAL' ? 'Kolumny' : 'Sekcje';
-                        } else if (parentZone?.divisionDirection === 'VERTICAL') {
-                          label = `Kol. ${childIndex + 1}`;
-                        } else {
-                          label = `Sek. ${childIndex + 1}`;
-                        }
-
-                        return (
-                          <div key={zoneId} className="flex items-center gap-1">
-                            <ChevronRight className="h-3 w-3 text-muted-foreground/40" />
-                            <Button
-                              variant={isLast ? "secondary" : "ghost"}
-                              size="sm"
-                              className={cn(
-                                "h-7 px-2 text-xs",
-                                isLast && "font-medium"
-                              )}
-                              onClick={() => setSelectedZoneId(zoneId)}
-                            >
-                              {label}
-                            </Button>
-                          </div>
-                        );
-                      })}
-                    </>
-                  )}
-
-                  {/* Back button for nested */}
-                  {isNestedSelection && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-7 px-2 text-xs gap-1 ml-auto"
-                      onClick={handleNavigateBack}
-                    >
-                      <ArrowLeft className="h-3 w-3" />
-                      Wróć
-                    </Button>
-                  )}
+                <div className="pb-3 border-b bg-muted/20 -mx-4 px-4 -mt-4 pt-4 rounded-t-lg">
+                  <ZoneBreadcrumb
+                    path={selectedZonePath ?? []}
+                    rootZone={localConfig.rootZone}
+                    onNavigate={setSelectedZoneId}
+                    onNavigateHome={() => setSelectedZoneId(zones[0]?.id ?? null)}
+                    isNested={isNestedSelection ?? false}
+                  />
                 </div>
 
-                {/* Enter nested zone - show children list with reorder */}
-                {selectedZone?.contentType === 'NESTED' && selectedZone.children && selectedZone.children.length > 0 && (
-                  <div className="border rounded-lg p-3 bg-muted/10">
-                    <div className="flex items-center justify-between mb-2">
-                      <Label className="text-xs text-muted-foreground">
-                        {selectedZone.divisionDirection === 'VERTICAL' ? 'Kolumny' : 'Sekcje'} ({selectedZone.children.length})
-                      </Label>
-                      <span className="text-[10px] text-muted-foreground">
-                        {selectedZone.divisionDirection === 'VERTICAL' ? '← → zmień kolejność' : '↑ ↓ zmień kolejność'}
-                      </span>
-                    </div>
-                    <div className={cn(
-                      "flex gap-2",
-                      selectedZone.divisionDirection === 'VERTICAL' ? "flex-row" : "flex-col-reverse"
-                    )}>
-                      {selectedZone.children.map((child, idx) => {
-                        const childLabel = selectedZone.divisionDirection === 'VERTICAL'
-                          ? `Kol. ${idx + 1}`
-                          : `Sek. ${idx + 1}`;
-                        const contentLabel = child.contentType === 'NESTED'
-                          ? (child.divisionDirection === 'VERTICAL' ? '◫' : '▤')
-                          : child.contentType === 'SHELVES' ? '═'
-                          : child.contentType === 'DRAWERS' ? '☰'
-                          : '○';
-                        const isChildSelected = child.id === selectedZoneId;
-                        const isFirst = idx === 0;
-                        const isLast = idx === selectedZone.children!.length - 1;
-                        const isVertical = selectedZone.divisionDirection === 'VERTICAL';
-
-                        return (
-                          <div
+                {/* Enter nested zone - show children as ZoneCards */}
+                {selectedZone?.contentType === "NESTED" &&
+                  selectedZone.children &&
+                  selectedZone.children.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium">
+                          {selectedZone.divisionDirection === "VERTICAL" ? "Kolumny" : "Sekcje"} (
+                          {selectedZone.children.length})
+                        </Label>
+                        <span className="text-xs text-muted-foreground">
+                          Wybierz sekcję do edycji
+                        </span>
+                      </div>
+                      <div
+                        className={cn(
+                          "flex gap-2",
+                          selectedZone.divisionDirection === "VERTICAL"
+                            ? "flex-row"
+                            : "flex-col-reverse"
+                        )}
+                      >
+                        {selectedZone.children.map((child, idx) => (
+                          <ZoneCard
                             key={child.id}
-                            className={cn(
-                              "flex items-center gap-1 p-2 rounded bg-muted/30 hover:bg-muted/50 transition-colors",
-                              isVertical ? "flex-col flex-1" : "flex-row",
-                              isChildSelected && "ring-2 ring-primary bg-primary/5"
-                            )}
-                          >
-                            {/* Reorder button (left/up) */}
-                            {selectedZone.children!.length > 1 && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className={cn(
-                                  "h-5 w-5 shrink-0",
-                                  (isVertical ? isFirst : isLast) && "invisible"
-                                )}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleMoveNestedChild(
-                                    selectedZone.id,
-                                    child.id,
-                                    isVertical ? 'left' : 'up'
-                                  );
-                                }}
-                              >
-                                {isVertical
-                                  ? <ChevronLeft className="h-3 w-3" />
-                                  : <ChevronUp className="h-3 w-3" />
-                                }
-                              </Button>
-                            )}
-
-                            {/* Content button */}
-                            <button
-                              className={cn(
-                                "flex-1 flex items-center gap-2 text-left min-w-0",
-                                isVertical && "flex-col"
-                              )}
-                              onClick={() => setSelectedZoneId(child.id)}
-                            >
-                              <span className="text-xs font-medium">{childLabel}</span>
-                              <span className="text-lg opacity-60">{contentLabel}</span>
-                            </button>
-
-                            {/* Reorder button (right/down) */}
-                            {selectedZone.children!.length > 1 && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className={cn(
-                                  "h-5 w-5 shrink-0",
-                                  (isVertical ? isLast : isFirst) && "invisible"
-                                )}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleMoveNestedChild(
-                                    selectedZone.id,
-                                    child.id,
-                                    isVertical ? 'right' : 'down'
-                                  );
-                                }}
-                              >
-                                {isVertical
-                                  ? <ChevronRight className="h-3 w-3" />
-                                  : <ChevronDown className="h-3 w-3" />
-                                }
-                              </Button>
-                            )}
-                          </div>
-                        );
-                      })}
+                            zone={child}
+                            index={idx}
+                            siblingCount={selectedZone.children!.length}
+                            isSelected={child.id === selectedZoneId}
+                            onClick={() => setSelectedZoneId(child.id)}
+                            onEnter={() => {
+                              if (child.contentType === "NESTED" && child.children?.length) {
+                                setSelectedZoneId(child.children[0].id);
+                              }
+                            }}
+                            onMove={(direction) => {
+                              const moveDir =
+                                selectedZone.divisionDirection === "VERTICAL"
+                                  ? direction === "up"
+                                    ? "right"
+                                    : "left"
+                                  : direction;
+                              handleMoveNestedChild(selectedZone.id, child.id, moveDir);
+                            }}
+                            onDelete={() => handleDeleteZone(child.id)}
+                            canDelete={selectedZone.children!.length > 1}
+                            parentDirection={selectedZone.divisionDirection}
+                            compact={selectedZone.divisionDirection === "VERTICAL"}
+                          />
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
                 {/* Current zone indicator */}
                 {selectedZone && (
                   <div className="flex items-center justify-between pb-2 border-b">
                     <div>
                       <Label className="text-sm font-medium">
-                        {selectedZone.contentType === 'NESTED'
-                          ? (selectedZone.divisionDirection === 'VERTICAL' ? 'Podział na kolumny' : 'Podział na sekcje')
-                          : selectedZone.contentType === 'SHELVES' ? 'Sekcja z półkami'
-                          : selectedZone.contentType === 'DRAWERS' ? 'Sekcja z szufladami'
-                          : 'Pusta sekcja'}
+                        {selectedZone.contentType === "NESTED"
+                          ? selectedZone.divisionDirection === "VERTICAL"
+                            ? "Podział na kolumny"
+                            : "Podział na sekcje"
+                          : selectedZone.contentType === "SHELVES"
+                            ? "Sekcja z półkami"
+                            : selectedZone.contentType === "DRAWERS"
+                              ? "Sekcja z szufladami"
+                              : "Pusta sekcja"}
                       </Label>
                       {isNestedSelection && selectedZonePath && (
                         <p className="text-xs text-muted-foreground mt-0.5">
@@ -922,7 +893,11 @@ export function InteriorConfigDialog({
                     zone={selectedZone}
                     onUpdate={handleUpdateZone}
                     onDelete={() => handleDeleteZone(selectedZone.id)}
-                    canDelete={selectedZoneParent ? (selectedZoneParent.children?.length ?? 0) > 1 : zones.length > 1}
+                    canDelete={
+                      selectedZoneParent
+                        ? (selectedZoneParent.children?.length ?? 0) > 1
+                        : zones.length > 1
+                    }
                     cabinetHeight={cabinetHeight}
                     cabinetWidth={cabinetWidth}
                     cabinetDepth={cabinetDepth}
@@ -948,16 +923,25 @@ export function InteriorConfigDialog({
 
           {/* Footer */}
           <div className="flex-shrink-0 border-t bg-muted/20 px-4 py-3 flex flex-col-reverse sm:flex-row justify-between gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              className="w-full sm:w-auto"
+            >
               Anuluj
             </Button>
-            <Button onClick={handleSave} className="w-full sm:w-auto">Zastosuj zmiany</Button>
+            <Button onClick={handleSave} className="w-full sm:w-auto">
+              Zastosuj zmiany
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* Conflict Resolution Popup Dialog */}
-      <Dialog open={conflictType !== null} onOpenChange={(open) => !open && handleConflictResolve('cancel')}>
+      <Dialog
+        open={conflictType !== null}
+        onOpenChange={(open) => !open && handleConflictResolve("cancel")}
+      >
         <DialogContent className="w-full max-w-[calc(100vw-2rem)] md:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-amber-600">
@@ -972,18 +956,20 @@ export function InteriorConfigDialog({
             <Button
               variant="outline"
               className="w-full justify-start h-auto py-3"
-              onClick={() => handleConflictResolve('convert-drawers')}
+              onClick={() => handleConflictResolve("convert-drawers")}
             >
               <div className="text-left">
                 <div className="font-medium">Konwertuj szuflady na wewnętrzne</div>
-                <div className="text-xs text-muted-foreground">Usuń fronty szuflad, zachowaj boxy</div>
+                <div className="text-xs text-muted-foreground">
+                  Usuń fronty szuflad, zachowaj boxy
+                </div>
               </div>
             </Button>
             {onRemoveDoors && (
               <Button
                 variant="outline"
                 className="w-full justify-start h-auto py-3"
-                onClick={() => handleConflictResolve('remove-doors')}
+                onClick={() => handleConflictResolve("remove-doors")}
               >
                 <div className="text-left">
                   <div className="font-medium">Usuń drzwi</div>
@@ -993,7 +979,7 @@ export function InteriorConfigDialog({
             )}
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => handleConflictResolve('cancel')}>
+            <Button variant="ghost" onClick={() => handleConflictResolve("cancel")}>
               Anuluj
             </Button>
           </DialogFooter>

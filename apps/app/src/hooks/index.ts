@@ -25,3 +25,4 @@ export * from "./useMaterialTexture";
 
 // Project hooks
 export * from "./useProjectRestore";
+export * from "./useHydration";

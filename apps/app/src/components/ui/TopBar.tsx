@@ -31,7 +31,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@meble/ui";
-import { ChevronDown, File, FolderOpen, Save, FileText, Cloud, Plus } from "lucide-react";
+import { ChevronDown, File, FolderOpen, Save, FileText, Cloud, Plus, Loader2 } from "lucide-react";
+import { ThemeToggle } from "./ThemeToggle";
 
 interface TopBarProps {
   className?: string;
@@ -170,6 +171,7 @@ export function TopBar({ className }: TopBarProps) {
             <span className="text-xs text-muted-foreground">
               Zaloguj się, aby zapisać projekt w chmurze
             </span>
+            <ThemeToggle />
           </div>
         </div>
       </>
@@ -226,7 +228,14 @@ export function TopBar({ className }: TopBarProps) {
           <div className="h-4 w-px bg-border mx-1" />
 
           {/* Project name */}
-          {currentProjectId ? (
+          {isProjectLoading ? (
+            <div className="flex items-center gap-1.5 px-1">
+              <Loader2 className="h-3 w-3 animate-spin text-primary" />
+              <span className="font-mono text-xs text-muted-foreground uppercase tracking-wide">
+                Wczytywanie...
+              </span>
+            </div>
+          ) : currentProjectId ? (
             <button
               onClick={() => {
                 const newName = prompt("Nazwa projektu:", currentProjectName);
@@ -249,8 +258,10 @@ export function TopBar({ className }: TopBarProps) {
           )}
         </div>
 
-        {/* Right side: Sync status and save button */}
+        {/* Right side: Theme toggle, sync status and save button */}
         <div className="flex items-center gap-2">
+          <ThemeToggle />
+
           {currentProjectId && (
             <SyncStatusIndicator status={syncState.status} size="sm" showLabel={false} />
           )}

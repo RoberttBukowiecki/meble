@@ -85,7 +85,7 @@ export const SCENE_CONFIG = {
   // Camera
   // Front-right view at ~40° from above - good for viewing cabinet fronts
   // X: slight offset to the right, Y: elevated for top-down angle, Z: front view
-  CAMERA_INITIAL_POSITION: [500, 1800, 2000] as [number, number, number],
+  CAMERA_INITIAL_POSITION: [800, 2800, 3200] as [number, number, number],
   CAMERA_FOV: 50,
 
   // Grid
@@ -100,6 +100,23 @@ export const SCENE_CONFIG = {
   // Lighting
   AMBIENT_LIGHT_INTENSITY: 0.5,
   DIRECTIONAL_LIGHT_INTENSITY: 0.8,
+} as const;
+
+// ============================================================================
+// Snap Configuration
+// ============================================================================
+
+export const SNAP_CONFIG = {
+  /** Default snap distance threshold in mm */
+  DEFAULT_DISTANCE: 20,
+  /** Default gap between snapped faces in mm */
+  DEFAULT_SNAP_GAP: 0.1,
+  /** Default collision margin in mm */
+  DEFAULT_COLLISION_MARGIN: 0.3,
+  /** Multiplier for corner snap threshold (relative to snap distance) */
+  CORNER_SNAP_THRESHOLD_MULTIPLIER: 1.5,
+  /** Minimum normal threshold for wall relevance check */
+  WALL_NORMAL_RELEVANCE_THRESHOLD: 0.3,
 } as const;
 
 // ============================================================================
@@ -1220,3 +1237,66 @@ export const CABINET_GAP_CONFIG = {
   /** Gaps larger than this default to SPLIT mode (user can still change to BRIDGE) */
   AUTO_SPLIT_THRESHOLD: 300,
 } as const;
+
+// ============================================================================
+// 3D Scene Theme Configuration
+// ============================================================================
+
+/**
+ * Theme-aware scene colors for light and dark mode
+ * These colors are applied to the 3D scene based on current theme
+ */
+export const SCENE_THEME_CONFIG = {
+  light: {
+    // Room colors
+    WALL_COLOR: "#e5e7eb",
+    FLOOR_COLOR: "#eeeeee",
+    CEILING_COLOR: "#ffffff",
+
+    // Grid colors
+    GRID_CELL_COLOR: "#6b7280",
+    GRID_SECTION_COLOR: "#374151",
+
+    // Lighting
+    AMBIENT_INTENSITY: 0.7,
+    AMBIENT_COLOR: "#ffffff",
+    HEMISPHERE_SKY: "#ffffff",
+    HEMISPHERE_GROUND: "#bbbbbb",
+    HEMISPHERE_INTENSITY: 0.5,
+
+    // Simulation mode
+    SIMULATION_AMBIENT_INTENSITY: 0.1,
+    SIMULATION_HEMISPHERE_GROUND: "#444444",
+    SIMULATION_HEMISPHERE_INTENSITY: 0.2,
+
+    // AO
+    AO_COLOR: "#000000",
+  },
+  dark: {
+    // Room colors - dark room style
+    WALL_COLOR: "#374151", // gray-700
+    FLOOR_COLOR: "#1f2937", // gray-800
+    CEILING_COLOR: "#111827", // gray-900
+
+    // Grid colors - lighter for contrast on dark
+    GRID_CELL_COLOR: "#4b5563", // gray-600
+    GRID_SECTION_COLOR: "#6b7280", // gray-500
+
+    // Lighting - adjusted for dark mode
+    AMBIENT_INTENSITY: 0.5,
+    AMBIENT_COLOR: "#e5e7eb",
+    HEMISPHERE_SKY: "#e5e7eb",
+    HEMISPHERE_GROUND: "#374151",
+    HEMISPHERE_INTENSITY: 0.4,
+
+    // Simulation mode
+    SIMULATION_AMBIENT_INTENSITY: 0.15,
+    SIMULATION_HEMISPHERE_GROUND: "#1f2937",
+    SIMULATION_HEMISPHERE_INTENSITY: 0.25,
+
+    // AO - slightly lighter for visibility
+    AO_COLOR: "#1a1a1a",
+  },
+} as const;
+
+export type SceneTheme = keyof typeof SCENE_THEME_CONFIG;

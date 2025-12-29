@@ -10,7 +10,7 @@
  * - Internal snap within same cabinet still uses V1 logic
  */
 
-import type { Part, Cabinet, SnapSettings, SnapResult, SnapPoint } from '@/types';
+import type { Part, Cabinet, SnapSettings, SnapResult, SnapPoint } from "@/types";
 import {
   type Vec3,
   type OBBFace,
@@ -29,14 +29,14 @@ import {
   calculateEdgeToFaceDistance,
   calculateEdgeToFaceSnapOffset,
   isEdgeWithinFaceBounds,
-} from './obb';
+} from "./obb";
 import {
   type GroupBoundingBoxes,
   calculatePartGroupBounds,
   calculatePartGroupBoundsWithOffset,
   calculateCabinetGroupBoundsWithOffset,
   getTargetGroupBounds,
-} from './group-bounds';
+} from "./group-bounds";
 
 // ============================================================================
 // Types
@@ -46,8 +46,8 @@ import {
  * Snap candidate for V2 snapping
  */
 export interface SnapV2Candidate {
-  type: 'face' | 'edge' | 'edge-to-face';
-  variant?: 'connection' | 'alignment' | 't-joint'; // t-joint = edge to face (perpendicular)
+  type: "face" | "edge" | "edge-to-face";
+  variant?: "connection" | "alignment" | "t-joint"; // t-joint = edge to face (perpendicular)
   sourceGroupId: string;
   targetGroupId: string;
   sourceFace: OBBFace;
@@ -85,14 +85,14 @@ const EXTENDED_BOX_PENALTY = 0.8;
 /**
  * Check if two AABBs overlap
  */
-function doAABBsOverlap(
-  aabbA: { min: Vec3; max: Vec3 },
-  aabbB: { min: Vec3; max: Vec3 }
-): boolean {
+function doAABBsOverlap(aabbA: { min: Vec3; max: Vec3 }, aabbB: { min: Vec3; max: Vec3 }): boolean {
   return (
-    aabbA.min[0] < aabbB.max[0] && aabbA.max[0] > aabbB.min[0] &&
-    aabbA.min[1] < aabbB.max[1] && aabbA.max[1] > aabbB.min[1] &&
-    aabbA.min[2] < aabbB.max[2] && aabbA.max[2] > aabbB.min[2]
+    aabbA.min[0] < aabbB.max[0] &&
+    aabbA.max[0] > aabbB.min[0] &&
+    aabbA.min[1] < aabbB.max[1] &&
+    aabbA.max[1] > aabbB.min[1] &&
+    aabbA.min[2] < aabbB.max[2] &&
+    aabbA.max[2] > aabbB.min[2]
   );
 }
 
@@ -100,8 +100,12 @@ function doAABBsOverlap(
  * Get AABB from OBB faces
  */
 function getAABBFromFaces(faces: OBBFace[]): { min: Vec3; max: Vec3 } {
-  let minX = Infinity, minY = Infinity, minZ = Infinity;
-  let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+  let minX = Infinity,
+    minY = Infinity,
+    minZ = Infinity;
+  let maxX = -Infinity,
+    maxY = -Infinity,
+    maxZ = -Infinity;
 
   for (const face of faces) {
     for (const corner of face.corners) {
@@ -128,7 +132,7 @@ function wouldSnapCauseCollision(
   movingGroup: GroupBoundingBoxes,
   targetGroup: GroupBoundingBoxes,
   snapOffset: Vec3,
-  collisionOffset: number
+  collisionMargin: number
 ): boolean {
   // Get AABBs
   const movingAABB = getAABBFromFaces(movingGroup.faces.core);
@@ -148,17 +152,17 @@ function wouldSnapCauseCollision(
     ],
   };
 
-  // Shrink by collision offset to allow touching (not overlapping)
+  // Shrink by collision margin to allow touching (not overlapping)
   const shrunkMovedAABB: { min: Vec3; max: Vec3 } = {
     min: [
-      movedAABB.min[0] + collisionOffset,
-      movedAABB.min[1] + collisionOffset,
-      movedAABB.min[2] + collisionOffset,
+      movedAABB.min[0] + collisionMargin,
+      movedAABB.min[1] + collisionMargin,
+      movedAABB.min[2] + collisionMargin,
     ],
     max: [
-      movedAABB.max[0] - collisionOffset,
-      movedAABB.max[1] - collisionOffset,
-      movedAABB.max[2] - collisionOffset,
+      movedAABB.max[0] - collisionMargin,
+      movedAABB.max[1] - collisionMargin,
+      movedAABB.max[2] - collisionMargin,
     ],
   };
 
@@ -178,7 +182,8 @@ function findFaceSnapCandidates(
   settings: SnapSettings
 ): SnapV2Candidate[] {
   const candidates: SnapV2Candidate[] = [];
-  const collisionOffset = settings.collisionOffset ?? 1.0;
+  const snapGap = settings.snapGap ?? settings.collisionOffset ?? 0.1;
+  const collisionMargin = settings.collisionMargin ?? 0.3;
 
   // Try core-to-core first, then core-to-extended, then extended-to-extended
   const facePairs: Array<{
@@ -195,7 +200,7 @@ function findFaceSnapCandidates(
     for (const sourceFace of sourceFaces) {
       for (const targetFace of targetFaces) {
         const dotProduct = vec3Dot(sourceFace.normal, targetFace.normal);
-        
+
         // 1. CONNECTION SNAP (Opposite normals)
         if (dotProduct <= OPPOSITE_THRESHOLD) {
           // Calculate distance
@@ -203,11 +208,11 @@ function findFaceSnapCandidates(
           if (distance === null || distance > settings.distance) continue;
 
           // Calculate snap offset
-          const snapOffset = calculateFaceSnapOffset(sourceFace, targetFace, collisionOffset);
+          const snapOffset = calculateFaceSnapOffset(sourceFace, targetFace, snapGap);
 
           candidates.push({
-            type: 'face',
-            variant: 'connection',
+            type: "face",
+            variant: "connection",
             sourceGroupId: movingGroup.groupId,
             targetGroupId: targetGroup.groupId,
             sourceFace,
@@ -218,7 +223,7 @@ function findFaceSnapCandidates(
             usedExtendedBox: usedExtended,
           });
         }
-        
+
         // 2. ALIGNMENT SNAP (Same normals)
         else if (dotProduct >= ALIGNMENT_THRESHOLD) {
           // Calculate distance
@@ -230,16 +235,23 @@ function findFaceSnapCandidates(
 
           // IMPORTANT: Reject alignment snaps that would cause collision
           // This prevents parts from being "aligned" in a way that causes overlap
-          const wouldCollide = wouldSnapCauseCollision(movingGroup, targetGroup, snapOffset, collisionOffset);
+          const wouldCollide = wouldSnapCauseCollision(
+            movingGroup,
+            targetGroup,
+            snapOffset,
+            collisionMargin
+          );
           if (wouldCollide) {
             // Debug: see which alignment snaps are rejected
-            console.log(`Rejected alignment snap: offset=[${snapOffset.map(n => n.toFixed(1))}], distance=${distance.toFixed(1)}`);
+            console.log(
+              `Rejected alignment snap: offset=[${snapOffset.map((n) => n.toFixed(1))}], distance=${distance.toFixed(1)}`
+            );
             continue; // Skip this candidate - it would cause collision
           }
 
           candidates.push({
-            type: 'face',
-            variant: 'alignment',
+            type: "face",
+            variant: "alignment",
             sourceGroupId: movingGroup.groupId,
             targetGroupId: targetGroup.groupId,
             sourceFace,
@@ -267,7 +279,7 @@ function findEdgeToFaceSnapCandidates(
   settings: SnapSettings
 ): SnapV2Candidate[] {
   const candidates: SnapV2Candidate[] = [];
-  const collisionOffset = settings.collisionOffset ?? 1.0;
+  const snapGap = settings.snapGap ?? settings.collisionOffset ?? 0.1;
 
   // For each face of the moving group, get its edges
   // and try to snap them to faces of the target group
@@ -289,11 +301,11 @@ function findEdgeToFaceSnapCandidates(
         if (!isEdgeWithinFaceBounds(edge, targetFace, 0)) continue;
 
         // Calculate snap offset
-        const snapOffset = calculateEdgeToFaceSnapOffset(edge, targetFace, collisionOffset);
+        const snapOffset = calculateEdgeToFaceSnapOffset(edge, targetFace, snapGap);
 
         candidates.push({
-          type: 'edge-to-face',
-          variant: 't-joint',
+          type: "edge-to-face",
+          variant: "t-joint",
           sourceGroupId: movingGroup.groupId,
           targetGroupId: targetGroup.groupId,
           sourceFace,
@@ -314,10 +326,7 @@ function findEdgeToFaceSnapCandidates(
 /**
  * Score a snap candidate based on distance and alignment
  */
-function scoreSnapCandidate(
-  candidate: SnapV2Candidate,
-  settings: SnapSettings
-): number {
+function scoreSnapCandidate(candidate: SnapV2Candidate, settings: SnapSettings): number {
   const maxDistance = settings.distance;
 
   // Distance component (closer = higher score)
@@ -336,9 +345,9 @@ function scoreSnapCandidate(
   // - alignment (same direction): 0.95 (second preference)
   // - t-joint (edge to face): 0.7 (lowest priority - only use when no face snaps available)
   let variantFactor = 1.0;
-  if (candidate.variant === 'alignment') {
+  if (candidate.variant === "alignment") {
     variantFactor = 0.95;
-  } else if (candidate.variant === 't-joint') {
+  } else if (candidate.variant === "t-joint") {
     variantFactor = 0.7; // Significantly lower to prefer face snaps
   }
 
@@ -357,7 +366,7 @@ function candidateToSnapPoint(candidate: SnapV2Candidate, score: number): SnapPo
   ];
 
   return {
-    id: `v2-${candidate.type}-${candidate.variant || 'connection'}-${candidate.targetGroupId}-${candidate.targetFace.axisIndex}`,
+    id: `v2-${candidate.type}-${candidate.variant || "connection"}-${candidate.targetGroupId}-${candidate.targetFace.axisIndex}`,
     type: candidate.type,
     position: snapPosition,
     normal: candidate.targetFace.normal,
@@ -377,11 +386,16 @@ function candidateToSnapPoint(candidate: SnapV2Candidate, score: number): SnapPo
 export function calculateSnapV2Simple(
   movingGroup: GroupBoundingBoxes,
   targetGroups: GroupBoundingBoxes[],
-  axis: 'X' | 'Y' | 'Z',
+  axis: "X" | "Y" | "Z",
   settings: SnapSettings
-): { snapped: boolean; offset: number; candidate: SnapV2Candidate | null; snapPoints: SnapPoint[] } {
-  const axisIndex = axis === 'X' ? 0 : axis === 'Y' ? 1 : 2;
-  const collisionOffset = settings.collisionOffset ?? 1.0;
+): {
+  snapped: boolean;
+  offset: number;
+  candidate: SnapV2Candidate | null;
+  snapPoints: SnapPoint[];
+} {
+  const axisIndex = axis === "X" ? 0 : axis === "Y" ? 1 : 2;
+  const snapGap = settings.snapGap ?? settings.collisionOffset ?? 0.1;
 
   let bestCandidate: SnapV2Candidate | null = null;
   let bestScore = 0;
@@ -406,9 +420,7 @@ export function calculateSnapV2Simple(
       // Check if this snap is on the drag axis
       const axisComponent = Math.abs(candidate.snapOffset[axisIndex]);
       const totalLength = Math.sqrt(
-        candidate.snapOffset[0] ** 2 +
-        candidate.snapOffset[1] ** 2 +
-        candidate.snapOffset[2] ** 2
+        candidate.snapOffset[0] ** 2 + candidate.snapOffset[1] ** 2 + candidate.snapOffset[2] ** 2
       );
 
       // Only consider snaps that are primarily on the drag axis
@@ -511,7 +523,7 @@ export function calculatePartSnapV2(
   allParts: Part[],
   cabinets: Cabinet[],
   settings: SnapSettings,
-  axis: 'X' | 'Y' | 'Z'
+  axis: "X" | "Y" | "Z"
 ): SnapResult {
   // Calculate offset from original position
   const positionOffset: Vec3 = [
@@ -541,7 +553,7 @@ export function calculatePartSnapV2(
   }
 
   // Apply snap offset to position
-  const axisIndex = axis === 'X' ? 0 : axis === 'Y' ? 1 : 2;
+  const axisIndex = axis === "X" ? 0 : axis === "Y" ? 1 : 2;
   const snappedPosition: Vec3 = [...newPosition];
   snappedPosition[axisIndex] += result.offset;
 
@@ -556,24 +568,20 @@ export function calculatePartSnapV2(
  * Calculate the center position of a cabinet from its parts
  */
 function calculateCabinetCenter(cabinet: Cabinet, parts: Part[]): Vec3 {
-  const cabinetParts = parts.filter(
-    (p) => p.cabinetMetadata?.cabinetId === cabinet.id
-  );
+  const cabinetParts = parts.filter((p) => p.cabinetMetadata?.cabinetId === cabinet.id);
 
   if (cabinetParts.length === 0) return [0, 0, 0];
 
-  let sumX = 0, sumY = 0, sumZ = 0;
+  let sumX = 0,
+    sumY = 0,
+    sumZ = 0;
   for (const part of cabinetParts) {
     sumX += part.position[0];
     sumY += part.position[1];
     sumZ += part.position[2];
   }
 
-  return [
-    sumX / cabinetParts.length,
-    sumY / cabinetParts.length,
-    sumZ / cabinetParts.length,
-  ];
+  return [sumX / cabinetParts.length, sumY / cabinetParts.length, sumZ / cabinetParts.length];
 }
 
 /**
@@ -586,7 +594,7 @@ export function calculateCabinetSnapV2(
   allParts: Part[],
   cabinets: Cabinet[],
   settings: SnapSettings,
-  axis: 'X' | 'Y' | 'Z'
+  axis: "X" | "Y" | "Z"
 ): SnapResult {
   // Calculate the original cabinet center from parts
   const originalCenter = calculateCabinetCenter(cabinet, allParts);
@@ -618,7 +626,7 @@ export function calculateCabinetSnapV2(
   }
 
   // Apply snap offset to position
-  const axisIndex = axis === 'X' ? 0 : axis === 'Y' ? 1 : 2;
+  const axisIndex = axis === "X" ? 0 : axis === "Y" ? 1 : 2;
   const snappedPosition: Vec3 = [...currentPosition];
   snappedPosition[axisIndex] += result.offset;
 
@@ -641,10 +649,10 @@ export function shouldUseSnapV2(
   movingPartId: string,
   targetPartId: string | undefined,
   parts: Part[],
-  snapVersion: 'v1' | 'v2'
+  snapVersion: "v1" | "v2"
 ): boolean {
   // If V1 is explicitly set, use V1
-  if (snapVersion === 'v1') return false;
+  if (snapVersion === "v1") return false;
 
   // If no target, use V2 (general snapping)
   if (!targetPartId) return true;

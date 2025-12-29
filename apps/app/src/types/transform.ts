@@ -93,12 +93,48 @@ export type SnapAxisConstraint = "X" | "Y" | "Z" | "XY" | "XZ" | "YZ" | "XYZ" | 
 export type SnapVersion = "v2" | "v3";
 
 /**
+ * Drag axes - single axis or planar combinations
+ * Used when TransformControls operates on planes (XY, XZ, YZ) or all axes (XYZ)
+ */
+export type DragAxes = "X" | "Y" | "Z" | "XY" | "XZ" | "YZ" | "XYZ";
+
+/**
+ * Per-axis snap result details
+ */
+export interface AxisSnapDetail {
+  snapped: boolean;
+  offset: number;
+  snapType?: "connection" | "alignment" | "tjoint" | "wall" | "corner";
+  targetId?: string;
+}
+
+/**
+ * Result from multi-axis snap calculation (planar drag)
+ */
+export interface MultiAxisSnapResult {
+  /** Whether any snap was found */
+  snapped: boolean;
+  /** Final position after all snaps applied */
+  position: [number, number, number];
+  /** Combined snap points from all axes */
+  snapPoints: SnapPoint[];
+  /** Which axes were snapped */
+  snappedAxes: Array<"X" | "Y" | "Z">;
+  /** Per-axis snap details for debugging */
+  axisResults: Map<"X" | "Y" | "Z", AxisSnapDetail>;
+}
+
+/**
  * Snap settings configuration
  */
 export interface SnapSettings {
   // Core settings
   distance: number; // Snap threshold in mm (default: 20)
-  collisionOffset: number; // Gap between snapped faces in mm (default: 1.0)
+  snapGap: number; // Gap between snapped faces in mm (default: 0.1)
+  collisionMargin: number; // Margin for collision detection in mm (default: 0.3)
+
+  // Legacy alias (deprecated, use snapGap instead)
+  collisionOffset?: number;
 
   // Snap types
   faceSnap: boolean; // Enable face-to-face snapping (opposite normals) - "connection"

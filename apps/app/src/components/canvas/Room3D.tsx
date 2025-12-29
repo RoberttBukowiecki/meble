@@ -7,6 +7,7 @@ import { useShallow } from "zustand/react/shallow";
 import { Room, WallSegment, Opening } from "@/types";
 import { DoubleSide } from "three";
 import { Opening3D } from "./Opening3D";
+import { useSceneTheme } from "@/hooks/useSceneTheme";
 
 // Helper to create shape for a wall segment with holes for openings
 function createWallShape(wall: WallSegment, openings: Opening[], wallHeight: number): THREE.Shape {
@@ -44,6 +45,8 @@ function createWallShape(wall: WallSegment, openings: Opening[], wallHeight: num
 }
 
 function Wall3D({ wall, room, openings }: { wall: WallSegment; room: Room; openings: Opening[] }) {
+  const { sceneTheme } = useSceneTheme();
+
   // Subscribe to occlusion state - selector returns boolean for this specific wall
   const isOccluding = useStore(
     (state) => state.wallOcclusionEnabled && state.occludingWallIds.has(wall.id)
@@ -108,7 +111,7 @@ function Wall3D({ wall, room, openings }: { wall: WallSegment; room: Room; openi
       {/* Offset Z by -thickness/2 to center the wall on the line */}
       <mesh geometry={geometry} position={[0, 0, -thickness / 2]} castShadow receiveShadow>
         <meshStandardMaterial
-          color="#e5e7eb"
+          color={sceneTheme.WALL_COLOR}
           side={DoubleSide}
           transparent={isOccluding}
           opacity={isOccluding ? 0.2 : 1}

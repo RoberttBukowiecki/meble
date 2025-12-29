@@ -117,6 +117,15 @@ export const createViewSlice: StoreSlice<ViewSlice> = (set) => ({
     position: [number, number, number],
     target: [number, number, number]
   ) => {
+    // Don't save if position is at/near origin - this indicates uninitialized camera
+    const distanceFromOrigin = Math.sqrt(
+      position[0] * position[0] + position[1] * position[1] + position[2] * position[2]
+    );
+    if (distanceFromOrigin < 100) {
+      console.warn("[ViewSlice] Ignoring camera position near origin:", position);
+      return;
+    }
+
     set({
       perspectiveCameraPosition: position,
       perspectiveCameraTarget: target,
