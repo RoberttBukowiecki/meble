@@ -320,7 +320,7 @@ export function CreditsPurchaseModal({
         <DialogFooter className="flex-shrink-0 border-t pt-4 mt-2">
           <div className="flex flex-col w-full gap-3">
             <p className="text-xs text-muted-foreground text-center">
-              Klikając „Zapłać", akceptujesz{" "}
+              Klikając &quot;Zapłać&quot;, akceptujesz{" "}
               <Link href="/regulamin" className="text-primary hover:underline" target="_blank">
                 regulamin serwisu
               </Link>{" "}

@@ -12,7 +12,7 @@
 
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState, useMemo } from "react";
 import { useStore } from "@/lib/store";
 import { useShallow } from "zustand/react/shallow";
 
@@ -86,9 +86,10 @@ interface UseMultiTabSyncReturn {
 export function useMultiTabSync(options: UseMultiTabSyncOptions = {}): UseMultiTabSyncReturn {
   const { onExternalSave, onConcurrentEdit, enabled = true } = options;
 
-  const tabIdRef = useRef<string>(generateTabId());
+  const [tabId] = useState(generateTabId);
   const channelRef = useRef<BroadcastChannel | null>(null);
   const concurrentTabsRef = useRef<Set<string>>(new Set());
+  const [concurrentTabsCount, setConcurrentTabsCount] = useState(0);
 
   const { currentProjectId, currentProjectRevision, loadProject, setSyncStatus } = useStore(
     useShallow((state) => ({
@@ -112,7 +113,7 @@ export function useMultiTabSync(options: UseMultiTabSyncOptions = {}): UseMultiT
       const message = event.data;
 
       // Ignore messages from this tab
-      if (message.tabId === tabIdRef.current) {
+      if (message.tabId === tabId) {
         return;
       }
 
@@ -144,6 +145,7 @@ export function useMultiTabSync(options: UseMultiTabSyncOptions = {}): UseMultiT
           // Another tab opened a project
           if (message.projectId === currentProjectId) {
             concurrentTabsRef.current.add(message.tabId);
+            setConcurrentTabsCount(concurrentTabsRef.current.size);
             console.log(
               `[MultiTabSync] Same project opened in another tab (${concurrentTabsRef.current.size} concurrent)`
             );
@@ -155,6 +157,7 @@ export function useMultiTabSync(options: UseMultiTabSyncOptions = {}): UseMultiT
         case "TAB_CLOSING": {
           // Another tab is closing
           concurrentTabsRef.current.delete(message.tabId);
+          setConcurrentTabsCount(concurrentTabsRef.current.size);
           break;
         }
       }
@@ -167,7 +170,7 @@ export function useMultiTabSync(options: UseMultiTabSyncOptions = {}): UseMultiT
       channel.postMessage({
         type: "PROJECT_OPENED",
         projectId: currentProjectId,
-        tabId: tabIdRef.current,
+        tabId,
         timestamp: Date.now(),
       } satisfies ProjectOpenedMessage);
     }
@@ -180,13 +183,13 @@ export function useMultiTabSync(options: UseMultiTabSyncOptions = {}): UseMultiT
       channel.postMessage({
         type: "TAB_CLOSING",
         projectId: currentProjectId,
-        tabId: tabIdRef.current,
+        tabId,
       } satisfies TabClosingMessage);
 
       channel.close();
       channelRef.current = null;
     };
-  }, [enabled, currentProjectId, onExternalSave, onConcurrentEdit]);
+  }, [enabled, currentProjectId, onExternalSave, onConcurrentEdit, tabId]);
 
   // Broadcast when project changes
   useEffect(() => {
@@ -197,10 +200,10 @@ export function useMultiTabSync(options: UseMultiTabSyncOptions = {}): UseMultiT
     channelRef.current.postMessage({
       type: "PROJECT_OPENED",
       projectId: currentProjectId,
-      tabId: tabIdRef.current,
+      tabId,
       timestamp: Date.now(),
     } satisfies ProjectOpenedMessage);
-  }, [enabled, currentProjectId]);
+  }, [enabled, currentProjectId, tabId]);
 
   // Broadcast that we saved
   const broadcastSave = useCallback(
@@ -213,11 +216,11 @@ export function useMultiTabSync(options: UseMultiTabSyncOptions = {}): UseMultiT
         type: "PROJECT_SAVED",
         projectId: currentProjectId,
         revision,
-        tabId: tabIdRef.current,
+        tabId,
         timestamp: Date.now(),
       } satisfies ProjectSavedMessage);
     },
-    [currentProjectId]
+    [currentProjectId, tabId]
   );
 
   // Broadcast that we opened
@@ -229,16 +232,16 @@ export function useMultiTabSync(options: UseMultiTabSyncOptions = {}): UseMultiT
     channelRef.current.postMessage({
       type: "PROJECT_OPENED",
       projectId: currentProjectId,
-      tabId: tabIdRef.current,
+      tabId,
       timestamp: Date.now(),
     } satisfies ProjectOpenedMessage);
-  }, [currentProjectId]);
+  }, [currentProjectId, tabId]);
 
   return {
-    tabId: tabIdRef.current,
+    tabId,
     broadcastSave,
     broadcastOpen,
-    concurrentTabs: concurrentTabsRef.current.size,
+    concurrentTabs: concurrentTabsCount,
   };
 }
 

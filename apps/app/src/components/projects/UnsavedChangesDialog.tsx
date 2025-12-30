@@ -193,23 +193,17 @@ export function useUnsavedChangesDialog() {
     [hasUnsavedChanges]
   );
 
-  const handleAction = useCallback(
-    (action: UnsavedChangesAction) => {
-      dialogState.resolve?.(action);
-      setDialogState({ open: false });
-    },
-    [dialogState.resolve]
-  );
+  const handleAction = (action: UnsavedChangesAction) => {
+    dialogState.resolve?.(action);
+    setDialogState({ open: false });
+  };
 
-  const handleOpenChange = useCallback(
-    (open: boolean) => {
-      if (!open) {
-        dialogState.resolve?.("cancel");
-        setDialogState({ open: false });
-      }
-    },
-    [dialogState.resolve]
-  );
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      dialogState.resolve?.("cancel");
+      setDialogState({ open: false });
+    }
+  };
 
   const DialogComponent = useCallback(
     () => (

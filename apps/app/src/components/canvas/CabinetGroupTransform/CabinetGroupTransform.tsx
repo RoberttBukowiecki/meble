@@ -143,9 +143,14 @@ export function CabinetGroupTransform({ cabinetId, space = "world" }: CabinetGro
   const isDraggingRef = useRef(false);
 
   // Preview state - stores calculated transforms without updating store
+  // Refs for internal calculations, state for rendering
   const previewTransformsRef = useRef<PreviewTransformMap>(new Map());
   const previewRotationRef = useRef<THREE.Euler>(new THREE.Euler());
-  const [previewVersion, setPreviewVersion] = useState(0);
+  const [isShowingPreview, setIsShowingPreview] = useState(false);
+  const [previewState, setPreviewState] = useState<{
+    transforms: PreviewTransformMap;
+    rotation: THREE.Euler;
+  }>({ transforms: new Map(), rotation: new THREE.Euler() });
 
   // -------------------------------------------------------------------------
   // Derived Values
@@ -501,7 +506,10 @@ export function CabinetGroupTransform({ cabinetId, space = "world" }: CabinetGro
     const newRotQuat = deltaQuat.clone().multiply(existingQuat);
     previewRotationRef.current.setFromQuaternion(newRotQuat, "XYZ");
 
-    setPreviewVersion((v) => v + 1);
+    setPreviewState({
+      transforms: new Map(previewTransformsRef.current),
+      rotation: previewRotationRef.current.clone(),
+    });
   }, [parts, target, transformMode, snapEnabled, applySnapLogic, allCabinets, cabinetId]);
 
   const handleTransformStart = useCallback(() => {
@@ -571,7 +579,11 @@ export function CabinetGroupTransform({ cabinetId, space = "world" }: CabinetGro
       before: beforeState,
     });
 
-    setPreviewVersion((v) => v + 1);
+    setIsShowingPreview(true);
+    setPreviewState({
+      transforms: new Map(previewTransformsRef.current),
+      rotation: previewRotationRef.current.clone(),
+    });
   }, [
     setIsTransforming,
     setTransformingCabinetId,
@@ -587,6 +599,7 @@ export function CabinetGroupTransform({ cabinetId, space = "world" }: CabinetGro
 
   const handleTransformEnd = useCallback(() => {
     isDraggingRef.current = false;
+    setIsShowingPreview(false);
 
     const group = target;
     if (!group) {
@@ -690,14 +703,13 @@ export function CabinetGroupTransform({ cabinetId, space = "world" }: CabinetGro
   // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
-  const isShowingPreview = isDraggingRef.current && previewTransformsRef.current.size > 0;
 
   return (
     <>
       {/* Preview part meshes during drag */}
       {isShowingPreview &&
         parts.map((part) => {
-          const transform = previewTransformsRef.current.get(part.id);
+          const transform = previewState.transforms.get(part.id);
           if (!transform) return null;
           return (
             <PreviewPartMesh
@@ -720,12 +732,12 @@ export function CabinetGroupTransform({ cabinetId, space = "world" }: CabinetGro
             const previewData = calculateCountertopPreview(
               segment,
               group,
-              previewTransformsRef.current,
+              previewState.transforms,
               allParts,
               segmentCabinets,
               allCabinets,
               materials,
-              previewRotationRef.current,
+              previewState.rotation,
               cabinetId
             );
 
@@ -748,8 +760,8 @@ export function CabinetGroupTransform({ cabinetId, space = "world" }: CabinetGro
         <PreviewLegs
           legs={currentCabinet.legs}
           parts={parts}
-          previewTransforms={previewTransformsRef.current}
-          groupRotation={previewRotationRef.current}
+          previewTransforms={previewState.transforms}
+          groupRotation={previewState.rotation}
         />
       )}
 

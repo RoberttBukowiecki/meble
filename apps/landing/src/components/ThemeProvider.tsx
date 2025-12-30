@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { THEME_STORAGE_KEY } from "@/lib/constants";
 
@@ -30,16 +23,17 @@ const resolveTheme = (theme: Theme): Exclude<Theme, "system"> => {
   return theme;
 };
 
-export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-  const [theme, setTheme] = useState<Theme>("system");
+const getInitialTheme = (): Theme => {
+  if (typeof window === "undefined") return "system";
+  const stored = window.localStorage.getItem(THEME_STORAGE_KEY) as Theme | null;
+  if (stored === "light" || stored === "dark" || stored === "system") {
+    return stored;
+  }
+  return "system";
+};
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const stored = window.localStorage.getItem(THEME_STORAGE_KEY) as Theme | null;
-    if (stored === "light" || stored === "dark" || stored === "system") {
-      setTheme(stored);
-    }
-  }, []);
+export const ThemeProvider = ({ children }: { children: ReactNode }) => {
+  const [theme, setTheme] = useState<Theme>(getInitialTheme);
 
   useEffect(() => {
     const resolved = resolveTheme(theme);

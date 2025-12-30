@@ -1,36 +1,24 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useSyncExternalStore } from "react";
 
 const MOBILE_BREAKPOINT = 768;
-const DEBOUNCE_DELAY = 150;
+
+function subscribe(callback: () => void) {
+  window.addEventListener("resize", callback);
+  return () => window.removeEventListener("resize", callback);
+}
+
+function getSnapshot() {
+  return window.innerWidth < MOBILE_BREAKPOINT;
+}
+
+function getServerSnapshot() {
+  return false; // Assume not mobile on server
+}
 
 export function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(false);
-
-  const checkMobile = useCallback(() => {
-    setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
-  }, []);
-
-  useEffect(() => {
-    // Initial check
-    checkMobile();
-
-    // Debounced resize handler
-    let timeoutId: ReturnType<typeof setTimeout>;
-    const handleResize = () => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(checkMobile, DEBOUNCE_DELAY);
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => {
-      clearTimeout(timeoutId);
-      window.removeEventListener('resize', handleResize);
-    };
-  }, [checkMobile]);
-
-  return isMobile;
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
 export { MOBILE_BREAKPOINT };

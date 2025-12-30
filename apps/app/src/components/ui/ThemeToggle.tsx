@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useSyncExternalStore } from "react";
 import { useTheme } from "next-themes";
 import { Moon, Sun, Monitor } from "lucide-react";
 import {
@@ -11,11 +11,15 @@ import {
   DropdownMenuTrigger,
 } from "@meble/ui";
 
-export function ThemeToggle() {
-  const [mounted, setMounted] = useState(false);
-  const { setTheme, resolvedTheme } = useTheme();
+const emptySubscribe = () => () => {};
 
-  useEffect(() => setMounted(true), []);
+export function ThemeToggle() {
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false
+  );
+  const { setTheme, resolvedTheme } = useTheme();
 
   if (!mounted) {
     return (
