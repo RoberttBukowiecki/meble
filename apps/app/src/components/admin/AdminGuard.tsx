@@ -183,7 +183,7 @@ export function AdminGuard({ children }: AdminGuardProps) {
               onClick={() => {
                 clearAdminCache();
                 checkStarted.current = false;
-                setStatus("loading");
+                setAdminStatus("idle");
                 setError(null);
               }}
               className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
