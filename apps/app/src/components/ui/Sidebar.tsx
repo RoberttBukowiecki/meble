@@ -31,6 +31,7 @@ import { ExportDialog } from "./ExportDialog";
 import { EXPORT_DIALOG_PENDING_KEY } from "./CreditsPurchaseModal";
 import { CopySceneDialog, copySceneToClipboard } from "./CopySceneDialog";
 import { UserMenu } from "@/components/auth";
+import { WizardTriggerButton } from "@/components/ai";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@meble/ui";
 
 type TabType = "properties" | "list" | "room" | "countertops";
@@ -212,6 +213,16 @@ export function Sidebar() {
             <Package className="h-4 w-4 mr-2" />
             {t("addCabinet")}
           </Button>
+
+          {/* AI Design Wizard */}
+          <WizardTriggerButton
+            variant="sidebar"
+            className="mt-1"
+            onComplete={(output) => {
+              console.log("Wizard completed:", output);
+              // TODO: Create cabinets from wizard output
+            }}
+          />
 
           <Button
             onClick={handleExportCSV}
